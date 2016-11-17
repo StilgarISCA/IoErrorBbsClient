@@ -25,7 +25,7 @@ int which;
     register int i;
     register int j;
     register int k;
-    char send_string[6][80];
+    char send_string[21][80];
     int override = 0;
     int local = 0;
 
@@ -412,7 +412,7 @@ int line;
 		putchar(c);
 	    else
 		putchar('.');
-	} else if (line < 0 || line == 4)
+	} else if (line < 0 || line == 19)
 	    continue;
 	else {
 	    if (c == ' ')

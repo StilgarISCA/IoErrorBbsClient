@@ -109,7 +109,7 @@ extern int wholist;	/* Are we currently receiving a who list? */
 extern char postbuf[160];       /* Buffer for post header (for kill files) */
 extern int postbufp;        /* Pointer for post header buffer */
 extern int postflag;        /* True if post header being received */
-extern char xmsgbuf[580];        /* Buffer for X message */
+extern char xmsgbuf[2320];  /* Buffer for X message */
 extern int highxmsg;        /* Highest X message counter */
 extern char *xmsgbufp;      /* Pointer for X message buffer */
 extern int xmsgflag;        /* True if X message header being received */
