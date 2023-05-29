@@ -78,9 +78,6 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
 
-/* Define to 1 if you have the <sys/time.h> header file. */
-#define HAVE_SYS_TIME_H 1
-
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
 
@@ -119,10 +116,6 @@
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
-
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. This
-   macro is obsolete. */
-#define TIME_WITH_SYS_TIME 1
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */

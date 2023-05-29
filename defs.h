@@ -13,16 +13,8 @@
 
 #include <stdlib.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#ifdef TIME_WITH_SYS_TIME
 #include <time.h>
-#endif
-#else
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
