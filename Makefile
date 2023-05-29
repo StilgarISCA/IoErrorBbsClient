@@ -2,7 +2,7 @@
 # Copyright (C) 2001 Michael Hampton.  GNU GPL version 2 or later.
 
 CC=gcc
-CFLAGS=-g -O2
+CFLAGS=-std=c17
 LDFLAGS=
 LIBS=-lutil -lresolv 
 srcdir=.
@@ -10,8 +10,8 @@ srcdir=.
 prefix=/usr/local
 exec_prefix=${prefix}
 bindir=${exec_prefix}/bin
-mandir=${prefix}/man
-INSTALL=/usr/bin/install -c
+mandir=${prefix}/share/man
+INSTALL=/usr/local/bin/ginstall -c
 INSTALL_DATA=${INSTALL} -m 644
 INSTALL_PROGRAM=${INSTALL}
 
