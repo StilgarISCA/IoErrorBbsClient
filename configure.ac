@@ -1,5 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(filter.c)
+AC_INIT
+AC_CONFIG_SRCDIR([filter.c])
 
 with_socks=yes
 AC_ARG_WITH(socks, [  --without-socks         exclude SOCKS firewall library (e.g. on Win32)])
@@ -98,8 +99,7 @@ if test x$with_ssl = xyes; then
 			# Basic test to check for compatible version and
 			# correct linking *does not* test for RSA - that
 			# comes later.
-			AC_TRY_RUN(
-				[
+			AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <string.h>
 #include <openssl/rand.h>
 int main(void)
@@ -109,12 +109,11 @@ int main(void)
 	RAND_add(a, sizeof(a), sizeof(a));
 	return(RAND_status() <= 0);
 }
-				],
-				[
+				]])],[
 					found_crypto=1
 					break;
-				], []
-			)
+				],[
+			],[])
 	
 			if test ! -z "$found_crypto" ; then
 				break;
@@ -188,10 +187,31 @@ if test x$enable_xlog = xyes; then
 fi
 
 dnl Checks for header files.
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sgtty.h sys/ioctl.h time.h sys/time.h termio.h unistd.h)
-AC_TIME_WITH_SYS_TIME
+m4_warn([obsolete],
+[Update your code to rely only on HAVE_SYS_TIME_H,
+then remove this warning and the obsolete code below it.
+All current systems provide time.h; it need not be checked for.
+Not all systems provide sys/time.h, but those that do, all allow
+you to include it and time.h simultaneously.])dnl
+AC_CHECK_HEADERS_ONCE([sys/time.h])
+# Obsolete code to be removed.
+if test $ac_cv_header_sys_time_h = yes; then
+  AC_DEFINE([TIME_WITH_SYS_TIME],[1],[Define to 1 if you can safely include both <sys/time.h>
+	     and <time.h>.  This macro is obsolete.])
+fi
+# End of obsolete code.
+
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -199,14 +219,27 @@ AC_C_CONST
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 AC_FUNC_SETVBUF_REVERSED
-AC_TYPE_SIGNAL
+m4_warn([obsolete],
+[your code may safely assume C89 semantics that RETSIGTYPE is void.
+Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
+AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([#include <sys/types.h>
+#include <signal.h>
+],
+		 [return *(signal (0, 0)) (0) == 1;])],
+		   [ac_cv_type_signal=int],
+		   [ac_cv_type_signal=void])])
+AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as the return type of signal handlers
+		    (`int' or `void').])
+
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(select socket)
 
 AC_SUBST(SOCKS_OBJS)
 AC_SUBST(PLATFORM_OBJS)
-AC_CONFIG_HEADER(config.h)
-AC_OUTPUT(Makefile)
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
 
 if test x$enable_save_password = xyes; then
 	cat <<SPT;
