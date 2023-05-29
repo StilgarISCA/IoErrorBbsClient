@@ -5,11 +5,7 @@
 #ifndef PROTO_H_INCLUDED
 #define PROTO_H_INCLUDED
 
-#ifdef STDC_HEADERS
 # define P(x) x
-#else
-# error Sorry, an ANSI C compiler is required now.
-#endif
 
 extern void
   ansi_transform_express P((char *)),
