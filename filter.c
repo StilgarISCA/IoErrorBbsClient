@@ -182,6 +182,7 @@ void filter_express(register int c)
 	unsigned int crlf:1;		/* Needs initial CR/LF */
 	unsigned int prochdr:1;		/* Needs killfile processing */
 	unsigned int ignore:1;		/* Ignore the remainder of the X */
+	unsigned int truncated:1;	/* X message exceeded buffer */
     } needs;
     char *thisline = xmsgbufp;	/* Pointer to the current line */
 
@@ -192,6 +193,7 @@ void filter_express(register int c)
 	    needs.ignore = 0;
 	    needs.crlf = 0;
 	    needs.prochdr = 1;
+	    needs.truncated = 0;
 	    return;
 	} else if (!needs.ignore) {	/* Finished this X, dump it out */
 		/* Process for automatic reply */
@@ -211,11 +213,14 @@ void filter_express(register int c)
 		replycode_transform_express(xmsgbuf);
 		ansi_transform_express(xmsgbuf);
 		std_printf("%s%s", (needs.crlf) ? "\r\n" : "", xmsgbuf);
+		if (needs.truncated)
+		    std_printf("\r\n[X message truncated]\r\n");
 		return;
 	}
     }
     /* If the message is killed, don't bother doing anything. */
     if (needs.ignore) return;
+    if (needs.truncated) return;
 
     if (xmsgbuf == xmsgbufp) {	/* Check for initial CR/LF pair */
 	if (c == '\r' || c == '\n') {
@@ -223,7 +228,11 @@ void filter_express(register int c)
 	    return;
 	}
     }
-    /* Insert character into the buffer */
+    /* Insert character into the buffer (drop excess to avoid overflow) */
+    if (xmsgbufp >= xmsgbuf + sizeof(xmsgbuf) - 1) {
+	needs.truncated = 1;
+	return;
+    }
     *xmsgbufp++ = c;
     *xmsgbufp = 0;
 
