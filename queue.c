@@ -12,7 +12,7 @@ queue *new_queue(int size, int nobjs)
 {
     queue *q;
 
-    if (!(q = (queue *) calloc(1, sizeof(queue) + size * nobjs)))
+    if (!(q = (queue *) calloc(1, sizeof(queue) + (size_t) size * (size_t) nobjs)))
 	return (queue *) NULL;
 
     q->start = (char *) (q + 1);

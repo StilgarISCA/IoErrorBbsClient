@@ -78,11 +78,11 @@ char ansi_transform(char c)
 	break;
     }
 
-    return c;
+    return (char) c;
 }
 
 
-void ansi_transform_express(char *s)
+void ansi_transform_express(char *s, size_t size)
 {
     char junk[580];
     char *sp1, *sp2;
@@ -107,17 +107,17 @@ void ansi_transform_express(char *s)
     *(sp1++) = 0;
     *(sp2++) = 0;
 
-    if (slistFind(friendList, sp1, (int (*)())fstrcmp) != -1) {
-	sprintf(junk, "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+    if (slistFind(friendList, sp1, fstrcmp_void) != -1) {
+	snprintf(junk, sizeof(junk), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
 		color.expressfriendtext, s, color.expressfriendname, sp1,
 		color.expressfriendtext, sp2, color.text);
     } else {
-	sprintf(junk, "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+	snprintf(junk, sizeof(junk), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
 		color.expresstext, s, color.expressname, sp1,
 		color.expresstext, sp2, color.text);
     }
     lastcolor = color.text;
-    strcpy(s, junk);
+    snprintf(s, size, "%s", junk);
 }
 
 
@@ -139,7 +139,7 @@ char ansi_transform_post(char c, int isFriend)
     default:
 	break;
     }
-    return c;
+    return (char) c;
 }
 
 
@@ -186,14 +186,14 @@ void color_config(void)
 {
     unsigned int invalid = 0;
     char work[110];
-    char c;
+    int c;
 
     std_printf("Color\r\n");
     if (!flags.useansi) {
 	std_printf("\r\nWARNING:  Color is off.  You will not be able to preview your selections.");
     }
     for (;;) {
-	sprintf(work, "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G");
+	snprintf(work, sizeof(work), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G");
 	colorize(work);
 
 	for (invalid = 0;;) {
@@ -260,10 +260,10 @@ void color_options(void)
 {
     std_printf("Automatically answer the ANSI terminal question? (%s) -> ",
 	       flags.ansiprompt ? "Yes" : "No");
-    flags.ansiprompt = yesnodefault(flags.ansiprompt);
+    flags.ansiprompt = (unsigned int) yesnodefault(flags.ansiprompt);
     std_printf("Use bold ANSI colors when ANSI is enabled? (%s) -> ",
 	       flags.usebold ? "Yes" : "No");
-    flags.usebold = yesnodefault(flags.usebold);
+    flags.usebold = (unsigned int) yesnodefault(flags.usebold);
     if (flags.useansi)
 	printf("\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
 			color.background);
@@ -281,7 +281,7 @@ void color_options(void)
 void general_color_config(void)
 {
 	unsigned int invalid = 0;
-	register char opt;
+	int opt;
 	char work[100];
 
 	for (;;) {
@@ -290,7 +290,7 @@ void general_color_config(void)
 				color.text, color.forum, color.number,
 				color.text, color.number, color.text);
 
-		sprintf(work, "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G");
+		snprintf(work, sizeof(work), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G");
 		colorize(work);
 	
 		for (invalid = 0;;) {
@@ -346,14 +346,14 @@ void general_color_config(void)
 void input_color_config(void)
 {
 	unsigned int invalid = 0;
-	register char opt;
+	int opt;
 	char work[100];
 
 	for (;;) {
 		std_printf(INPUT_FMT_STR, color.text, color.input1,
 				color.input2, color.input1, color.text);
 
-		sprintf(work, "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G");
+		snprintf(work, sizeof(work), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G");
 		colorize(work);
 	
 		for (invalid = 0;;) {
@@ -410,7 +410,7 @@ void post_color_config(void)
 
 void post_user_color_config(void)
 {
-    char opt;
+    int opt;
 
     for (;;) {
 	std_printf(POST_FMT_STR, color.postdate, color.posttext,
@@ -444,7 +444,7 @@ void post_user_color_config(void)
 
 void post_friend_color_config(void)
 {
-    char opt;
+    int opt;
 
     for (;;) {
 	std_printf(POST_FMT_STR, color.postfrienddate, color.postfriendtext,
@@ -480,10 +480,10 @@ void post_friend_color_config(void)
 char post_color_menu(void)
 {
     unsigned int invalid = 0;
-    register char c;
+    int c;
     char work[100];
 
-    sprintf(work, "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G");
+    snprintf(work, sizeof(work), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G");
     colorize(work);
 
     for (invalid = 0;;) {
@@ -519,7 +519,7 @@ char post_color_menu(void)
 	break;
     }
 
-    return c;
+    return (char) c;
 }
 
 
@@ -542,7 +542,7 @@ void express_color_config(void)
 
 void express_user_color_config(void)
 {
-    char opt;
+    int opt;
 
     for (;;) {
 	std_printf(EXPRESS_FMT_STR, color.expresstext,
@@ -571,7 +571,7 @@ void express_user_color_config(void)
 
 void express_friend_color_config(void)
 {
-    char opt;
+    int opt;
 
     for (;;) {
 	std_printf(EXPRESS_FMT_STR, color.expressfriendtext,
@@ -602,10 +602,10 @@ void express_friend_color_config(void)
 char express_color_menu(void)
 {
     unsigned int invalid = 0;
-    char c;
+    int c;
     char work[100];
 
-    sprintf(work, "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G");
+    snprintf(work, sizeof(work), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G");
     colorize(work);
 
     for (invalid = 0;;) {
@@ -637,17 +637,17 @@ char express_color_menu(void)
 	break;
     }
 
-    return c;
+    return (char) c;
 }
 
 
 char user_or_friend(void)
 {
     unsigned int invalid = 0;
-    char c;
+    int c;
     char work[100];
 
-    sprintf(work, "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G");
+    snprintf(work, sizeof(work), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G");
     colorize(work);
 
     for (invalid = 0;;) {
@@ -676,17 +676,17 @@ char user_or_friend(void)
 	break;
     }
 
-    return c;
+    return (char) c;
 }
 
 
 char color_picker(void)
 {
     unsigned int invalid = 0;
-    char c;
+    int c;
     char work[100];
 
-    sprintf(work, "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G");
+    snprintf(work, sizeof(work), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G");
     colorize(work);
 
     for (invalid = 0;;) {
@@ -747,17 +747,17 @@ char color_picker(void)
 	break;
     }
 
-    return c;
+    return (char) c;
 }
 
 
 char background_picker(void)
 {
     unsigned int invalid = 0;
-    char c;
+    int c;
     char work[140];
 
-    sprintf(work, "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%cm @Y-> @G",
+    snprintf(work, sizeof(work), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%cm @Y-> @G",
 		    color.background);
     colorize(work);
 
@@ -825,5 +825,5 @@ char background_picker(void)
     }
     std_printf("\033[4%cm\n", c);
 
-    return c;
+    return (char) c;
 }

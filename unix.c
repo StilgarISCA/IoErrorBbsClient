@@ -95,20 +95,22 @@ void findhome(void)
 {
 #ifdef USE_CYGWIN
     if (getenv("USERNAME")) {
-	strcpy(user, (char *) getenv("USERNAME"));
-	strcat(user, "  (Win32)");
+	snprintf(user, sizeof(user), "%s  (Win32)", getenv("USERNAME"));
     } else
-	strcpy(user, "No username!  (Win32)");
+	snprintf(user, sizeof(user), "No username!  (Win32)");
 #else
     if ((pw = getpwuid(getuid())))
-	strcpy(user, pw->pw_name);
+	snprintf(user, sizeof(user), "%s", pw->pw_name);
     else if (getenv("USER"))
-	strcpy(user, (char *) getenv("USER"));
+	snprintf(user, sizeof(user), "%s", getenv("USER"));
     else
 	fatalexit("findhome: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
-    if (login_shell)
-	strcat(user, "  (login shell)");
+    if (login_shell) {
+	size_t len = strlen(user);
+	if (len < sizeof(user) - 1)
+	    snprintf(user + len, sizeof(user) - len, "  (login shell)");
+    }
 }
 
 
@@ -118,31 +120,34 @@ void findhome(void)
  * provided the BBSRC environment will specify the name of the BBSRC file if it
  * is set.  Returns a pointer to the file via openbbsrc().
  */
-FILE *
- findbbsrc()
+FILE *findbbsrc(void)
 {
     FILE *f;
 
     if (login_shell)
-	sprintf(bbsrcname, "/tmp/bbsrc.%d", getpid());
+	snprintf(bbsrcname, sizeof(bbsrcname), "/tmp/bbsrc.%d", getpid());
     else {
 	if (getenv("BBSRC"))
-	    strcpy(bbsrcname, (char *) getenv("BBSRC"));
+	    snprintf(bbsrcname, sizeof(bbsrcname), "%s", getenv("BBSRC"));
 #ifdef USE_CYGWIN
 	else if (getenv("USERPROFILE"))
-	    sprintf(bbsrcname, "%s/bbs.rc", (char *) getenv("USERPROFILE"));
+	    snprintf(bbsrcname, sizeof(bbsrcname), "%s/bbs.rc", getenv("USERPROFILE"));
 	else {
 	    if (!getcwd(bbsrcname, sizeof bbsrcname)) {
 		fatalperror("findbbsrc: getcwd", "Local error");
 	    }
-	    strcat(bbsrcname, "/bbs.rc");
+	    {
+		size_t len = strlen(bbsrcname);
+		if (len < sizeof(bbsrcname) - 1)
+		    snprintf(bbsrcname + len, sizeof(bbsrcname) - len, "/bbs.rc");
+	    }
 	}
 	move_if_needed("c:\\.bbsrc", bbsrcname);
 #else
 	else if (pw)
-	    sprintf(bbsrcname, "%s/.bbsrc", pw->pw_dir);
+	    snprintf(bbsrcname, sizeof(bbsrcname), "%s/.bbsrc", pw->pw_dir);
 	else if (getenv("HOME"))
-	    sprintf(bbsrcname, "%s/.bbsrc", (char *) getenv("HOME"));
+	    snprintf(bbsrcname, sizeof(bbsrcname), "%s/.bbsrc", getenv("HOME"));
 	else
 	    fatalexit("findbbsrc: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
@@ -158,28 +163,31 @@ FILE *
 
 /* Added by Dave (Isoroku).  Finds .bbsfriends for friends list */
 /* Edited by IO ERROR.  We read-only the .bbsfriends now, if it exists. */
-FILE *
- findbbsfriends()
+FILE *findbbsfriends(void)
 {
     if (login_shell)
-	sprintf(bbsfriendsname, "/tmp/bbsfriends.%d", getpid());
+	snprintf(bbsfriendsname, sizeof(bbsfriendsname), "/tmp/bbsfriends.%d", getpid());
     else {
 	if (getenv("BBSFRIENDS"))
-	    strcpy(bbsfriendsname, (char *) getenv("BBSFRIENDS"));
+	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s", getenv("BBSFRIENDS"));
 #ifdef USE_CYGWIN
 	else if (getenv("USERPROFILE"))
-	    sprintf(bbsfriendsname, "%s/bbs.friends", (char *) getenv("USERPROFILE"));
+	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/bbs.friends", getenv("USERPROFILE"));
 	else {
 	    if (!getcwd(bbsfriendsname, sizeof bbsrcname)) {
 		fatalperror("findbbsfriends: getcwd", "Local error");
 	    }
-	    strcat(bbsfriendsname, "/.bbsfriends");
+	    {
+		size_t len = strlen(bbsfriendsname);
+		if (len < sizeof(bbsfriendsname) - 1)
+		    snprintf(bbsfriendsname + len, sizeof(bbsfriendsname) - len, "/.bbsfriends");
+	    }
 	}
 #else
 	else if (pw)
-	    sprintf(bbsfriendsname, "%s/.bbsfriends", pw->pw_dir);
+	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/.bbsfriends", pw->pw_dir);
 	else if (getenv("HOME"))
-	    sprintf(bbsfriendsname, "%s/.bbsfriends", (char *) getenv("HOME"));
+	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/.bbsfriends", getenv("HOME"));
 	else
 	    fatalexit("findbbsfriends: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
@@ -193,7 +201,7 @@ FILE *
 /*
  * Truncates bbsrc file to the specified length.
  */
-void truncbbsrc(int len)
+void truncbbsrc(long len)
 {
     /* Anyone know how to do this in SCO/Xenix?  If so, please let me know! */
 #ifndef M_XENIX
@@ -211,25 +219,29 @@ void truncbbsrc(int len)
 void opentmpfile(void)
 {
     if (login_shell)
-	sprintf(tempfilename, "/tmp/bbstmp.%d", getpid());
+	snprintf(tempfilename, sizeof(tempfilename), "/tmp/bbstmp.%d", getpid());
     else {
 	if (getenv("BBSTMP"))
-	    strcpy(tempfilename, (char *) getenv("BBSTMP"));
+	    snprintf(tempfilename, sizeof(tempfilename), "%s", getenv("BBSTMP"));
 #ifdef USE_CYGWIN
 	else if (getenv("USERPROFILE"))
-	    sprintf(tempfilename, "%s\\bbstmp.txt", (char *)getenv("USERPROFILE"));
+	    snprintf(tempfilename, sizeof(tempfilename), "%s\\bbstmp.txt", getenv("USERPROFILE"));
 	else {
 	    if (!getcwd(tempfilename, sizeof tempfilename)) {
 		fatalperror("opentmpfile: getcwd", "Local error");
 	    }
-	    strcat(tempfilename, "\\bbstmp.txt");
+	    {
+		size_t len = strlen(tempfilename);
+		if (len < sizeof(tempfilename) - 1)
+		    snprintf(tempfilename + len, sizeof(tempfilename) - len, "\\bbstmp.txt");
+	    }
 	}
 	move_if_needed("c:\\.bbstmp", tempfilename);
 #else
 	else if (pw)
-	    sprintf(tempfilename, "%s/.bbstmp", pw->pw_dir);
+	    snprintf(tempfilename, sizeof(tempfilename), "%s/.bbstmp", pw->pw_dir);
 	else if (getenv("HOME"))
-	    sprintf(tempfilename, "%s/.bbstmp", (char *) getenv("HOME"));
+	    snprintf(tempfilename, sizeof(tempfilename), "%s/.bbstmp", getenv("HOME"));
 	else
 	    fatalexit("opentmpfile: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
@@ -246,7 +258,7 @@ void titlebar(void)
 #ifdef ENABLE_TITLEBAR
 	char title[80];
 
-	sprintf(title, "%s:%d%s - BBS Client %s (%s)",
+	snprintf(title, sizeof(title), "%s:%d%s - BBS Client %s (%s)",
 			cmdlinehost, cmdlineport, is_ssl ? " (Secure)" : "",
 			VERSION, IsWin32 ? "Windows" : "Unix");
 	/* xterm */
@@ -295,11 +307,11 @@ void connectbbs(void)
     struct sockaddr_in sa;
 
     if (!*bbshost)
-	strcpy(bbshost, BBSHOST);
+	snprintf(bbshost, sizeof(bbshost), "%s", BBSHOST);
     if (!bbsport)
 	bbsport = BBSPORT;
     if (!*cmdlinehost)
-	strcpy(cmdlinehost, bbshost);
+	snprintf(cmdlinehost, sizeof(cmdlinehost), "%s", bbshost);
     if (!cmdlineport)
 	cmdlineport = bbsport;
     strncpy((char *) &sa, "", sizeof sa);
@@ -414,6 +426,7 @@ void suspend(void)
  */
 RETSIGTYPE bye(int signum)
 {
+    (void) signum;
     myexit();
 }
 
@@ -423,6 +436,7 @@ RETSIGTYPE bye(int signum)
  */
 RETSIGTYPE naws(int signum)
 {
+    (void) signum;
     if (oldrows != -1)
 	sendnaws();
 #ifdef SIGWINCH
@@ -442,6 +456,7 @@ RETSIGTYPE naws(int signum)
  */
 RETSIGTYPE reapchild(int signum)
 {
+    (void) signum;
 #ifndef __EMX__
     wait(0);
     titlebar();
@@ -741,6 +756,7 @@ void techinfo(void)
 
 void initialize(const char *protocol)
 {
+    (void) protocol;
     if (!isatty(0) || !isatty(1) || !isatty(2))
 	exit(0);
 
@@ -784,34 +800,33 @@ void initialize(const char *protocol)
     if (!xlandQueue)
 	xland = 0;
     if (login_shell)
-	strcpy(shell, "/bin/true");
+	snprintf(shell, sizeof(shell), "%s", "/bin/true");
     else {
 	if (getenv("SHELL"))
-	    strcpy(shell, (char *) getenv("SHELL"));
+	    snprintf(shell, sizeof(shell), "%s", getenv("SHELL"));
 	else
-	    strcpy(shell, "/bin/sh");
+	    snprintf(shell, sizeof(shell), "%s", "/bin/sh");
     }
     if (!login_shell)
-	strcpy(browser, "netscape -remote");
+	snprintf(browser, sizeof(browser), "%s", "netscape -remote");
     if (login_shell)
-	strcpy(myeditor, "\0");
+	snprintf(myeditor, sizeof(myeditor), "%s", "");
     else {
 	if (getenv("EDITOR"))
-	    strcpy(myeditor, (char *) getenv("EDITOR"));
+	    snprintf(myeditor, sizeof(myeditor), "%s", getenv("EDITOR"));
 	else
-	    strcpy(myeditor, "vi");
+	    snprintf(myeditor, sizeof(myeditor), "%s", "vi");
     }
 }
 
 
 void deinitialize(void)
 {
-    char tfile[100];
+    char tfile[PATH_MAX];
 
     notitlebar();
     /* Get rid of ~ file emacs always leaves behind */
-    strcpy(tfile, tempfilename);
-    strcat(tfile, "~");
+    snprintf(tfile, sizeof(tfile), "%s~", tempfilename);
     unlink(tfile);
     if (login_shell) {
 	unlink(tempfilename);
@@ -854,6 +869,7 @@ int s_prompt(const char *info, const char *question, int def)
 
 void s_info(const char *info, const char *heading)
 {
+    (void) heading;
 #ifdef USE_CYGWIN
 	if (!textonly) {
 		MessageBox(NULL, info, heading,
@@ -873,12 +889,12 @@ void s_perror(const char *msg, const char *heading)
 
 #ifdef USE_CYGWIN
 	if (!textonly) {
-		sprintf(buf, "%s: %s", msg, strerror(errno));
+		snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
 		MessageBox(NULL, buf, heading, MB_APPLMODAL | MB_OK | MB_ICONERROR);
 		return;
 	}
 #endif
-	sprintf(buf, "%s: %s", heading, msg);
+	snprintf(buf, sizeof(buf), "%s: %s", heading, msg);
 	perror(buf);
 	fprintf(stderr, "\r");
 	return;
@@ -894,7 +910,7 @@ void s_error(const char *msg, const char *heading)
 		MessageBox(NULL, msg, heading, MB_APPLMODAL | MB_OK | MB_ICONERROR);
 	}
 #endif
-	sprintf(buf, "%s: %s", heading, msg);
+	snprintf(buf, sizeof(buf), "%s: %s", heading, msg);
 	fflush(stdout);
 	fprintf(stderr, "%s\r\n", buf);
 }
@@ -915,7 +931,7 @@ void open_browser(void)
 #ifdef USE_CYGWIN
 		ShellExecute(NULL, "open", urlQueue->start + (urlQueue->objsize * urlQueue->head), NULL, NULL, SW_SHOW);
 #else
-		sprintf(cmd, "%s \"%s\"%s", browser,
+		snprintf(cmd, sizeof(cmd), "%s \"%s\"%s", browser,
 			urlQueue->start + (urlQueue->objsize * urlQueue->head),
 			flags.browserbg ? " &" : "");
 		system(cmd);
@@ -961,7 +977,7 @@ void open_browser(void)
 #ifdef USE_CYGWIN
 		ShellExecute(NULL, "open", p, NULL, NULL, SW_SHOW);
 #else
-		sprintf(cmd, "%s \"%s\"%s", browser, p,
+		snprintf(cmd, sizeof(cmd), "%s \"%s\"%s", browser, p,
 			flags.browserbg ? " &" : "");
 		system(cmd);
 #endif
@@ -982,8 +998,8 @@ void move_if_needed(const char *oldpath, const char *newpath)
 	FILE *old;
 	FILE *new;
 	char buf[BUFSIZ];
-	int i;
-	size_t s;
+	size_t i;
+	long s;
 
 	old = fopen(oldpath, "r");
 	if (!old)

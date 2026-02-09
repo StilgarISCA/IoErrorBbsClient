@@ -67,7 +67,7 @@ void get_five_lines(int which)
     }
     sendblock();
     if (!strcmp(*send_string, "PING"))
-	strcpy((char *) send_string[0], "\0");	/* please let this go away soon */
+	send_string[0][0] = 0;	/* please let this go away soon */
     for (j = 0; j < i; j++) {
 	for (k = 0; send_string[j][k]; k++)
 	    net_putchar(send_string[j][k]);
@@ -85,35 +85,39 @@ void get_five_lines(int which)
  */
 int smartname(char *buf, char *pe)
 {
-    int i, found = -1;
+    unsigned int i;
+    int found = -1;
     friend *pf = NULL, *pg;
     char hold = *pe;
     slist *listToUse;
 
     *pe = 0;
     listToUse = whoList;
+    {
+	size_t buflen = strlen(buf);
     for (i = 0; i < listToUse->nitems; i++) {
 	pf = listToUse->items[i];
-	if (!strncmp((const char *) pf, buf, strlen(buf))) {	/* Partial match? */
+	if (!strncmp((const char *) pf, buf, buflen)) {	/* Partial match? */
 	    /* Partial match unique? */
 	    if (i + 1 >= listToUse->nitems) {
-		found = i;
+		found = (int) i;
 		break;
 	    } else {
 		pg = listToUse->items[i + 1];
-		if (strncmp((const char *) pg, buf, strlen(buf))) {
-		    found = i;
+		if (strncmp((const char *) pg, buf, buflen)) {
+		    found = (int) i;
 		    break;
 		} else
 		    break;
 	    }
+	}
 	}
     }
     if (found == -1) {
 	*pe = hold;
 	return 0;
     } else
-	strcpy(buf, (const char *) pf);
+	snprintf(buf, MAXNAME + 1, "%s", (const char *) pf);
     return 1;
 }
 
@@ -174,7 +178,7 @@ char *get_name(int quit_priv)
 	std_printf("\033[3%cm", color.input1);
     if (quit_priv == 1 && *autoname && strcmp(autoname, "NONE") && !autologgedin) {
 	autologgedin = 1;
-	strcpy(junk, autoname);
+	snprintf(junk, sizeof(junk), "%s", autoname);
 	std_printf("%s\r\n", junk);
 	return junk;
     }
@@ -215,7 +219,7 @@ char *get_name(int quit_priv)
 		for (; p > pbuf; --p)
 		    printf("\b \b");
 		printf("%s", lastname[lastptr]);
-		strcpy(pbuf, lastname[lastptr]);
+		snprintf(pbuf, sizeof(pbuf), "%s", lastname[lastptr]);
 		if (++lastptr == 20 || lastname[lastptr][0] == 0)
 		    lastptr = 0;
 		for (p = pbuf; *p != '\0'; p++);
@@ -237,7 +241,7 @@ char *get_name(int quit_priv)
 			if (lastname[lastptr][0] != 0)
 			    break;
 		printf("%s", lastname[lastptr]);
-		strcpy(pbuf, lastname[lastptr]);
+		snprintf(pbuf, sizeof(pbuf), "%s", lastname[lastptr]);
 		if (++lastptr == 20 || lastname[lastptr][0] == 0)
 		    lastptr = 0;
 		for (p = pbuf; *p != 0; p++);
@@ -280,7 +284,7 @@ char *get_name(int quit_priv)
 		    }
 		    if (c == ' ')
 			upflag = 1;
-		    *p++ = c;
+		    *p++ = (char) c;
 		    putchar(c);
 		    if (quit_priv == 2 || quit_priv == -999) {
 			if (smartname(pbuf, p)) {
@@ -312,7 +316,7 @@ char *get_name(int quit_priv)
 	p[-1] = 0;
 
     if (quit_priv == 1 && strcmp(pbuf, "Guest") && strcmp(autoname, "NONE")) {
-	strcpy(autoname, pbuf);
+	snprintf(autoname, sizeof(autoname), "%s", pbuf);
 	writebbsrc();
     }
     return (pbuf);
@@ -339,8 +343,16 @@ void get_string(int length, char *result, int line)
 	*wrap = 0;
     else if (*wrap) {
 	printf("%s", wrap);
-	strcpy(result, wrap);
-	p = result + strlen(wrap);
+	{
+	    int maxlen = length;
+	    if (maxlen < 0)
+		maxlen = -maxlen;
+	    if (maxlen > 0)
+		snprintf(result, (size_t) maxlen + 1, "%s", wrap);
+	    else
+		*result = 0;
+	}
+	p = result + strlen(result);
 	*wrap = 0;
     }
     hidden = 0;
@@ -353,8 +365,11 @@ void get_string(int length, char *result, int line)
     if (hidden != 0 && *autopasswd) {
 	if (!autopasswdsent) {
 	    jhpdecode(result, autopasswd, strlen(autopasswd));
-	    for (c = 0; c < strlen(result); c++)
-		std_putchar('.');
+	    {
+		size_t rlen = strlen(result);
+		for (size_t i = 0; i < rlen; i++)
+		    std_putchar('.');
+	    }
 	    std_printf("\r\n");
 	    autopasswdsent = 1;
 	    return;
@@ -398,7 +413,7 @@ void get_string(int length, char *result, int line)
 		printf("\b \b");
 	    }
 	} else if (p < result + length && isprint(c)) {
-	    *p++ = c;
+		    *p++ = (char) c;
 	    if (!hidden)
 		putchar(c);
 	    else
@@ -413,21 +428,23 @@ void get_string(int length, char *result, int line)
 		*q = 0;
 		for (rest = wrap, q++; q < p; printf("\b \b"))
 		    *rest++ = *q++;
-		*rest++ = c;
+			*rest++ = (char) c;
 		*rest = 0;
 	    } else {
-		*wrap = c;
+			*wrap = (char) c;
 		*(wrap + 1) = 0;
 	    }
 	    break;
 	}
     }
     *p = 0;
-    if (!hidden)
+    if (!hidden) {
 	cap_puts(result);
-    else
-	for (c = 0; c < strlen(result); c++)
+    } else {
+	size_t rlen = strlen(result);
+	for (size_t i = 0; i < rlen; i++)
 	    cap_putchar('.');
+    }
 #ifdef ENABLE_SAVE_PASSWORD
     if (hidden != 0) {
 	    jhpencode(autopasswd, result, strlen(result));

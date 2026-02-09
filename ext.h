@@ -80,10 +80,10 @@ extern FILE *netifp;		/* net input pointer */
 #else
 extern unsigned char *netifp;	/* buffer pointer for input from net */
 #endif
-extern int netilen;		/* length of current input buffer from net */
+extern ssize_t netilen;		/* length of current input buffer from net */
 extern unsigned char ptyibuf[1024];	/* buffer for input from pty */
 extern unsigned char *ptyifp;	/* buffer pointer for input from pty */
-extern int ptyilen;		/* length of current input buffer from pty */
+extern ssize_t ptyilen;		/* length of current input buffer from pty */
 
 extern int rows;		/* number of rows on user's screen */
 extern int oldrows;		/* previous value of rows */

@@ -24,10 +24,10 @@ slist *slistCreate(int nitems, int (*sortfn)(const void *, const void *), ...)
 
     if (!(list = (slist *) calloc(1, sizeof(slist))))
 	return NULL;
-    list->nitems = nitems;
+    list->nitems = (unsigned int) nitems;
     list->sortfn = sortfn;
     if (nitems > 0) {
-	if (!(list->items = (void *) calloc(1, nitems * sizeof(void *))))
+    if (!(list->items = (void *) calloc(1, (size_t) nitems * sizeof(void *))))
 	     return NULL;
 	va_start(ap, sortfn);
 	for (i = 0; i < nitems; i++)
@@ -57,7 +57,7 @@ void slistDestroy(slist *list)
  */
 void slistDestroyItems(slist *list)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < list->nitems; i++) {
 	free(list->items[i]);
@@ -91,16 +91,16 @@ int slistAddItem(slist *list, void *item, int deferSort)
 int slistRemoveItem(slist *list, int item)
 {
     void **p;
-    int i;
+    unsigned int i;
 
     assert(list);
     assert(item >= 0);
-    assert(item < list->nitems);
+    assert((unsigned int) item < list->nitems);
 
 printf("slistRemoveItem(list, %d): nitems=%d\r\n", item, list->nitems);
     list->items[item] = NULL;
-    if (item < --list->nitems)
-	for (i = item; i < list->nitems; i++)
+    if ((unsigned int) item < --list->nitems)
+	for (i = (unsigned int) item; i < list->nitems; i++)
 	    list->items[i] = list->items[i + 1];
     p = (void *) realloc(list->items, list->nitems * sizeof(void *));
     if (!p && list->nitems)	/* request failed */
@@ -126,7 +126,9 @@ int slistFind(slist *list, void *toFind, int (*findfn) (const void *, const void
 
     if (!toFind)		/* Fail if nothing to find */
 	return -1;
-    upper = list->nitems - 1;
+    if (list->nitems == 0)
+	return -1;
+    upper = (int) list->nitems - 1;
     lower = 0;
     while (upper >= lower) {
 	i = (upper + lower) / 2;
@@ -183,7 +185,7 @@ slist *slistIntersection(const slist *list1, const slist *list2)
 	dest = slistCreate(0, list1->sortfn);
 	if (!dest) return NULL;
 
-	for (; n1 < list1->nitems; n1++) {
+	for (; n1 < (int) list1->nitems; n1++) {
 		/*
 		 * Now run through list2 until we find either a matching
 		 * item, or an item that is greater than the one in list1
@@ -195,12 +197,12 @@ slist *slistIntersection(const slist *list1, const slist *list2)
 		while ((r = dest->sortfn(list1->items[n1], list2->items[n2])) < 0) {
 			n2++;
 			/* If this happens, we're done */
-			if (n2 > list2->nitems)
+			if (n2 > (int) list2->nitems)
 				break;
 		}
 
 		/* If this happens, we're done; nothing else will match */
-		if (n2 > list2->nitems)
+		if (n2 > (int) list2->nitems)
 			break;
 
 		/* If item is not less than and not greater than, it's equal */

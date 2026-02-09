@@ -160,7 +160,7 @@ void makemessage(int upload)			/* 0 = normal, 1 = upload (end w/^D) */
 		for (lnlngth = 1; (lnlngth + lastspace) < 80; lnlngth++) {
 		    old = thisline[lnlngth + lastspace];
 		    putchar(old);
-		    thisline[lnlngth] = old;
+		    thisline[lnlngth] = (char) old;
 		}
 		lastspace = 0;
 	    } else {
@@ -177,7 +177,7 @@ void makemessage(int upload)			/* 0 = normal, 1 = upload (end w/^D) */
 	}
 	if (chr != CTRL_D && chr != '\n' && old != -1) {
 	    putchar(chr);	/* echo user's input to screen */
-	    thisline[lnlngth] = chr;
+		    thisline[lnlngth] = (char) chr;
 	} else if (lnlngth && chr == CTRL_D) {	/* simulate LF */
 	    for (i = 1; i <= lnlngth; i++)
 		if (putc(thisline[i], fp) < 0)
@@ -225,7 +225,7 @@ int prompt(FILE *fp, int *old, int cmd)
     int chr = cmd;
     int lnlngth;
     unsigned int invalid = 0;
-    int size;
+    long size;
     int lines;
     char thisline[80];
 
@@ -290,7 +290,7 @@ int prompt(FILE *fp, int *old, int cmd)
 	    else
 		printf("Print formatted\r\n\n%s", saveheader);
 	    fseek(fp, 0L, SEEK_END);
-	    size = ftell(fp);
+		    size = ftell(fp);
 	    rewind(fp);
 	    lines = 2;
 	    lnlngth = i = 0;
@@ -306,7 +306,7 @@ int prompt(FILE *fp, int *old, int cmd)
 		    putchar(chr);
 		    lnlngth++;
 		}
-		if (chr == '\n' && !(lnlngth = 0) && ++lines == rows && more(&lines, i * 100 / size) < 0)
+			if (chr == '\n' && !(lnlngth = 0) && ++lines == rows && more(&lines, size > 0 ? (int) (i * 100 / size) : 0) < 0)
 		    break;
 	    }
 	    fseek(fp, 0L, SEEK_END);

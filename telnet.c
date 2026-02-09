@@ -32,7 +32,6 @@ int telrcv(int c)
     static int state = TS_DATA;	/* Current state of telnet state machine */
     static unsigned char buf[80];	/* Generic buffer */
     static int bufp = 0;	/* Pointer into generic buffer */
-    static int numposts = 0;	/* Count of # of posts we've received so far */
     register int i;
     char *sp;
 
@@ -94,7 +93,7 @@ int telrcv(int c)
 		       c == CONFIG ? "CONFIG" : "huh?");
 #endif
 	    state = TS_GET;
-	    buf[bufp++] = c;
+            buf[bufp++] = (unsigned char) c;
 	    break;
 
 	    /*
@@ -118,7 +117,6 @@ int telrcv(int c)
 #endif
 	    state = TS_DATA;
 	    byte = 1;
-	    numposts = 1;
 	    net_putchar(IAC);
 	    net_putchar(START3);
 	    break;
@@ -137,7 +135,6 @@ int telrcv(int c)
 	    std_printf("{IAC POST_E}");
 #endif
 	    state = TS_DATA;
-	    numposts++;
 	    postflag = postbufp = postnow = 0;
 	    postwas = 1;
 	    filter_post(-1);	/* Tell filter to end working */
@@ -204,7 +201,7 @@ int telrcv(int c)
 
 	/* Get local mode strings/lines/posts */
     case TS_GET:
-	buf[bufp++] = c;
+        buf[bufp++] = (unsigned char) c;
 	if (bufp == 5) {
 	    targetbyte = byte;
 	    /* Decode the bbs' idea of what the current byte is */
@@ -324,7 +321,7 @@ void sendnaws(void)
 	    rows = 24;
 	else
 	    oldrows = rows;
-	sprintf(s, "%c%c%c%c%c%c%c%c%c", IAC, SB, TELOPT_NAWS, 0, 0, 0, rows, IAC, SE);
+	snprintf(s, sizeof(s), "%c%c%c%c%c%c%c%c%c", IAC, SB, TELOPT_NAWS, 0, 0, 0, rows, IAC, SE);
 	for (i = 0; i < 9; i++)
 	    net_putchar(s[i]);
     }
@@ -340,9 +337,6 @@ void sendnaws(void)
  */
 void telinit(void)
 {
-	register int i;
-
-
 	net_putchar(IAC);
 	net_putchar(CLIENT2);
 	net_putchar(IAC);

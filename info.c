@@ -410,8 +410,8 @@ void warranty(void)
  */
 void information(void)
 {
-    char c;
-    int invalid = 0;
+    int c;
+    unsigned int invalid = 0;
 
     std_printf("Information\r\n");
 

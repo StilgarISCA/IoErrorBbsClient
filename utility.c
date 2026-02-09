@@ -32,8 +32,7 @@ void send_an_x(void)
 /* fake get_five_lines for the bbs */
 void replymessage(void)
 {
-    int i, k, control = 0;
-    char send;
+    int i, k;
 
     sendblock();
     for (i = 0; replymsg[i]; i++)
@@ -112,7 +111,11 @@ void looper(void)
 	    invalid = 0;
 	    net_putchar(keymap[c]);
 	    if (byte)
-		save[byte++ % sizeof save] = c;
+		{
+		    size_t idx = (size_t) (byte % (long) sizeof save);
+		    save[idx] = (unsigned char) c;
+		    byte++;
+		}
 	} else if (invalid++)
 	    flush_input(invalid);
     }
@@ -155,7 +158,7 @@ int yesnodefault(int def)
     } else {		/* This should never happen, means bug in mystrchr() */
 	char buf[160];
 	std_printf("\r\n");
-	sprintf(buf, "yesnodefault: 0x%x\r\n"
+	snprintf(buf, sizeof(buf), "yesnodefault: 0x%x\r\n"
 		     "Please report this to IO ERROR\r\n", c);
 	fatalexit(buf, "Internal error");
     }
@@ -206,15 +209,24 @@ int more(int *line, int pct)
  */
 char *mystrstr(const char *str, const char *substr)
 {
-    register char *s;
+    const char *s;
 
-    for (s = (char *)str; *s; s++)
+    for (s = str; *s; s++)
 	if (*s == *substr && !strncmp(s, substr, strlen(substr)))
 	    break;
     if (!*s)
 	return ((char *) NULL);
-    else
-	return (s);
+    else {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#endif
+	char *ret = (char *) s;
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+	return ret;
+    }
 }
 
 
@@ -225,14 +237,22 @@ char *mystrstr(const char *str, const char *substr)
  */
 char *mystrchr(const char *str, int ch)
 {
-    register char *s;
+    const char *s;
 
-    s = (char *)str;
+    s = str;
     while (*s && ch != *s)
 	s++;
-    if (*s)
-	return (s);
-    else
+    if (*s) {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#endif
+	char *ret = (char *) s;
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+	return ret;
+    } else
 	return ((char *) NULL);
 }
 
@@ -253,15 +273,18 @@ char *ExtractName(char *header)
     /* Now should be pointing to the user name */
     lastspace = 1;
     ours = mystrdup(hp);
-    for (i = 0; i < strlen(ours); i++) {
-	if (ours[i] == '\033')
-	    break;
-	if (lastspace && !isupper(ours[i]))
-	    break;
-	if (ours[i] == ' ')
-	    lastspace = 1;
-	else
-	    lastspace = 0;
+    {
+	int len = (int) strlen(ours);
+	for (i = 0; i < len; i++) {
+	    if (ours[i] == '\033')
+		break;
+	    if (lastspace && !isupper(ours[i]))
+		break;
+	    if (ours[i] == ' ')
+		lastspace = 1;
+	    else
+		lastspace = 0;
+	}
     }
     ours[i] = '\0';
     i--;
@@ -278,8 +301,8 @@ char *ExtractName(char *header)
     /* insert the name */
     if (which != 0) {
 	for (i = (which > 0) ? which - 1 : MAXLAST - 2; i >= 0; --i)
-	    strcpy(lastname[i + 1], lastname[i]);
-	strcpy(lastname[0], ours);
+	    snprintf(lastname[i + 1], sizeof(lastname[i + 1]), "%s", lastname[i]);
+	snprintf(lastname[0], sizeof(lastname[0]), "%s", ours);
     }
     free(ours);
     return (char *) lastname[0];
@@ -307,13 +330,13 @@ int ExtractNumber(char *header)
 
 char *mystrdup(const char *s)
 {
-    int i;
+    size_t i;
     char *p;
 
     i = strlen(s) + 2;
-    p = (char *) calloc(1, (unsigned) i);
+    p = (char *) calloc(1, i);
     if (p)
-	strcpy(p, s);
+	snprintf(p, i, "%s", s);
     return p;
 }
 
@@ -321,9 +344,9 @@ char *mystrdup(const char *s)
 
 int colorize(const char *str)
 {
-    char *p;
+    const char *p;
 
-    for (p = (char *)str; *p; p++)
+    for (p = str; *p; p++)
 	if (*p == '@')
 	    if (!*(p + 1))
 		p--;
@@ -403,12 +426,12 @@ int colorize(const char *str)
 void arguments(int argc, char **argv)
 {
     if (argc > 1) {
-	strcpy(cmdlinehost, argv[1]);
+	snprintf(cmdlinehost, sizeof(cmdlinehost), "%s", argv[1]);
     } else {
 	*cmdlinehost = 0;
     }
     if (argc > 2) {
-	cmdlineport = atoi(argv[2]);
+        cmdlineport = (unsigned short) atoi(argv[2]);
     } else {
 	cmdlineport = 0;
     }
@@ -426,9 +449,14 @@ void arguments(int argc, char **argv)
  * strcmp() wrapper for friend entries; grabs the correct entry from the
  * struct, which is arg 2.
  */
-int fstrcmp(char *a, friend *b)
+int fstrcmp(const char *a, const friend *b)
 {
     return strcmp(a, b->name);
+}
+
+int fstrcmp_void(const void *a, const void *b)
+{
+    return fstrcmp((const char *) a, (const friend *) b);
 }
 
 
@@ -441,16 +469,33 @@ int sortcmp(char **a, char **b)
     return strcmp(*a, *b);
 }
 
+int sortcmp_void(const void *a, const void *b)
+{
+    const char *const *aa = (const char *const *) a;
+    const char *const *bb = (const char *const *) b;
+    return strcmp(*aa, *bb);
+}
+
+int strcmp_void(const void *a, const void *b)
+{
+    return strcmp((const char *) a, (const char *) b);
+}
+
 
 /*
  * strcmp() wrapper for friend entries; takes two friend * args.
  */
-int fsortcmp(friend **a, friend **b)
+int fsortcmp(const friend *const *a, const friend *const *b)
 {
     assert((*a)->magic == 0x3231);
     assert((*b)->magic == 0x3231);
 
     return strcmp((*a)->name, (*b)->name);
+}
+
+int fsortcmp_void(const void *a, const void *b)
+{
+    return fsortcmp((const friend *const *) a, (const friend *const *) b);
 }
 
 #ifdef ENABLE_SAVE_PASSWORD

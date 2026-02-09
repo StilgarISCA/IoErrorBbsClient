@@ -83,7 +83,11 @@ int getkey(void)
 				exit(1);
 			} else {
 				lastcr = 0;
-				return (save[bytep++ % sizeof save]);
+					{
+						size_t idx = (size_t) (bytep % (long) sizeof save);
+						bytep++;
+						return (save[idx]);
+					}
 			}
 		}
 		/*

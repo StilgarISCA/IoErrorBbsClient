@@ -29,7 +29,7 @@ int cap_putchar(int c)
 		printf("\033[0m");
 		skipansi--;
 	    } else {
-		lastcolor = c;
+		lastcolor = (char) c;
 	    }
 	}
     } else if (c == '\033') {
@@ -50,7 +50,7 @@ int net_putchar(int c)
 /* stripansi removes ANSI escape sequences from a string.  Limits: string
  * buffer space is BUFSIZ bytes, should not overflow this!!
  */
-char *stripansi(char *c)
+char *stripansi(char *c, size_t csize)
 {
     char *p, *q;
     q = swork;
@@ -63,7 +63,8 @@ char *stripansi(char *c)
     if (*p == '\r')		/* strip ^M too while we're here */
 	q--;
     *q = '\0';
-    strcpy(c, swork);
+    if (csize > 0)
+	snprintf(c, csize, "%s", swork);
     return c;
 }
 
@@ -71,7 +72,7 @@ char *stripansi(char *c)
  * in that they do NOT write a trailing \n to the stream.  On error, they
  * terminate the client.
  */
-int std_puts(char *c)
+int std_puts(const char *c)
 {
     printf("%s", c);
     fflush(stdout);
@@ -79,19 +80,21 @@ int std_puts(char *c)
     return 1;
 }
 
-int cap_puts(char *c)
+int cap_puts(const char *c)
 {
     if (capture > 0 && !flags.posting && !flags.moreflag) {
-	stripansi(c);
-	fprintf(tempfile, "%s", c);
+	char buf[BUFSIZ];
+	snprintf(buf, sizeof(buf), "%s", c);
+	stripansi(buf, sizeof(buf));
+	fprintf(tempfile, "%s", buf);
 	fflush(tempfile);
     }
     return 1;
 }
 
-int net_puts(char *c)
+int net_puts(const char *c)
 {
-    char *i;
+    const char *i;
 
     for (i = c; *i; i++)
 	netput(*i);
@@ -108,7 +111,14 @@ int std_printf(const char *format,...)
     va_list ap;
 
     va_start(ap, format);
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
     (void) vsnprintf(string, sizeof(string), format, ap);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
     va_end(ap);
     return std_puts(string);
 }
@@ -120,7 +130,14 @@ int cap_printf(const char *format,...)
 
     if (capture) {
 	va_start(ap, format);
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
 	(void) vsnprintf(string, sizeof(string), format, ap);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 	va_end(ap);
 	return cap_puts(string);
     }
@@ -133,7 +150,14 @@ int net_printf(const char *format,...)
     static char work[BUFSIZ];
 
     va_start(ap, format);
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
     (void) vsnprintf(work, sizeof(work), format, ap);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
     va_end(ap);
     net_puts(work);
     return 1;

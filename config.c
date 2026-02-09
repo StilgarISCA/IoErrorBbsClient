@@ -139,7 +139,7 @@ void configbbsrc(void)
 		std_printf("Enter name of SOCKS server (%s) -> ", socks_fw);
 		get_string(64, tmp, -999);
 		if (*tmp) {
-		    strcpy(socks_fw, tmp);
+		    snprintf(socks_fw, sizeof(socks_fw), "%s", tmp);
 		    std_printf("Enter SOCKS port number (%d) ->", socks_fw_port ? socks_fw_port : 1080);
 		    get_string(5, tmp, -999);
 		    if (*tmp)
@@ -160,7 +160,7 @@ void configbbsrc(void)
 		std_printf("\r\nEnter name of local editor to use (%s) -> ", editor);
 		get_string(72, tmp, -999);
 		if (*tmp)
-		    strcpy(editor, tmp);
+		    snprintf(editor, sizeof(editor), "%s", tmp);
 	    }
 	    std_printf("Show long who list by default? (%s) -> ", (keymap['w'] == 'w') ? "No" : "Yes");
 	    if (yesnodefault((keymap['w'] != 'w') ? 1 : 0)) {
@@ -181,7 +181,7 @@ void configbbsrc(void)
 	    std_printf("Enter name of site to connect to (%s) -> ", bbshost);
 	    get_string(64, tmp, -999);
 	    if (*tmp)
-		strcpy(bbshost, tmp);
+		snprintf(bbshost, sizeof(bbshost), "%s", tmp);
 #if 0
 	    std_printf("Use secure (SSL) connection to this site? (%s) -> ",
 			    want_ssl ? "Yes" : "No");
@@ -213,7 +213,7 @@ void configbbsrc(void)
 		strncpy(browser, tmp, 80);
 	    std_printf("Does %s run in a separate window? (%s) -> ", browser,
 			    flags.browserbg ? "Yes" : "No");
-	    flags.browserbg = yesnodefault(flags.browserbg);
+            flags.browserbg = (unsigned int) yesnodefault(flags.browserbg);
 #else
 	    flags.browserbg = 1;
 #endif
@@ -253,13 +253,13 @@ void configbbsrc(void)
 	case 'f':
 	case 'F':
 	    std_printf("Friend list\r\n");
-	    editusers(friendList, (int (*)())fstrcmp, "friend");
+	    editusers(friendList, fstrcmp_void, "friend");
 	    break;
 
 	case 'e':
 	case 'E':
 	    std_printf("Enemy list\r\n");
-	    editusers(enemyList, (int (*)())strcmp, "enemy");
+	    editusers(enemyList, strcmp_void, "enemy");
 	    break;
 
 	case 'm':
@@ -271,7 +271,7 @@ void configbbsrc(void)
 		else
 		    std_printf("\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> ");
 		for (invalid = 0;;) {
-		    c = inkey();
+            c = inkey();
 		    if (!mystrchr("EeLlQq \n", c)) {
 			if (invalid++)
 			    flush_input(invalid);
@@ -341,7 +341,7 @@ void configbbsrc(void)
 void express_config(void)
 {
     unsigned int invalid = 0;
-    char c;
+    int c;
 
     std_printf("Express\r\n");
 
@@ -462,11 +462,11 @@ void writebbsrc(void)
 	fprintf(bbsrc, "textonly\n");
     if (!xland)
 	fprintf(bbsrc, "xland\n");
-    for (i = 0; i < friendList->nitems; i++) {
+    for (i = 0; i < (int) friendList->nitems; i++) {
 	pf = (friend *) friendList->items[i];
 	fprintf(bbsrc, "friend %-20s   %s\n", pf->name, pf->info);
     }
-    for (i = 0; i < enemyList->nitems; i++)
+    for (i = 0; i < (int) enemyList->nitems; i++)
 	fprintf(bbsrc, "enemy %s\n", (char *) enemyList->items[i]);
     for (i = 0; i < 128; i++)
 	if (*macro[i]) {
@@ -547,7 +547,7 @@ void newmacro(int which)
 	    i--;
 	    continue;
 	}
-	printf("%s", strctrl(macro[which][i] = c));
+        printf("%s", strctrl(macro[which][i] = (char) c));
     }
 }
 
@@ -564,9 +564,9 @@ char *strctrl(int c)
 
     if (c <= 31 || c == DEL) {
 	ret[0] = '^';
-	ret[1] = c == 10 ? 'M' : c ^ 0x40;
+        ret[1] = (char) (c == 10 ? 'M' : (c ^ 0x40));
     } else {
-	ret[0] = c;
+        ret[0] = (char) c;
 	ret[1] = 0;
     }
     ret[2] = 0;
@@ -601,7 +601,7 @@ void editusers(slist *list, int (*findfn)(const void *, const void *), const cha
 	    colorize("\r\n@YA@Cdd  @YD@Celete  @YE@Cdit  @YL@Cist  @YQ@Cuit@Y");
 	else
 	    std_printf("\r\n<A>dd <D>elete <E>dit <L>ist <Q>uit");
-	sprintf(work, "\r\n%c%s list -> @G", toupper(name[0]), name+1);
+	snprintf(work, sizeof(work), "\r\n%c%s list -> @G", toupper(name[0]), name+1);
 	colorize(work);
 
 	c = inkey();
@@ -624,16 +624,16 @@ void editusers(slist *list, int (*findfn)(const void *, const void *), const cha
 		if (!strcmp(name, "friend")) {
 		    if (!(pf = (friend *) calloc(1, sizeof(friend))))
 			fatalexit("Out of memory adding 'friend'!\n", "Fatal error");
-		    strcpy(pf->name, sp);
+		    snprintf(pf->name, sizeof(pf->name), "%s", sp);
 		    std_printf("Enter info for %s: ", sp);
 		    get_string(48, nfo, -999);
-		    strcpy(pf->info, (*nfo) ? nfo : "(None)");
+		    snprintf(pf->info, sizeof(pf->info), "%s", (*nfo) ? nfo : "(None)");
 		    pf->magic = 0x3231;
 		    if (!slistAddItem(list, pf, 0))
 			fatalexit("Can't add 'friend'!\n", "Fatal error");
 		} else {	/* enemy list */
 		    pc = (char *) calloc(1, strlen(sp) + 1);
-		    strcpy(pc, sp);	/* 2.1.2 bugfix */
+		    snprintf(pc, strlen(sp) + 1, "%s", sp);	/* 2.1.2 bugfix */
 		    if (!pc)
 			fatalexit("Out of memory adding 'enemy'!\r\n", "Fatal error");
 		    if (!slistAddItem(list, pc, 0))
@@ -674,9 +674,9 @@ void editusers(slist *list, int (*findfn)(const void *, const void *), const cha
 			    get_string(48, nfo, -999);
 			    if (*nfo) {
 				if (!strcmp(nfo, "NONE")) {
-				    strcpy(pf->info, "(None)");
+				    snprintf(pf->info, sizeof(pf->info), "%s", "(None)");
 				} else {
-				    strcpy(pf->info, nfo);
+				    snprintf(pf->info, sizeof(pf->info), "%s", nfo);
 				}
 			    }
 			}
@@ -694,25 +694,28 @@ void editusers(slist *list, int (*findfn)(const void *, const void *), const cha
 	case 'l':
 	case 'L':
 	    std_printf("List\r\n\n");
-	    if (!strcmp(name, "friend"))
-		for (i = 0, lines = 1; i < list->nitems; i++) {
-		    pf = list->items[i];
-		    sprintf(work, "@Y%-20s @C%s@G\r\n", pf->name, pf->info);
-		    colorize(work);
-		    lines++;
-		    if (lines == rows - 1 && more(&lines, -1) < 0)
-			break;
-	    } else {
-		for (i = 0, lines = 1; i < list->nitems; i++) {
-		    std_printf("%-19s%s", list->items[i], (i % 4) == 3 ? "\r\n" : " ");
-		    if ((i % 4) == 3)
-			lines++;
-		    if (lines == rows - 1 && more(&lines, -1) < 0)
-			break;
-		}
-		if (i % 4)
-		    std_printf("\r\n");
-	    }
+		    if (!strcmp(name, "friend")) {
+			lines = 1;
+			for (i = 0; i < (int) list->nitems; i++) {
+			    pf = list->items[i];
+			    snprintf(work, sizeof(work), "@Y%-20s @C%s@G\r\n", pf->name, pf->info);
+			    colorize(work);
+			    lines++;
+			    if (lines == rows - 1 && more(&lines, -1) < 0)
+				break;
+			}
+		    } else {
+			lines = 1;
+			for (i = 0; i < (int) list->nitems; i++) {
+			    std_printf("%-19s%s", list->items[i], (i % 4) == 3 ? "\r\n" : " ");
+			    if ((i % 4) == 3)
+				lines++;
+			    if (lines == rows - 1 && more(&lines, -1) < 0)
+				break;
+			}
+			if (i % 4)
+			    std_printf("\r\n");
+		    }
 	    break;
 
 	case 'q':

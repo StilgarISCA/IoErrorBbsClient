@@ -47,7 +47,7 @@ void filter_wholist(register int c)
     }
     if (c) {			/* received a character */
 	new = 1;
-	*whop++ = (char) c;
+	*whop++ = (unsigned char) c;
 	*whop = 0;
     } else {			/* received a null */
 	/*
@@ -77,13 +77,13 @@ void filter_wholist(register int c)
 			       (int) (now / 60),
 			       (int) (now % 60));
 		    for (; col++ < savewhop;) {
-			if ((i = slistFind(friendList, savewho[col - 1], (int (*)())strcmp)) != -1)
+			if ((i = slistFind(friendList, savewho[col - 1], strcmp_void)) != -1)
 			    pf = friendList->items[i];
 			else
 			    pf = NULL;
 			/* FIXME: Finish writing this! */
-			strcpy(junk, (char *) savewho[col - 1] + 1);
-			sprintf(work, flags.useansi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n"
+			snprintf(junk, sizeof(junk), "%s", (char *) savewho[col - 1] + 1);
+			snprintf(work, sizeof(work), flags.useansi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n"
 				: "%c%-18s%c    %2d:%02d  %s\r\n",
 			*junk & 0x7f, junk + 1, *junk & 0x80 ? '*' : ' ',
 			     (*savewho[col - 1] + (int) (now / 60)) / 60,
@@ -107,13 +107,13 @@ void filter_wholist(register int c)
 		savewhop = 0;
 		slistDestroyItems(whoList);
 		slistDestroy(whoList);
-		if (!(whoList = slistCreate(0, (int (*)())sortcmp)))
+		if (!(whoList = slistCreate(0, sortcmp_void)))
 		    fatalexit("Can't re-create saved who list!\r\n", "Fatal error");
-		for (i = 0; i < friendList->nitems; i++) {
-		    pf = friendList->items[i];
+		for (unsigned int ui = 0; ui < friendList->nitems; ui++) {
+		    pf = friendList->items[ui];
 		    if (!(pc = (char *) calloc(1, strlen(pf->name) + 1)))
 			fatalexit("Out of memory for list copy!\r\n", "Fatal error");
-		    strcpy(pc, pf->name);
+		    snprintf(pc, strlen(pf->name) + 1, "%s", pf->name);
 		    if (!(slistAddItem(whoList, pc, 0)))
 			fatalexit("Out of memory adding item in list copy!\r\n", "Fatal error");
 		}
@@ -129,16 +129,16 @@ void filter_wholist(register int c)
 		}
 	    } else {
 		/* output name and info if user is on our 'friend' list */
-		strcpy(junk, (char *) who + 1);
+		snprintf(junk, sizeof(junk), "%s", (char *) who + 1);
 		*junk &= 0x7f;
 		if (!(pc = (char *) calloc(1, strlen(junk) + 1)))
 		    fatalexit("Out of memory adding to saved who list!\r\n", "Fatal error");
-		strcpy(pc, junk);
-		if (slistFind(whoList, pc, (int (*)())strcmp) == -1)
+		snprintf(pc, strlen(junk) + 1, "%s", junk);
+		if (slistFind(whoList, pc, strcmp_void) == -1)
 		    if (!(slistAddItem(whoList, pc, 0)))
 			fatalexit("Can't add item to saved who list!\r\n", "Fatal error");
 		timestamp = time(NULL);
-		if ((c = slistFind(friendList, junk, (int (*)())fstrcmp)) != -1) {
+		if ((c = slistFind(friendList, junk, fstrcmp_void)) != -1) {
 		    if (!col++)
 			std_printf("Your friends online (new)\r\n\n");
 		    --*who;
@@ -147,7 +147,7 @@ void filter_wholist(register int c)
 			if (extime == 0)
 			    extime = (long) (*who);
 			if (extime >= 1440)
-			    sprintf(work, flags.useansi ?
+			    snprintf(work, sizeof(work), flags.useansi ?
 				    "@Y%-19s%c @R%2ldd%02ld:%02ld@G  @C%s\r\n" :
 				    "%-19s%c %2ldd%02ld:%02ld  %s\r\n",
 				    junk, who[1] & 0x80 ? '*' : ' ',
@@ -155,15 +155,15 @@ void filter_wholist(register int c)
 				    (extime % 1440) / 60, (extime % 1440) % 60,
 				    pf->info);
 			else
-			    sprintf(work, flags.useansi ?
+			    snprintf(work, sizeof(work), flags.useansi ?
 				    "@Y%-19s%c @R   %2ld:%02ld@G  @C%s\r\n" :
 				    "%-19s%c    %2ld:%02ld  %s\r\n",
 				    junk, who[1] & 0x80 ? '*' : ' ',
 				    extime / 60, extime % 60, pf->info);
 			colorize(work);
 			*savewho[savewhop] = *who;
-			strcpy((char *) savewho[savewhop] + 1, (char *) who + 1);
-			strcpy((char *) saveinfo[savewhop], pf->info);
+			snprintf((char *) savewho[savewhop] + 1, sizeof(savewho[savewhop]) - 1, "%s", (char *) who + 1);
+			snprintf((char *) saveinfo[savewhop], sizeof(saveinfo[savewhop]), "%s", pf->info);
 			savewhop++;
 		    }
 		}
@@ -177,14 +177,14 @@ void filter_wholist(register int c)
 void filter_express(register int c)
 {
     register int i;		/* generic counter */
-    static char *sp, *bp;	/* comparison pointer */
+    static char *bp;		/* comparison pointer */
     static struct {
 	unsigned int crlf:1;		/* Needs initial CR/LF */
 	unsigned int prochdr:1;		/* Needs killfile processing */
 	unsigned int ignore:1;		/* Ignore the remainder of the X */
 	unsigned int truncated:1;	/* X message exceeded buffer */
     } needs;
-    char *thisline = xmsgbufp;	/* Pointer to the current line */
+    char *xline = xmsgbufp;	/* Pointer to the current line */
 
     if (c == -1) {		/* signal from IAC to begin/end X */
 	if (xmsgnow) {		/* Need to re-init for new X */
@@ -205,13 +205,13 @@ void filter_express(register int c)
 			push_queue(bp, xlandQueue);
 			needx = 1;
 		} else if (is_automatic_reply(xmsgbuf) && i > highxmsg) {
-			not_replying_transform_express(xmsgbuf);
+			not_replying_transform_express(xmsgbuf, sizeof(xmsgbuf));
 		}
 		/* Update highxmsg with greatest number seen */
 		if (i > highxmsg)
 		    highxmsg = i;
-		replycode_transform_express(xmsgbuf);
-		ansi_transform_express(xmsgbuf);
+		replycode_transform_express(xmsgbuf, sizeof(xmsgbuf));
+		ansi_transform_express(xmsgbuf, sizeof(xmsgbuf));
 		std_printf("%s%s", (needs.crlf) ? "\r\n" : "", xmsgbuf);
 		if (needs.truncated)
 		    std_printf("\r\n[X message truncated]\r\n");
@@ -233,30 +233,30 @@ void filter_express(register int c)
 	needs.truncated = 1;
 	return;
     }
-    *xmsgbufp++ = c;
+    *xmsgbufp++ = (char) c;
     *xmsgbufp = 0;
 
     /* Extract URLs if any */
     if (!needs.prochdr && c == '\r') {
-	    filter_url(thisline);
-	    thisline = xmsgbufp;
+	    filter_url(xline);
+	    xline = xmsgbufp;
     }
 
     /* If reached a \r it's time to do header processing */
     if (needs.prochdr && c == '\r') {
 	needs.prochdr = 0;
-	thisline = xmsgbufp;
+	xline = xmsgbufp;
 
 	/* Process for kill file */
-	sp = mystrstr(xmsgbuf, " from ");
 	if (!mystrstr(xmsgbuf, "*** Message ") &&
-	    !mystrstr(xmsgbuf, "%%% Question "))
-	    sp = NULL;
+	    !mystrstr(xmsgbuf, "%%% Question ")) {
+	    /* not an X header we care about */
+	}
 	/* get name for ^N function */
 	bp = ExtractName(xmsgbuf);
 	/* FIXME: move this down to where the msg is printed! so that enemies are
 	   not added to the ^N scroll */
-	if (slistFind(enemyList, bp, (int (*)())strcmp) != -1) {
+	if (slistFind(enemyList, bp, strcmp_void) != -1) {
 	    if (!flags.squelchexpress)
 		std_printf("\r\n[X message by %s killed]\r\n", bp);
 	    needs.ignore = 1;
@@ -326,7 +326,7 @@ void filter_post(register int c)
 		for (; *p; p++)		/* Find end of string */
 		    ;
 	
-		*p++ = c;		/* Copy character to end of string */
+		*p++ = (char) c;		/* Copy character to end of string */
 		*p = 0;
 	    }
 
@@ -357,7 +357,7 @@ void filter_post(register int c)
 	/* Output character */
 	std_putchar(c);
     } else {
-	*posthdrp++ = c;	/* store character in buffer */
+	*posthdrp++ = (char) c;	/* store character in buffer */
 	*posthdrp = 0;
 
 	/* If reached a \r it's time to do header processing */
@@ -365,15 +365,14 @@ void filter_post(register int c)
 	    needs.prochdr = 0;
 
 	    /* Process for enemy list kill file */
-	    strcpy(junk, posthdr);
+	    snprintf(junk, sizeof(junk), "%s", posthdr);
 	    /* FIXME: name of enemy should not be added to ^N list */
 	    bp = ExtractName(junk);
 /*      strcpy(junk, posthdr);  * Why did I do this? */
-	    isFriend = (slistFind(friendList, bp, (int (*)())fstrcmp) != -1) ? 1 : 0;
+	    isFriend = (slistFind(friendList, bp, fstrcmp_void) != -1) ? 1 : 0;
 	    ansi_transform_posthdr(posthdr, isFriend);
-	    strcpy(saveheader, posthdr);
-	    strcat(saveheader, "\r\n");
-	    if (slistFind(enemyList, bp, (int (*)())strcmp) != -1) {
+	    snprintf(saveheader, sizeof(saveheader), "%s\r\n", posthdr);
+	    if (slistFind(enemyList, bp, strcmp_void) != -1) {
 		needs.ignore = 1;
 		postflag = postnow = -1;
 		net_printf("%c%c%c%c", IAC, POST_K, numposts & 0xFF, 17);
@@ -395,27 +394,39 @@ void filter_post(register int c)
 }
 
 
-void filter_url(char *line)
+void filter_url(const char *line)
 {
 	static int multiline = 0;
 	static char url[1024];
 	char *p, *q;
-	int c, off = 0, len = 0;
 	
 	if (!urlQueue)	/* Can't store URLs for some reason */
 		return;
 
 	if (!multiline)
-	    strcpy(url, line);
-	else
-	    strcat(url, line);
+	    snprintf(url, sizeof(url), "%s", line);
+	else {
+	    size_t ulen = strlen(url);
+	    if (ulen < sizeof(url) - 1)
+		snprintf(url + ulen, sizeof(url) - ulen, "%s", line);
+	}
 
-	for (c = strlen(url) - 1; c >= 0; c--)
-	    if (url[c] == ' ' || url[c] == '\t' || url[c] == '\r')
-		url[c] = 0;
-	    else
-		break;
-	strcat(url, " ");
+	{
+	    size_t len = strlen(url);
+	    while (len > 0) {
+		size_t idx = len - 1;
+		if (url[idx] == ' ' || url[idx] == '\t' || url[idx] == '\r')
+		    url[idx] = 0;
+		else
+		    break;
+		len = idx;
+	    }
+	}
+	{
+	    size_t ulen = strlen(url);
+	    if (ulen < sizeof(url) - 1)
+		snprintf(url + ulen, sizeof(url) - ulen, " ");
+	}
 
 	if (!(p = strstr(url, "http://"))) {
 	    if (!(p = strstr(url, "ftp://"))) {
@@ -424,13 +435,13 @@ void filter_url(char *line)
 		return;
 	    }
 	}
-	off = p - url;
+	/* offset unused */
 
 	for (q = p; *q; q++) {
 	    if (mystrchr(":/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$-_@.&+,=;?%~{|}", *q))
 		continue;
 	    *q = 0;
-	    len = q - p;
+	    /* length unused */
 	    
 	    /* Oops, looks like a multi-line URL */
 	    if ((!multiline && p == line && q > p + 77) || (multiline && strlen(line) > 77))
@@ -466,9 +477,10 @@ void filter_data(register int c)
 	/* This is faster than calling strcat() */
         char *p = thisline;
 
-	for (; *p; p++) ;	/* Find end of string */
+	while (*p)		/* Find end of string */
+	    p++;
 
-	*p++ = c;		/* Copy character to end of string */
+		*p++ = (char) c;		/* Copy character to end of string */
 	*p = 0;
     }
 
@@ -605,7 +617,7 @@ int is_automatic_reply(const char *message)
 }
 
 
-void not_replying_transform_express(char *s)
+void not_replying_transform_express(char *s, size_t size)
 {
 	char junk[580];
 	char *sp;
@@ -617,12 +629,12 @@ void not_replying_transform_express(char *s)
 
 	*(sp++) = 0;
 
-	sprintf(junk, "%s (not replying) %s", s, sp);
-	strcpy(s, junk);
+	snprintf(junk, sizeof(junk), "%s (not replying) %s", s, sp);
+	snprintf(s, size, "%s", junk);
 }
 
 
-void replycode_transform_express(char *s)
+void replycode_transform_express(char *s, size_t size)
 {
 	char junk[580];
 	char *sp;
@@ -635,6 +647,6 @@ void replycode_transform_express(char *s)
 	*(++sp) = 0;
 	sp += 4;
 
-	sprintf(junk, "%s%s", s, sp);
-	strcpy(s, junk);
+	snprintf(junk, sizeof(junk), "%s%s", s, sp);
+	snprintf(s, size, "%s", junk);
 }

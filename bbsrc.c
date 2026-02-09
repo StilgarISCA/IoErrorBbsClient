@@ -43,18 +43,18 @@ void readbbsrc(void)
     int l = 0;
     int reads = 0;
     int z;
-    unsigned int hold = 0;
+    size_t hold = 0;
     int tmpVersion = 0;
     friend *pf = NULL;
 
     version = INTVERSION;
     commandkey = shellkey = capturekey = suspkey = quitkey = awaykey = -1;
     browserkey = -1;
-    if (!(friendList = slistCreate(0, (int (*)())fsortcmp)))
+    if (!(friendList = slistCreate(0, fsortcmp_void)))
 	fatalexit("Can't create 'friend' list!\n", "Fatal error");
-    if (!(enemyList = slistCreate(0, (int (*)())sortcmp)))
+    if (!(enemyList = slistCreate(0, sortcmp_void)))
 	fatalexit("Can't create 'enemy' list!\n", "Fatal error");
-    if (!(whoList = slistCreate(0, (int (*)())sortcmp)))
+    if (!(whoList = slistCreate(0, sortcmp_void)))
 	fatalexit("Can't create saved who list!\n", "Fatal error");
 
     for (c = 0; c <= 127; c++) {
@@ -97,11 +97,17 @@ void readbbsrc(void)
 		fgets(tmp, MAXLINELEN+1, bbsrc);
 	    continue;
 	}
-	for (c = strlen(tmp) - 1; c >= 0; c--)
-	    if (tmp[c] == ' ' || tmp[c] == '\t' || tmp[c] == '\n' || tmp[c] == '\r')
-		tmp[c] = 0;
-	    else
-		break;
+	{
+	    size_t len = strlen(tmp);
+	    while (len > 0) {
+		size_t idx = len - 1;
+		if (tmp[idx] == ' ' || tmp[idx] == '\t' || tmp[idx] == '\n' || tmp[idx] == '\r')
+		    tmp[idx] = 0;
+		else
+		    break;
+		len = idx;
+	    }
+	}
 
 	/* Just ignore these for now, they'll be quietly erased... */
 	if (!strncmp(tmp, "reread ", 7));
@@ -188,7 +194,7 @@ void readbbsrc(void)
 		    !strcmp(bbshost, "128.255.95.69") ||
 		    !strcmp(bbshost, "128.255.3.160") ||
 		    !strcmp(bbshost, "bbs.iscabbs.info")) /* Old addresses */
-		    strcpy(bbshost, BBSHOST);	/* changed to new */
+		    snprintf(bbshost, sizeof(bbshost), "%s", BBSHOST);	/* changed to new */
 	} else if (!strncmp(tmp, "socks ", 6)) {
 		for (c = 6; (socks_fw[c - 6] = tmp[c]) && tmp[c] != ' ' && c < 69; c++);
 		if (c == 69 || c == 6) {
@@ -206,7 +212,7 @@ void readbbsrc(void)
 	    if (strlen(tmp) == 7)
 		std_printf("Empty username in 'friend'.\n");
 	    else {
-		if (slistFind(friendList, tmp + 7, (int (*)())fstrcmp) != -1)
+		if (slistFind(friendList, tmp + 7, fstrcmp_void) != -1)
 		    std_printf("Duplicate username in 'friend'.\n");
 		else if (strlen(tmp) > 30) {
 		    pf = (friend *) calloc(1, sizeof(friend));
@@ -215,7 +221,7 @@ void readbbsrc(void)
 		    strncpy(pf->info, tmp + 30, 53);
 		    for (z = 19; z > 0; z--)
 			if (tmp[7 + z] == ' ')
-			    hold = z;
+			    hold = (size_t) z;
 			else
 			    break;
 		    strncpy(pf->name, tmp + 7, hold);
@@ -225,7 +231,7 @@ void readbbsrc(void)
 			fatalexit("Out of memory adding 'friend'!\n", "Fatal error");
 		    strncpy(pf->name, tmp + 7, 19);
 		    hold = sizeof(pf->name);
-		    strcat(pf->info, "(None)");
+		    snprintf(pf->info, sizeof(pf->info), "%s", "(None)");
 		}
 		pf->magic = 0x3231;
 		if (!slistAddItem(friendList, pf, 1))
@@ -233,13 +239,13 @@ void readbbsrc(void)
 	} else if (!strncmp(tmp, "enemy ", 6))
 	    if (strlen(tmp) == 6)
 		std_printf("Empty username in 'enemy'.\n");
-	    else if (slistFind(enemyList, tmp + 6, (int (*)())strcmp) != -1)
+	    else if (slistFind(enemyList, tmp + 6, strcmp_void) != -1)
 		std_printf("Duplicate username in 'enemy'.\n");
 	    else {
 		pc = (char *) calloc(1, strlen(tmp + 6) + 1);
 		if (!pc)
 		    fatalexit("Out of memory adding 'enemy'!\n", "Fatal error");
-		strcpy(pc, tmp + 6);
+		snprintf(pc, strlen(tmp + 6) + 1, "%s", tmp + 6);
 		if (!slistAddItem(enemyList, (void *) pc, 1))
 		    fatalexit("Can't add 'enemy' to list!\n", "Fatal error");
 	} else if (!strncmp(tmp, "commandkey ", 11) ||
@@ -310,18 +316,18 @@ void readbbsrc(void)
 					    m = awaymsg[++q];
 				    else if (iscntrl(c))
 					    continue;
-				    else
-					    *m++ = c;
+					    else
+						    *m++ = (char) c;
 			    }
 		    } else {
 			    m = macro[c];
-			    while ((c = *s++)) {
-				    if (c == '^' && *s != '^')
-					    c = ctrl(s++ - 1);
-				    if (c == '\r')
-					    c = '\n';
-				    *m++ = c;
-			    }
+				    while ((c = *s++)) {
+					    if (c == '^' && *s != '^')
+						    c = ctrl(s++ - 1);
+					    if (c == '\r')
+						    c = '\n';
+					    *m++ = (char) c;
+				    }
 		    }
 		}
 	    } else
@@ -340,13 +346,13 @@ void readbbsrc(void)
 		    m = awaymsg[++q];
 		else if (iscntrl(c))
 		    continue;
-		else
-		    *m++ = c;
+			else
+			    *m++ = (char) c;
 	    }
 	} else if (tmp[0] == 'a' && tmp[1] >= '1' && tmp[1] <= '5' &&
 		   tmp[2] == ' ') {
 		/* New away messages */
-		strcpy(awaymsg[tmp[1] - '1'], tmp + 3);
+		snprintf(awaymsg[tmp[1] - '1'], sizeof(awaymsg[0]), "%s", tmp + 3);
 	} else if (!strncmp(tmp, "shell ", 6)) {
 	    if (shellkey >= 0)
 		std_printf("Additional definition for 'shell' ignored.\n");
@@ -367,17 +373,23 @@ void readbbsrc(void)
 		fgets(tmp, MAXLINELEN+1, bbsfriends);
 	    continue;
 	}
-	for (c = strlen(tmp) - 1; c >= 0; c--)
-	    if (tmp[c] == ' ' || tmp[c] == '\t' || tmp[c] == '\n' || tmp[c] == '\r')
-		tmp[c] = 0;
-	    else
-		break;
+	{
+	    size_t len = strlen(tmp);
+	    while (len > 0) {
+		size_t idx = len - 1;
+		if (tmp[idx] == ' ' || tmp[idx] == '\t' || tmp[idx] == '\n' || tmp[idx] == '\r')
+		    tmp[idx] = 0;
+		else
+		    break;
+		len = idx;
+	    }
+	}
 
 	if (!strncmp(tmp, "friend ", 7)) {
 	    if (strlen(tmp) == 7) {
 		std_printf("Empty username in 'friend'.\n");
 	    } else {
-		if (slistFind(friendList, tmp + 7, (int (*)())fstrcmp) != -1) {
+		if (slistFind(friendList, tmp + 7, fstrcmp_void) != -1) {
 		    std_printf("Duplicate username in 'friend'.\n");
 		} else if (strlen(tmp) > 30) {
 		    pf = (friend *) calloc(1, sizeof(friend));
@@ -386,14 +398,14 @@ void readbbsrc(void)
 		    strncpy(pf->info, tmp + 30, 53);
 		    for (z = 19; z > 0; z--)
 			if (tmp[7 + z] == ' ')
-			    hold = z;
+			    hold = (size_t) z;
 			else
 			    break;
 		    strncpy(pf->name, tmp + 7, hold);
 		} else {
 		    strncpy(pf->name, tmp + 7, 19);
 		    hold = sizeof(pf->name);
-		    strcat(pf->info, "(None)");
+		    snprintf(pf->info, sizeof(pf->info), "%s", "(None)");
 		}
 		pf->magic = 0x3231;
 		if (!slistAddItem(friendList, pf, 1))
@@ -421,7 +433,7 @@ void readbbsrc(void)
     if (browserkey == -1) browserkey = 'w';
 
     if (!**awaymsg) {
-	strcpy(awaymsg[0], "I'm away from my keyboard right now.");
+	snprintf(awaymsg[0], sizeof(awaymsg[0]), "%s", "I'm away from my keyboard right now.");
 	*awaymsg[1] = 0;
     }
 
@@ -449,11 +461,11 @@ void readbbsrc(void)
 	std_printf("Warning: duplicate definition of 'capture' and 'shell'\n");
 
     /* Load who list */
-    for (z = 0; z < friendList->nitems; z++) {
-	pf = friendList->items[z];
+    for (unsigned int zi = 0; zi < friendList->nitems; zi++) {
+	pf = friendList->items[zi];
 	if (!(pc = (char *) calloc(1, strlen(pf->name) + 1)))
 	    fatalexit("Out of memory for list copy!\r\n", "Fatal error");
-	strcpy(pc, pf->name);
+	snprintf(pc, strlen(pf->name) + 1, "%s", pf->name);
 	if (!(slistAddItem(whoList, pc, 1)))
 	    fatalexit("Out of memory adding item in list copy!\r\n", "Fatal error");
     }
@@ -463,11 +475,11 @@ void readbbsrc(void)
     slistSort(whoList);
 
     if (!*bbshost) {
-	strcpy(bbshost, BBSHOST);
+	snprintf(bbshost, sizeof(bbshost), "%s", BBSHOST);
 	bbsport = BBSPORT;
     }
     if (!*editor)
-	strcpy(editor, myeditor);
+	snprintf(editor, sizeof(editor), "%s", myeditor);
     if (version != tmpVersion) {
 	if (reads) {
 	    setup(tmpVersion);
