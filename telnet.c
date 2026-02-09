@@ -303,7 +303,7 @@ int telrcv(int c)
  * throwing away everything it receives from the time it sends an IAC G_*
  * command until the time it receives an IAC BLOCK command. 
  */
-void sendblock()
+void sendblock(void)
 {
     net_putchar(IAC);
     net_putchar(BLOCK);
@@ -313,7 +313,7 @@ void sendblock()
 /*
  * Send a NAWS command to the bbs to tell it what our window size is. 
  */
-void sendnaws()
+void sendnaws(void)
 {
     char s[10];
     register int i;
@@ -338,15 +338,23 @@ void sendnaws()
  * BBS (the queue daemon actually) is kludged on its end as well by the IAC
  * CLIENT command. 
  */
-void telinit()
+void telinit(void)
 {
-	char s[39];
 	register int i;
 
 
-	sprintf(s, "%c%c%c%c%c%c%cUSER%c%s%c%c",
-		IAC, CLIENT2, IAC, SB, TELOPT_ENVIRON, 0, 1, 0, user, IAC, SE);
-	for (i = 0; i < (int)strlen(user) + 14; i++)
-		net_putchar(s[i]);
+	net_putchar(IAC);
+	net_putchar(CLIENT2);
+	net_putchar(IAC);
+	net_putchar(SB);
+	net_putchar(TELOPT_ENVIRON);
+	net_putchar(0);
+	net_putchar(1);
+	net_putchar(0);
+	net_puts("USER");
+	net_putchar(0);
+	net_puts(user);
+	net_putchar(IAC);
+	net_putchar(SE);
 	sendnaws();
 }

@@ -17,20 +17,20 @@ void send_an_x(void)
 {
     /* get the ball rolling with the bbs */
     SendingX = SX_WANT_TO;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("send_an_x 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
     net_putchar('x');
     byte++;
     SendingX = SX_SENT_x;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("send_an_x 2 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
 }
 
 
 /* fake get_five_lines for the bbs */
-void replymessage()
+void replymessage(void)
 {
     int i, k, control = 0;
     char send;
@@ -51,7 +51,7 @@ void replymessage()
 	byte++;
     }
     SendingX = SX_NOT;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("replymessage 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
 }
@@ -73,7 +73,7 @@ void fatalexit(const char *message, const char *heading)
 }
 
 
-void myexit()
+void myexit(void)
 {
     fflush(stdout);
     if (childpid) {
@@ -99,7 +99,7 @@ void myexit()
 }
 
 
-void looper()
+void looper(void)
 {
     register int c;
     unsigned int invalid = 0;
@@ -119,7 +119,7 @@ void looper()
 }
 
 
-int yesno()
+int yesno(void)
 {
     register int c;
     unsigned int invalid = 0;
@@ -163,7 +163,7 @@ int yesnodefault(int def)
 }
 
 
-void tempfileerror()
+void tempfileerror(void)
 {
 	if (errno == EINTR)
 		return;

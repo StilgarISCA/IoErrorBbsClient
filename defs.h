@@ -9,6 +9,10 @@
 
 #define VERSION		"2.3.10-Stilgar"
 #define INTVERSION	2310
+
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 #include "config.h"
 
 #ifdef STDC_HEADERS

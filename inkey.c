@@ -21,7 +21,7 @@ static int lastcr = 0;
  * with user misconfiguration) and translate certain keypresses into common
  * Unix equivalents (i.e. \r -> \n, DEL -> BS, ctrl-U -> ctrl-X)
  */
-int inkey()
+int inkey(void)
 {
 	register int c;
 
@@ -43,7 +43,7 @@ int inkey()
 }
 
 
-int getkey()
+int getkey(void)
 {
     	static int macron = 0;
 	static int macrop = 0;	/* pointer into the macro array */

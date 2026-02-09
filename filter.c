@@ -483,7 +483,7 @@ void filter_data(register int c)
     /*
     if (SendingX == SX_SENT_NAME) {
 	SendingX = SX_SEND_NEXT;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("filter_data 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
     }
@@ -493,7 +493,7 @@ void filter_data(register int c)
 	*/
     if (SendingX == SX_SEND_NEXT && !*thisline && c == '\r') {
 	SendingX = SX_NOT;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("filter_data 2 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
 	if (xlandQueue->nobjs && (away || xland))

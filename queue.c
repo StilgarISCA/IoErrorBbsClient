@@ -62,7 +62,7 @@ int push_queue(char *obj, queue * q)
     /* Find the target address within the queue to insert object. */
     p = q->start + q->objsize * q->tail;
 
-#ifdef DEBUG
+#if DEBUG
     std_printf("{Queuing %s, %d objects} ", obj, q->nobjs);
 #endif
     /* Copy the object into its queue position */
@@ -93,7 +93,7 @@ int pop_queue(char *obj, queue * q)
     /* Find the object within the queue. */
     p = q->start + (q->objsize * q->head);
 
-#ifdef DEBUG
+#if DEBUG
     std_printf("{Dequeuing %s, %d objects}\r\n", p, q->nobjs);
 #endif
     /* Copy the object. */

@@ -108,7 +108,7 @@ int std_printf(const char *format,...)
     va_list ap;
 
     va_start(ap, format);
-    (void) vsprintf(string, format, ap);
+    (void) vsnprintf(string, sizeof(string), format, ap);
     va_end(ap);
     return std_puts(string);
 }
@@ -120,7 +120,7 @@ int cap_printf(const char *format,...)
 
     if (capture) {
 	va_start(ap, format);
-	(void) vsprintf(string, format, ap);
+	(void) vsnprintf(string, sizeof(string), format, ap);
 	va_end(ap);
 	return cap_puts(string);
     }
@@ -133,7 +133,7 @@ int net_printf(const char *format,...)
     static char work[BUFSIZ];
 
     va_start(ap, format);
-    (void) vsprintf(work, format, ap);
+    (void) vsnprintf(work, sizeof(work), format, ap);
     va_end(ap);
     net_puts(work);
     return 1;

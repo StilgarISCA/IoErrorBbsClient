@@ -73,7 +73,7 @@ void setup(int newVersion)
 /*
  * Changes settings in bbsrc file and saves it. 
  */
-void configbbsrc()
+void configbbsrc(void)
 {
     char tmp[80];
     register int c;
@@ -616,7 +616,7 @@ void editusers(slist *list, int (*findfn)(const void *, const void *), const cha
 		    std_printf("\r\n%s is already on your %s list.\r\n", sp, name);
 		    i = -1;
 		}
-#ifdef DEBUG
+#if DEBUG
 		printf("{%d %s} ", i, sp);
 #endif
 		if (i < 0)

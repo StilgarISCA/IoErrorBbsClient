@@ -49,7 +49,7 @@ int initSSL(void)
 		return 0;
 	}
 
-#ifdef DEBUG
+#if DEBUG
 	printf("SSL initialized\n");
 #endif
 	return 1;
@@ -61,7 +61,7 @@ int initSSL(void)
  * the user while we have a child process running.  Returns 1 for user input
  * pending, 2 for network input pending, 3 for both.
  */
-int waitnextevent()
+int waitnextevent(void)
 {
     	fd_set fdr;
 	int result;
@@ -91,7 +91,7 @@ int waitnextevent()
 /*
  * Find the user's home directory (needed for .bbsrc and .bbstmp)
  */
-void findhome()
+void findhome(void)
 {
 #ifdef USE_CYGWIN
     if (getenv("USERNAME")) {
@@ -208,7 +208,7 @@ void truncbbsrc(int len)
  * Opens the temp file, ~/.bbstmp.  If the BBSTMP environment variable is set,
  * that file is used instead.
  */
-void opentmpfile()
+void opentmpfile(void)
 {
     if (login_shell)
 	sprintf(tempfilename, "/tmp/bbstmp.%d", getpid());
@@ -288,7 +288,7 @@ void notitlebar(void)
  * in the bbsrc file if/when the source to the ISCA BBS is released and others
  * start their own on different machines and/or ports.
  */
-void connectbbs()
+void connectbbs(void)
 {
     register struct hostent *host;
     register int err;
@@ -391,7 +391,7 @@ void connectbbs()
  * puts it back in proper mode when client restarts, and checks if the window
  * size was changed while we were away.
  */
-void suspend()
+void suspend(void)
 {
 #ifdef __EMX__
     /* TODO: find out how to make SIGSTOP work under OS/2 */
@@ -458,7 +458,7 @@ RETSIGTYPE reapchild(int signum)
 /*
  * Initialize necessary signals
  */
-void siginit()
+void siginit(void)
 {
     oldrows = -1;
 
@@ -482,7 +482,7 @@ void siginit()
 /*
  * Turn off signals now that we are ready to terminate
  */
-void sigoff()
+void sigoff(void)
 {
     signal(SIGALRM, SIG_IGN);
 #ifdef SIGWINCH
@@ -511,7 +511,7 @@ static int savelocalmode;
 /*
  * Set terminal state to proper modes for running the client/bbs
  */
-void setterm()
+void setterm(void)
 {
 #ifdef HAVE_TERMIO_H
     struct termio tmpterm;
@@ -574,7 +574,7 @@ void setterm()
 /*
  * Reset the terminal to the previous state it was in when we started.
  */
-void resetterm()
+void resetterm(void)
 {
     if (flags.useansi)
 /*	printf("\033[0m\033[1;37;49m"); */
@@ -596,7 +596,7 @@ void resetterm()
 /*
  * Get the current window size.
  */
-int getwindowsize()
+int getwindowsize(void)
 {
 #ifdef TIOCGWINSZ
     struct winsize ws;
@@ -804,7 +804,7 @@ void initialize(const char *protocol)
 }
 
 
-void deinitialize()
+void deinitialize(void)
 {
     char tfile[100];
 

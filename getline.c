@@ -33,7 +33,7 @@ void get_five_lines(int which)
 #endif
     if (away && SendingX == SX_SENT_NAME) {
 	SendingX = SX_REPLYING;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("get_five_lines 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
 	replymessage();
@@ -43,7 +43,7 @@ void get_five_lines(int which)
 	SendingX = SX_SEND_NEXT;
     else
 	SendingX = SX_NOT;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("get_five_lines 2 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
     if (flags.useansi)
@@ -180,7 +180,7 @@ char *get_name(int quit_priv)
     }
     if ((away || xland) && quit_priv == 2 && SendingX == SX_SENT_x) {
 	SendingX = SX_SENT_NAME;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("get_name 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
 	if (!pop_queue(junk, xlandQueue))
@@ -190,7 +190,7 @@ char *get_name(int quit_priv)
 	return (junk);
     }
     SendingX = SX_NOT;
-#ifdef DEBUG
+#if DEBUG
 		std_printf("get_name 2 SendingX is %d, xland is %d\r\n", SendingX, xland);
 #endif
     for (;;) {

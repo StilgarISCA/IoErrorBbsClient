@@ -34,7 +34,7 @@ static int ctrl(char *s)
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed. 
  */
 #define MAXLINELEN 83
-void readbbsrc()
+void readbbsrc(void)
 {
     char tmp[MAXLINELEN+1];
     char tmps[MAXLINELEN+1];
@@ -488,8 +488,7 @@ void readbbsrc()
  * Opens the bbsrc file, warning the user if it can't be opened or can't be
  * opened for write, returning the file pointer if it was opened successfully. 
  */
-FILE *
- openbbsrc()
+FILE *openbbsrc(void)
 {
 	FILE *f;
 	int e;
@@ -517,8 +516,7 @@ FILE *
  * be opened for write, returning the file pointer if it was opened
  * successfully.
  */
-FILE *
- openbbsfriends()
+FILE *openbbsfriends(void)
 {
     FILE *f;
 
