@@ -31,7 +31,7 @@ void filter_wholist(register int c)
     static char new;
     static int col;
     static unsigned char who[21];	/* Buffer for current name in who list */
-    static unsigned char *whop = (char *) NULL;
+    static unsigned char *whop = NULL;
     static long timestamp = 0;	/* Friend list timestamp */
     static long timer = 0;	/* Friend list timestamp */
     static long now = 0;	/* Current time */
@@ -61,7 +61,7 @@ void filter_wholist(register int c)
 	    if (new == 1) {
 		if (!savewhop)	/* FIXME: I think this is buggy */
 		    std_printf("No friends online (new)");
-		whop = (char *) NULL;
+		whop = NULL;
 		new = 0;
 		wholist = 0;
 	    } else if (new == 0) {
@@ -99,7 +99,7 @@ void filter_wholist(register int c)
 			       (int) (now / 60), (int) (now % 60));
 		}
 		wholist = 0;
-		whop = (char *) NULL;
+		whop = NULL;
 	    }
 	} else {		/* Received a friend */
 	    whop = who;
@@ -121,8 +121,11 @@ void filter_wholist(register int c)
 	    /* Handle extended time information */
 	    if (*who == 0xfe) {
 		/* Decode BCD */
-		for (pc = who + 1; *pc; pc++) {
-		    extime = 10 * extime + *pc - 1;
+		{
+		    unsigned char *upc;
+		    for (upc = who + 1; *upc; upc++) {
+			extime = 10 * extime + *upc - 1;
+		    }
 		}
 	    } else {
 		/* output name and info if user is on our 'friend' list */
@@ -145,16 +148,16 @@ void filter_wholist(register int c)
 			    extime = (long) (*who);
 			if (extime >= 1440)
 			    sprintf(work, flags.useansi ?
-				    "@Y%-19s%c @R%2dd%02d:%02d@G  @C%s\r\n" :
-				    "%-19s%c %2dd%02d:%02d  %s\r\n",
+				    "@Y%-19s%c @R%2ldd%02ld:%02ld@G  @C%s\r\n" :
+				    "%-19s%c %2ldd%02ld:%02ld  %s\r\n",
 				    junk, who[1] & 0x80 ? '*' : ' ',
 				    extime / 1440,
 				    (extime % 1440) / 60, (extime % 1440) % 60,
 				    pf->info);
 			else
 			    sprintf(work, flags.useansi ?
-				    "@Y%-19s%c @R   %2d:%02d@G  @C%s\r\n" :
-				    "%-19s%c    %2d:%02d  %s\r\n",
+				    "@Y%-19s%c @R   %2ld:%02ld@G  @C%s\r\n" :
+				    "%-19s%c    %2ld:%02ld  %s\r\n",
 				    junk, who[1] & 0x80 ? '*' : ' ',
 				    extime / 60, extime % 60, pf->info);
 			colorize(work);
@@ -176,9 +179,9 @@ void filter_express(register int c)
     register int i;		/* generic counter */
     static char *sp, *bp;	/* comparison pointer */
     static struct {
-	int crlf:1;		/* Needs initial CR/LF */
-	int prochdr:1;		/* Needs killfile processing */
-	int ignore:1;		/* Ignore the remainder of the X */
+	unsigned int crlf:1;		/* Needs initial CR/LF */
+	unsigned int prochdr:1;		/* Needs killfile processing */
+	unsigned int ignore:1;		/* Ignore the remainder of the X */
     } needs;
     char *thisline = xmsgbufp;	/* Pointer to the current line */
 
@@ -261,10 +264,10 @@ void filter_post(register int c)
     static char posthdr[140];	/* store the post header here */
     static char *posthdrp;	/* pointer into posthdr */
     static struct {
-	int crlf:1;		/* need to add a CR/LF */
-	int prochdr:1;		/* process post header */
-	int ignore:1;		/* kill this post */
-	int second_n:1;		/* send a second n */
+	unsigned int crlf:1;		/* need to add a CR/LF */
+	unsigned int prochdr:1;		/* process post header */
+	unsigned int ignore:1;		/* kill this post */
+	unsigned int second_n:1;	/* send a second n */
     } needs;
     static char *bp;		/* misc. pointer */
     static char junk[160];

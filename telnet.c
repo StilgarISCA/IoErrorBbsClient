@@ -27,8 +27,7 @@
 #include "telnet.h"
 
 
-int telrcv(c)
-register int c;
+int telrcv(int c)
 {
     static int state = TS_DATA;	/* Current state of telnet state machine */
     static unsigned char buf[80];	/* Generic buffer */

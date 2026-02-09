@@ -19,8 +19,7 @@
  * wanting, to allow the special commands for X's, like PING and ABORT. When
  * we've got what we need, we send it immediately over the net. 
  */
-void get_five_lines(which)
-int which;
+void get_five_lines(int which)
 {
     register int i;
     register int j;
@@ -84,8 +83,7 @@ int which;
 /*
  * Find a unique matching name to the input entered so far by the user.
  */
-int smartname(buf, pe)
-char *buf, *pe;
+int smartname(char *buf, char *pe)
 {
     int i, found = -1;
     friend *pf = NULL, *pg;
@@ -120,8 +118,7 @@ char *buf, *pe;
 }
 
 
-void smartprint(buf, pe)
-char *buf, *pe;
+void smartprint(char *buf, char *pe)
 {
     char *pc = pe;
 
@@ -141,8 +138,7 @@ char *buf, *pe;
 }
 
 
-void smarterase(pe)
-char *pe;
+void smarterase(char *pe)
 {
     char *pc = pe;
 
@@ -159,9 +155,7 @@ char *pe;
  * of quit_priv (that stuff should be left alone)  The name is then returned to
  * the caller. 
  */
-char *
- get_name(quit_priv)
-int quit_priv;
+char *get_name(int quit_priv)
 {
     register char *p;
     static char pbuf[MAXNAME + 1];
@@ -330,10 +324,7 @@ int quit_priv;
  * pointer to result.  If the length given is negative, the string is echoed
  * with '.' instead of the character typed (used for passwords) 
  */
-void get_string(length, result, line)
-int length;
-char *result;
-int line;
+void get_string(int length, char *result, int line)
 {
     static char wrap[80];
     char *rest;

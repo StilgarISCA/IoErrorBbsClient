@@ -193,8 +193,7 @@ FILE *
 /*
  * Truncates bbsrc file to the specified length.
  */
-void truncbbsrc(len)
-int len;
+void truncbbsrc(int len)
 {
     /* Anyone know how to do this in SCO/Xenix?  If so, please let me know! */
 #ifndef M_XENIX
@@ -615,8 +614,7 @@ int getwindowsize()
 
 
 
-void mysleep(sec)
-unsigned int sec;
+void mysleep(unsigned int sec)
 {
     sleep(sec);
 }
@@ -632,8 +630,7 @@ unsigned int sec;
  * you too much hassle of posting random garbage, changing your profile or
  * configuration or whatever.
  */
-void flush_input(invalid)
-unsigned int invalid;
+void flush_input(unsigned int invalid)
 {
     int i;
 
@@ -661,9 +658,7 @@ unsigned int invalid;
  * here once I receive a signal from the child that it has terminated. So I
  * guess there actually IS a use for setjmp/longjmp after all! :-)
  */
-void run(cmd, arg)
-char *cmd;
-char *arg;
+void run(char *cmd, char *arg)
 {
 #ifdef __EMX__
     /* TODO: find out how to make SIGCONT work under OS/2 */
@@ -744,8 +739,7 @@ void techinfo(void)
 }
 
 
-void initialize(protocol)
-const char *protocol;
+void initialize(const char *protocol)
 {
     if (!isatty(0) || !isatty(1) || !isatty(2))
 	exit(0);

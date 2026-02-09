@@ -490,8 +490,7 @@ void writebbsrc(void)
  * inkey() to avoid the character translation (since the hotkey values are
  * checked within inkey() instead of getkey()) 
  */
-int newkey(oldkey)
-int oldkey;
+int newkey(int oldkey)
 {
     int c;
 
@@ -511,8 +510,7 @@ int oldkey;
 /*
  * Gets a new value for macro 'which'. 
  */
-void newmacro(which)
-int which;
+void newmacro(int which)
 {
     register int i;
     register int c;
@@ -560,8 +558,7 @@ int which;
  * regular character it will be printed normally, if it is a control character
  * it is printed as in the Unix ctlecho mode (i.e. ctrl-A is printed as ^A) 
  */
-char *strctrl(c)
-int c;
+char *strctrl(int c)
 {
     static char ret[3];
 
@@ -581,10 +578,7 @@ int c;
 /*
  * Does the editing of the friend and enemy lists. 
  */
-void editusers(list, findfn, name)
-slist *list;
-int (*findfn) (const void *, const void *);
-const char *name;
+void editusers(slist *list, int (*findfn)(const void *, const void *), const char *name)
 {
     register int c;
     register int i = 0;

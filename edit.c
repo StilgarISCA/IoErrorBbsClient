@@ -7,8 +7,7 @@
 #include "ext.h"
 
 
-void makemessage(upload)
-int upload;			/* 0 = normal, 1 = upload (end w/^D) */
+void makemessage(int upload)			/* 0 = normal, 1 = upload (end w/^D) */
 {
     int chr;
     FILE *fp = tempfile;
@@ -219,10 +218,7 @@ int upload;			/* 0 = normal, 1 = upload (end w/^D) */
  * also might even make this stuff easier for others to understand, but I doubt
  * it.
  */
-int prompt(fp, old, cmd)
-FILE *fp;
-int *old;
-int cmd;
+int prompt(FILE *fp, int *old, int cmd)
 {
     FILE *cp;
     int i;
@@ -408,8 +404,7 @@ int cmd;
  * or the file itself being too long.  Returns 1 if the file has problems and
  * cannot be saved as is, 0 otherwise. 
  */
-int checkfile(fp)
-FILE *fp;
+int checkfile(FILE *fp)
 {
     int i;
     int count = 0;

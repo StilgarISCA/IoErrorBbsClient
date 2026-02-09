@@ -94,22 +94,22 @@ typedef struct {
 
 #define MAXLAST		20
 typedef struct {
-    int posting:1;		/* true if user is currently posting */
-    int lastsave:1;		/* true if last time user edited they saved */
-    int check:1;		/* true if waiting to check BBS for X's */
-    int configflag:1;		/* true if we are in bbsrc config funcs */
-    int useansi:1;		/* true if BBS is in ANSI color mode */
-    int usebold:1;		/* true if using bold in ANSI color mode */
-    int offbold:1;		/* true if we need to force bold ANSI off */
-    int moreflag:1;		/* true if we are inside a MORE prompt */
-    int squelchpost:1;		/* true if we should squelch enemy posts */
-    int squelchexpress:1;	/* true if we should squelch enemy express */
-    int ansiprompt:1;		/* true if we automatically answer ANSI ? */
-    int browserbg:1;		/* true if browser can be backgrounded */
+    unsigned int posting:1;		/* true if user is currently posting */
+    unsigned int lastsave:1;		/* true if last time user edited they saved */
+    unsigned int check:1;		/* true if waiting to check BBS for X's */
+    unsigned int configflag:1;		/* true if we are in bbsrc config funcs */
+    unsigned int useansi:1;		/* true if BBS is in ANSI color mode */
+    unsigned int usebold:1;		/* true if using bold in ANSI color mode */
+    unsigned int offbold:1;		/* true if we need to force bold ANSI off */
+    unsigned int moreflag:1;		/* true if we are inside a MORE prompt */
+    unsigned int squelchpost:1;	/* true if we should squelch enemy posts */
+    unsigned int squelchexpress:1;	/* true if we should squelch enemy express */
+    unsigned int ansiprompt:1;		/* true if we automatically answer ANSI ? */
+    unsigned int browserbg:1;		/* true if browser can be backgrounded */
 } Flags;
 
 typedef struct {
-    int (*sortfn)();		/* function to sort list; see slist.c */
+    int (*sortfn)(const void *, const void *); /* function to sort list; see slist.c */
     unsigned int nitems;	/* number of items in list */
     void **items;		/* dynamic array containing item pointers */
 } slist;

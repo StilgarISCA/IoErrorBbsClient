@@ -13,7 +13,7 @@
  * allocated.  If the number of items is >0, the pointers must be
  * passed as arguments.
  */
-slist *slistCreate(int nitems, int (*sortfn) (), ...)
+slist *slistCreate(int nitems, int (*sortfn)(const void *, const void *), ...)
 {
     int i;
     slist *list;
@@ -43,8 +43,7 @@ slist *slistCreate(int nitems, int (*sortfn) (), ...)
  * slistDestroy destroys a list.  It does not destroy the data items
  * in the list.
  */
-void slistDestroy(list)
-slist *list;
+void slistDestroy(slist *list)
 {
     free(list->items);
     list->items = NULL;
@@ -56,8 +55,7 @@ slist *list;
 /*
  * slistDestroyItems destroys the data items in a list.
  */
-void slistDestroyItems(list)
-slist *list;
+void slistDestroyItems(slist *list)
 {
     int i;
 
@@ -71,10 +69,7 @@ slist *list;
 /*
  * slistAddItem adds an item to the list.
  */
-int slistAddItem(list, item, deferSort)
-slist *list;
-void *item;
-int deferSort;
+int slistAddItem(slist *list, void *item, int deferSort)
 {
     void **p;
 
@@ -93,9 +88,7 @@ int deferSort;
  * slistRemoveItem removes an item from the list.  It does not free the
  * object being pointed to.
  */
-int slistRemoveItem(list, item)
-slist *list;
-int item;
+int slistRemoveItem(slist *list, int item)
 {
     void **p;
     int i;
@@ -154,8 +147,7 @@ int slistFind(slist *list, void *toFind, int (*findfn) (const void *, const void
  * and really should be reworked to be faster.  Sometime....  sortfn should
  * compare a to b and return <0 if a < b, >0 if a > b, or 0 if a == b.
  */
-void slistSort(list)
-slist *list;
+void slistSort(slist *list)
 {
     assert(list);
 
@@ -173,9 +165,7 @@ slist *list;
  * are no intersecting items, or NULL on error.  Do NOT destroy the list
  * items; they don't belong to you!
  */
-slist *slistIntersection(list1, list2)
-	const slist *list1;
-	const slist *list2;
+slist *slistIntersection(const slist *list1, const slist *list2)
 {
 	int n1;		/* Count of items processed */
 	int n2;		/* Count of items processed */
