@@ -21,7 +21,7 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
-AC_DEFINE_UNQUOTED(HOSTTYPE,"$host")
+AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -linet:
@@ -49,7 +49,7 @@ solaris*)
 	;;
 cygwin* | mingw*)
 	with_socks=no	# Can't build libsocks on cygwin yet
-	AC_DEFINE(USE_CYGWIN)
+	AC_DEFINE(USE_CYGWIN,[1],[Define this if building in the Cygwin environment])
 #	PLATFORM_OBJS="${PLATFORM_OBJS} windows.o"
 	CFLAGS="$CFLAGS -I/usr/include/w32api"
 	;;
@@ -140,7 +140,7 @@ else
 fi
 
 if test "x$ac_cv_openssldir" != "xno" ; then
-	AC_DEFINE(HAVE_OPENSSL)
+	AC_DEFINE(HAVE_OPENSSL,[1],[Define this if we have OpenSSL])
 	LIBS="$saved_LIBS -lssl -lcrypto"
 	dnl Need to recover ssldir - test above runs in subshell
 	ssldir=$ac_cv_openssldir
@@ -170,22 +170,22 @@ fi
 
 
 if test x$with_socks = xyes; then
-	AC_DEFINE(ENABLE_SOCKS)
+	AC_DEFINE(ENABLE_SOCKS,[1],[Define this if you want to build in the SOCKS library])
 	SOCKS_OBJS="socks/porttoserv.o socks/Rconnect.o socks/Rgethostbyname.o socks/SendGetDst.o socks/shell_cmd.o socks/socks_ckcf.o socks/socks_rdconf.o socks/socks_rdfz.o socks/utils.o"
 else
 	SOCKS_OBJS=""
 fi
 
 if test x$enable_save_password = xyes; then
-	AC_DEFINE(ENABLE_SAVE_PASSWORD)
+	AC_DEFINE(ENABLE_SAVE_PASSWORD,[1],[Define this if you want to enable saving passwords])
 fi
 	
 if test x$enable_titlebar != xno; then
-	AC_DEFINE(ENABLE_TITLEBAR)
+	AC_DEFINE(ENABLE_TITLEBAR,[1],[Define this if you want to use xterm/NeXT titlebars])
 fi
 
 if test x$enable_xlog = xyes; then
-	AC_DEFINE(ENABLE_XLOG)
+	AC_DEFINE(ENABLE_XLOG,[1],[Define this to enable X message logging])
 fi
 
 dnl Checks for header files.
@@ -198,6 +198,7 @@ AC_C_CONST
 dnl Checks for library functions.
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(select socket)
+
 
 AC_SUBST(SOCKS_OBJS)
 AC_SUBST(PLATFORM_OBJS)

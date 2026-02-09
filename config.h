@@ -1,8 +1,5 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
-/* Define to 44 if running on a BSD system */
-/* #undef BSD */
-
 /* Define this if you want to build in the SOCKS library */
 /* #undef ENABLE_SOCKS */
 
