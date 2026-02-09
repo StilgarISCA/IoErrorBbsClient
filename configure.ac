@@ -1,5 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(filter.c)
+AC_INIT([IoErrorBbsClient],[2.3.10-Stilgar])
+AC_CONFIG_SRCDIR([filter.c])
 
 with_socks=yes
 AC_ARG_WITH(socks, [  --without-socks         exclude SOCKS firewall library (e.g. on Win32)])
@@ -98,8 +99,8 @@ if test x$with_ssl = xyes; then
 			# Basic test to check for compatible version and
 			# correct linking *does not* test for RSA - that
 			# comes later.
-			AC_TRY_RUN(
-				[
+			AC_RUN_IFELSE(
+				[AC_LANG_SOURCE([[
 #include <string.h>
 #include <openssl/rand.h>
 int main(void)
@@ -109,11 +110,11 @@ int main(void)
 	RAND_add(a, sizeof(a), sizeof(a));
 	return(RAND_status() <= 0);
 }
-				],
+				]])],
 				[
 					found_crypto=1
 					break;
-				], []
+				], [], []
 			)
 	
 			if test ! -z "$found_crypto" ; then
@@ -188,25 +189,21 @@ if test x$enable_xlog = xyes; then
 fi
 
 dnl Checks for header files.
-AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sgtty.h sys/ioctl.h time.h sys/time.h termio.h unistd.h)
-AC_TIME_WITH_SYS_TIME
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
 dnl Checks for library functions.
-AC_PROG_GCC_TRADITIONAL
-AC_FUNC_SETVBUF_REVERSED
-AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(select socket)
 
 AC_SUBST(SOCKS_OBJS)
 AC_SUBST(PLATFORM_OBJS)
-AC_CONFIG_HEADER(config.h)
-AC_OUTPUT(Makefile)
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
 
 if test x$enable_save_password = xyes; then
 	cat <<SPT;

@@ -775,11 +775,7 @@ void initialize(const char *protocol)
     away = 0;
 
 #ifdef _IOFBF
-#ifdef SETVBUF_REVERSED
-    setvbuf(stdout, _IOFBF, NULL, 4096);
-#else
     setvbuf(stdout, NULL, _IOFBF, 4096);
-#endif
 #endif
 
     std_printf("\nISCA BBS Client %s (%s)\n", VERSION,
