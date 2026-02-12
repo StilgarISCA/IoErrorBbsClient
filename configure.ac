@@ -1,9 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT([IoErrorBbsClient],[2.3.10-Stilgar])
 AC_CONFIG_SRCDIR([filter.c])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
-with_socks=yes
-AC_ARG_WITH(socks, [  --without-socks         exclude SOCKS firewall library (e.g. on Win32)])
+AC_ARG_WITH(socks, [  --without-socks         exclude SOCKS firewall library (e.g. on Win32)], [], [with_socks=yes])
 AC_ARG_WITH(ssl,
 	[  --with-ssl=PATH         use OpenSSL (no BBSs support this yet) ],
 	[
@@ -175,6 +175,7 @@ if test x$with_socks = xyes; then
 else
 	SOCKS_OBJS=""
 fi
+AM_CONDITIONAL([WITH_SOCKS], [test x$with_socks = xyes])
 
 if test x$enable_save_password = xyes; then
 	AC_DEFINE(ENABLE_SAVE_PASSWORD,[1],[Define this if you want to enable saving passwords])

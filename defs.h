@@ -40,6 +40,10 @@
 #include <assert.h>
 #include <limits.h>
 
+#ifndef RETSIGTYPE
+#define RETSIGTYPE void
+#endif
+
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #define SEEK_CUR 1

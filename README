@@ -4,9 +4,13 @@ INSTALL file for your platform, and the client web page at:
 			http://ioerror.bbsclient.net/
 
 Quick Start:
+	autoreconf -i
 	./configure
 	make
 	make install
+
+Optional:
+	./configure --without-socks
 
 This software is OSI Certified Open Source Software. OSI Certified is a
 certification mark of the Open Source Initiative.
