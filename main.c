@@ -1,7 +1,7 @@
 /*
  * This is the main procedure, the details are elsewhere.  Since it is so
  * small, it is the only function in this whole program I can confidently say
- * is maybe probably sort of a bit slightly bug-free. 
+ * is maybe probably sort of a bit slightly bug-free.
  *
  *
  * ISCA BBS client v1.5    02/15/94 (des)
@@ -31,7 +31,7 @@
  *                         stuff, bbsrc is now self-generating and no longer
  *                         required to be installed when first setting up the
  *                         client, making things hopefully much easier for the
- *                         less than clueful hordes. 
+ *                         less than clueful hordes.
  * v1.31   11/01/93 (des)  Minor bug fixes.  Unix version now truncates file to
  *                         avoid extra blank lines.  Unreleased test version.
  * v1.4    11/08/93 (des)  Usual minor bug fixes.  Marco Polo comes through in
@@ -82,9 +82,9 @@ int main(int argc, char *argv[])
     escape[0] = '\033';
     escape[1] = '\0';
     if (*argv[0] == '-')
-	login_shell = 1;
+   login_shell = 1;
     else
-	login_shell = 0;
+   login_shell = 0;
     initialize("v1.5");
     findhome();
     readbbsrc();

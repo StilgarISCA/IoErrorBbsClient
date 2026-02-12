@@ -1,5 +1,5 @@
 /*
- * This is the home of all global variables (see global.c) 
+ * This is the home of all global variables (see global.c)
  */
 
 #ifndef EXT_H_INCLUDED
@@ -98,7 +98,7 @@ extern int ignore_network;	/* Temporarily don't check for network input */
 extern char bbsfriendsname[PATH_MAX];/* added friends file name */
 extern FILE *bbsfriends;	/* added friends file */
 extern unsigned char saveinfo[150][80];	/* added saved info array */
-				/* for saved who list */
+   			/* for saved who list */
 extern char parsing[400];	/* for incoming X messages */
 extern int login_shell;		/* whether this client is a login shell */
 extern char keymap[128];	/* key remapping array */

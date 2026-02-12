@@ -24,35 +24,35 @@ SSL_CTX* ctx;
 
 void killSSL(void)
 {
-	SSL_shutdown(ssl);
-	SSL_free(ssl);
+   SSL_shutdown(ssl);
+   SSL_free(ssl);
 }
 
 
 int initSSL(void)
 {
-	SSL_METHOD* meth;
+   SSL_METHOD* meth;
 
-	SSL_load_error_strings();
-	SSLeay_add_ssl_algorithms();
-	meth = SSLv23_client_method();
-	ctx = SSL_CTX_new(meth);
+   SSL_load_error_strings();
+   SSLeay_add_ssl_algorithms();
+   meth = SSLv23_client_method();
+   ctx = SSL_CTX_new(meth);
 
-	if (!ctx) {
-		printf("%s\n", ERR_reason_error_string(ERR_get_error()));
-		exit(1);
-	}
+   if (!ctx) {
+   	printf("%s\n", ERR_reason_error_string(ERR_get_error()));
+   	exit(1);
+   }
 
-	ssl = SSL_new(ctx);
-	if (!ssl) {
-		printf("SSL_new failed\n");
-		return 0;
-	}
+   ssl = SSL_new(ctx);
+   if (!ssl) {
+   	printf("SSL_new failed\n");
+   	return 0;
+   }
 
 #if DEBUG
-	printf("SSL initialized\n");
+   printf("SSL initialized\n");
 #endif
-	return 1;
+   return 1;
 }
 #endif	/* HAVE_OPENSSL */
 
@@ -64,27 +64,27 @@ int initSSL(void)
 int waitnextevent(void)
 {
     	fd_set fdr;
-	int result;
-	
-	for (;;) {
-		FD_ZERO(&fdr);
-		if (!childpid && !flags.check)
-			FD_SET(0, &fdr);
-		if (!ignore_network)
-			FD_SET(net, &fdr);
-		
-		if (select(ignore_network ? 1 : net + 1, &fdr, 0, 0, 0) < 0) {
-			if (errno == EINTR) {
-				continue;
-			} else {
-				std_printf("\r\n");
-				fatalperror("select", "Local error");
-			}
-		}
-		
-		if ((result = ((FD_ISSET(net, &fdr) != 0) << 1 | (FD_ISSET(0, &fdr) != 0))))
-			return (result);
-	}
+   int result;
+
+   for (;;) {
+   	FD_ZERO(&fdr);
+   	if (!childpid && !flags.check)
+   		FD_SET(0, &fdr);
+   	if (!ignore_network)
+   		FD_SET(net, &fdr);
+
+   	if (select(ignore_network ? 1 : net + 1, &fdr, 0, 0, 0) < 0) {
+   		if (errno == EINTR) {
+   			continue;
+   		} else {
+   			std_printf("\r\n");
+   			fatalperror("select", "Local error");
+   		}
+   	}
+
+   	if ((result = ((FD_ISSET(net, &fdr) != 0) << 1 | (FD_ISSET(0, &fdr) != 0))))
+   		return (result);
+   }
 }
 
 
@@ -95,21 +95,21 @@ void findhome(void)
 {
 #ifdef USE_CYGWIN
     if (getenv("USERNAME")) {
-	snprintf(user, sizeof(user), "%s  (Win32)", getenv("USERNAME"));
+   snprintf(user, sizeof(user), "%s  (Win32)", getenv("USERNAME"));
     } else
-	snprintf(user, sizeof(user), "No username!  (Win32)");
+   snprintf(user, sizeof(user), "No username!  (Win32)");
 #else
     if ((pw = getpwuid(getuid())))
-	snprintf(user, sizeof(user), "%s", pw->pw_name);
+   snprintf(user, sizeof(user), "%s", pw->pw_name);
     else if (getenv("USER"))
-	snprintf(user, sizeof(user), "%s", getenv("USER"));
+   snprintf(user, sizeof(user), "%s", getenv("USER"));
     else
-	fatalexit("findhome: You don't exist, go away.", "Local error");
+   fatalexit("findhome: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
     if (login_shell) {
-	size_t len = strlen(user);
-	if (len < sizeof(user) - 1)
-	    snprintf(user + len, sizeof(user) - len, "  (login shell)");
+   size_t len = strlen(user);
+   if (len < sizeof(user) - 1)
+       snprintf(user + len, sizeof(user) - len, "  (login shell)");
     }
 }
 
@@ -125,37 +125,37 @@ FILE *findbbsrc(void)
     FILE *f;
 
     if (login_shell)
-	snprintf(bbsrcname, sizeof(bbsrcname), "/tmp/bbsrc.%d", getpid());
+   snprintf(bbsrcname, sizeof(bbsrcname), "/tmp/bbsrc.%d", getpid());
     else {
-	if (getenv("BBSRC"))
-	    snprintf(bbsrcname, sizeof(bbsrcname), "%s", getenv("BBSRC"));
+   if (getenv("BBSRC"))
+       snprintf(bbsrcname, sizeof(bbsrcname), "%s", getenv("BBSRC"));
 #ifdef USE_CYGWIN
-	else if (getenv("USERPROFILE"))
-	    snprintf(bbsrcname, sizeof(bbsrcname), "%s/bbs.rc", getenv("USERPROFILE"));
-	else {
-	    if (!getcwd(bbsrcname, sizeof bbsrcname)) {
-		fatalperror("findbbsrc: getcwd", "Local error");
-	    }
-	    {
-		size_t len = strlen(bbsrcname);
-		if (len < sizeof(bbsrcname) - 1)
-		    snprintf(bbsrcname + len, sizeof(bbsrcname) - len, "/bbs.rc");
-	    }
-	}
-	move_if_needed("c:\\.bbsrc", bbsrcname);
+   else if (getenv("USERPROFILE"))
+       snprintf(bbsrcname, sizeof(bbsrcname), "%s/bbs.rc", getenv("USERPROFILE"));
+   else {
+       if (!getcwd(bbsrcname, sizeof bbsrcname)) {
+   	fatalperror("findbbsrc: getcwd", "Local error");
+       }
+       {
+   	size_t len = strlen(bbsrcname);
+   	if (len < sizeof(bbsrcname) - 1)
+   	    snprintf(bbsrcname + len, sizeof(bbsrcname) - len, "/bbs.rc");
+       }
+   }
+   move_if_needed("c:\\.bbsrc", bbsrcname);
 #else
-	else if (pw)
-	    snprintf(bbsrcname, sizeof(bbsrcname), "%s/.bbsrc", pw->pw_dir);
-	else if (getenv("HOME"))
-	    snprintf(bbsrcname, sizeof(bbsrcname), "%s/.bbsrc", getenv("HOME"));
-	else
-	    fatalexit("findbbsrc: You don't exist, go away.", "Local error");
+   else if (pw)
+       snprintf(bbsrcname, sizeof(bbsrcname), "%s/.bbsrc", pw->pw_dir);
+   else if (getenv("HOME"))
+       snprintf(bbsrcname, sizeof(bbsrcname), "%s/.bbsrc", getenv("HOME"));
+   else
+       fatalexit("findbbsrc: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
     }
     if ((f = fopen(bbsrcname, "r")) && chmod(bbsrcname, 0600) < 0)
-	s_perror("Can't set access on bbsrc file", "Warning");
+   s_perror("Can't set access on bbsrc file", "Warning");
     if (f)
-	fclose(f);
+   fclose(f);
     return (openbbsrc());
 }
 
@@ -166,30 +166,30 @@ FILE *findbbsrc(void)
 FILE *findbbsfriends(void)
 {
     if (login_shell)
-	snprintf(bbsfriendsname, sizeof(bbsfriendsname), "/tmp/bbsfriends.%d", getpid());
+   snprintf(bbsfriendsname, sizeof(bbsfriendsname), "/tmp/bbsfriends.%d", getpid());
     else {
-	if (getenv("BBSFRIENDS"))
-	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s", getenv("BBSFRIENDS"));
+   if (getenv("BBSFRIENDS"))
+       snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s", getenv("BBSFRIENDS"));
 #ifdef USE_CYGWIN
-	else if (getenv("USERPROFILE"))
-	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/bbs.friends", getenv("USERPROFILE"));
-	else {
-	    if (!getcwd(bbsfriendsname, sizeof bbsrcname)) {
-		fatalperror("findbbsfriends: getcwd", "Local error");
-	    }
-	    {
-		size_t len = strlen(bbsfriendsname);
-		if (len < sizeof(bbsfriendsname) - 1)
-		    snprintf(bbsfriendsname + len, sizeof(bbsfriendsname) - len, "/.bbsfriends");
-	    }
-	}
+   else if (getenv("USERPROFILE"))
+       snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/bbs.friends", getenv("USERPROFILE"));
+   else {
+       if (!getcwd(bbsfriendsname, sizeof bbsrcname)) {
+   	fatalperror("findbbsfriends: getcwd", "Local error");
+       }
+       {
+   	size_t len = strlen(bbsfriendsname);
+   	if (len < sizeof(bbsfriendsname) - 1)
+   	    snprintf(bbsfriendsname + len, sizeof(bbsfriendsname) - len, "/.bbsfriends");
+       }
+   }
 #else
-	else if (pw)
-	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/.bbsfriends", pw->pw_dir);
-	else if (getenv("HOME"))
-	    snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/.bbsfriends", getenv("HOME"));
-	else
-	    fatalexit("findbbsfriends: You don't exist, go away.", "Local error");
+   else if (pw)
+       snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/.bbsfriends", pw->pw_dir);
+   else if (getenv("HOME"))
+       snprintf(bbsfriendsname, sizeof(bbsfriendsname), "%s/.bbsfriends", getenv("HOME"));
+   else
+       fatalexit("findbbsfriends: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
     }
     chmod(bbsfriendsname, 0600);
@@ -206,7 +206,7 @@ void truncbbsrc(long len)
     /* Anyone know how to do this in SCO/Xenix?  If so, please let me know! */
 #ifndef M_XENIX
     if (ftruncate(fileno(bbsrc), len) < 0)
-	fatalexit("ftruncate", "Local error");
+   fatalexit("ftruncate", "Local error");
 #endif
 }
 
@@ -219,78 +219,78 @@ void truncbbsrc(long len)
 void opentmpfile(void)
 {
     if (login_shell)
-	snprintf(tempfilename, sizeof(tempfilename), "/tmp/bbstmp.%d", getpid());
+   snprintf(tempfilename, sizeof(tempfilename), "/tmp/bbstmp.%d", getpid());
     else {
-	if (getenv("BBSTMP"))
-	    snprintf(tempfilename, sizeof(tempfilename), "%s", getenv("BBSTMP"));
+   if (getenv("BBSTMP"))
+       snprintf(tempfilename, sizeof(tempfilename), "%s", getenv("BBSTMP"));
 #ifdef USE_CYGWIN
-	else if (getenv("USERPROFILE"))
-	    snprintf(tempfilename, sizeof(tempfilename), "%s\\bbstmp.txt", getenv("USERPROFILE"));
-	else {
-	    if (!getcwd(tempfilename, sizeof tempfilename)) {
-		fatalperror("opentmpfile: getcwd", "Local error");
-	    }
-	    {
-		size_t len = strlen(tempfilename);
-		if (len < sizeof(tempfilename) - 1)
-		    snprintf(tempfilename + len, sizeof(tempfilename) - len, "\\bbstmp.txt");
-	    }
-	}
-	move_if_needed("c:\\.bbstmp", tempfilename);
+   else if (getenv("USERPROFILE"))
+       snprintf(tempfilename, sizeof(tempfilename), "%s\\bbstmp.txt", getenv("USERPROFILE"));
+   else {
+       if (!getcwd(tempfilename, sizeof tempfilename)) {
+   	fatalperror("opentmpfile: getcwd", "Local error");
+       }
+       {
+   	size_t len = strlen(tempfilename);
+   	if (len < sizeof(tempfilename) - 1)
+   	    snprintf(tempfilename + len, sizeof(tempfilename) - len, "\\bbstmp.txt");
+       }
+   }
+   move_if_needed("c:\\.bbstmp", tempfilename);
 #else
-	else if (pw)
-	    snprintf(tempfilename, sizeof(tempfilename), "%s/.bbstmp", pw->pw_dir);
-	else if (getenv("HOME"))
-	    snprintf(tempfilename, sizeof(tempfilename), "%s/.bbstmp", getenv("HOME"));
-	else
-	    fatalexit("opentmpfile: You don't exist, go away.", "Local error");
+   else if (pw)
+       snprintf(tempfilename, sizeof(tempfilename), "%s/.bbstmp", pw->pw_dir);
+   else if (getenv("HOME"))
+       snprintf(tempfilename, sizeof(tempfilename), "%s/.bbstmp", getenv("HOME"));
+   else
+       fatalexit("opentmpfile: You don't exist, go away.", "Local error");
 #endif	/* USE_CYGWIN */
     }
     if (!(tempfile = fopen(tempfilename, "a+")))
-	fatalperror("opentmpfile: fopen", "Local error");
+   fatalperror("opentmpfile: fopen", "Local error");
     if (chmod(tempfilename, 0600) < 0)
-	s_perror("opentmpfile: chmod", "Warning");
+   s_perror("opentmpfile: chmod", "Warning");
 }
 
 
 void titlebar(void)
 {
 #ifdef ENABLE_TITLEBAR
-	char title[80];
+   char title[80];
 
-	snprintf(title, sizeof(title), "%s:%d%s - BBS Client %s (%s)",
-			cmdlinehost, cmdlineport, is_ssl ? " (Secure)" : "",
-			VERSION, IsWin32 ? "Windows" : "Unix");
-	/* xterm */
-	if (!strcmp(getenv("TERM"), "xterm"))
-		printf("\033]0;%s\007", title);
-	/* NeXT */
-	if (getenv("STUART")) {
-		printf("\033]1;%s\\", title);
-		printf("\033]2;%s\\", title);
-	}
+   snprintf(title, sizeof(title), "%s:%d%s - BBS Client %s (%s)",
+   		cmdlinehost, cmdlineport, is_ssl ? " (Secure)" : "",
+   		VERSION, IsWin32 ? "Windows" : "Unix");
+   /* xterm */
+   if (!strcmp(getenv("TERM"), "xterm"))
+   	printf("\033]0;%s\007", title);
+   /* NeXT */
+   if (getenv("STUART")) {
+   	printf("\033]1;%s\\", title);
+   	printf("\033]2;%s\\", title);
+   }
 #endif
-	return;
+   return;
 }
 
 
 void notitlebar(void)
 {
 #ifdef ENABLE_TITLEBAR
-	/* xterm */
-	if (!strcmp(getenv("TERM"), "xterm"))
-		printf("\033]0;xterm\007");
-	/* NeXT */
-	if (getenv("STUART")) {
-		struct winsize ws;
-		 
-		ioctl(0, TIOCGWINSZ, (char *)&ws);
-		printf("\033]1; csh (%s)\033\\", rindex((char *)ttyname(0), '/') + 1);
-		printf("\033]2; (%s) %dx%d\033\\", rindex((char *)ttyname(0), '/') + 1, ws.ws_col, ws.ws_row);
-	}
-	fflush(stdout);
+   /* xterm */
+   if (!strcmp(getenv("TERM"), "xterm"))
+   	printf("\033]0;xterm\007");
+   /* NeXT */
+   if (getenv("STUART")) {
+   	struct winsize ws;
+
+   	ioctl(0, TIOCGWINSZ, (char *)&ws);
+   	printf("\033]1; csh (%s)\033\\", rindex((char *)ttyname(0), '/') + 1);
+   	printf("\033]2; (%s) %dx%d\033\\", rindex((char *)ttyname(0), '/') + 1, ws.ws_col, ws.ws_row);
+   }
+   fflush(stdout);
 #endif
-	return;
+   return;
 }
 
 
@@ -307,32 +307,32 @@ void connectbbs(void)
     struct sockaddr_in sa;
 
     if (!*bbshost)
-	snprintf(bbshost, sizeof(bbshost), "%s", BBSHOST);
+   snprintf(bbshost, sizeof(bbshost), "%s", BBSHOST);
     if (!bbsport)
-	bbsport = BBSPORT;
+   bbsport = BBSPORT;
     if (!*cmdlinehost)
-	snprintf(cmdlinehost, sizeof(cmdlinehost), "%s", bbshost);
+   snprintf(cmdlinehost, sizeof(cmdlinehost), "%s", bbshost);
     if (!cmdlineport)
-	cmdlineport = bbsport;
+   cmdlineport = bbsport;
     strncpy((char *) &sa, "", sizeof sa);
     sa.sin_family = AF_INET;
     sa.sin_port = htons(cmdlineport);	/* Spurious gcc warning */
     if (isdigit(*cmdlinehost))
-	sa.sin_addr.s_addr = inet_addr(cmdlinehost);
+   sa.sin_addr.s_addr = inet_addr(cmdlinehost);
     else if (!(host = gethostbyname(cmdlinehost)))
-	sa.sin_addr.s_addr = inet_addr(BBSIPNUM);
+   sa.sin_addr.s_addr = inet_addr(BBSIPNUM);
     else
-	strncpy((char *) &sa.sin_addr, host->h_addr, sizeof sa.sin_addr);
+   strncpy((char *) &sa.sin_addr, host->h_addr, sizeof sa.sin_addr);
 
     net = socket(AF_INET, SOCK_STREAM, 0);
     if (net < 0)
-	fatalperror("socket", "Local error");
+   fatalperror("socket", "Local error");
 #ifdef ENABLE_SOCKS
     if (use_socks)
-	    err = Rconnect(net, (struct sockaddr *) &sa, sizeof sa);
+       err = Rconnect(net, (struct sockaddr *) &sa, sizeof sa);
     else
 #endif
-	    err = connect(net, (struct sockaddr *) &sa, sizeof sa);
+       err = connect(net, (struct sockaddr *) &sa, sizeof sa);
     if (err < 0)
     {
 #define BBSREFUSED	"The BBS has refused connection, try again later.\r\n"
@@ -340,45 +340,45 @@ void connectbbs(void)
 #define BBSHOSTDOWN	"The BBS is down or there are network problems, try again later.\r\n"
 
 #ifdef ECONNREFUSED
-	if (errno == ECONNREFUSED)
-	    std_printf(BBSREFUSED);
+   if (errno == ECONNREFUSED)
+       std_printf(BBSREFUSED);
 #endif
 #ifdef ENETDOWN
-	if (errno == ENETDOWN)
-	    std_printf(BBSNETDOWN);
+   if (errno == ENETDOWN)
+       std_printf(BBSNETDOWN);
 #endif
 #ifdef ENETUNREACH
-	if (errno == ENETUNREACH)
-	    std_printf(BBSNETDOWN);
+   if (errno == ENETUNREACH)
+       std_printf(BBSNETDOWN);
 #endif
 #ifdef ETIMEDOUT
-	if (errno == ETIMEDOUT)
-	    std_printf(BBSHOSTDOWN);
+   if (errno == ETIMEDOUT)
+       std_printf(BBSHOSTDOWN);
 #endif
 #ifdef EHOSTDOWN
-	if (errno == EHOSTDOWN)
-	    std_printf(BBSHOSTDOWN);
+   if (errno == EHOSTDOWN)
+       std_printf(BBSHOSTDOWN);
 #endif
 #ifdef EHOSTUNREACH
-	if (errno == EHOSTUNREACH)
-	    std_printf(BBSNETDOWN);
+   if (errno == EHOSTUNREACH)
+       std_printf(BBSNETDOWN);
 #endif
-	fatalperror("connect", "Network error");
+   fatalperror("connect", "Network error");
     }
 #ifdef HAVE_OPENSSL
     if (want_ssl) {
-	initSSL();
-	if (SSL_set_fd(ssl, net) != 1) {
-	    printf("%s\n", ERR_reason_error_string(ERR_get_error()));
-	    shutdown(net, 2);
-	    exit(1);
-	}
-	if ((err = SSL_connect(ssl)) != 1) {
-	    printf("%s\n", ERR_reason_error_string(ERR_get_error()));
-	    shutdown(net, 2);
-	    exit(1);
-	}
-	is_ssl = 1;
+   initSSL();
+   if (SSL_set_fd(ssl, net) != 1) {
+       printf("%s\n", ERR_reason_error_string(ERR_get_error()));
+       shutdown(net, 2);
+       exit(1);
+   }
+   if ((err = SSL_connect(ssl)) != 1) {
+       printf("%s\n", ERR_reason_error_string(ERR_get_error()));
+       shutdown(net, 2);
+       exit(1);
+   }
+   is_ssl = 1;
     }
 #endif
     std_printf("[%secure connection established]\n", (want_ssl) ? "S" : "Ins");
@@ -391,10 +391,10 @@ void connectbbs(void)
      */
 #ifdef __EMX__
     if (!(netifp = fdopen(net, "r")))
-	fatalperror("fdopen r", "Local error");
+   fatalperror("fdopen r", "Local error");
 #endif
     if (!(netofp = fdopen(net, "w")))
-	fatalperror("fdopen w", "Local error");
+   fatalperror("fdopen w", "Local error");
 }
 
 
@@ -417,7 +417,7 @@ void suspend(void)
     printf("\r\n[Continue]\r\n");
 #endif
     if (oldrows != getwindowsize() && oldrows != -1)
-	sendnaws();
+   sendnaws();
 }
 
 
@@ -438,7 +438,7 @@ RETSIGTYPE naws(int signum)
 {
     (void) signum;
     if (oldrows != -1)
-	sendnaws();
+   sendnaws();
 #ifdef SIGWINCH
     signal(SIGWINCH, naws);
 #endif
@@ -462,7 +462,7 @@ RETSIGTYPE reapchild(int signum)
     titlebar();
     if (kill(childpid, SIGCONT) < 0)
 #ifdef USE_POSIX_SIGSETJMP
-	    siglongjmp(jmpenv, 1);
+       siglongjmp(jmpenv, 1);
 #else
     	    longjmp(jmpenv, 1);
 #endif /* USE_POSIX_SIGSETJMP */
@@ -542,14 +542,14 @@ void setterm(void)
     getwindowsize();
 
     if (flags.useansi)
-	printf("\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
-			color.background);
+   printf("\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
+   		color.background);
     fflush(stdout);
 
     titlebar();
 #ifdef HAVE_TERMIO_H
     if (!savedterm)
-	ioctl(0, TCGETA, &saveterm);
+   ioctl(0, TCGETA, &saveterm);
     tmpterm = saveterm;
     tmpterm.c_iflag &= ~(INLCR | IGNCR | ICRNL);
     tmpterm.c_iflag |= IXOFF | IXON | IXANY;
@@ -560,23 +560,23 @@ void setterm(void)
     ioctl(0, TCSETA, &tmpterm);
 #else
     if (!savedterm)
-	ioctl(0, TIOCGETP, (char *) &saveterm);
+   ioctl(0, TIOCGETP, (char *) &saveterm);
     tmpterm = saveterm;
     tmpterm.sg_flags &= ~(ECHO | CRMOD);
     tmpterm.sg_flags |= CBREAK | TANDEM;
     ioctl(0, TIOCSETN, (char *) &tmpterm);
     if (!savedterm)
-	ioctl(0, TIOCGETC, (char *) &savetchars);
+   ioctl(0, TIOCGETC, (char *) &savetchars);
     tmptchars = savetchars;
     tmptchars.t_intrc = tmptchars.t_quitc = tmptchars.t_eofc = tmptchars.t_brkc = -1;
     ioctl(0, TIOCSETC, (char *) &tmptchars);
     if (!savedterm)
-	ioctl(0, TIOCGLTC, (char *) &saveltchars);
+   ioctl(0, TIOCGLTC, (char *) &saveltchars);
     tmpltchars = saveltchars;
     tmpltchars.t_suspc = tmpltchars.t_dsuspc = tmpltchars.t_rprntc = -1;
     ioctl(0, TIOCSLTC, (char *) &tmpltchars);
     if (!savedterm)
-	ioctl(0, TIOCLGET, (char *) &savelocalmode);
+   ioctl(0, TIOCLGET, (char *) &savelocalmode);
     tmplocalmode = savelocalmode;
     tmplocalmode &= ~(LPRTERA | LCRTERA | LCRTKIL | LCTLECH | LPENDIN | LDECCTQ);
     tmplocalmode |= LCRTBS;
@@ -593,10 +593,10 @@ void resetterm(void)
 {
     if (flags.useansi)
 /*	printf("\033[0m\033[1;37;49m"); */
-	printf("\033[0;39;49m");
+   printf("\033[0;39;49m");
     fflush(stdout);
     if (!savedterm)
-	return;
+   return;
 #ifdef HAVE_TERMIO_H
     ioctl(0, TCSETA, &saveterm);
 #else
@@ -617,11 +617,11 @@ int getwindowsize(void)
     struct winsize ws;
 
     if (ioctl(0, TIOCGWINSZ, (char *) &ws) < 0)
-	return (rows = 24);
+   return (rows = 24);
     else if ((rows = ws.ws_row) < 5 || rows > 120)
-	return (rows = 24);
+   return (rows = 24);
     else
-	return (rows);
+   return (rows);
 #else
     return (rows = 24);
 #endif
@@ -650,7 +650,7 @@ void flush_input(unsigned int invalid)
     int i;
 
     if (invalid / 2)
-	mysleep(invalid / 2 < 3 ? invalid / 2 : 3);
+   mysleep(invalid / 2 < 3 ? invalid / 2 : 3);
 #ifdef FIONREAD
     while (INPUT_LEFT(stdin) || (!ioctl(0, FIONREAD, &i) && i > 0))
 #else
@@ -660,7 +660,7 @@ void flush_input(unsigned int invalid)
 #endif
     while (INPUT_LEFT(stdin))
 #endif
-	(void) ptyget();
+   (void) ptyget();
 }
 
 
@@ -686,35 +686,35 @@ void run(char *cmd, char *arg)
 #else
     if (setjmp(jmpenv)) {
 #endif /* USE_POSIX_SIGSETJMP */
-	signal(SIGCHLD, SIG_DFL);
-	if (childpid < 0) {
-	    childpid = 0;
-	    myexit();
-	} else {
-	    setterm();
-	    childpid = 0;
-	}
+   signal(SIGCHLD, SIG_DFL);
+   if (childpid < 0) {
+       childpid = 0;
+       myexit();
+   } else {
+       setterm();
+       childpid = 0;
+   }
     } else {
-	signal(SIGCHLD, reapchild);
-	notitlebar();
-	resetterm();
+   signal(SIGCHLD, reapchild);
+   notitlebar();
+   resetterm();
 
-	if (!(childpid = fork())) {
-	    execlp(cmd, cmd, arg, 0);
-	    fprintf(stderr, "\r\n");
-	    s_perror("exec", "Local error");
-	    _exit(0);
-	} else if (childpid > 0) {
+   if (!(childpid = fork())) {
+       execlp(cmd, cmd, arg, 0);
+       fprintf(stderr, "\r\n");
+       s_perror("exec", "Local error");
+       _exit(0);
+   } else if (childpid > 0) {
 
-	    /*
-	     * Flush out anything in our stdio buffer -- it was copied to the
-	     * child process, we don't want it waiting for us when the child
-	     * is done.
-	     */
-	    flush_input(0);
-	    (void) inkey();
-	} else
-	    fatalperror("fork", "Local error");
+       /*
+        * Flush out anything in our stdio buffer -- it was copied to the
+        * child process, we don't want it waiting for us when the child
+        * is done.
+        */
+       flush_input(0);
+       (void) inkey();
+   } else
+       fatalperror("fork", "Local error");
     }
 #endif /* __EMX__ */
 }
@@ -725,32 +725,32 @@ void techinfo(void)
     std_printf("Technical information\r\n\n");
 
     feed_pager(3,
-		"ISCA BBS Client " VERSION " (Unix)\r\n",
-		"Compiled on: " HOSTTYPE "\r\n",
-		"With: "
+   	"ISCA BBS Client " VERSION " (Unix)\r\n",
+   	"Compiled on: " HOSTTYPE "\r\n",
+   	"With: "
 #ifdef __STDC__
-		"ANSI "
+   	"ANSI "
 #endif
 #ifdef __cplusplus
-		"C++ "
+   	"C++ "
 #endif
 #ifdef __GNUC__
-		"gcc "
+   	"gcc "
 #endif
 #ifdef _POSIX_SOURCE
-		"POSIX "
+   	"POSIX "
 #endif
 #ifdef ENABLE_SAVE_PASSWORD
-		"save-password "
+   	"save-password "
 #endif
 #ifdef USE_POSIX_SIGSETJMP
-		"sigsetjmp "
+   	"sigsetjmp "
 #endif
 #ifdef ENABLE_SOCKS
-		"SOCKS "
+   	"SOCKS "
 #endif
-		"\r\n",
-		NULL);
+   	"\r\n",
+   	NULL);
 }
 
 
@@ -758,7 +758,7 @@ void initialize(const char *protocol)
 {
     (void) protocol;
     if (!isatty(0) || !isatty(1) || !isatty(2))
-	exit(0);
+   exit(0);
 
     ptyifp = ptyibuf;
 #ifndef __EMX__
@@ -780,11 +780,11 @@ void initialize(const char *protocol)
 
     std_printf("\nISCA BBS Client %s (%s)\n", VERSION,
 #ifdef USE_CYGWIN
-		"Windows"
+   	"Windows"
 #else
-		"Unix"
+   	"Unix"
 #endif
-	);
+   );
     std_printf("\nCopyright (C) 1995-2003 Michael Hampton.\n");
     std_printf("OSI Certified Open Source Software.  GNU General Public License version 2.\n");
     std_printf("For information about this client visit http://www.ioerror.us/client/\n\n");
@@ -794,24 +794,24 @@ void initialize(const char *protocol)
     fflush(stdout);
     xlandQueue = new_queue(21, MAXLAST);
     if (!xlandQueue)
-	xland = 0;
+   xland = 0;
     if (login_shell)
-	snprintf(shell, sizeof(shell), "%s", "/bin/true");
+   snprintf(shell, sizeof(shell), "%s", "/bin/true");
     else {
-	if (getenv("SHELL"))
-	    snprintf(shell, sizeof(shell), "%s", getenv("SHELL"));
-	else
-	    snprintf(shell, sizeof(shell), "%s", "/bin/sh");
+   if (getenv("SHELL"))
+       snprintf(shell, sizeof(shell), "%s", getenv("SHELL"));
+   else
+       snprintf(shell, sizeof(shell), "%s", "/bin/sh");
     }
     if (!login_shell)
-	snprintf(browser, sizeof(browser), "%s", "netscape -remote");
+   snprintf(browser, sizeof(browser), "%s", "netscape -remote");
     if (login_shell)
-	snprintf(myeditor, sizeof(myeditor), "%s", "");
+   snprintf(myeditor, sizeof(myeditor), "%s", "");
     else {
-	if (getenv("EDITOR"))
-	    snprintf(myeditor, sizeof(myeditor), "%s", getenv("EDITOR"));
-	else
-	    snprintf(myeditor, sizeof(myeditor), "%s", "vi");
+   if (getenv("EDITOR"))
+       snprintf(myeditor, sizeof(myeditor), "%s", getenv("EDITOR"));
+   else
+       snprintf(myeditor, sizeof(myeditor), "%s", "vi");
     }
 }
 
@@ -825,9 +825,9 @@ void deinitialize(void)
     snprintf(tfile, sizeof(tfile), "%s~", tempfilename);
     unlink(tfile);
     if (login_shell) {
-	unlink(tempfilename);
-	unlink(bbsrcname);
-	unlink(bbsfriendsname);
+   unlink(tempfilename);
+   unlink(bbsrcname);
+   unlink(bbsfriendsname);
     }
 }
 
@@ -841,74 +841,74 @@ int deletefile(const char *pathname)
 int s_prompt(const char *info, const char *question, int def)
 {
 #ifdef USE_CYGWIN
-	int flags = MB_APPLMODAL | MB_YESNO | MB_ICONQUESTION;
-	int ret;
+   int flags = MB_APPLMODAL | MB_YESNO | MB_ICONQUESTION;
+   int ret;
 
-	if (!textonly) {
-		if (def)
-			flags |= MB_DEFBUTTON1;	/* Yes */
-		else
-			flags |= MB_DEFBUTTON2;	/* No */
+   if (!textonly) {
+   	if (def)
+   		flags |= MB_DEFBUTTON1;	/* Yes */
+   	else
+   		flags |= MB_DEFBUTTON2;	/* No */
 
-		ret = MessageBox(NULL, info, question, flags);
-		if (ret == IDYES)
-			return 1;
-		return 0;
-	}
+   	ret = MessageBox(NULL, info, question, flags);
+   	if (ret == IDYES)
+   		return 1;
+   	return 0;
+   }
 #endif
-	std_printf("\r\n%s\r\n\n", info);
-	std_printf("%s (%s) -> ", question, def ? "Yes" : "No");
-	if (yesnodefault(def))
-		return 1;
-	return 0;
+   std_printf("\r\n%s\r\n\n", info);
+   std_printf("%s (%s) -> ", question, def ? "Yes" : "No");
+   if (yesnodefault(def))
+   	return 1;
+   return 0;
 }
 
 void s_info(const char *info, const char *heading)
 {
     (void) heading;
 #ifdef USE_CYGWIN
-	if (!textonly) {
-		MessageBox(NULL, info, heading,
-				MB_ICONINFORMATION | MB_APPLMODAL | MB_OK);
-		return;
-	}
+   if (!textonly) {
+   	MessageBox(NULL, info, heading,
+   			MB_ICONINFORMATION | MB_APPLMODAL | MB_OK);
+   	return;
+   }
 #endif
-	/* Heading ignored for Unix */
-	std_printf("\r\n%s\r\n\n", info);
-	return;
+   /* Heading ignored for Unix */
+   std_printf("\r\n%s\r\n\n", info);
+   return;
 }
 
 
 void s_perror(const char *msg, const char *heading)
 {
-	char buf[4096];
+   char buf[4096];
 
 #ifdef USE_CYGWIN
-	if (!textonly) {
-		snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
-		MessageBox(NULL, buf, heading, MB_APPLMODAL | MB_OK | MB_ICONERROR);
-		return;
-	}
+   if (!textonly) {
+   	snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
+   	MessageBox(NULL, buf, heading, MB_APPLMODAL | MB_OK | MB_ICONERROR);
+   	return;
+   }
 #endif
-	snprintf(buf, sizeof(buf), "%s: %s", heading, msg);
-	perror(buf);
-	fprintf(stderr, "\r");
-	return;
+   snprintf(buf, sizeof(buf), "%s: %s", heading, msg);
+   perror(buf);
+   fprintf(stderr, "\r");
+   return;
 }
 
 
 void s_error(const char *msg, const char *heading)
 {
-	char buf[4096];
+   char buf[4096];
 
 #ifdef USE_CYGWIN
-	if (!textonly) {
-		MessageBox(NULL, msg, heading, MB_APPLMODAL | MB_OK | MB_ICONERROR);
-	}
+   if (!textonly) {
+   	MessageBox(NULL, msg, heading, MB_APPLMODAL | MB_OK | MB_ICONERROR);
+   }
 #endif
-	snprintf(buf, sizeof(buf), "%s: %s", heading, msg);
-	fflush(stdout);
-	fprintf(stderr, "%s\r\n", buf);
+   snprintf(buf, sizeof(buf), "%s: %s", heading, msg);
+   fflush(stdout);
+   fprintf(stderr, "%s\r\n", buf);
 }
 
 
@@ -916,105 +916,105 @@ void s_error(const char *msg, const char *heading)
 /* TODO: Peeking into the queue object itself is REALLY cheating */
 void open_browser(void)
 {
-	int c, capturestate;
-	char line[4];
-	char cmd[4096];
-	char *p;
+   int c, capturestate;
+   char line[4];
+   char cmd[4096];
+   char *p;
 
-	if (urlQueue->nobjs < 1)
-		return;
-	if (urlQueue->nobjs == 1) {
+   if (urlQueue->nobjs < 1)
+   	return;
+   if (urlQueue->nobjs == 1) {
 #ifdef USE_CYGWIN
-		ShellExecute(NULL, "open", urlQueue->start + (urlQueue->objsize * urlQueue->head), NULL, NULL, SW_SHOW);
+   	ShellExecute(NULL, "open", urlQueue->start + (urlQueue->objsize * urlQueue->head), NULL, NULL, SW_SHOW);
 #else
-		snprintf(cmd, sizeof(cmd), "%s \"%s\"%s", browser,
-			urlQueue->start + (urlQueue->objsize * urlQueue->head),
-			flags.browserbg ? " &" : "");
-		system(cmd);
+   	snprintf(cmd, sizeof(cmd), "%s \"%s\"%s", browser,
+   		urlQueue->start + (urlQueue->objsize * urlQueue->head),
+   		flags.browserbg ? " &" : "");
+   	system(cmd);
 #endif
-		if (!flags.browserbg)
-		    reprint_line();
-		return;
-	}
+   	if (!flags.browserbg)
+   	    reprint_line();
+   	return;
+   }
 
-	capturestate = capture;
-	capture = 0;
-	ignore_network = 1;
-	printf("\r\n\n");
-	p = urlQueue->start + (urlQueue->objsize * urlQueue->head);
-	for (c = 0; c < urlQueue->nobjs; c++) {
-		if (strlen(p) > 72) {
-			char junk[71];
+   capturestate = capture;
+   capture = 0;
+   ignore_network = 1;
+   printf("\r\n\n");
+   p = urlQueue->start + (urlQueue->objsize * urlQueue->head);
+   for (c = 0; c < urlQueue->nobjs; c++) {
+   	if (strlen(p) > 72) {
+   		char junk[71];
 
-			strncpy(junk, p, 70);
-			junk[70] = 0;
-			printf("%d. %-70s...\r\n", c + 1, junk);
-		} else
-			printf("%d. %s\r\n", c + 1, p);
-		p += urlQueue->objsize;
-		if (p >= (char *) (urlQueue->start + (urlQueue->objsize * urlQueue->size)))
-			p = urlQueue->start;
-	}
+   		strncpy(junk, p, 70);
+   		junk[70] = 0;
+   		printf("%d. %-70s...\r\n", c + 1, junk);
+   	} else
+   		printf("%d. %s\r\n", c + 1, p);
+   	p += urlQueue->objsize;
+   	if (p >= (char *) (urlQueue->start + (urlQueue->objsize * urlQueue->size)))
+   		p = urlQueue->start;
+   }
 
-	printf("\r\nChoose the URL you want to view: ");
-	get_string(3, line, 1); /* No more than 999 URLs in a post? */
-	printf("\r\n");
-	c = atoi(line);
-	p = urlQueue->start + (urlQueue->objsize * urlQueue->head);
-	if (c > 0 && c <= urlQueue->nobjs) {
-		int j;
+   printf("\r\nChoose the URL you want to view: ");
+   get_string(3, line, 1); /* No more than 999 URLs in a post? */
+   printf("\r\n");
+   c = atoi(line);
+   p = urlQueue->start + (urlQueue->objsize * urlQueue->head);
+   if (c > 0 && c <= urlQueue->nobjs) {
+   	int j;
 
-		c -= 1;
-		for (j = 0; j < c; j++) {
-			p += urlQueue->objsize;
-			if (p >= (char *) (urlQueue->start + (urlQueue->objsize * urlQueue->size)))
-				p = urlQueue->start;
-		}
+   	c -= 1;
+   	for (j = 0; j < c; j++) {
+   		p += urlQueue->objsize;
+   		if (p >= (char *) (urlQueue->start + (urlQueue->objsize * urlQueue->size)))
+   			p = urlQueue->start;
+   	}
 #ifdef USE_CYGWIN
-		ShellExecute(NULL, "open", p, NULL, NULL, SW_SHOW);
+   	ShellExecute(NULL, "open", p, NULL, NULL, SW_SHOW);
 #else
-		snprintf(cmd, sizeof(cmd), "%s \"%s\"%s", browser, p,
-			flags.browserbg ? " &" : "");
-		system(cmd);
+   	snprintf(cmd, sizeof(cmd), "%s \"%s\"%s", browser, p,
+   		flags.browserbg ? " &" : "");
+   	system(cmd);
 #endif
-	}
-	ignore_network = 0;
-	reprint_line();
-	capture = capturestate;
-	return;
+   }
+   ignore_network = 0;
+   reprint_line();
+   capture = capturestate;
+   return;
 }
 
 
-/* 
+/*
  * Move oldpath to newpath if oldpath exists and newpath does not exist.
  * Then delete oldpath, even if newpath already exists.
  */
 void move_if_needed(const char *oldpath, const char *newpath)
 {
-	FILE *old;
-	FILE *new;
-	char buf[BUFSIZ];
-	size_t i;
-	long s;
+   FILE *old;
+   FILE *new;
+   char buf[BUFSIZ];
+   size_t i;
+   long s;
 
-	old = fopen(oldpath, "r");
-	if (!old)
-		return;
+   old = fopen(oldpath, "r");
+   if (!old)
+   	return;
 
-	new = fopen(newpath, "a");
-	if (!new)
-		return;
+   new = fopen(newpath, "a");
+   if (!new)
+   	return;
 
-	s = ftell(new);
-	if (s == 0) {
-		/* Args 2 and 3 intentionally reversed */
-		while ((i = fread(buf, 1, BUFSIZ, old)) > 0) {
-			i = fwrite(buf, 1, BUFSIZ, new);
-		}
-	}
+   s = ftell(new);
+   if (s == 0) {
+   	/* Args 2 and 3 intentionally reversed */
+   	while ((i = fread(buf, 1, BUFSIZ, old)) > 0) {
+   		i = fwrite(buf, 1, BUFSIZ, new);
+   	}
+   }
 
-	fclose(old);
-	fclose(new);
-	unlink(oldpath);
-	return;
+   fclose(old);
+   fclose(new);
+   unlink(oldpath);
+   return;
 }

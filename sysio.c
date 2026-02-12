@@ -13,7 +13,7 @@ char swork[BUFSIZ];		/* temp buffer for color stripping */
 int std_putchar(int c)
 {
     if (putchar(c) < 0)
-	fatalperror("std_putchar", "Local error");
+   fatalperror("std_putchar", "Local error");
     cap_putchar(c);
     return c;
 }
@@ -23,21 +23,21 @@ int cap_putchar(int c)
     static int skipansi = 0;	/* Counter for avoidance of capturing ANSI */
 
     if (skipansi) {
-	skipansi--;
-	if (skipansi == 1) {
-	    if (flags.offbold && c == 109) {	/* Damned weird kludge */
-		printf("\033[0m");
-		skipansi--;
-	    } else {
-		lastcolor = (char) c;
-	    }
-	}
+   skipansi--;
+   if (skipansi == 1) {
+       if (flags.offbold && c == 109) {	/* Damned weird kludge */
+   	printf("\033[0m");
+   	skipansi--;
+       } else {
+   	lastcolor = (char) c;
+       }
+   }
     } else if (c == '\033') {
-	skipansi = 4;
+   skipansi = 4;
     } else if (capture > 0 && !flags.posting && !flags.moreflag && c != '\r') {
-	if (putc(c, tempfile) < 0) {
-	    tempfileerror();
-	}
+   if (putc(c, tempfile) < 0) {
+       tempfileerror();
+   }
     }
     return c;
 }
@@ -55,16 +55,16 @@ char *stripansi(char *c, size_t csize)
     char *p, *q;
     q = swork;
     for (p = c; *p != '\0'; p++) {
-	if (*p != '\033')
-	    *q++ = *p;
-	else
-	    for (; *p != '\0' && !isalpha(*p); p++);
+   if (*p != '\033')
+       *q++ = *p;
+   else
+       for (; *p != '\0' && !isalpha(*p); p++);
     }
     if (*p == '\r')		/* strip ^M too while we're here */
-	q--;
+   q--;
     *q = '\0';
     if (csize > 0)
-	snprintf(c, csize, "%s", swork);
+   snprintf(c, csize, "%s", swork);
     return c;
 }
 
@@ -83,11 +83,11 @@ int std_puts(const char *c)
 int cap_puts(const char *c)
 {
     if (capture > 0 && !flags.posting && !flags.moreflag) {
-	char buf[BUFSIZ];
-	snprintf(buf, sizeof(buf), "%s", c);
-	stripansi(buf, sizeof(buf));
-	fprintf(tempfile, "%s", buf);
-	fflush(tempfile);
+   char buf[BUFSIZ];
+   snprintf(buf, sizeof(buf), "%s", c);
+   stripansi(buf, sizeof(buf));
+   fprintf(tempfile, "%s", buf);
+   fflush(tempfile);
     }
     return 1;
 }
@@ -97,7 +97,7 @@ int net_puts(const char *c)
     const char *i;
 
     for (i = c; *i; i++)
-	netput(*i);
+   netput(*i);
     return 1;
 }
 
@@ -129,17 +129,17 @@ int cap_printf(const char *format,...)
     va_list ap;
 
     if (capture) {
-	va_start(ap, format);
+   va_start(ap, format);
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
-	(void) vsnprintf(string, sizeof(string), format, ap);
+   (void) vsnprintf(string, sizeof(string), format, ap);
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
-	va_end(ap);
-	return cap_puts(string);
+   va_end(ap);
+   return cap_puts(string);
     }
     return 1;
 }

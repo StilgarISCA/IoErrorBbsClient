@@ -1,6 +1,6 @@
 /*
  * This is where all the system-specific #include files go, and all the #ifdefs
- * for portability to different Unix systems belong here and in unix.c. 
+ * for portability to different Unix systems belong here and in unix.c.
  */
 #include <sys/socket.h>
 #include <netinet/in.h>

@@ -132,7 +132,7 @@ extern int
   strcmp_void P((const void *, const void *)),
   s_prompt P((const char *, const char *, int)),
   std_printf P((const char *, ...)),
-  std_putchar P((int)),	
+  std_putchar P((int)),
   std_puts P((const char *)),
   telrcv P((int)),
   waitnextevent P((void)),

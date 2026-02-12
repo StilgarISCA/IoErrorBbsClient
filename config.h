@@ -1,25 +1,17 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
-/* Define this if you want to build in the SOCKS library */
-/* #undef ENABLE_SOCKS */
 
 /* Define this if you want to enable saving passwords */
 /* #undef ENABLE_SAVE_PASSWORD */
+
+/* Define this if you want to build in the SOCKS library */
+/* #undef ENABLE_SOCKS */
 
 /* Define this if you want to use xterm/NeXT titlebars */
 #define ENABLE_TITLEBAR 1
 
 /* Define this to enable X message logging */
 /* #undef ENABLE_XLOG */
-
-/* Define this if we have OpenSSL */
-/* #undef HAVE_OPENSSL */
-
-/* Define to the cancnical host */
-#define HOSTTYPE "arm-apple-darwin24.1.0"
-
-/* Define this if building in the Cygwin environment */
-/* #undef USE_CYGWIN */
 
 /* Define to 1 if you don't have 'vprintf' but do have '_doprnt.' */
 /* #undef HAVE_DOPRNT */
@@ -44,6 +36,9 @@
 
 /* Define to 1 if you have the 'util' library (-lutil). */
 #define HAVE_LIBUTIL 1
+
+/* Define this if we have OpenSSL */
+/* #undef HAVE_OPENSSL */
 
 /* Define to 1 if you have the 'select' function. */
 #define HAVE_SELECT 1
@@ -96,35 +91,40 @@
 /* Define to 1 if you have the 'vprintf' function. */
 #define HAVE_VPRINTF 1
 
+/* Define to the canonical host */
+#define HOSTTYPE "arm-apple-darwin24.6.0"
+
+/* Name of package */
+#define PACKAGE "ioerrorbbsclient"
+
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME ""
+#define PACKAGE_NAME "IoErrorBbsClient"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING ""
+#define PACKAGE_STRING "IoErrorBbsClient 2.3.10-Stilgar"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME ""
+#define PACKAGE_TARNAME "ioerrorbbsclient"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION ""
-
-/* Define as the return type of signal handlers ('int' or 'void'). */
-#define RETSIGTYPE void
+#define PACKAGE_VERSION "2.3.10-Stilgar"
 
 /* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. This
-   macro is obsolete. */
-#define TIME_WITH_SYS_TIME 1
+/* Define this if building in the Cygwin environment */
+/* #undef USE_CYGWIN */
+
+/* Version number of package */
+#define VERSION "2.3.10-Stilgar"
 
 /* Define to empty if 'const' does not conform to ANSI C. */
 /* #undef const */

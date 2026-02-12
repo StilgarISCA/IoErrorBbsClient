@@ -1,7 +1,7 @@
 /*
  * This is where I've put all the #include files, to keep them separate in a
  * single location.  Pure C stuff goes here, the system-specific stuff is kept
- * over in unix.h. 
+ * over in unix.h.
  */
 
 #ifndef DEFS_H_INCLUDED

@@ -12,13 +12,13 @@ int	sin_port; /* port number in network byte order */
 char	*name;
 int	namelen;
 {
-	struct	servent	*serv;
-	int	port = ntohs((short)sin_port);
+   struct	servent	*serv;
+   int	port = ntohs((short)sin_port);
 
-	if ((serv = getservbyport(port, "tcp")) != (struct servent *)0)
-		strncpy(name, serv->s_name, namelen);
-	else
-		sprintf(name, "%u", port);
-	return(name);
+   if ((serv = getservbyport(port, "tcp")) != (struct servent *)0)
+   	strncpy(name, serv->s_name, namelen);
+   else
+   	sprintf(name, "%u", port);
+   return(name);
 }
 

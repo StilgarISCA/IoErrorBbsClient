@@ -63,19 +63,19 @@ char ansi_transform(char c)
 {
     switch (c) {
     case '6':
-	c = color.number;
-	break;
+   c = color.number;
+   break;
     case '3':
-	c = color.forum;
-	break;
+   c = color.forum;
+   break;
     case '2':
-	c = color.text;
-	break;
+   c = color.text;
+   break;
     case '1':
-	c = color.err;
-	break;
+   c = color.err;
+   break;
     default:
-	break;
+   break;
     }
 
     return (char) c;
@@ -89,32 +89,32 @@ void ansi_transform_express(char *s, size_t size)
 
     /* Insert color only when ANSI is being used */
     if (!flags.useansi)
-	return;
+   return;
 
     /* Verify this is an X message and set up pointers */
     sp1 = mystrstr(s, ") to ");
     sp2 = mystrstr(s, ") from ");
     if (!sp1 && !sp2)
-	return;
+   return;
     if ((sp2 && sp2 < sp1) || !sp1)
-	sp1 = sp2 + 2;
+   sp1 = sp2 + 2;
 
     sp2 = mystrstr(s, " at ");
     if (!sp2)
-	return;
+   return;
 
     sp1 += 4;
     *(sp1++) = 0;
     *(sp2++) = 0;
 
     if (slistFind(friendList, sp1, fstrcmp_void) != -1) {
-	snprintf(junk, sizeof(junk), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
-		color.expressfriendtext, s, color.expressfriendname, sp1,
-		color.expressfriendtext, sp2, color.text);
+   snprintf(junk, sizeof(junk), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+   	color.expressfriendtext, s, color.expressfriendname, sp1,
+   	color.expressfriendtext, sp2, color.text);
     } else {
-	snprintf(junk, sizeof(junk), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
-		color.expresstext, s, color.expressname, sp1,
-		color.expresstext, sp2, color.text);
+   snprintf(junk, sizeof(junk), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+   	color.expresstext, s, color.expressname, sp1,
+   	color.expresstext, sp2, color.text);
     }
     lastcolor = color.text;
     snprintf(s, size, "%s", junk);
@@ -125,19 +125,19 @@ char ansi_transform_post(char c, int isFriend)
 {
     switch (c) {
     case '3':
-	c = color.moreprompt;
-	break;
+   c = color.moreprompt;
+   break;
     case '2':
-	if (isFriend)
-	    c = color.postfriendtext;
-	else
-	    c = color.posttext;
-	break;
+   if (isFriend)
+       c = color.postfriendtext;
+   else
+       c = color.posttext;
+   break;
     case '1':
-	c = color.err;
-	break;
+   c = color.err;
+   break;
     default:
-	break;
+   break;
     }
     return (char) c;
 }
@@ -149,35 +149,35 @@ void ansi_transform_posthdr(char *s, int isFriend)
 
     /* Would have been easier with strtok() but can't guarantee it exists. */
     for (sp = s; *sp; sp++) {
-	/* Find an ANSI code */
-	if (*sp == 27) {
-	    /* transform ANSI code */
-	    sp += 3;
+   /* Find an ANSI code */
+   if (*sp == 27) {
+       /* transform ANSI code */
+       sp += 3;
 
-	    switch (*sp) {
-	    case '6':
-		if (isFriend)
-		    *sp = color.postfriendname;
-		else
-		    *sp = color.postname;
-		break;
-	    case '5':
-		*sp = color.postdate;
-		break;
-	    case '3':
-		*sp = color.anonymous;
-		break;
-	    case '2':
-		if (isFriend)
-		    *sp = color.postfriendtext;
-		else
-		    *sp = color.posttext;
-		break;
-	    default:
-		break;
-	    }
-	    lastcolor = *sp;
-	}
+       switch (*sp) {
+       case '6':
+   	if (isFriend)
+   	    *sp = color.postfriendname;
+   	else
+   	    *sp = color.postname;
+   	break;
+       case '5':
+   	*sp = color.postdate;
+   	break;
+       case '3':
+   	*sp = color.anonymous;
+   	break;
+       case '2':
+   	if (isFriend)
+   	    *sp = color.postfriendtext;
+   	else
+   	    *sp = color.posttext;
+   	break;
+       default:
+   	break;
+       }
+       lastcolor = *sp;
+   }
     }
 }
 
@@ -190,68 +190,68 @@ void color_config(void)
 
     std_printf("Color\r\n");
     if (!flags.useansi) {
-	std_printf("\r\nWARNING:  Color is off.  You will not be able to preview your selections.");
+   std_printf("\r\nWARNING:  Color is off.  You will not be able to preview your selections.");
     }
     for (;;) {
-	snprintf(work, sizeof(work), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G");
-	colorize(work);
+   snprintf(work, sizeof(work), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G");
+   colorize(work);
 
-	for (invalid = 0;;) {
-	    c = inkey();
-	    if (!mystrchr("GgIiPpXxOoRrQq \n", c)) {
-		if (invalid++)
-		    flush_input(invalid);
-		continue;
-	    }
-	    break;
-	}
+   for (invalid = 0;;) {
+       c = inkey();
+       if (!mystrchr("GgIiPpXxOoRrQq \n", c)) {
+   	if (invalid++)
+   	    flush_input(invalid);
+   	continue;
+       }
+       break;
+   }
 
-	switch (c) {
-	case 'g':
-	case 'G':
-		std_printf("General\r\n\n");
-		general_color_config();
-		break;
-	case 'i':
-	case 'I':
-		std_printf("Input\r\n\n");
-		input_color_config();
-		break;
-	case 'o':
-	case 'O':
-	    std_printf("Options\r\n\n");
-	    color_options();
-	    break;
+   switch (c) {
+   case 'g':
+   case 'G':
+   	std_printf("General\r\n\n");
+   	general_color_config();
+   	break;
+   case 'i':
+   case 'I':
+   	std_printf("Input\r\n\n");
+   	input_color_config();
+   	break;
+   case 'o':
+   case 'O':
+       std_printf("Options\r\n\n");
+       color_options();
+       break;
 
-	case 'p':
-	case 'P':
-	    std_printf("Post colors\r\n\n");
-	    post_color_config();
-	    break;
+   case 'p':
+   case 'P':
+       std_printf("Post colors\r\n\n");
+       post_color_config();
+       break;
 
-	case 'r':
-	case 'R':
-	    std_printf("Reset colors\r\n");
-	    default_colors(1);
-	    break;
+   case 'r':
+   case 'R':
+       std_printf("Reset colors\r\n");
+       default_colors(1);
+       break;
 
-	case 'x':
-	case 'X':
-	    std_printf("Express colors\r\n\n");
-	    express_color_config();
-	    break;
+   case 'x':
+   case 'X':
+       std_printf("Express colors\r\n\n");
+       express_color_config();
+       break;
 
-	case 'q':
-	case 'Q':
-	case ' ':
-	case '\n':
-	    std_printf("Quit\r\n");
-	    return;
-	    /* NOTREACHED */
+   case 'q':
+   case 'Q':
+   case ' ':
+   case '\n':
+       std_printf("Quit\r\n");
+       return;
+       /* NOTREACHED */
 
-	default:
-	    break;
-	}
+   default:
+       break;
+   }
     }
 }
 
@@ -259,14 +259,14 @@ void color_config(void)
 void color_options(void)
 {
     std_printf("Automatically answer the ANSI terminal question? (%s) -> ",
-	       flags.ansiprompt ? "Yes" : "No");
+          flags.ansiprompt ? "Yes" : "No");
     flags.ansiprompt = (unsigned int) yesnodefault(flags.ansiprompt);
     std_printf("Use bold ANSI colors when ANSI is enabled? (%s) -> ",
-	       flags.usebold ? "Yes" : "No");
+          flags.usebold ? "Yes" : "No");
     flags.usebold = (unsigned int) yesnodefault(flags.usebold);
     if (flags.useansi)
-	printf("\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
-			color.background);
+   printf("\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
+   		color.background);
 }
 
 
@@ -280,130 +280,130 @@ void color_options(void)
 
 void general_color_config(void)
 {
-	unsigned int invalid = 0;
-	int opt;
-	char work[100];
+   unsigned int invalid = 0;
+   int opt;
+   char work[100];
 
-	for (;;) {
-		std_printf(GEN_FMT_STR, color.background, color.forum,
-				color.text, color.err, color.forum,
-				color.text, color.forum, color.number,
-				color.text, color.number, color.text);
+   for (;;) {
+   	std_printf(GEN_FMT_STR, color.background, color.forum,
+   			color.text, color.err, color.forum,
+   			color.text, color.forum, color.number,
+   			color.text, color.number, color.text);
 
-		snprintf(work, sizeof(work), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G");
-		colorize(work);
-	
-		for (invalid = 0;;) {
-			opt = inkey();
-			if (!mystrchr("BbEeFfNnTtQq \n", opt)) {
-				if (invalid++)
-					flush_input(invalid);
-				continue;
-			}
-			break;
-		}
+   	snprintf(work, sizeof(work), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G");
+   	colorize(work);
 
-		switch (opt) {
-		case 'q':
-		case 'Q':
-		case ' ':
-		case '\n':
-			std_printf("Quit\r\n");
-			return;
-			/* NOTREACHED */
-		case 'b':
-		case 'B':
-			std_printf("Background\r\n\n");
-			color.background = background_picker();
-			break;
-		case 'e':
-		case 'E':
-			std_printf("Error\r\n\n");
-			color.err = color_picker();
-			break;
-		case 'f':
-		case 'F':
-			std_printf("Forum\r\n\n");
-			color.forum = color_picker();
-			break;
-		case 'n':
-		case 'N':
-			std_printf("Number\r\n\n");
-			color.number = color_picker();
-			break;
-		case 't':
-		case 'T':
-			std_printf("Text\r\n\n");
-			color.text = color_picker();
-			break;
-		default:
-			break;
-		}
-	}
+   	for (invalid = 0;;) {
+   		opt = inkey();
+   		if (!mystrchr("BbEeFfNnTtQq \n", opt)) {
+   			if (invalid++)
+   				flush_input(invalid);
+   			continue;
+   		}
+   		break;
+   	}
+
+   	switch (opt) {
+   	case 'q':
+   	case 'Q':
+   	case ' ':
+   	case '\n':
+   		std_printf("Quit\r\n");
+   		return;
+   		/* NOTREACHED */
+   	case 'b':
+   	case 'B':
+   		std_printf("Background\r\n\n");
+   		color.background = background_picker();
+   		break;
+   	case 'e':
+   	case 'E':
+   		std_printf("Error\r\n\n");
+   		color.err = color_picker();
+   		break;
+   	case 'f':
+   	case 'F':
+   		std_printf("Forum\r\n\n");
+   		color.forum = color_picker();
+   		break;
+   	case 'n':
+   	case 'N':
+   		std_printf("Number\r\n\n");
+   		color.number = color_picker();
+   		break;
+   	case 't':
+   	case 'T':
+   		std_printf("Text\r\n\n");
+   		color.text = color_picker();
+   		break;
+   	default:
+   		break;
+   	}
+   }
 }
 
 
 void input_color_config(void)
 {
-	unsigned int invalid = 0;
-	int opt;
-	char work[100];
+   unsigned int invalid = 0;
+   int opt;
+   char work[100];
 
-	for (;;) {
-		std_printf(INPUT_FMT_STR, color.text, color.input1,
-				color.input2, color.input1, color.text);
+   for (;;) {
+   	std_printf(INPUT_FMT_STR, color.text, color.input1,
+   			color.input2, color.input1, color.text);
 
-		snprintf(work, sizeof(work), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G");
-		colorize(work);
-	
-		for (invalid = 0;;) {
-			opt = inkey();
-			if (!mystrchr("CcTtQq \n", opt)) {
-				if (invalid++)
-					flush_input(invalid);
-				continue;
-			}
-			break;
-		}
+   	snprintf(work, sizeof(work), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G");
+   	colorize(work);
 
-		switch (opt) {
-		case 'q':
-		case 'Q':
-		case ' ':
-		case '\n':
-			std_printf("Quit\r\n");
-			return;
-			/* NOTREACHED */
-		case 'c':
-		case 'C':
-			std_printf("Completion\r\n\n");
-			color.input2 = color_picker();
-			break;
-		case 't':
-		case 'T':
-			std_printf("Text\r\n\n");
-			color.input1 = color_picker();
-			break;
-		default:
-			break;
-		}
-	}
+   	for (invalid = 0;;) {
+   		opt = inkey();
+   		if (!mystrchr("CcTtQq \n", opt)) {
+   			if (invalid++)
+   				flush_input(invalid);
+   			continue;
+   		}
+   		break;
+   	}
+
+   	switch (opt) {
+   	case 'q':
+   	case 'Q':
+   	case ' ':
+   	case '\n':
+   		std_printf("Quit\r\n");
+   		return;
+   		/* NOTREACHED */
+   	case 'c':
+   	case 'C':
+   		std_printf("Completion\r\n\n");
+   		color.input2 = color_picker();
+   		break;
+   	case 't':
+   	case 'T':
+   		std_printf("Text\r\n\n");
+   		color.input1 = color_picker();
+   		break;
+   	default:
+   		break;
+   	}
+   }
 }
 
 
 void post_color_config(void)
 {
     for (;;) {
-	switch (user_or_friend()) {
-	case 'u':
-	    post_user_color_config();
-	    break;
-	case 'f':
-	    post_friend_color_config();
-	    break;
-	default:
-	    return;
-	}
+   switch (user_or_friend()) {
+   case 'u':
+       post_user_color_config();
+       break;
+   case 'f':
+       post_friend_color_config();
+       break;
+   default:
+       return;
+   }
     }
 }
 
@@ -413,31 +413,31 @@ void post_user_color_config(void)
     int opt;
 
     for (;;) {
-	std_printf(POST_FMT_STR, color.postdate, color.posttext,
-		   color.postname, A_USER, color.posttext, color.forum);
-	opt = post_color_menu();
-	switch (opt) {
-	case 'q':
-	case 'Q':
-	case ' ':
-	case '\n':
-	    return;
-	    /* NOTREACHED */
-	case 'd':
-	case 'D':
-	    color.postdate = color_picker();
-	    break;
-	case 'n':
-	case 'N':
-	    color.postname = color_picker();
-	    break;
-	case 't':
-	case 'T':
-	    color.posttext = color_picker();
-	    break;
-	default:
-	    break;
-	}
+   std_printf(POST_FMT_STR, color.postdate, color.posttext,
+   	   color.postname, A_USER, color.posttext, color.forum);
+   opt = post_color_menu();
+   switch (opt) {
+   case 'q':
+   case 'Q':
+   case ' ':
+   case '\n':
+       return;
+       /* NOTREACHED */
+   case 'd':
+   case 'D':
+       color.postdate = color_picker();
+       break;
+   case 'n':
+   case 'N':
+       color.postname = color_picker();
+       break;
+   case 't':
+   case 'T':
+       color.posttext = color_picker();
+       break;
+   default:
+       break;
+   }
     }
 }
 
@@ -447,32 +447,32 @@ void post_friend_color_config(void)
     int opt;
 
     for (;;) {
-	std_printf(POST_FMT_STR, color.postfrienddate, color.postfriendtext,
-		   color.postfriendname, A_FRIEND, color.postfriendtext,
-		   color.forum);
-	opt = post_color_menu();
-	switch (opt) {
-	case 'q':
-	case 'Q':
-	case ' ':
-	case '\n':
-	    return;
-	    /* NOTREACHED */
-	case 'd':
-	case 'D':
-	    color.postfrienddate = color_picker();
-	    break;
-	case 'n':
-	case 'N':
-	    color.postfriendname = color_picker();
-	    break;
-	case 't':
-	case 'T':
-	    color.postfriendtext = color_picker();
-	    break;
-	default:
-	    break;
-	}
+   std_printf(POST_FMT_STR, color.postfrienddate, color.postfriendtext,
+   	   color.postfriendname, A_FRIEND, color.postfriendtext,
+   	   color.forum);
+   opt = post_color_menu();
+   switch (opt) {
+   case 'q':
+   case 'Q':
+   case ' ':
+   case '\n':
+       return;
+       /* NOTREACHED */
+   case 'd':
+   case 'D':
+       color.postfrienddate = color_picker();
+       break;
+   case 'n':
+   case 'N':
+       color.postfriendname = color_picker();
+       break;
+   case 't':
+   case 'T':
+       color.postfriendtext = color_picker();
+       break;
+   default:
+       break;
+   }
     }
 }
 
@@ -487,36 +487,36 @@ char post_color_menu(void)
     colorize(work);
 
     for (invalid = 0;;) {
-	c = inkey();
-	if (!mystrchr("DdNnTtQq \n", c)) {
-	    if (invalid++)
-		flush_input(invalid);
-	    continue;
-	}
-	break;
+   c = inkey();
+   if (!mystrchr("DdNnTtQq \n", c)) {
+       if (invalid++)
+   	flush_input(invalid);
+       continue;
+   }
+   break;
     }
 
     switch (c) {
     case 'd':
     case 'D':
-	std_printf("Date\r\n\n");
-	break;
+   std_printf("Date\r\n\n");
+   break;
     case 'n':
     case 'N':
-	std_printf("Name\r\n\n");
-	break;
+   std_printf("Name\r\n\n");
+   break;
     case 't':
     case 'T':
-	std_printf("Text\r\n\n");
-	break;
+   std_printf("Text\r\n\n");
+   break;
     case 'q':
     case 'Q':
     case ' ':
     case '\n':
-	std_printf("Quit\r\n\n");
-	break;
+   std_printf("Quit\r\n\n");
+   break;
     default:
-	break;
+   break;
     }
 
     return (char) c;
@@ -526,16 +526,16 @@ char post_color_menu(void)
 void express_color_config(void)
 {
     for (;;) {
-	switch (user_or_friend()) {
-	case 'u':
-	    express_user_color_config();
-	    break;
-	case 'f':
-	    express_friend_color_config();
-	    break;
-	default:
-	    return;
-	}
+   switch (user_or_friend()) {
+   case 'u':
+       express_user_color_config();
+       break;
+   case 'f':
+       express_friend_color_config();
+       break;
+   default:
+       return;
+   }
     }
 }
 
@@ -545,27 +545,27 @@ void express_user_color_config(void)
     int opt;
 
     for (;;) {
-	std_printf(EXPRESS_FMT_STR, color.expresstext,
-		   color.expressname, A_USER, color.expresstext);
-	opt = express_color_menu();
-	switch (opt) {
-	case 'q':
-	case 'Q':
-	case ' ':
-	case '\n':
-	    return;
-	    /* NOTREACHED */
-	case 'n':
-	case 'N':
-	    color.expressname = color_picker();
-	    break;
-	case 't':
-	case 'T':
-	    color.expresstext = color_picker();
-	    break;
-	default:
-	    break;
-	}
+   std_printf(EXPRESS_FMT_STR, color.expresstext,
+   	   color.expressname, A_USER, color.expresstext);
+   opt = express_color_menu();
+   switch (opt) {
+   case 'q':
+   case 'Q':
+   case ' ':
+   case '\n':
+       return;
+       /* NOTREACHED */
+   case 'n':
+   case 'N':
+       color.expressname = color_picker();
+       break;
+   case 't':
+   case 'T':
+       color.expresstext = color_picker();
+       break;
+   default:
+       break;
+   }
     }
 }
 
@@ -574,27 +574,27 @@ void express_friend_color_config(void)
     int opt;
 
     for (;;) {
-	std_printf(EXPRESS_FMT_STR, color.expressfriendtext,
-	     color.expressfriendname, A_FRIEND, color.expressfriendtext);
-	opt = express_color_menu();
-	switch (opt) {
-	case 'q':
-	case 'Q':
-	case ' ':
-	case '\n':
-	    return;
-	    /* NOTREACHED */
-	case 'n':
-	case 'N':
-	    color.expressfriendname = color_picker();
-	    break;
-	case 't':
-	case 'T':
-	    color.expressfriendtext = color_picker();
-	    break;
-	default:
-	    break;
-	}
+   std_printf(EXPRESS_FMT_STR, color.expressfriendtext,
+        color.expressfriendname, A_FRIEND, color.expressfriendtext);
+   opt = express_color_menu();
+   switch (opt) {
+   case 'q':
+   case 'Q':
+   case ' ':
+   case '\n':
+       return;
+       /* NOTREACHED */
+   case 'n':
+   case 'N':
+       color.expressfriendname = color_picker();
+       break;
+   case 't':
+   case 'T':
+       color.expressfriendtext = color_picker();
+       break;
+   default:
+       break;
+   }
     }
 }
 
@@ -609,32 +609,32 @@ char express_color_menu(void)
     colorize(work);
 
     for (invalid = 0;;) {
-	c = inkey();
-	if (!mystrchr("NnTtQq \n", c)) {
-	    if (invalid++)
-		flush_input(invalid);
-	    continue;
-	}
-	break;
+   c = inkey();
+   if (!mystrchr("NnTtQq \n", c)) {
+       if (invalid++)
+   	flush_input(invalid);
+       continue;
+   }
+   break;
     }
 
     switch (c) {
     case 'n':
     case 'N':
-	std_printf("Name\r\n\n");
-	break;
+   std_printf("Name\r\n\n");
+   break;
     case 't':
     case 'T':
-	std_printf("Text\r\n\n");
-	break;
+   std_printf("Text\r\n\n");
+   break;
     case 'q':
     case 'Q':
     case ' ':
     case '\n':
-	std_printf("Quit\r\n\n");
-	break;
+   std_printf("Quit\r\n\n");
+   break;
     default:
-	break;
+   break;
     }
 
     return (char) c;
@@ -651,29 +651,29 @@ char user_or_friend(void)
     colorize(work);
 
     for (invalid = 0;;) {
-	c = inkey();
-	if (!mystrchr("UuFfQq \n", c)) {
-	    if (invalid++)
-		flush_input(invalid);
-	    continue;
-	}
-	break;
+   c = inkey();
+   if (!mystrchr("UuFfQq \n", c)) {
+       if (invalid++)
+   	flush_input(invalid);
+       continue;
+   }
+   break;
     }
 
     switch (c) {
     case 'U':
-	c = 'u';
+   c = 'u';
     case 'u':
-	std_printf("User\r\n\n");
-	break;
+   std_printf("User\r\n\n");
+   break;
     case 'F':
-	c = 'f';
+   c = 'f';
     case 'f':
-	std_printf("Friend\r\n\n");
-	break;
+   std_printf("Friend\r\n\n");
+   break;
     default:
-	std_printf("Quit\r\n");
-	break;
+   std_printf("Quit\r\n");
+   break;
     }
 
     return (char) c;
@@ -690,61 +690,61 @@ char color_picker(void)
     colorize(work);
 
     for (invalid = 0;;) {
-	c = inkey();
-	if (!mystrchr("KkRrGgYyBbMmCcWw", c)) {
-	    if (invalid++)
-		flush_input(invalid);
-	    continue;
-	}
-	break;
+   c = inkey();
+   if (!mystrchr("KkRrGgYyBbMmCcWw", c)) {
+       if (invalid++)
+   	flush_input(invalid);
+       continue;
+   }
+   break;
     }
 
     switch (c) {
     case 'r':
     case 'R':
-	std_printf("Red\r\n\n");
-	c = '1';
-	break;
+   std_printf("Red\r\n\n");
+   c = '1';
+   break;
     case 'g':
     case 'G':
-	std_printf("Green\r\n\n");
-	c = '2';
-	break;
+   std_printf("Green\r\n\n");
+   c = '2';
+   break;
     case 'y':
     case 'Y':
-	std_printf("Yellow\r\n\n");
-	c = '3';
-	break;
+   std_printf("Yellow\r\n\n");
+   c = '3';
+   break;
     case 'b':
     case 'B':
-	std_printf("Blue\r\n\n");
-	c = '4';
-	break;
+   std_printf("Blue\r\n\n");
+   c = '4';
+   break;
     case 'm':
     case 'M':
     case 'p':			/* Some people call it purple */
     case 'P':
-	std_printf("Magenta\r\n\n");
-	c = '5';
-	break;
+   std_printf("Magenta\r\n\n");
+   c = '5';
+   break;
     case 'c':
     case 'C':
-	std_printf("Cyan\r\n\n");
-	c = '6';
-	break;
+   std_printf("Cyan\r\n\n");
+   c = '6';
+   break;
     case 'w':
     case 'W':
-	std_printf("White\r\n\n");
-	c = '7';
-	break;
+   std_printf("White\r\n\n");
+   c = '7';
+   break;
     case 'k':
     case 'K':
-	std_printf("Black\r\n\n");
-	c = '0';
-	break;
+   std_printf("Black\r\n\n");
+   c = '0';
+   break;
     default:
-	c = '0';		/* If your text goes black it's a bug here */
-	break;
+   c = '0';		/* If your text goes black it's a bug here */
+   break;
     }
 
     return (char) c;
@@ -758,70 +758,70 @@ char background_picker(void)
     char work[140];
 
     snprintf(work, sizeof(work), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%cm @Y-> @G",
-		    color.background);
+   	    color.background);
     colorize(work);
 
     for (invalid = 0;;) {
-	c = inkey();
-	if (!mystrchr("KkRrGgYyBbMmCcWwDd", c)) {
-	    if (invalid++)
-		flush_input(invalid);
-	    continue;
-	}
-	break;
+   c = inkey();
+   if (!mystrchr("KkRrGgYyBbMmCcWwDd", c)) {
+       if (invalid++)
+   	flush_input(invalid);
+       continue;
+   }
+   break;
     }
 
     switch (c) {
     case 'k':
     case 'K':
-	std_printf("Black\r\n");
-	c = '0';
-	break;
+   std_printf("Black\r\n");
+   c = '0';
+   break;
     case 'r':
     case 'R':
-	std_printf("Red\r\n");
-	c = '1';
-	break;
+   std_printf("Red\r\n");
+   c = '1';
+   break;
     case 'g':
     case 'G':
-	std_printf("Green\r\n");
-	c = '2';
-	break;
+   std_printf("Green\r\n");
+   c = '2';
+   break;
     case 'y':
     case 'Y':
-	std_printf("Yellow\r\n");
-	c = '3';
-	break;
+   std_printf("Yellow\r\n");
+   c = '3';
+   break;
     case 'b':
     case 'B':
-	std_printf("Blue\r\n");
-	c = '4';
-	break;
+   std_printf("Blue\r\n");
+   c = '4';
+   break;
     case 'm':
     case 'M':
     case 'p':			/* Some people call it purple */
     case 'P':
-	std_printf("Magenta\r\n");
-	c = '5';
-	break;
+   std_printf("Magenta\r\n");
+   c = '5';
+   break;
     case 'c':
     case 'C':
-	std_printf("Cyan\r\n");
-	c = '6';
-	break;
+   std_printf("Cyan\r\n");
+   c = '6';
+   break;
     case 'w':
     case 'W':
-	std_printf("White\r\n");
-	c = '7';
-	break;
+   std_printf("White\r\n");
+   c = '7';
+   break;
     case 'd':
     case 'D':
-	std_printf("Default\r\n");
-	c = '9';
-	break;
+   std_printf("Default\r\n");
+   c = '9';
+   break;
     default:
-	c = '0';		/* If your text goes black it's a bug here */
-	break;
+   c = '0';		/* If your text goes black it's a bug here */
+   break;
     }
     std_printf("\033[4%cm\n", c);
 

@@ -2,7 +2,7 @@
  * Generic telnet protocol #defines, along with some special protocol that is
  * spoken between the ISCA BBS and a connected client.  You don't want to
  * change this, it depends on this being the same on both ends, and you can't
- * change what the BBS end does. 
+ * change what the BBS end does.
  */
 
 #define	IAC	255		/* interpret as command: */

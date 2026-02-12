@@ -23,18 +23,18 @@ slist *slistCreate(int nitems, int (*sortfn)(const void *, const void *), ...)
     assert(sortfn);
 
     if (!(list = (slist *) calloc(1, sizeof(slist))))
-	return NULL;
+   return NULL;
     list->nitems = (unsigned int) nitems;
     list->sortfn = sortfn;
     if (nitems > 0) {
     if (!(list->items = (void *) calloc(1, (size_t) nitems * sizeof(void *))))
-	     return NULL;
-	va_start(ap, sortfn);
-	for (i = 0; i < nitems; i++)
-	    list->items[i] = va_arg(ap, void *);
-	va_end(ap);
+        return NULL;
+   va_start(ap, sortfn);
+   for (i = 0; i < nitems; i++)
+       list->items[i] = va_arg(ap, void *);
+   va_end(ap);
     } else
-	list->items = NULL;
+   list->items = NULL;
     return list;
 }
 
@@ -60,8 +60,8 @@ void slistDestroyItems(slist *list)
     unsigned int i;
 
     for (i = 0; i < list->nitems; i++) {
-	free(list->items[i]);
-	list->items[i] = NULL;
+   free(list->items[i]);
+   list->items[i] = NULL;
     }
 }
 
@@ -75,11 +75,11 @@ int slistAddItem(slist *list, void *item, int deferSort)
 
     list->nitems++;
     if (!(p = (void *) realloc(list->items, list->nitems * sizeof(void *))))
-	 return 0;
+    return 0;
     list->items = p;
     list->items[list->nitems - 1] = item;
     if (!deferSort)
-	slistSort(list);
+   slistSort(list);
     return 1;
 }
 
@@ -100,18 +100,18 @@ int slistRemoveItem(slist *list, int item)
 printf("slistRemoveItem(list, %d): nitems=%d\r\n", item, list->nitems);
     list->items[item] = NULL;
     if ((unsigned int) item < --list->nitems)
-	for (i = (unsigned int) item; i < list->nitems; i++)
-	    list->items[i] = list->items[i + 1];
+   for (i = (unsigned int) item; i < list->nitems; i++)
+       list->items[i] = list->items[i + 1];
     p = (void *) realloc(list->items, list->nitems * sizeof(void *));
     if (!p && list->nitems)	/* request failed */
-	return 0;
+   return 0;
 
     list->items = p;
     return 1;
 }
 
 
-/* 
+/*
  * slistFind locates an item based on the results of the search function.
  * Returns entry on success, -1 on failure.  findfn() should compare a to b
  * and return <0 if a < b, >0 if a > b, or 0 if a == b.
@@ -125,20 +125,20 @@ int slistFind(slist *list, void *toFind, int (*findfn) (const void *, const void
     assert(findfn);
 
     if (!toFind)		/* Fail if nothing to find */
-	return -1;
+   return -1;
     if (list->nitems == 0)
-	return -1;
+   return -1;
     upper = (int) list->nitems - 1;
     lower = 0;
     while (upper >= lower) {
-	i = (upper + lower) / 2;
-	k = findfn(toFind, list->items[i]);
-	if (k == 0)
-	    return i;
-	if (k < 0)
-	    upper = i - 1;
-	else
-	    lower = i + 1;
+   i = (upper + lower) / 2;
+   k = findfn(toFind, list->items[i]);
+   if (k == 0)
+       return i;
+   if (k < 0)
+       upper = i - 1;
+   else
+       lower = i + 1;
     }
     return -1;
 }
@@ -169,50 +169,50 @@ void slistSort(slist *list)
  */
 slist *slistIntersection(const slist *list1, const slist *list2)
 {
-	int n1;		/* Count of items processed */
-	int n2;		/* Count of items processed */
-	slist *dest;	/* The list being created */
+   int n1;		/* Count of items processed */
+   int n2;		/* Count of items processed */
+   slist *dest;	/* The list being created */
 
-	assert(list1);
-	assert(list2);
-	assert(list1->sortfn == list2->sortfn);
+   assert(list1);
+   assert(list2);
+   assert(list1->sortfn == list2->sortfn);
 
-	if (!list1 || !list2 || list1->sortfn != list2->sortfn) return NULL;
+   if (!list1 || !list2 || list1->sortfn != list2->sortfn) return NULL;
 
-	n1 = 0;
-	n2 = 0;
+   n1 = 0;
+   n2 = 0;
 
-	dest = slistCreate(0, list1->sortfn);
-	if (!dest) return NULL;
+   dest = slistCreate(0, list1->sortfn);
+   if (!dest) return NULL;
 
-	for (; n1 < (int) list1->nitems; n1++) {
-		/*
-		 * Now run through list2 until we find either a matching
-		 * item, or an item that is greater than the one in list1
-		 * that we are currently looking at.
-		 */
-		int r;
+   for (; n1 < (int) list1->nitems; n1++) {
+   	/*
+   	 * Now run through list2 until we find either a matching
+   	 * item, or an item that is greater than the one in list1
+   	 * that we are currently looking at.
+   	 */
+   	int r;
 
-		/* First item in n2 not less than current item n1 */
-		while ((r = dest->sortfn(list1->items[n1], list2->items[n2])) < 0) {
-			n2++;
-			/* If this happens, we're done */
-			if (n2 > (int) list2->nitems)
-				break;
-		}
+   	/* First item in n2 not less than current item n1 */
+   	while ((r = dest->sortfn(list1->items[n1], list2->items[n2])) < 0) {
+   		n2++;
+   		/* If this happens, we're done */
+   		if (n2 > (int) list2->nitems)
+   			break;
+   	}
 
-		/* If this happens, we're done; nothing else will match */
-		if (n2 > (int) list2->nitems)
-			break;
+   	/* If this happens, we're done; nothing else will match */
+   	if (n2 > (int) list2->nitems)
+   		break;
 
-		/* If item is not less than and not greater than, it's equal */
-		if (!(dest->sortfn(list2->items[n2], list1->items[n1]) < 0)) {
-			if (!slistAddItem(dest, list1->items[n1], 1)) {
-				slistDestroy(dest);
-				return NULL;
-			}
-		}
-	}
-	slistSort(dest);
-	return dest;
+   	/* If item is not less than and not greater than, it's equal */
+   	if (!(dest->sortfn(list2->items[n2], list1->items[n1]) < 0)) {
+   		if (!slistAddItem(dest, list1->items[n1], 1)) {
+   			slistDestroy(dest);
+   			return NULL;
+   		}
+   	}
+   }
+   slistSort(dest);
+   return dest;
 }

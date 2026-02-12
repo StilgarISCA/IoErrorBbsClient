@@ -13,7 +13,7 @@ queue *new_queue(int size, int nobjs)
     queue *q;
 
     if (!(q = (queue *) calloc(1, sizeof(queue) + (size_t) size * (size_t) nobjs)))
-	return (queue *) NULL;
+   return (queue *) NULL;
 
     q->start = (char *) (q + 1);
     q->size = nobjs;
@@ -30,7 +30,7 @@ queue *new_queue(int size, int nobjs)
 int safe_delete_queue(queue * q)
 {
     if (q->nobjs)
-	return 0;
+   return 0;
     free(q);
     return 1;
 }
@@ -55,7 +55,7 @@ int push_queue(char *obj, queue * q)
     char *p;			/* Pointer into the queue */
 
     if (q->nobjs >= q->size)	/* Is the queue full? */
-	return 0;
+   return 0;
 
     q->nobjs++;
 
@@ -70,7 +70,7 @@ int push_queue(char *obj, queue * q)
 
     /* Wrap around if we've gone past the end of the queue. */
     if (++q->tail >= q->size)
-	q->tail = 0;
+   q->tail = 0;
 
     return 1;
 }
@@ -86,7 +86,7 @@ int pop_queue(char *obj, queue * q)
     char *p;			/* Pointer into the queue */
 
     if (q->nobjs <= 0)
-	return q->nobjs = 0;	/* Queue is empty */
+   return q->nobjs = 0;	/* Queue is empty */
 
     q->nobjs--;			/* Removing an object... */
 
@@ -100,7 +100,7 @@ int pop_queue(char *obj, queue * q)
     for (i = q->objsize; --i >= 0; *obj++ = *p++);
 
     if (++q->head >= q->size)
-	q->head = 0;
+   q->head = 0;
 
     return 1;
 }
@@ -116,12 +116,12 @@ int is_queued(char *obj, queue * q)
 
     /* Move to head of queue. */
     for (p = q->start + (q->objsize * q->head), i = 0; i < q->nobjs; i++) {
-	/* Do the comparison. */
-	if (!strcmp(p, obj))
-	    return 1;
-	p += q->objsize;
-	if (p >= (char *) (q->start + (q->objsize * q->size)))
-	    p = q->start;
+   /* Do the comparison. */
+   if (!strcmp(p, obj))
+       return 1;
+   p += q->objsize;
+   if (p >= (char *) (q->start + (q->objsize * q->size)))
+       p = q->start;
     }
     return 0;
 }

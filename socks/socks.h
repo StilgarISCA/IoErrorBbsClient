@@ -113,7 +113,7 @@
 #define SOCKS_FAIL	91
 #define SOCKS_NO_IDENTD	92 /* Failed to connect to Identd on client machine */
 #define SOCKS_BAD_ID	93 /* Client's Identd reported a different user-id */
-  
+
 #if defined(__alpha)
 typedef unsigned int u_int32;
 #else
@@ -121,10 +121,10 @@ typedef unsigned long u_int32;
 #endif
 
 typedef struct {
-	u_int32			host; /* in network byte order */
-	unsigned short		port; /* in network byte oreder */
-	unsigned char		version;
-	unsigned char		cmd;
+   u_int32			host; /* in network byte order */
+   unsigned short		port; /* in network byte oreder */
+   unsigned char		version;
+   unsigned char		cmd;
 } Socks_t;
 
 typedef enum portcmp Portcmp;
@@ -151,19 +151,19 @@ enum portcmp { e_lt, e_gt, e_eq, e_neq, e_le, e_ge, e_nil };
  * clients or in servers * when STAND_ALONE_SERVER is defined.
  * Also used in the SOCKS library.
  */
- 
+
 struct config {
-	char *userlist, *serverlist;
-	int action;
-	int use_identd;
-	Portcmp tst;
-	struct in_addr saddr,	/* source addr, or  */
-				/* output interface for route file */
-		smask,		/* source mask */
-		daddr,		/* destination addr */
-		dmask;		/* destination mask */
-	unsigned short dport;
-	char *cmdp, *sdomain, *ddomain;
+   char *userlist, *serverlist;
+   int action;
+   int use_identd;
+   Portcmp tst;
+   struct in_addr saddr,	/* source addr, or  */
+   			/* output interface for route file */
+   	smask,		/* source mask */
+   	daddr,		/* destination addr */
+   	dmask;		/* destination mask */
+   unsigned short dport;
+   char *cmdp, *sdomain, *ddomain;
 };
 
 
@@ -231,12 +231,12 @@ struct  linger {
 #define NAMELEN 128
 
 struct sockshost_s {
-	char *dmname[MAXNAMESPERHOST];
-	struct in_addr	shipaddr[MAXIPPERHOST];
-	unsigned short port; /* in network order */
-	char portname[NAMELEN];
-	char user[NAMELEN];
-	char ruser[NAMELEN];
+   char *dmname[MAXNAMESPERHOST];
+   struct in_addr	shipaddr[MAXIPPERHOST];
+   unsigned short port; /* in network order */
+   char portname[NAMELEN];
+   char user[NAMELEN];
+   char ruser[NAMELEN];
 };
 
 #define STREQ(a,b) (strcasecmp(a,b) == 0)

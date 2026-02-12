@@ -14,33 +14,33 @@ void feed_pager(int startrow, ...)
   for (;;) {
     s = va_arg(ap, char *);
     if (!s)
-	break;
+   break;
     std_printf("%s", s);
     row++;
     if (row == rows) {
-	/* More prompt */
-	printf("--MORE-- ");
-	fflush(stdout);
-	switch (inkey()) {
-	case 'n':
-	case 'N':
-	case 's':
-	case 'S':
-	case 'q':
-	case 'Q':
-	printf("\r        \r");
-	  va_end(ap);
-	  return;
-	  /* NOTREACHED */
-	case '\n':
-	  row--;
-	printf("\r        \r");
-	  break;
-	default:
-	  row = 1;
-	printf("\r        \r");
-	  break;
-	}
+   /* More prompt */
+   printf("--MORE-- ");
+   fflush(stdout);
+   switch (inkey()) {
+   case 'n':
+   case 'N':
+   case 's':
+   case 'S':
+   case 'q':
+   case 'Q':
+   printf("\r        \r");
+     va_end(ap);
+     return;
+     /* NOTREACHED */
+   case '\n':
+     row--;
+   printf("\r        \r");
+     break;
+   default:
+     row = 1;
+   printf("\r        \r");
+     break;
+   }
     }
   }
   va_end(ap);
@@ -356,9 +356,9 @@ NULL);
 
 void warranty(void)
 {
-	std_printf("Warranty\r\n\n");
+   std_printf("Warranty\r\n\n");
 
-	feed_pager(3,
+   feed_pager(3,
 "BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY\r\n",
 "FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN\r\n",
 "OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES\r\n",
@@ -401,7 +401,7 @@ void warranty(void)
 "OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE\r\n",
 "OR PERFORMANCE OF THIS SOFTWARE.\r\n",
 #endif
-	NULL);
+   NULL);
 }
 
 
@@ -416,50 +416,50 @@ void information(void)
     std_printf("Information\r\n");
 
     for (;;) {
-	if (flags.useansi)
-	    colorize("\r\n@YC@Copyright  @YL@Cicense  @YW@Carranty  @YT@Cechnical  @YQ@Cuit\r\n@YClient information -> @G");
-	else
-	    std_printf("\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> ");
-	for (invalid = 0;;) {
-	    c = inkey();
-	    if (!mystrchr("CcLlOoWwTtQq \n", c)) {
-		if (invalid++)
-		    flush_input(invalid);
-		continue;
-	    }
-	   break;
-	}
-	switch (c) {
-	case 'c':
-	case 'C':
-	    copyright();
-	    break;
-	case 'l':
-	case 'L':
-	    license();
-	    break;
-	case 'o':
-	case 'O':
-	    otherinfo();
-	    break;
-	case 't':
-	case 'T':
-	    techinfo();
-	    break;
-	case 'w':
-	case 'W':
-	    warranty();
-	    break;
-	case 'q':
-	case 'Q':
-	case ' ':
-	case '\n':
-	    std_printf("Quit\r\n");
-	    return;
-	    /* NOTREACHED */
-	default:
-	    break;
-	}
+   if (flags.useansi)
+       colorize("\r\n@YC@Copyright  @YL@Cicense  @YW@Carranty  @YT@Cechnical  @YQ@Cuit\r\n@YClient information -> @G");
+   else
+       std_printf("\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> ");
+   for (invalid = 0;;) {
+       c = inkey();
+       if (!mystrchr("CcLlOoWwTtQq \n", c)) {
+   	if (invalid++)
+   	    flush_input(invalid);
+   	continue;
+       }
+      break;
+   }
+   switch (c) {
+   case 'c':
+   case 'C':
+       copyright();
+       break;
+   case 'l':
+   case 'L':
+       license();
+       break;
+   case 'o':
+   case 'O':
+       otherinfo();
+       break;
+   case 't':
+   case 'T':
+       techinfo();
+       break;
+   case 'w':
+   case 'W':
+       warranty();
+       break;
+   case 'q':
+   case 'Q':
+   case ' ':
+   case '\n':
+       std_printf("Quit\r\n");
+       return;
+       /* NOTREACHED */
+   default:
+       break;
+   }
     }
 }
 
@@ -491,5 +491,5 @@ void otherinfo(void)
 "    your friend.  The Policy Board will always be your friend.\r\n",
 "8.  The BBS is never moving to Gestalt.\r\n",
 "9.  The performers may change, but the song is always the same.\r\n",
-	       NULL);
+          NULL);
 }

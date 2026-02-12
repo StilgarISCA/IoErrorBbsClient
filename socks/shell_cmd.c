@@ -6,9 +6,9 @@
   * The result is executed
   * by a /bin/sh child process, with standard input, standard output and
   * standard error connected to /dev/null.
-  * 
+  *
   * Diagnostics are reported through syslog(3).
-  * 
+  *
   * Author: Wietse Venema, Eindhoven University of Technology, The Netherlands.
   *
   * Adapted for use with SOCKS by Ying-Da Lee, NEC Systems Lab, CSTC
@@ -69,10 +69,10 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     percent_x(cmd, sizeof(cmd), string, srcshp, dstshp, daemon_pid);
     if (strpbrk(cmd, alpha_num) == NULL) {
-	syslog(LOG_HIGH, "error -- shell command \"%s\" contains no alphanumeric characters.", cmd);
-	return;
+   syslog(LOG_HIGH, "error -- shell command \"%s\" contains no alphanumeric characters.", cmd);
+   return;
     }
-    
+
     /*
      * Most of the work is done within the child process, to minimize the
      * risk of damage to the parent.
@@ -80,14 +80,14 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     switch (child_pid = fork()) {
     case -1:					/* error */
-	syslog(LOG_HIGH, "error -- socks_shell_cmd fork() %m");
-	break;
+   syslog(LOG_HIGH, "error -- socks_shell_cmd fork() %m");
+   break;
     case 00:					/* child */
-	do_child(daemon_pid, cmd);
-	/* NOTREACHED */
+   do_child(daemon_pid, cmd);
+   /* NOTREACHED */
     default:					/* parent */
-	while ((wait_pid = wait((int *) 0)) != -1 && wait_pid != child_pid)
-	     /* void */ ;
+   while ((wait_pid = wait((int *) 0)) != -1 && wait_pid != child_pid)
+        /* void */ ;
     }
 }
 
@@ -107,17 +107,17 @@ char   *command;
 
     closelog();
     for (tmp_fd = 0; tmp_fd < 10; tmp_fd++)
-	(void) close(tmp_fd);
+   (void) close(tmp_fd);
 
     /* Set up new stdin, stdout, stderr, and exec the shell command. */
 
     if (open("/dev/null", 2) != 0) {
-	error = "open /dev/null: %m";
+   error = "open /dev/null: %m";
     } else if (dup(0) != 1 || dup(0) != 2) {
-	error = "dup: %m";
+   error = "dup: %m";
     } else {
-	(void) execl("/bin/sh", "sh", "-c", command, (char *) 0);
-	error = "execl /bin/sh: %m";
+   (void) execl("/bin/sh", "sh", "-c", command, (char *) 0);
+   error = "execl /bin/sh: %m";
     }
 
     /* We can reach the following code only if there was an error. */
@@ -138,9 +138,9 @@ char   *command;
   * expansion would overflow the output buffer. Because the result of %<char>
   * expansion is typically passed on to a shell process, characters that may
   * confuse the shell are replaced by underscores.
-  * 
+  *
   * Diagnostics are reported through syslog(3).
-  * 
+  *
   * Author: Wietse Venema, Eindhoven University of Technology, The Netherlands.
   *
   * Adapted for use with SOCKS by Ying-Da Lee, NEC Systems Lab, CSTC
@@ -174,7 +174,7 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ";
      * %c: "connect" or "bind"
      * %p: the daemon or client program process id
      * %S: the service name (ftp, telnet,etc.) if known, port number otherwise
-     * %s: the destination port number 
+     * %s: the destination port number
      * %U: for sockd, this is the username as reported by identd;
      *	   for client program, this is the name used at login
      * %u: for sockd, this is the username as reported by the client program;
@@ -188,35 +188,35 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ";
      */
 
     while (*str) {
-	if (*str == '%') {
-	    str++;
-	    expansion =
-		*str == 'A' ? (str++, src_name) :
-		*str == 'a' ? (str++, inet_ntoa(srcshp->shipaddr[0])) :
-		*str == 'c' ? (str++, socks_cmd) :
-		*str == 'p' ? (str++, sprintf(pid_buf, "%d", pid), pid_buf) :
-		*str == 'S' ? (str++, dst_serv) :
-		*str == 's' ? (str++, sprintf(port_buf, "%u", ntohs(dstshp->port)), port_buf) :
-		*str == 'U' ? (str++, real_user) :
-		*str == 'u' ? (str++, src_user) :
-		*str == 'Z' ? (str++, dst_name) :
-		*str == 'z' ? (str++, inet_ntoa(dstshp->shipaddr[0])) :
-		*str == '%' ? (str++, "%") :
-		*str == 0 ? "" : (str++, "");
-	    expansion_len = strlen(expansion);
-	    for (cp = expansion; *cp; cp++)
-		if (strchr(ok_chars, *cp) == 0)
-		    *cp = '_';
-	} else {
-	    expansion = str++;
-	    expansion_len = 1;
-	}
-	if (result + expansion_len >= end) {
-	    syslog(LOG_HIGH, "shell command too long: %30s...", result);
-	    exit(0);
-	}
-	strncpy(result, expansion, expansion_len);
-	result += expansion_len;
+   if (*str == '%') {
+       str++;
+       expansion =
+   	*str == 'A' ? (str++, src_name) :
+   	*str == 'a' ? (str++, inet_ntoa(srcshp->shipaddr[0])) :
+   	*str == 'c' ? (str++, socks_cmd) :
+   	*str == 'p' ? (str++, sprintf(pid_buf, "%d", pid), pid_buf) :
+   	*str == 'S' ? (str++, dst_serv) :
+   	*str == 's' ? (str++, sprintf(port_buf, "%u", ntohs(dstshp->port)), port_buf) :
+   	*str == 'U' ? (str++, real_user) :
+   	*str == 'u' ? (str++, src_user) :
+   	*str == 'Z' ? (str++, dst_name) :
+   	*str == 'z' ? (str++, inet_ntoa(dstshp->shipaddr[0])) :
+   	*str == '%' ? (str++, "%") :
+   	*str == 0 ? "" : (str++, "");
+       expansion_len = strlen(expansion);
+       for (cp = expansion; *cp; cp++)
+   	if (strchr(ok_chars, *cp) == 0)
+   	    *cp = '_';
+   } else {
+       expansion = str++;
+       expansion_len = 1;
+   }
+   if (result + expansion_len >= end) {
+       syslog(LOG_HIGH, "shell command too long: %30s...", result);
+       exit(0);
+   }
+   strncpy(result, expansion, expansion_len);
+   result += expansion_len;
     }
     *result = 0;
 }
