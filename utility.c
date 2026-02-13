@@ -93,7 +93,10 @@ void myexit( void )
 #endif
    if ( flags.lastsave )
    {
-      (void)freopen( tempfilename, "w+", tempfile );
+      if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+      {
+         s_perror( "myexit: reopen temp file before exit", "Shutdown warning" );
+      }
    }
    deinitialize();
    exit( 0 );

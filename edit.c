@@ -34,7 +34,11 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
    rewind( fp );
    if ( flags.lastsave )
    {
-      (void)freopen( tempfilename, "w+", tempfile );
+      if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+      {
+         fatalperror( "makemessage: freopen(tempfilename, \"w+\")", "Edit file error" );
+      }
+      fp = tempfile;
       flags.lastsave = 0;
    }
    if ( getc( fp ) >= 0 )
@@ -43,7 +47,11 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
       printf( "There is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
       if ( yesno() )
       {
-         (void)freopen( tempfilename, "w+", tempfile );
+         if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+         {
+            fatalperror( "makemessage: reopen temp file for truncate", "Edit file error" );
+         }
+         fp = tempfile;
       }
       else
       {
@@ -491,7 +499,11 @@ int prompt( FILE *fp, int *old, int cmd )
                      printf( "\r\nThere is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
                      if ( yesno() )
                      {
-                        (void)freopen( tempfilename, "w+", tempfile );
+                        if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+                        {
+                           fatalperror( "load file into editor: reopen temp file for truncate", "Edit file error" );
+                        }
+                        fp = tempfile;
                      }
                      else
                      {
@@ -538,7 +550,11 @@ int prompt( FILE *fp, int *old, int cmd )
                   printf( "\033[%cm\033[3%cm", flags.usebold ? '1' : '0', lastcolor );
                }
                printf( "[Editing complete]\r\n" );
-               (void)freopen( tempfilename, "r+", tempfile );
+               if ( !( tempfile = freopen( tempfilename, "r+", tempfile ) ) )
+               {
+                  fatalperror( "editor return: freopen(tempfilename, \"r+\")", "Edit file error" );
+               }
+               fp = tempfile;
                if ( checkfile( fp ) )
                {
                   fflush( stdout );

@@ -193,7 +193,10 @@ int getkey( void )
                   rewind( tempfile );
                   if ( flags.lastsave )
                   {
-                     (void)freopen( tempfilename, "w+", tempfile );
+                     if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+                     {
+                        fatalperror( "toggle capture: reopen temp file for truncate", "Capture file error" );
+                     }
                      flags.lastsave = 0;
                   }
                   else if ( getc( tempfile ) >= 0 )
@@ -202,7 +205,10 @@ int getkey( void )
                      capture = -1;
                      if ( yesno() )
                      {
-                        (void)freopen( tempfilename, "w+", tempfile );
+                        if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+                        {
+                           fatalperror( "capture prompt: reopen temp file for truncate", "Capture file error" );
+                        }
                      }
                      else
                      {
