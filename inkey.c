@@ -1,63 +1,63 @@
 /*
- * Return next letter the user typed.  This function can be indirectly
- * recursive -- inkey may call telrcv(), which calls other functions which can
- * call inkey()...
+ * Return next letter the aryUser typed.  This function can be indirectly
+ * recursive -- inKey may call telReceive(), which calls other functions which can
+ * call inKey()...
  *
  * Basically, if there is a keypress waiting in the stdio buffer, it is returned
  * immediately, if not the socket's stdio buffer is checked (this is where the
  * recursion can take place) and if that is also empty, the output buffers are
- * flushed, then the program blocks in select() until either the user types
+ * flushed, then the program blocks in select() until either the aryUser types
  * something or something is sent from the remote side.
  */
 #include "defs.h"
 #include "ext.h"
 
-static int lastcr = 0;
+static int lastCarriageReturn = 0;
 
 /*
- * The functionality of the former inkey() has been renamed to getkey(), so
- * that inkey() could strip a \n after a \r (common terminal program problem
- * with user misconfiguration) and translate certain keypresses into common
+ * The functionality of the former inKey() has been renamed to getKey(), so
+ * that inKey() could strip a \n after a \r (common terminal program problem
+ * with aryUser misconfiguration) and translate certain keypresses into common
  * Unix equivalents (i.e. \r -> \n, DEL -> BS, ctrl-U -> ctrl-X)
  */
-int inkey( void )
+int inKey( void )
 {
-   register int c;
+   register int inputChar;
 
    for ( ;; )
    {
-      c = getkey();
-      if ( !lastcr || c != '\n' )
+      inputChar = getKey();
+      if ( !lastCarriageReturn || inputChar != '\n' )
       {
          break;
       }
-      lastcr = 0;
+      lastCarriageReturn = 0;
    }
-   lastcr = 0;
-   if ( c == '\r' )
+   lastCarriageReturn = 0;
+   if ( inputChar == '\r' )
    {
-      c = '\n';
-      lastcr = 1;
+      inputChar = '\n';
+      lastCarriageReturn = 1;
    }
-   else if ( c == 127 )
+   else if ( inputChar == 127 )
    {
-      c = '\b';
+      inputChar = '\b';
    }
-   else if ( c == CTRL_U )
+   else if ( inputChar == CTRL_U )
    {
-      c = CTRL_X;
+      inputChar = CTRL_X;
    }
-   return ( c );
+   return ( inputChar );
 }
 
-int getkey( void )
+int getKey( void )
 {
-   static int macron = 0;
-   static int macrop = 0;    /* pointer into the macro array */
-   static int macronext = 0; /* macro key was hit, macro is next */
-   static int wasundef = 0;  /* to remove the blurb about undefined macro */
-   register int c = -1;
-   int result; /* result returned from waitnextevent() */
+   static int macroKey = 0;
+   static int macroPosition = 0;       /* pointer into the aryMacro array */
+   static int isMacroNext = 0;         /* aryMacro key was hit, aryMacro is next */
+   static int wasUndefinedCommand = 0; /* to remove the blurb about undefined aryMacro */
+   register int inputChar = -1;
+   int eventResult; /* eventResult returned from waitNextEvent() */
 
    /*
     * Throughout this function, if we are currently running with a child
@@ -65,8 +65,8 @@ int getkey( void )
     * only * concerned with passing along anything that might be coming
     * over the net during this time (connection going down, broadcast
     * message from wizards, etc.)  That's the reason for all the
-    * references to '!childpid' The same is true when 'check' is set, it
-    * is used when entering the edit menu (abort, save, etc.) to check
+    * references to '!childPid' The same is true when 'check' is set, it
+    * is used when entering the edit menu (abort, arySavedBytes, etc.) to check
     * back with the BBS for any X messages that may have arrived -- it is
     * added purely to make things compatible between the BBS and the
     * client.
@@ -76,86 +76,87 @@ int getkey( void )
    {
 
       /*
-   	 * If we're busy going to our save buffers, targetbyte is
-   	 * non-zero.  We continue to take characters from our save
-   	 * buffers until bytep catches up to targetbyte -- then we
+   	 * If we're busy going to our arySavedBytes buffers, targetByte is
+   	 * non-zero.  We continue to take characters from our arySavedBytes
+   	 * buffers until bytePosition catches up to targetByte -- then we
    	 * should be synced with the bbs once again.
    	 */
-      if ( targetbyte && !childpid && !flags.check )
+      if ( targetByte && !childPid && !flagsConfiguration.shouldCheckExpress )
       {
-         if ( bytep == targetbyte )
+         if ( bytePosition == targetByte )
          {
-            targetbyte = 0;
+            targetByte = 0;
          }
-         else if ( bytep > targetbyte )
+         else if ( bytePosition > targetByte )
          {
-            std_printf( "[Internal error: byte synch lost!  %s > %s]\r\n", bytep,
-                        targetbyte );
+            stdPrintf( "[Internal error: byte synch lost!  %s > %s]\r\n", bytePosition,
+                       targetByte );
             exit( 1 );
          }
          else
          {
-            lastcr = 0;
+            lastCarriageReturn = 0;
             {
-               size_t idx = (size_t)( bytep % (long)sizeof save );
-               bytep++;
-               return ( save[idx] );
+               size_t index = (size_t)( bytePosition % (long)sizeof arySavedBytes );
+               bytePosition++;
+               return ( arySavedBytes[index] );
             }
          }
       }
       /*
-   	 * Main processing loop for processing a macro or characters
+   	 * Main processing loop for processing a aryMacro or characters
    	 * in the stdin buffers.
    	 */
-      while ( ( macrop || INPUT_LEFT( stdin ) ) && !childpid && !flags.check )
+      while ( ( macroPosition || INPUT_LEFT( stdin ) ) && !childPid && !flagsConfiguration.shouldCheckExpress )
       {
-         /* macrop > 0 when we are getting out input from a macro key */
-         if ( macrop > 0 )
+         /* macroPosition > 0 when we are getting out input from a aryMacro key */
+         if ( macroPosition > 0 )
          {
-            if ( ( c = macro[macron][macrop++] ) )
+            if ( ( inputChar = aryMacro[macroKey][macroPosition++] ) )
             {
-               lastcr = 0;
-               return ( c );
+               lastCarriageReturn = 0;
+               return ( inputChar );
             }
             else
             {
-               macrop = 0;
+               macroPosition = 0;
                continue;
             }
          }
-         if ( !macrop )
+         if ( !macroPosition )
          {
-            c = ptyget() & 0x7f;
+            inputChar = ptyget() & 0x7f;
          }
          else
          {
-            macrop = 0;
+            macroPosition = 0;
          }
-         if ( c > 0 && away == 1 )
+         if ( inputChar > 0 && isAway == 1 )
          {
-            away = 0;
-            std_printf( "\r\n[No longer away]\r\n" );
+            isAway = 0;
+            stdPrintf( "\r\n[No longer away]\r\n" );
          }
-         /* Did we hit commandkey last?  Then the next key hit is the macro */
-         if ( macronext )
+         /* Did we hit commandKey last?  Then the next key hit is the aryMacro */
+         if ( isMacroNext )
          {
             printf( "\b\b\b\b\b\b\b\b\b         \b\b\b\b\b\b\b\b\b" );
-            macronext = macrop = 0;
+            isMacroNext = 0;
+            macroPosition = 0;
 
-            if ( c == awaykey )
+            if ( inputChar == awayKey )
             {
-               away ^= 1;
-               std_printf( "\r\n[%s away]\r\n", ( away ) ? "Now" : "No longer" );
+               isAway ^= 1;
+               stdPrintf( "\r\n[%s away]\r\n", ( isAway ) ? "Now" : "No longer" );
                continue;
             }
-            if ( c == quitkey )
+            if ( inputChar == quitKey )
             {
-               std_printf( "\r\n[Quitting]\r\n" );
-               myexit();
+               stdPrintf( "\r\n[Quitting]\r\n" );
+               myExit();
             }
-            else if ( c == suspkey )
+            else if ( inputChar == suspKey )
             {
-               if ( !login_shell )
+               if ( !isLoginShell )
                {
                   printf( "\r\n[Suspended]\r\n" );
                   fflush( stdout );
@@ -163,93 +164,93 @@ int getkey( void )
                }
                continue;
             }
-            else if ( c == shellkey )
+            else if ( inputChar == shellKey )
             {
-               if ( !login_shell )
+               if ( !isLoginShell )
                {
-                  printf( "\r\n[New shell]\r\n" );
-                  run( shell, 0 );
+                  printf( "\r\n[New aryShell]\r\n" );
+                  run( aryShell, 0 );
                   printf( "\r\n[Continue]\r\n" );
                }
                continue;
             }
-            else if ( c == browserkey && !login_shell )
+            else if ( inputChar == browserKey && !isLoginShell )
             {
-               open_browser();
+               openBrowser();
                continue;
             }
-            else if ( c == capturekey )
+            else if ( inputChar == captureKey )
             {
-               if ( capture < 0 || flags.posting )
+               if ( capture < 0 || flagsConfiguration.isPosting )
                {
                   printf( "[ Cannot capture! ]" );
-                  wasundef = 1;
+                  wasUndefinedCommand = 1;
                   continue;
                }
                capture ^= 1;
                printf( "\r\n[Capture to temp file turned O%s]\r\n", capture ? "N" : "FF" );
                if ( capture )
                {
-                  rewind( tempfile );
-                  if ( flags.lastsave )
+                  rewind( tempFile );
+                  if ( flagsConfiguration.isLastSave )
                   {
-                     if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+                     if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
                      {
-                        fatalperror( "toggle capture: reopen temp file for truncate", "Capture file error" );
+                        fatalPerror( "toggle capture: reopen temp file for truncate", "Capture file error" );
                      }
-                     flags.lastsave = 0;
+                     flagsConfiguration.isLastSave = 0;
                   }
-                  else if ( getc( tempfile ) >= 0 )
+                  else if ( getc( tempFile ) >= 0 )
                   {
                      printf( "There is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
                      capture = -1;
-                     if ( yesno() )
+                     if ( yesNo() )
                      {
-                        if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+                        if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
                         {
-                           fatalperror( "capture prompt: reopen temp file for truncate", "Capture file error" );
+                           fatalPerror( "capture prompt: reopen temp file for truncate", "Capture file error" );
                         }
                      }
                      else
                      {
-                        fseek( tempfile, 0L, SEEK_END );
+                        fseek( tempFile, 0L, SEEK_END );
                      }
                      capture = 1;
                   }
-                  flags.lastsave = 0;
+                  flagsConfiguration.isLastSave = 0;
                }
                else
                {
-                  fflush( tempfile );
+                  fflush( tempFile );
                }
                continue;
             }
-            else if ( c > 127 || !*macro[macron = c] )
+            else if ( inputChar > 127 || !*aryMacro[macroKey = inputChar] )
             {
                printf( "[Undefined command]" );
-               wasundef = 1;
+               wasUndefinedCommand = 1;
                continue;
             }
             else
             {
-               return ( macro[macron][macrop++] );
+               return ( aryMacro[macroKey][macroPosition++] );
             }
          }
          /* If we just printed the undefined command blurb, let's erase it */
-         else if ( wasundef )
+         else if ( wasUndefinedCommand )
          {
-            wasundef = 0;
+            wasUndefinedCommand = 0;
             printf( "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b                   \b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b" );
          }
-         /* Did the user just hit the command key? */
-         if ( c == commandkey && !flags.configflag )
+         /* Did the aryUser just hit the command key? */
+         if ( inputChar == commandKey && !flagsConfiguration.isConfigMode )
          {
-            macronext = 1;
+            isMacroNext = 1;
             printf( "[Command]" );
          }
          else
          {
-            return ( c ); /* Return the next character to the caller */
+            return ( inputChar ); /* Return the next character to the caller */
          }
       }
 
@@ -258,7 +259,7 @@ int getkey( void )
       {
          while ( NET_INPUT_LEFT() )
          {
-            if ( telrcv( netget() ) < 0 )
+            if ( telReceive( netget() ) < 0 )
             {
                return ( -1 );
             }
@@ -268,63 +269,63 @@ int getkey( void )
       /* Flush out any output buffers */
       if ( netflush() < 0 )
       {
-         std_printf( "\r\n" );
-         fatalperror( "send", "Network error" );
+         stdPrintf( "\r\n" );
+         fatalPerror( "send", "Network error" );
       }
       if ( fflush( stdout ) < 0 )
       {
-         std_printf( "\r\n" );
-         fatalperror( "write", "Local error" );
+         stdPrintf( "\r\n" );
+         fatalPerror( "write", "Local error" );
       }
 
       /*
-   	 * Wait for the next event from either the network or the user,
+   	 * Wait for the next event from either the network or the aryUser,
    	 * note that if we are running with a child process, we'll be
-   	 * ignoring the user input entirely -- we're only concerned
+   	 * ignoring the aryUser input entirely -- we're only concerned
    	 * with network traffic until we no longer have a child process
    	 * to swallow up our data for us.
    	 */
-      result = waitnextevent();
+      eventResult = waitNextEvent();
 
-      /* The user has input waiting for us to process */
-      if ( result & 1 )
+      /* The aryUser has input waiting for us to process */
+      if ( eventResult & 1 )
       {
-         c = ptyget();
-         if ( c < 0 )
+         inputChar = ptyget();
+         if ( inputChar < 0 )
          {
-            std_printf( "\r\n" );
-            fatalperror( "read", "Local error" );
+            stdPrintf( "\r\n" );
+            fatalPerror( "read", "Local error" );
          }
-         c &= 0x7f;
-         macrop = -1;
+         inputChar &= 0x7f;
+         macroPosition = -1;
          continue;
       }
       /* The network has input waiting for us to process */
-      if ( result & 2 )
+      if ( eventResult & 2 )
       {
          errno = 0;
-         if ( ( c = netget() ) < 0 )
+         if ( ( inputChar = netget() ) < 0 )
          {
             if ( errno )
             {
-               std_printf( "\r\n" );
-               fatalperror( "recv", "Network error" );
+               stdPrintf( "\r\n" );
+               fatalPerror( "recv", "Network error" );
             }
             else
             {
-               if ( childpid )
+               if ( childPid )
                {
-                  std_printf( "\r\n\n\007[DISCONNECTED]\r\n\n\007" );
+                  stdPrintf( "\r\n\n\007[DISCONNECTED]\r\n\n\007" );
                }
                else
                {
-                  std_printf( "\r\n[Disconnected]\r\n" );
+                  stdPrintf( "\r\n[Disconnected]\r\n" );
                }
-               myexit();
+               myExit();
             }
          }
          /* Handle net traffic */
-         if ( telrcv( c ) < 0 )
+         if ( telReceive( inputChar ) < 0 )
          {
             return ( -1 );
          }

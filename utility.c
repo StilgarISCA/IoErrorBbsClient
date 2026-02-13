@@ -4,7 +4,7 @@
 #include "defs.h"
 #include "ext.h"
 
-/* replyaway routines to reply to X's when you are away from keyboard */
+/* replyaway routines to reply to X's when you are isAway from keyboard */
 /* these globals used only in this file, so let 'em stay here */
 /* Please do not change this message; it's used for reply suppression
    * (see below).  If you alter this, you will draw the ire of the ISCA
@@ -12,90 +12,91 @@
    */
 char replymsg[5] = "+!R ";
 
-void send_an_x( void )
+void sendAnX( void )
 {
    /* get the ball rolling with the bbs */
-   SendingX = SX_WANT_TO;
+   sendingXState = SX_WANT_TO;
 #if DEBUG
-   std_printf( "send_an_x 1 SendingX is %d, xland is %d\r\n", SendingX, xland );
+   stdPrintf( "sendAnX 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-   net_putchar( 'x' );
+   netPutChar( 'x' );
    byte++;
-   SendingX = SX_SENT_x;
+   sendingXState = SENDING_X_STATE_SENT_COMMAND_X;
 #if DEBUG
-   std_printf( "send_an_x 2 SendingX is %d, xland is %d\r\n", SendingX, xland );
+   stdPrintf( "sendAnX 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
 }
 
-/* fake get_five_lines for the bbs */
-void replymessage( void )
+/* fake getFiveLines for the bbs */
+void replyMessage( void )
 {
-   int i, k;
+   int lineIndex;
+   int charIndex;
 
-   sendblock();
-   for ( i = 0; replymsg[i]; i++ )
+   sendBlock();
+   for ( lineIndex = 0; replymsg[lineIndex]; lineIndex++ )
    {
-      net_putchar( replymsg[i] );
+      netPutChar( replymsg[lineIndex] );
    }
-   byte += i;
-   for ( i = 0; i < 5 && *awaymsg[i]; i++ )
+   byte += lineIndex;
+   for ( lineIndex = 0; lineIndex < 5 && *aryAwayMessageLines[lineIndex]; lineIndex++ )
    {
-      for ( k = 0; awaymsg[i][k]; k++ )
+      for ( charIndex = 0; aryAwayMessageLines[lineIndex][charIndex]; charIndex++ )
       {
-         net_putchar( awaymsg[i][k] );
+         netPutChar( aryAwayMessageLines[lineIndex][charIndex] );
       }
-      net_putchar( '\n' );
-      byte += k + 1;
-      std_printf( "%s\r\n", awaymsg[i] );
+      netPutChar( '\n' );
+      byte += charIndex + 1;
+      stdPrintf( "%s\r\n", aryAwayMessageLines[lineIndex] );
    }
-   if ( i < 5 )
+   if ( lineIndex < 5 )
    { /* less than five lines */
-      net_putchar( '\n' );
+      netPutChar( '\n' );
       byte++;
    }
-   SendingX = SX_NOT;
+   sendingXState = SX_NOT;
 #if DEBUG
-   std_printf( "replymessage 1 SendingX is %d, xland is %d\r\n", SendingX, xland );
+   stdPrintf( "replyMessage 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
 }
 
-void fatalperror( const char *error, const char *heading )
+void fatalPerror( const char *error, const char *heading )
 {
    fflush( stdout );
-   s_perror( error, heading );
-   myexit();
+   sPerror( error, heading );
+   myExit();
 }
 
-void fatalexit( const char *message, const char *heading )
+void fatalExit( const char *message, const char *heading )
 {
    fflush( stdout );
-   s_error( message, heading );
-   myexit();
+   sError( message, heading );
+   myExit();
 }
 
-void myexit( void )
+void myExit( void )
 {
    fflush( stdout );
-   if ( childpid )
+   if ( childPid )
    {
       /* Wait for child to terminate */
-      sigoff();
-      childpid = ( -childpid );
-      while ( childpid )
+      sigOff();
+      childPid = ( -childPid );
+      while ( childPid )
       {
          sigpause( 0 );
       }
    }
-   resetterm();
+   resetTerm();
 #ifdef HAVE_OPENSSL
-   if ( is_ssl )
-      killSSL();
+   if ( isSsl )
+      killSsl();
 #endif
-   if ( flags.lastsave )
+   if ( flagsConfiguration.isLastSave )
    {
-      if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+      if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
       {
-         s_perror( "myexit: reopen temp file before exit", "Shutdown warning" );
+         sPerror( "myExit: reopen temp file before exit", "Shutdown warning" );
       }
    }
    deinitialize();
@@ -104,114 +105,114 @@ void myexit( void )
 
 void looper( void )
 {
-   register int c;
+   register int inputChar;
    unsigned int invalid = 0;
 
    for ( ;; )
    {
-      if ( ( c = inkey() ) < 0 )
+      if ( ( inputChar = inKey() ) < 0 )
       {
          return;
       }
       /* Don't bother sending stuff to the bbs it won't use anyway */
-      if ( ( c >= 32 && c <= 127 ) || mystrchr( "\3\4\5\b\n\r\27\30\32", c ) )
+      if ( ( inputChar >= 32 && inputChar <= 127 ) || findChar( "\3\4\5\b\n\r\27\30\32", inputChar ) )
       {
          invalid = 0;
-         net_putchar( keymap[c] );
+         netPutChar( aryKeyMap[inputChar] );
          if ( byte )
          {
-            size_t idx = (size_t)( byte % (long)sizeof save );
-            save[idx] = (unsigned char)c;
+            size_t index = (size_t)( byte % (long)sizeof arySavedBytes );
+            arySavedBytes[index] = (unsigned char)inputChar;
             byte++;
          }
       }
       else if ( invalid++ )
       {
-         flush_input( invalid );
+         flushInput( invalid );
       }
    }
 }
 
-int yesno( void )
+int yesNo( void )
 {
-   register int c;
+   register int inputChar;
    unsigned int invalid = 0;
 
-   while ( !mystrchr( "nNyY", c = inkey() ) )
+   while ( !findChar( "nNyY", inputChar = inKey() ) )
    {
       if ( invalid++ )
       {
-         flush_input( invalid );
+         flushInput( invalid );
       }
    }
-   if ( c == 'y' || c == 'Y' )
+   if ( inputChar == 'y' || inputChar == 'Y' )
    {
-      std_printf( "Yes\r\n" );
+      stdPrintf( "Yes\r\n" );
       return ( 1 );
    }
    else
    {
-      std_printf( "No\r\n" );
+      stdPrintf( "No\r\n" );
       return ( 0 );
    }
 }
 
-int yesnodefault( int def )
+int yesNoDefault( int defaultAnswer )
 {
-   register int c;
+   register int inputChar;
    unsigned int invalid = 0;
 
-   while ( !mystrchr( "nNyY\n ", c = inkey() ) )
+   while ( !findChar( "nNyY\n ", inputChar = inKey() ) )
    {
       if ( invalid++ )
       {
-         flush_input( invalid );
+         flushInput( invalid );
       }
    }
-   if ( c == '\n' || c == ' ' )
+   if ( inputChar == '\n' || inputChar == ' ' )
    {
-      c = ( def ? 'Y' : 'N' );
+      inputChar = ( defaultAnswer ? 'Y' : 'N' );
    }
-   if ( c == 'y' || c == 'Y' )
+   if ( inputChar == 'y' || inputChar == 'Y' )
    {
-      std_printf( "Yes\r\n" );
+      stdPrintf( "Yes\r\n" );
       return ( 1 );
    }
-   else if ( c == 'n' || c == 'N' )
+   else if ( inputChar == 'n' || inputChar == 'N' )
    {
-      std_printf( "No\r\n" );
+      stdPrintf( "No\r\n" );
       return ( 0 );
    }
    else
-   { /* This should never happen, means bug in mystrchr() */
-      char buf[160];
-      std_printf( "\r\n" );
-      snprintf( buf, sizeof( buf ), "yesnodefault: 0x%x\r\n"
-                                    "Please report this to IO ERROR\r\n",
-                c );
-      fatalexit( buf, "Internal error" );
+   { /* This should never happen, means bug in findChar() */
+      char aryBuffer[160];
+      stdPrintf( "\r\n" );
+      snprintf( aryBuffer, sizeof( aryBuffer ), "yesNoDefault: 0x%x\r\n"
+                                                "Please report this to IO ERROR\r\n",
+                inputChar );
+      fatalExit( aryBuffer, "Internal error" );
    }
    return 0;
 }
 
-void tempfileerror( void )
+void tempFileError( void )
 {
    if ( errno == EINTR )
    {
       return;
    }
    fprintf( stderr, "\r\n" );
-   s_perror( "writing tempfile", "Local error" );
+   sPerror( "writing tempfile", "Local error" );
 }
 
-int more( int *line, int pct )
+int more( int *line, int percentComplete )
 {
-   register int c;
+   register int inputChar;
    unsigned int invalid = 0;
 
-   if ( pct >= 0 )
+   if ( percentComplete >= 0 )
    {
-      printf( "--MORE--(%d%%)", pct );
+      printf( "--MORE--(%d%%)", percentComplete );
    }
    else
    {
@@ -219,22 +220,22 @@ int more( int *line, int pct )
    }
    for ( ;; )
    {
-      c = inkey();
-      if ( c == ' ' || c == 'y' || c == 'Y' )
+      inputChar = inKey();
+      if ( inputChar == ' ' || inputChar == 'y' || inputChar == 'Y' )
       {
          *line = 1;
       }
-      else if ( c == '\n' )
+      else if ( inputChar == '\n' )
       {
          --*line;
       }
-      else if ( mystrchr( "nNqsS", c ) )
+      else if ( findChar( "nNqsS", inputChar ) )
       {
          *line = -1;
       }
       else if ( invalid++ )
       {
-         flush_input( invalid );
+         flushInput( invalid );
          continue;
       }
       printf( "\r              \r" );
@@ -246,18 +247,18 @@ int more( int *line, int pct )
 /*
  * Not all systems have strstr(), so I roll my own...
  */
-char *mystrstr( const char *str, const char *substr )
+char *findSubstring( const char *ptrString, const char *ptrSubstring )
 {
-   const char *s;
+   const char *ptrSearch;
 
-   for ( s = str; *s; s++ )
+   for ( ptrSearch = ptrString; *ptrSearch; ptrSearch++ )
    {
-      if ( *s == *substr && !strncmp( s, substr, strlen( substr ) ) )
+      if ( *ptrSearch == *ptrSubstring && !strncmp( ptrSearch, ptrSubstring, strlen( ptrSubstring ) ) )
       {
          break;
       }
    }
-   if ( !*s )
+   if ( !*ptrSearch )
    {
       return ( (char *)NULL );
    }
@@ -267,11 +268,11 @@ char *mystrstr( const char *str, const char *substr )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
 #endif
-      char *ret = (char *)s;
+      char *ptrResult = (char *)ptrSearch;
 #if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
-      return ret;
+      return ptrResult;
    }
 }
 
@@ -279,26 +280,26 @@ char *mystrstr( const char *str, const char *substr )
  * Not all systems have strchr() either (they usually have index() instead, but
  * I don't want to count on that or check for it)
  */
-char *mystrchr( const char *str, int ch )
+char *findChar( const char *ptrString, int targetChar )
 {
-   const char *s;
+   const char *ptrSearch;
 
-   s = str;
-   while ( *s && ch != *s )
+   ptrSearch = ptrString;
+   while ( *ptrSearch && targetChar != *ptrSearch )
    {
-      s++;
+      ptrSearch++;
    }
-   if ( *s )
+   if ( *ptrSearch )
    {
 #if defined( __clang__ )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
 #endif
-      char *ret = (char *)s;
+      char *ptrResult = (char *)ptrSearch;
 #if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
-      return ret;
+      return ptrResult;
    }
    else
    {
@@ -306,134 +307,137 @@ char *mystrchr( const char *str, int ch )
    }
 }
 
-/* ExtractName -- get the username out of a post or X message header */
+/* extractName -- get the username out of a post or X message header */
 /* returns pointer to username as stored in the array */
-char *ExtractName( const char *header )
+char *extractName( const char *header )
 {
-   char *hp, *ours;
-   int lastspace, i, which = -1;
+   char *ptrHeaderName;
+   char *ptrExtractedName;
+   int isAfterSpace;
+   int charIndex;
+   int existingIndex = -1;
 
-   hp = mystrstr( header, " from " );
-   if ( !hp )
+   ptrHeaderName = findSubstring( header, " from " );
+   if ( !ptrHeaderName )
    { /* This isn't an X message or a post */
       return NULL;
    }
-   hp += 6;
-   if ( *hp == '\033' )
+   ptrHeaderName += 6;
+   if ( *ptrHeaderName == '\033' )
    {
-      hp += 5;
+      ptrHeaderName += 5;
    }
-   /* Now should be pointing to the user name */
-   lastspace = 1;
-   ours = mystrdup( hp );
+   /* Now should be pointing to the aryUser name */
+   isAfterSpace = 1;
+   ptrExtractedName = duplicateString( ptrHeaderName );
    {
-      int len = (int)strlen( ours );
-      for ( i = 0; i < len; i++ )
+      int nameLength = (int)strlen( ptrExtractedName );
+      for ( charIndex = 0; charIndex < nameLength; charIndex++ )
       {
-         if ( ours[i] == '\033' )
+         if ( ptrExtractedName[charIndex] == '\033' )
          {
             break;
          }
-         if ( lastspace && !isupper( ours[i] ) )
+         if ( isAfterSpace && !isupper( ptrExtractedName[charIndex] ) )
          {
             break;
          }
-         if ( ours[i] == ' ' )
+         if ( ptrExtractedName[charIndex] == ' ' )
          {
-            lastspace = 1;
+            isAfterSpace = 1;
          }
          else
          {
-            lastspace = 0;
+            isAfterSpace = 0;
          }
       }
    }
-   ours[i] = '\0';
-   i--;
+   ptrExtractedName[charIndex] = '\0';
+   charIndex--;
    /* \r courtesy of Sbum, fixed enemy list in non-ANSI mode 2/9/2000 */
-   if ( ours[i] == ' ' || ours[i] == '\r' )
+   if ( ptrExtractedName[charIndex] == ' ' || ptrExtractedName[charIndex] == '\r' )
    {
-      ours[i] = '\0';
+      ptrExtractedName[charIndex] = '\0';
    }
    /* Is the name empty? */
-   if ( *ours == 0 )
+   if ( *ptrExtractedName == 0 )
    {
       return NULL;
    }
    /* check for dupes first */
-   for ( i = 0; i < MAXLAST; i++ )
+   for ( charIndex = 0; charIndex < MAX_USER_NAME_HISTORY_COUNT; charIndex++ )
    {
-      if ( !strcmp( lastname[i], ours ) )
+      if ( !strcmp( aryLastName[charIndex], ptrExtractedName ) )
       {
-         which = i;
+         existingIndex = charIndex;
       }
    }
    /* insert the name */
-   if ( which != 0 )
+   if ( existingIndex != 0 )
    {
-      for ( i = ( which > 0 ) ? which - 1 : MAXLAST - 2; i >= 0; --i )
+      for ( charIndex = ( existingIndex > 0 ) ? existingIndex - 1 : MAX_USER_NAME_HISTORY_COUNT - 2; charIndex >= 0; --charIndex )
       {
-         snprintf( lastname[i + 1], sizeof( lastname[i + 1] ), "%s", lastname[i] );
+         snprintf( aryLastName[charIndex + 1], sizeof( aryLastName[charIndex + 1] ), "%s", aryLastName[charIndex] );
       }
-      snprintf( lastname[0], sizeof( lastname[0] ), "%s", ours );
+      snprintf( aryLastName[0], sizeof( aryLastName[0] ), "%s", ptrExtractedName );
    }
-   free( ours );
-   return (char *)lastname[0];
+   free( ptrExtractedName );
+   return (char *)aryLastName[0];
 }
 
 /*
- * ExtractNumber - extract the X message number from an X message header.
+ * extractNumber - extract the X message number from an X message header.
  */
-int ExtractNumber( const char *header )
+int extractNumber( const char *header )
 {
-   char *p;
+   char *ptrMessageNumber;
    int number = 0;
 
-   p = mystrstr( header, "(#" );
-   if ( !p )
+   ptrMessageNumber = findSubstring( header, "(#" );
+   if ( !ptrMessageNumber )
    { /* This isn't an X message */
       return 0;
    }
 
-   for ( p += 2; *p != ')'; p++ )
+   for ( ptrMessageNumber += 2; *ptrMessageNumber != ')'; ptrMessageNumber++ )
    {
-      number += number * 10 + ( *p - '0' );
+      number += number * 10 + ( *ptrMessageNumber - '0' );
    }
 
    return number;
 }
 
-char *mystrdup( const char *s )
+char *duplicateString( const char *ptrSource )
 {
-   size_t i;
-   char *p;
+   size_t length;
+   char *ptrCopy;
 
-   i = strlen( s ) + 2;
-   p = (char *)calloc( 1, i );
-   if ( p )
+   length = strlen( ptrSource ) + 2;
+   ptrCopy = (char *)calloc( 1, length );
+   if ( ptrCopy )
    {
-      snprintf( p, i, "%s", s );
+      snprintf( ptrCopy, length, "%s", ptrSource );
    }
-   return p;
+   return ptrCopy;
 }
 
-#define ifansi if ( flags.useansi )
+#define ifansi if ( flagsConfiguration.useAnsi )
 
 int colorize( const char *str )
 {
-   const char *p;
+   const char *ptrText;
 
-   for ( p = str; *p; p++ )
+   for ( ptrText = str; *ptrText; ptrText++ )
    {
-      if ( *p == '@' )
+      if ( *ptrText == '@' )
       {
-         if ( !*( p + 1 ) )
+         if ( !*( ptrText + 1 ) )
          {
-            p--;
+            ptrText--;
          }
          else
          {
-            switch ( *++p )
+            switch ( *++ptrText )
             {
                case '@':
                   putchar( (int)'@' );
@@ -501,7 +505,7 @@ int colorize( const char *str )
       }
       else
       {
-         std_putchar( (int)*p );
+         stdPutChar( (int)*ptrText );
       }
    }
    return 1;
@@ -515,29 +519,29 @@ void arguments( int argc, char **argv )
 {
    if ( argc > 1 )
    {
-      snprintf( cmdlinehost, sizeof( cmdlinehost ), "%s", argv[1] );
+      snprintf( aryCommandLineHost, sizeof( aryCommandLineHost ), "%s", argv[1] );
    }
    else
    {
-      *cmdlinehost = 0;
+      *aryCommandLineHost = 0;
    }
    if ( argc > 2 )
    {
-      cmdlineport = (unsigned short)atoi( argv[2] );
+      cmdLinePort = (unsigned short)atoi( argv[2] );
    }
    else
    {
-      cmdlineport = 0;
+      cmdLinePort = 0;
    }
    if ( argc > 3 )
    {
       if ( !strncmp( argv[3], "secure", 6 ) || !strncmp( argv[3], "ssl", 6 ) )
       {
-         want_ssl = 1;
+         shouldUseSsl = 1;
       }
       else
       {
-         want_ssl = 0;
+         shouldUseSsl = 0;
       }
    }
 }
@@ -546,50 +550,50 @@ void arguments( int argc, char **argv )
  * strcmp() wrapper for friend entries; grabs the correct entry from the
  * struct, which is arg 2.
  */
-int fstrcmp( const char *a, const friend *b )
+int fStrCompare( const char *ptrName, const friend *ptrFriend )
 {
-   return strcmp( a, b->name );
+   return strcmp( ptrName, ptrFriend->name );
 }
 
-int fstrcmp_void( const void *a, const void *b )
+int fStrCompareVoid( const void *ptrName, const void *ptrFriend )
 {
-   return fstrcmp( (const char *)a, (const friend *)b );
+   return fStrCompare( (const char *)ptrName, (const friend *)ptrFriend );
 }
 
 /*
  * strcmp() wrapper for char entries.
  */
-int sortcmp( char **a, char **b )
+int sortCompare( char **ptrLeft, char **ptrRight )
 {
-   return strcmp( *a, *b );
+   return strcmp( *ptrLeft, *ptrRight );
 }
 
-int sortcmp_void( const void *a, const void *b )
+int sortCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
-   const char *const *aa = (const char *const *)a;
-   const char *const *bb = (const char *const *)b;
-   return strcmp( *aa, *bb );
+   const char *const *ptrLeftString = (const char *const *)ptrLeft;
+   const char *const *ptrRightString = (const char *const *)ptrRight;
+   return strcmp( *ptrLeftString, *ptrRightString );
 }
 
-int strcmp_void( const void *a, const void *b )
+int strCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
-   return strcmp( (const char *)a, (const char *)b );
+   return strcmp( (const char *)ptrLeft, (const char *)ptrRight );
 }
 
 /*
  * strcmp() wrapper for friend entries; takes two friend * args.
  */
-int fsortcmp( const friend *const *a, const friend *const *b )
+int fSortCompare( const friend *const *ptrLeft, const friend *const *ptrRight )
 {
-   assert( ( *a )->magic == 0x3231 );
-   assert( ( *b )->magic == 0x3231 );
+   assert( ( *ptrLeft )->magic == 0x3231 );
+   assert( ( *ptrRight )->magic == 0x3231 );
 
-   return strcmp( ( *a )->name, ( *b )->name );
+   return strcmp( ( *ptrLeft )->name, ( *ptrRight )->name );
 }
 
-int fsortcmp_void( const void *a, const void *b )
+int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
-   return fsortcmp( (const friend *const *)a, (const friend *const *)b );
+   return fSortCompare( (const friend *const *)ptrLeft, (const friend *const *)ptrRight );
 }
 
 #ifdef ENABLE_SAVE_PASSWORD
@@ -601,32 +605,33 @@ int fsortcmp_void( const void *a, const void *b )
  * you care about!  Also note it's closely tied to ASCII and won't
  * work with a non-ASCII system.  - IO
  */
-char *jhpencode( char *dest, const char *src, size_t len )
+char *jhpencode( char *ptrDestination, const char *src, size_t seedLength )
 {
-   char *di; /* dest iterator */
-   char x;   /* a single character */
+   char *ptrDestIterator; /* dest iterator */
+   char inputChar;        /* a single character */
 
-   di = dest;
-   while ( ( x = *src++ ) != 0 )
+   ptrDestIterator = ptrDestination;
+   while ( ( inputChar = *src++ ) != 0 )
    {
-      *di++ = ( x - 32 - len + 95 ) % 95 + 32;
-      len = x - 32;
+      *ptrDestIterator++ = ( inputChar - 32 - seedLength + 95 ) % 95 + 32;
+      seedLength = inputChar - 32;
    }
-   *di = 0;
-   return dest;
+   *ptrDestIterator = 0;
+   return ptrDestination;
 }
 
-char *jhpdecode( char *dest, const char *src, size_t len )
+char *jhpdecode( char *ptrDestination, const char *src, size_t seedLength )
 {
-   char *di; /* dest iterator */
-   char x;   /* a single character */
+   char *ptrDestIterator; /* dest iterator */
+   char inputChar;        /* a single character */
 
-   di = dest;
-   while ( ( x = *src++ ) != 0 )
+   ptrDestIterator = ptrDestination;
+   while ( ( inputChar = *src++ ) != 0 )
    {
-      *di++ = ( len = ( len + x - 32 ) % 95 ) + 32;
+      seedLength = ( seedLength + inputChar - 32 ) % 95;
+      *ptrDestIterator++ = seedLength + 32;
    }
-   *di = 0;
-   return dest;
+   *ptrDestIterator = 0;
+   return ptrDestination;
 }
 #endif

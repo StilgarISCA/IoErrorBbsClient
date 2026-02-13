@@ -21,7 +21,7 @@
 #include "ext.h"
 
 /*
- * default_colors is called once with an arg of 1 before the bbsrc file is
+ * defaultColors is called once with an arg of 1 before the bbsrc file is
  * read.  This initializes all the color variables.  It is then called again
  * after the bbsrc file is read, with an arg of 0.  This helps with reserved
  * fields which might become used after a user upgrades to a later version
@@ -29,12 +29,12 @@
  * instead of zero, which would render as black.
  */
 #define ifzero( x ) if ( ( x ) < '1' || ( x ) > '7' || clearall )
-void default_colors( int clearall )
+void defaultColors( int clearall )
 {
    ifzero( color.text ) color.text = '2';
    ifzero( color.forum ) color.forum = '3';
    ifzero( color.number ) color.number = '6';
-   ifzero( color.err ) color.err = '1';
+   ifzero( color.errorTextColor ) color.errorTextColor = '1';
    color.reserved1 = '0';
    color.reserved2 = '0';
    color.reserved3 = '0';
@@ -60,224 +60,224 @@ void default_colors( int clearall )
    ifzero( color.expressfriendtext ) color.expressfriendtext = '2';
 }
 
-char ansi_transform( char c )
+char ansiTransform( char inputChar )
 {
-   switch ( c )
+   switch ( inputChar )
    {
       case '6':
-         c = color.number;
+         inputChar = color.number;
          break;
       case '3':
-         c = color.forum;
+         inputChar = color.forum;
          break;
       case '2':
-         c = color.text;
+         inputChar = color.text;
          break;
       case '1':
-         c = color.err;
+         inputChar = color.errorTextColor;
          break;
       default:
          break;
    }
 
-   return (char)c;
+   return (char)inputChar;
 }
 
-void ansi_transform_express( char *s, size_t size )
+void ansiTransformExpress( char *ptrText, size_t size )
 {
-   char junk[580];
-   char *sp1, *sp2;
+   char aryTempText[580];
+   char *ptrExpressSender, *ptrExpressMarker;
 
    /* Insert color only when ANSI is being used */
-   if ( !flags.useansi )
+   if ( !flagsConfiguration.useAnsi )
    {
       return;
    }
 
    /* Verify this is an X message and set up pointers */
-   sp1 = mystrstr( s, ") to " );
-   sp2 = mystrstr( s, ") from " );
-   if ( !sp1 && !sp2 )
+   ptrExpressSender = findSubstring( ptrText, ") to " );
+   ptrExpressMarker = findSubstring( ptrText, ") from " );
+   if ( !ptrExpressSender && !ptrExpressMarker )
    {
       return;
    }
-   if ( ( sp2 && sp2 < sp1 ) || !sp1 )
+   if ( ( ptrExpressMarker && ptrExpressMarker < ptrExpressSender ) || !ptrExpressSender )
    {
-      sp1 = sp2 + 2;
+      ptrExpressSender = ptrExpressMarker + 2;
    }
 
-   sp2 = mystrstr( s, " at " );
-   if ( !sp2 )
+   ptrExpressMarker = findSubstring( ptrText, " at " );
+   if ( !ptrExpressMarker )
    {
       return;
    }
 
-   sp1 += 4;
-   *( sp1++ ) = 0;
-   *( sp2++ ) = 0;
+   ptrExpressSender += 4;
+   *( ptrExpressSender++ ) = 0;
+   *( ptrExpressMarker++ ) = 0;
 
-   if ( slistFind( friendList, sp1, fstrcmp_void ) != -1 )
+   if ( slistFind( friendList, ptrExpressSender, fStrCompareVoid ) != -1 )
    {
-      snprintf( junk, sizeof( junk ), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
-                color.expressfriendtext, s, color.expressfriendname, sp1,
-                color.expressfriendtext, sp2, color.text );
+      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+                color.expressfriendtext, ptrText, color.expressfriendname, ptrExpressSender,
+                color.expressfriendtext, ptrExpressMarker, color.text );
    }
    else
    {
-      snprintf( junk, sizeof( junk ), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
-                color.expresstext, s, color.expressname, sp1,
-                color.expresstext, sp2, color.text );
+      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+                color.expresstext, ptrText, color.expressname, ptrExpressSender,
+                color.expresstext, ptrExpressMarker, color.text );
    }
-   lastcolor = color.text;
-   snprintf( s, size, "%s", junk );
+   lastColor = color.text;
+   snprintf( ptrText, size, "%s", aryTempText );
 }
 
-char ansi_transform_post( char c, int isFriend )
+char ansiTransformPost( char inputChar, int isFriend )
 {
-   switch ( c )
+   switch ( inputChar )
    {
       case '3':
-         c = color.moreprompt;
+         inputChar = color.moreprompt;
          break;
       case '2':
          if ( isFriend )
          {
-            c = color.postfriendtext;
+            inputChar = color.postfriendtext;
          }
          else
          {
-            c = color.posttext;
+            inputChar = color.posttext;
          }
          break;
       case '1':
-         c = color.err;
+         inputChar = color.errorTextColor;
          break;
       default:
          break;
    }
-   return (char)c;
+   return (char)inputChar;
 }
 
-void ansi_transform_posthdr( char *s, int isFriend )
+void ansiTransformPostHeader( char *ptrText, int isFriend )
 {
-   char *sp;
+   char *ptrScan;
 
    /* Would have been easier with strtok() but can't guarantee it exists. */
-   for ( sp = s; *sp; sp++ )
+   for ( ptrScan = ptrText; *ptrScan; ptrScan++ )
    {
       /* Find an ANSI code */
-      if ( *sp == 27 )
+      if ( *ptrScan == 27 )
       {
          /* transform ANSI code */
-         sp += 3;
+         ptrScan += 3;
 
-         switch ( *sp )
+         switch ( *ptrScan )
          {
             case '6':
                if ( isFriend )
                {
-                  *sp = color.postfriendname;
+                  *ptrScan = color.postfriendname;
                }
                else
                {
-                  *sp = color.postname;
+                  *ptrScan = color.postname;
                }
                break;
             case '5':
-               *sp = color.postdate;
+               *ptrScan = color.postdate;
                break;
             case '3':
-               *sp = color.anonymous;
+               *ptrScan = color.anonymous;
                break;
             case '2':
                if ( isFriend )
                {
-                  *sp = color.postfriendtext;
+                  *ptrScan = color.postfriendtext;
                }
                else
                {
-                  *sp = color.posttext;
+                  *ptrScan = color.posttext;
                }
                break;
             default:
                break;
          }
-         lastcolor = *sp;
+         lastColor = *ptrScan;
       }
    }
 }
 
-void color_config( void )
+void colorConfig( void )
 {
    unsigned int invalid = 0;
-   char work[110];
-   int c;
+   char aryPromptText[110];
+   int inputChar;
 
-   std_printf( "Color\r\n" );
-   if ( !flags.useansi )
+   stdPrintf( "Color\r\n" );
+   if ( !flagsConfiguration.useAnsi )
    {
-      std_printf( "\r\nWARNING:  Color is off.  You will not be able to preview your selections." );
+      stdPrintf( "\r\nWARNING:  Color is off.  You will not be able to preview your selections." );
    }
    for ( ;; )
    {
-      snprintf( work, sizeof( work ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
-      colorize( work );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
+      colorize( aryPromptText );
 
       for ( invalid = 0;; )
       {
-         c = inkey();
-         if ( !mystrchr( "GgIiPpXxOoRrQq \n", c ) )
+         inputChar = inKey();
+         if ( !findChar( "GgIiPpXxOoRrQq \n", inputChar ) )
          {
             if ( invalid++ )
             {
-               flush_input( invalid );
+               flushInput( invalid );
             }
             continue;
          }
          break;
       }
 
-      switch ( c )
+      switch ( inputChar )
       {
          case 'g':
          case 'G':
-            std_printf( "General\r\n\n" );
-            general_color_config();
+            stdPrintf( "General\r\n\n" );
+            generalColorConfig();
             break;
          case 'i':
          case 'I':
-            std_printf( "Input\r\n\n" );
-            input_color_config();
+            stdPrintf( "Input\r\n\n" );
+            inputColorConfig();
             break;
          case 'o':
          case 'O':
-            std_printf( "Options\r\n\n" );
-            color_options();
+            stdPrintf( "Options\r\n\n" );
+            colorOptions();
             break;
 
          case 'p':
          case 'P':
-            std_printf( "Post colors\r\n\n" );
-            post_color_config();
+            stdPrintf( "Post colors\r\n\n" );
+            postColorConfig();
             break;
 
          case 'r':
          case 'R':
-            std_printf( "Reset colors\r\n" );
-            default_colors( 1 );
+            stdPrintf( "Reset colors\r\n" );
+            defaultColors( 1 );
             break;
 
          case 'x':
          case 'X':
-            std_printf( "Express colors\r\n\n" );
-            express_color_config();
+            stdPrintf( "Express colors\r\n\n" );
+            expressColorConfig();
             break;
 
          case 'q':
          case 'Q':
          case ' ':
          case '\n':
-            std_printf( "Quit\r\n" );
+            stdPrintf( "Quit\r\n" );
             return;
             /* NOTREACHED */
 
@@ -287,17 +287,17 @@ void color_config( void )
    }
 }
 
-void color_options( void )
+void colorOptions( void )
 {
-   std_printf( "Automatically answer the ANSI terminal question? (%s) -> ",
-               flags.ansiprompt ? "Yes" : "No" );
-   flags.ansiprompt = (unsigned int)yesnodefault( flags.ansiprompt );
-   std_printf( "Use bold ANSI colors when ANSI is enabled? (%s) -> ",
-               flags.usebold ? "Yes" : "No" );
-   flags.usebold = (unsigned int)yesnodefault( flags.usebold );
-   if ( flags.useansi )
+   stdPrintf( "Automatically answer the ANSI terminal question? (%s) -> ",
+              flagsConfiguration.shouldAutoAnswerAnsiPrompt ? "Yes" : "No" );
+   flagsConfiguration.shouldAutoAnswerAnsiPrompt = (unsigned int)yesNoDefault( flagsConfiguration.shouldAutoAnswerAnsiPrompt );
+   stdPrintf( "Use bold ANSI colors when ANSI is enabled? (%s) -> ",
+              flagsConfiguration.useBold ? "Yes" : "No" );
+   flagsConfiguration.useBold = (unsigned int)yesNoDefault( flagsConfiguration.useBold );
+   if ( flagsConfiguration.useAnsi )
    {
-      printf( "\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
+      printf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0', lastColor,
               color.background );
    }
 }
@@ -309,69 +309,69 @@ void color_options( void )
 #define EXPRESS_FMT_STR "\033[3%cm*** Message (#1) from \033[3%cm%s\033[3%cm at 11:01 ***\r\n>Hi there!\r\n"
 #define INPUT_FMT_STR "\033[3%cmMessage eXpress\r\nRecipient: \033[3%cmExam\033[3%cmple User\r\n\033[3%cm>Hi there!\r\n\033[3%cmMessage received by Example User.\r\n"
 
-void general_color_config( void )
+void generalColorConfig( void )
 {
    unsigned int invalid = 0;
-   int opt;
-   char work[100];
+   int menuOption;
+   char aryPromptText[100];
 
    for ( ;; )
    {
-      std_printf( GEN_FMT_STR, color.background, color.forum,
-                  color.text, color.err, color.forum,
-                  color.text, color.forum, color.number,
-                  color.text, color.number, color.text );
+      stdPrintf( GEN_FMT_STR, color.background, color.forum,
+                 color.text, color.errorTextColor, color.forum,
+                 color.text, color.forum, color.number,
+                 color.text, color.number, color.text );
 
-      snprintf( work, sizeof( work ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
-      colorize( work );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
+      colorize( aryPromptText );
 
       for ( invalid = 0;; )
       {
-         opt = inkey();
-         if ( !mystrchr( "BbEeFfNnTtQq \n", opt ) )
+         menuOption = inKey();
+         if ( !findChar( "BbEeFfNnTtQq \n", menuOption ) )
          {
             if ( invalid++ )
             {
-               flush_input( invalid );
+               flushInput( invalid );
             }
             continue;
          }
          break;
       }
 
-      switch ( opt )
+      switch ( menuOption )
       {
          case 'q':
          case 'Q':
          case ' ':
          case '\n':
-            std_printf( "Quit\r\n" );
+            stdPrintf( "Quit\r\n" );
             return;
             /* NOTREACHED */
          case 'b':
          case 'B':
-            std_printf( "Background\r\n\n" );
-            color.background = background_picker();
+            stdPrintf( "Background\r\n\n" );
+            color.background = backgroundPicker();
             break;
          case 'e':
          case 'E':
-            std_printf( "Error\r\n\n" );
-            color.err = color_picker();
+            stdPrintf( "Error\r\n\n" );
+            color.errorTextColor = colorPicker();
             break;
          case 'f':
          case 'F':
-            std_printf( "Forum\r\n\n" );
-            color.forum = color_picker();
+            stdPrintf( "Forum\r\n\n" );
+            color.forum = colorPicker();
             break;
          case 'n':
          case 'N':
-            std_printf( "Number\r\n\n" );
-            color.number = color_picker();
+            stdPrintf( "Number\r\n\n" );
+            color.number = colorPicker();
             break;
          case 't':
          case 'T':
-            std_printf( "Text\r\n\n" );
-            color.text = color_picker();
+            stdPrintf( "Text\r\n\n" );
+            color.text = colorPicker();
             break;
          default:
             break;
@@ -379,52 +379,52 @@ void general_color_config( void )
    }
 }
 
-void input_color_config( void )
+void inputColorConfig( void )
 {
    unsigned int invalid = 0;
-   int opt;
-   char work[100];
+   int menuOption;
+   char aryPromptText[100];
 
    for ( ;; )
    {
-      std_printf( INPUT_FMT_STR, color.text, color.input1,
-                  color.input2, color.input1, color.text );
+      stdPrintf( INPUT_FMT_STR, color.text, color.input1,
+                 color.input2, color.input1, color.text );
 
-      snprintf( work, sizeof( work ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
-      colorize( work );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
+      colorize( aryPromptText );
 
       for ( invalid = 0;; )
       {
-         opt = inkey();
-         if ( !mystrchr( "CcTtQq \n", opt ) )
+         menuOption = inKey();
+         if ( !findChar( "CcTtQq \n", menuOption ) )
          {
             if ( invalid++ )
             {
-               flush_input( invalid );
+               flushInput( invalid );
             }
             continue;
          }
          break;
       }
 
-      switch ( opt )
+      switch ( menuOption )
       {
          case 'q':
          case 'Q':
          case ' ':
          case '\n':
-            std_printf( "Quit\r\n" );
+            stdPrintf( "Quit\r\n" );
             return;
             /* NOTREACHED */
          case 'c':
          case 'C':
-            std_printf( "Completion\r\n\n" );
-            color.input2 = color_picker();
+            stdPrintf( "Completion\r\n\n" );
+            color.input2 = colorPicker();
             break;
          case 't':
          case 'T':
-            std_printf( "Text\r\n\n" );
-            color.input1 = color_picker();
+            stdPrintf( "Text\r\n\n" );
+            color.input1 = colorPicker();
             break;
          default:
             break;
@@ -432,17 +432,17 @@ void input_color_config( void )
    }
 }
 
-void post_color_config( void )
+void postColorConfig( void )
 {
    for ( ;; )
    {
-      switch ( user_or_friend() )
+      switch ( userOrFriend() )
       {
          case 'u':
-            post_user_color_config();
+            postUserColorConfig();
             break;
          case 'f':
-            post_friend_color_config();
+            postFriendColorConfig();
             break;
          default:
             return;
@@ -450,16 +450,16 @@ void post_color_config( void )
    }
 }
 
-void post_user_color_config( void )
+void postUserColorConfig( void )
 {
-   int opt;
+   int menuOption;
 
    for ( ;; )
    {
-      std_printf( POST_FMT_STR, color.postdate, color.posttext,
-                  color.postname, A_USER, color.posttext, color.forum );
-      opt = post_color_menu();
-      switch ( opt )
+      stdPrintf( POST_FMT_STR, color.postdate, color.posttext,
+                 color.postname, A_USER, color.posttext, color.forum );
+      menuOption = postColorMenu();
+      switch ( menuOption )
       {
          case 'q':
          case 'Q':
@@ -469,15 +469,15 @@ void post_user_color_config( void )
             /* NOTREACHED */
          case 'd':
          case 'D':
-            color.postdate = color_picker();
+            color.postdate = colorPicker();
             break;
          case 'n':
          case 'N':
-            color.postname = color_picker();
+            color.postname = colorPicker();
             break;
          case 't':
          case 'T':
-            color.posttext = color_picker();
+            color.posttext = colorPicker();
             break;
          default:
             break;
@@ -485,17 +485,17 @@ void post_user_color_config( void )
    }
 }
 
-void post_friend_color_config( void )
+void postFriendColorConfig( void )
 {
-   int opt;
+   int menuOption;
 
    for ( ;; )
    {
-      std_printf( POST_FMT_STR, color.postfrienddate, color.postfriendtext,
-                  color.postfriendname, A_FRIEND, color.postfriendtext,
-                  color.forum );
-      opt = post_color_menu();
-      switch ( opt )
+      stdPrintf( POST_FMT_STR, color.postfrienddate, color.postfriendtext,
+                 color.postfriendname, A_FRIEND, color.postfriendtext,
+                 color.forum );
+      menuOption = postColorMenu();
+      switch ( menuOption )
       {
          case 'q':
          case 'Q':
@@ -505,15 +505,15 @@ void post_friend_color_config( void )
             /* NOTREACHED */
          case 'd':
          case 'D':
-            color.postfrienddate = color_picker();
+            color.postfrienddate = colorPicker();
             break;
          case 'n':
          case 'N':
-            color.postfriendname = color_picker();
+            color.postfriendname = colorPicker();
             break;
          case 't':
          case 'T':
-            color.postfriendtext = color_picker();
+            color.postfriendtext = colorPicker();
             break;
          default:
             break;
@@ -521,67 +521,67 @@ void post_friend_color_config( void )
    }
 }
 
-char post_color_menu( void )
+char postColorMenu( void )
 {
    unsigned int invalid = 0;
-   int c;
-   char work[100];
+   int inputChar;
+   char aryPromptText[100];
 
-   snprintf( work, sizeof( work ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
-   colorize( work );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
+   colorize( aryPromptText );
 
    for ( invalid = 0;; )
    {
-      c = inkey();
-      if ( !mystrchr( "DdNnTtQq \n", c ) )
+      inputChar = inKey();
+      if ( !findChar( "DdNnTtQq \n", inputChar ) )
       {
          if ( invalid++ )
          {
-            flush_input( invalid );
+            flushInput( invalid );
          }
          continue;
       }
       break;
    }
 
-   switch ( c )
+   switch ( inputChar )
    {
       case 'd':
       case 'D':
-         std_printf( "Date\r\n\n" );
+         stdPrintf( "Date\r\n\n" );
          break;
       case 'n':
       case 'N':
-         std_printf( "Name\r\n\n" );
+         stdPrintf( "Name\r\n\n" );
          break;
       case 't':
       case 'T':
-         std_printf( "Text\r\n\n" );
+         stdPrintf( "Text\r\n\n" );
          break;
       case 'q':
       case 'Q':
       case ' ':
       case '\n':
-         std_printf( "Quit\r\n\n" );
+         stdPrintf( "Quit\r\n\n" );
          break;
       default:
          break;
    }
 
-   return (char)c;
+   return (char)inputChar;
 }
 
-void express_color_config( void )
+void expressColorConfig( void )
 {
    for ( ;; )
    {
-      switch ( user_or_friend() )
+      switch ( userOrFriend() )
       {
          case 'u':
-            express_user_color_config();
+            expressUserColorConfig();
             break;
          case 'f':
-            express_friend_color_config();
+            expressFriendColorConfig();
             break;
          default:
             return;
@@ -589,16 +589,16 @@ void express_color_config( void )
    }
 }
 
-void express_user_color_config( void )
+void expressUserColorConfig( void )
 {
-   int opt;
+   int menuOption;
 
    for ( ;; )
    {
-      std_printf( EXPRESS_FMT_STR, color.expresstext,
-                  color.expressname, A_USER, color.expresstext );
-      opt = express_color_menu();
-      switch ( opt )
+      stdPrintf( EXPRESS_FMT_STR, color.expresstext,
+                 color.expressname, A_USER, color.expresstext );
+      menuOption = expressColorMenu();
+      switch ( menuOption )
       {
          case 'q':
          case 'Q':
@@ -608,11 +608,11 @@ void express_user_color_config( void )
             /* NOTREACHED */
          case 'n':
          case 'N':
-            color.expressname = color_picker();
+            color.expressname = colorPicker();
             break;
          case 't':
          case 'T':
-            color.expresstext = color_picker();
+            color.expresstext = colorPicker();
             break;
          default:
             break;
@@ -620,16 +620,16 @@ void express_user_color_config( void )
    }
 }
 
-void express_friend_color_config( void )
+void expressFriendColorConfig( void )
 {
-   int opt;
+   int menuOption;
 
    for ( ;; )
    {
-      std_printf( EXPRESS_FMT_STR, color.expressfriendtext,
-                  color.expressfriendname, A_FRIEND, color.expressfriendtext );
-      opt = express_color_menu();
-      switch ( opt )
+      stdPrintf( EXPRESS_FMT_STR, color.expressfriendtext,
+                 color.expressfriendname, A_FRIEND, color.expressfriendtext );
+      menuOption = expressColorMenu();
+      switch ( menuOption )
       {
          case 'q':
          case 'Q':
@@ -639,11 +639,11 @@ void express_friend_color_config( void )
             /* NOTREACHED */
          case 'n':
          case 'N':
-            color.expressfriendname = color_picker();
+            color.expressfriendname = colorPicker();
             break;
          case 't':
          case 'T':
-            color.expressfriendtext = color_picker();
+            color.expressfriendtext = colorPicker();
             break;
          default:
             break;
@@ -651,248 +651,248 @@ void express_friend_color_config( void )
    }
 }
 
-char express_color_menu( void )
+char expressColorMenu( void )
 {
    unsigned int invalid = 0;
-   int c;
-   char work[100];
+   int inputChar;
+   char aryPromptText[100];
 
-   snprintf( work, sizeof( work ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
-   colorize( work );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
+   colorize( aryPromptText );
 
    for ( invalid = 0;; )
    {
-      c = inkey();
-      if ( !mystrchr( "NnTtQq \n", c ) )
+      inputChar = inKey();
+      if ( !findChar( "NnTtQq \n", inputChar ) )
       {
          if ( invalid++ )
          {
-            flush_input( invalid );
+            flushInput( invalid );
          }
          continue;
       }
       break;
    }
 
-   switch ( c )
+   switch ( inputChar )
    {
       case 'n':
       case 'N':
-         std_printf( "Name\r\n\n" );
+         stdPrintf( "Name\r\n\n" );
          break;
       case 't':
       case 'T':
-         std_printf( "Text\r\n\n" );
+         stdPrintf( "Text\r\n\n" );
          break;
       case 'q':
       case 'Q':
       case ' ':
       case '\n':
-         std_printf( "Quit\r\n\n" );
+         stdPrintf( "Quit\r\n\n" );
          break;
       default:
          break;
    }
 
-   return (char)c;
+   return (char)inputChar;
 }
 
-char user_or_friend( void )
+char userOrFriend( void )
 {
    unsigned int invalid = 0;
-   int c;
-   char work[100];
+   int inputChar;
+   char aryPromptText[100];
 
-   snprintf( work, sizeof( work ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
-   colorize( work );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
+   colorize( aryPromptText );
 
    for ( invalid = 0;; )
    {
-      c = inkey();
-      if ( !mystrchr( "UuFfQq \n", c ) )
+      inputChar = inKey();
+      if ( !findChar( "UuFfQq \n", inputChar ) )
       {
          if ( invalid++ )
          {
-            flush_input( invalid );
+            flushInput( invalid );
          }
          continue;
       }
       break;
    }
 
-   switch ( c )
+   switch ( inputChar )
    {
       case 'U':
-         c = 'u';
+         inputChar = 'u';
       case 'u':
-         std_printf( "User\r\n\n" );
+         stdPrintf( "User\r\n\n" );
          break;
       case 'F':
-         c = 'f';
+         inputChar = 'f';
       case 'f':
-         std_printf( "Friend\r\n\n" );
+         stdPrintf( "Friend\r\n\n" );
          break;
       default:
-         std_printf( "Quit\r\n" );
+         stdPrintf( "Quit\r\n" );
          break;
    }
 
-   return (char)c;
+   return (char)inputChar;
 }
 
-char color_picker( void )
+char colorPicker( void )
 {
    unsigned int invalid = 0;
-   int c;
-   char work[100];
+   int inputChar;
+   char aryPromptText[100];
 
-   snprintf( work, sizeof( work ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
-   colorize( work );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
+   colorize( aryPromptText );
 
    for ( invalid = 0;; )
    {
-      c = inkey();
-      if ( !mystrchr( "KkRrGgYyBbMmCcWw", c ) )
+      inputChar = inKey();
+      if ( !findChar( "KkRrGgYyBbMmCcWw", inputChar ) )
       {
          if ( invalid++ )
          {
-            flush_input( invalid );
+            flushInput( invalid );
          }
          continue;
       }
       break;
    }
 
-   switch ( c )
+   switch ( inputChar )
    {
       case 'r':
       case 'R':
-         std_printf( "Red\r\n\n" );
-         c = '1';
+         stdPrintf( "Red\r\n\n" );
+         inputChar = '1';
          break;
       case 'g':
       case 'G':
-         std_printf( "Green\r\n\n" );
-         c = '2';
+         stdPrintf( "Green\r\n\n" );
+         inputChar = '2';
          break;
       case 'y':
       case 'Y':
-         std_printf( "Yellow\r\n\n" );
-         c = '3';
+         stdPrintf( "Yellow\r\n\n" );
+         inputChar = '3';
          break;
       case 'b':
       case 'B':
-         std_printf( "Blue\r\n\n" );
-         c = '4';
+         stdPrintf( "Blue\r\n\n" );
+         inputChar = '4';
          break;
       case 'm':
       case 'M':
       case 'p': /* Some people call it purple */
       case 'P':
-         std_printf( "Magenta\r\n\n" );
-         c = '5';
+         stdPrintf( "Magenta\r\n\n" );
+         inputChar = '5';
          break;
       case 'c':
       case 'C':
-         std_printf( "Cyan\r\n\n" );
-         c = '6';
+         stdPrintf( "Cyan\r\n\n" );
+         inputChar = '6';
          break;
       case 'w':
       case 'W':
-         std_printf( "White\r\n\n" );
-         c = '7';
+         stdPrintf( "White\r\n\n" );
+         inputChar = '7';
          break;
       case 'k':
       case 'K':
-         std_printf( "Black\r\n\n" );
-         c = '0';
+         stdPrintf( "Black\r\n\n" );
+         inputChar = '0';
          break;
       default:
-         c = '0'; /* If your text goes black it's a bug here */
+         inputChar = '0'; /* If your text goes black it's a bug here */
          break;
    }
 
-   return (char)c;
+   return (char)inputChar;
 }
 
-char background_picker( void )
+char backgroundPicker( void )
 {
    unsigned int invalid = 0;
-   int c;
-   char work[140];
+   int inputChar;
+   char aryPromptText[140];
 
-   snprintf( work, sizeof( work ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%cm @Y-> @G",
+   snprintf( aryPromptText, sizeof( aryPromptText ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%cm @Y-> @G",
              color.background );
-   colorize( work );
+   colorize( aryPromptText );
 
    for ( invalid = 0;; )
    {
-      c = inkey();
-      if ( !mystrchr( "KkRrGgYyBbMmCcWwDd", c ) )
+      inputChar = inKey();
+      if ( !findChar( "KkRrGgYyBbMmCcWwDd", inputChar ) )
       {
          if ( invalid++ )
          {
-            flush_input( invalid );
+            flushInput( invalid );
          }
          continue;
       }
       break;
    }
 
-   switch ( c )
+   switch ( inputChar )
    {
       case 'k':
       case 'K':
-         std_printf( "Black\r\n" );
-         c = '0';
+         stdPrintf( "Black\r\n" );
+         inputChar = '0';
          break;
       case 'r':
       case 'R':
-         std_printf( "Red\r\n" );
-         c = '1';
+         stdPrintf( "Red\r\n" );
+         inputChar = '1';
          break;
       case 'g':
       case 'G':
-         std_printf( "Green\r\n" );
-         c = '2';
+         stdPrintf( "Green\r\n" );
+         inputChar = '2';
          break;
       case 'y':
       case 'Y':
-         std_printf( "Yellow\r\n" );
-         c = '3';
+         stdPrintf( "Yellow\r\n" );
+         inputChar = '3';
          break;
       case 'b':
       case 'B':
-         std_printf( "Blue\r\n" );
-         c = '4';
+         stdPrintf( "Blue\r\n" );
+         inputChar = '4';
          break;
       case 'm':
       case 'M':
       case 'p': /* Some people call it purple */
       case 'P':
-         std_printf( "Magenta\r\n" );
-         c = '5';
+         stdPrintf( "Magenta\r\n" );
+         inputChar = '5';
          break;
       case 'c':
       case 'C':
-         std_printf( "Cyan\r\n" );
-         c = '6';
+         stdPrintf( "Cyan\r\n" );
+         inputChar = '6';
          break;
       case 'w':
       case 'W':
-         std_printf( "White\r\n" );
-         c = '7';
+         stdPrintf( "White\r\n" );
+         inputChar = '7';
          break;
       case 'd':
       case 'D':
-         std_printf( "Default\r\n" );
-         c = '9';
+         stdPrintf( "Default\r\n" );
+         inputChar = '9';
          break;
       default:
-         c = '0'; /* If your text goes black it's a bug here */
+         inputChar = '0'; /* If your text goes black it's a bug here */
          break;
    }
-   std_printf( "\033[4%cm\n", c );
+   stdPrintf( "\033[4%cm\n", inputChar );
 
-   return (char)c;
+   return (char)inputChar;
 }

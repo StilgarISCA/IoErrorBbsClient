@@ -7,20 +7,20 @@
 
 char swork[BUFSIZ]; /* temp buffer for color stripping */
 
-/* std_putchar() and cap_putchar() write a single character to stdout and the
+/* stdPutChar() and capPutChar() write a single character to stdout and the
  * capture file, respectively.  On error, they terminate the client.
  */
-int std_putchar( int c )
+int stdPutChar( int inputChar )
 {
-   if ( putchar( c ) < 0 )
+   if ( putchar( inputChar ) < 0 )
    {
-      fatalperror( "std_putchar", "Local error" );
+      fatalPerror( "stdPutChar", "Local error" );
    }
-   cap_putchar( c );
-   return c;
+   capPutChar( inputChar );
+   return inputChar;
 }
 
-int cap_putchar( int c )
+int capPutChar( int inputChar )
 {
    static int skipansi = 0; /* Counter for avoidance of capturing ANSI */
 
@@ -29,113 +29,113 @@ int cap_putchar( int c )
       skipansi--;
       if ( skipansi == 1 )
       {
-         if ( flags.offbold && c == 109 )
+         if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
          { /* Damned weird kludge */
             printf( "\033[0m" );
             skipansi--;
          }
          else
          {
-            lastcolor = (char)c;
+            lastColor = (char)inputChar;
          }
       }
    }
-   else if ( c == '\033' )
+   else if ( inputChar == '\033' )
    {
       skipansi = 4;
    }
-   else if ( capture > 0 && !flags.posting && !flags.moreflag && c != '\r' )
+   else if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive && inputChar != '\r' )
    {
-      if ( putc( c, tempfile ) < 0 )
+      if ( putc( inputChar, tempFile ) < 0 )
       {
-         tempfileerror();
+         tempFileError();
       }
    }
-   return c;
+   return inputChar;
 }
 
-int net_putchar( int c )
+int netPutChar( int inputChar )
 {
-   return ( netput( c ) );
+   return ( netput( inputChar ) );
 }
 
-/* stripansi removes ANSI escape sequences from a string.  Limits: string
+/* stripAnsi removes ANSI aryEscape sequences from a aryString.  Limits: aryString
  * buffer space is BUFSIZ bytes, should not overflow this!!
  */
-char *stripansi( char *c, size_t csize )
+char *stripAnsi( char *ptrText, size_t bufferSize )
 {
-   const char *p;
-   char *q;
-   q = swork;
-   for ( p = c; *p != '\0'; p++ )
+   const char *ptrRead;
+   char *ptrWrite;
+   ptrWrite = swork;
+   for ( ptrRead = ptrText; *ptrRead != '\0'; ptrRead++ )
    {
-      if ( *p != '\033' )
+      if ( *ptrRead != '\033' )
       {
-         *q++ = *p;
+         *ptrWrite++ = *ptrRead;
       }
       else
       {
-         for ( ; *p != '\0' && !isalpha( *p ); p++ )
+         for ( ; *ptrRead != '\0' && !isalpha( *ptrRead ); ptrRead++ )
          {
             ;
          }
       }
    }
-   if ( *p == '\r' )
+   if ( *ptrRead == '\r' )
    { /* strip ^M too while we're here */
-      q--;
+      ptrWrite--;
    }
-   *q = '\0';
-   if ( csize > 0 )
+   *ptrWrite = '\0';
+   if ( bufferSize > 0 )
    {
-      snprintf( c, csize, "%s", swork );
+      snprintf( ptrText, bufferSize, "%s", swork );
    }
-   return c;
+   return ptrText;
 }
 
-/* std_puts and cap_puts write a string to stdout.  They differ from libc *puts
+/* stdPuts and capPuts write a aryString to stdout.  They differ from libc *puts
  * in that they do NOT write a trailing \n to the stream.  On error, they
  * terminate the client.
  */
-int std_puts( const char *c )
+int stdPuts( const char *ptrText )
 {
-   printf( "%s", c );
+   printf( "%s", ptrText );
    fflush( stdout );
-   cap_puts( c );
+   capPuts( ptrText );
    return 1;
 }
 
-int cap_puts( const char *c )
+int capPuts( const char *ptrText )
 {
-   if ( capture > 0 && !flags.posting && !flags.moreflag )
+   if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive )
    {
-      char buf[BUFSIZ];
-      snprintf( buf, sizeof( buf ), "%s", c );
-      stripansi( buf, sizeof( buf ) );
-      fprintf( tempfile, "%s", buf );
-      fflush( tempfile );
+      char aryBuffer[BUFSIZ];
+      snprintf( aryBuffer, sizeof( aryBuffer ), "%s", ptrText );
+      stripAnsi( aryBuffer, sizeof( aryBuffer ) );
+      fprintf( tempFile, "%s", aryBuffer );
+      fflush( tempFile );
    }
    return 1;
 }
 
-int net_puts( const char *c )
+int netPuts( const char *ptrText )
 {
-   const char *i;
+   const char *ptrRead;
 
-   for ( i = c; *i; i++ )
+   for ( ptrRead = ptrText; *ptrRead; ptrRead++ )
    {
-      netput( *i );
+      netput( *ptrRead );
    }
    return 1;
 }
 
-/* std_printf and cap_printf print a formatted string to stdout, exactly as
+/* stdPrintf and capPrintf print a formatted aryString to stdout, exactly as
  * libc *printf.
  */
-int std_printf( const char *format, ... )
+int stdPrintf( const char *format, ... )
 {
-   /* Know what sucks?  I can't really call cap_printf directly... */
-   char string[BUFSIZ];
+   /* Know what sucks?  I can't really call capPrintf directly... */
+   char aryString[BUFSIZ];
    va_list ap;
 
    va_start( ap, format );
@@ -143,17 +143,17 @@ int std_printf( const char *format, ... )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
-   (void)vsnprintf( string, sizeof( string ), format, ap );
+   (void)vsnprintf( aryString, sizeof( aryString ), format, ap );
 #if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
    va_end( ap );
-   return std_puts( string );
+   return stdPuts( aryString );
 }
 
-int cap_printf( const char *format, ... )
+int capPrintf( const char *format, ... )
 {
-   char string[BUFSIZ];
+   char aryString[BUFSIZ];
    va_list ap;
 
    if ( capture )
@@ -163,17 +163,17 @@ int cap_printf( const char *format, ... )
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
-      (void)vsnprintf( string, sizeof( string ), format, ap );
+      (void)vsnprintf( aryString, sizeof( aryString ), format, ap );
 #if defined( __clang__ )
 #pragma clang diagnostic pop
 #endif
       va_end( ap );
-      return cap_puts( string );
+      return capPuts( aryString );
    }
    return 1;
 }
 
-int net_printf( const char *format, ... )
+int netPrintf( const char *format, ... )
 {
    va_list ap;
    static char work[BUFSIZ];
@@ -188,6 +188,6 @@ int net_printf( const char *format, ... )
 #pragma clang diagnostic pop
 #endif
    va_end( ap );
-   net_puts( work );
+   netPuts( work );
    return 1;
 }

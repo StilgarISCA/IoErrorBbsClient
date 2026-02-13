@@ -8,7 +8,7 @@
 #define DEFS_H_INCLUDED
 
 #define VERSION "2.3.10-Stilgar"
-#define INTVERSION 2310
+#define INT_VERSION 2310
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -33,6 +33,7 @@
 #include <unistd.h>
 #endif
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 #include <setjmp.h>
@@ -82,14 +83,14 @@ typedef struct
 #define ESC 27
 #define DEL 127
 
-#define BBSHOST "bbs.iscabbs.com"
-#define BBSIPNUM "64.198.88.46"
-#define BBSPORT 23
-#define SSLPORT 992
+#define BBS_HOSTNAME "bbs.iscabbs.com"
+#define BBS_IP_ADDRESS "64.198.88.46"
+#define BBS_PORT_NUMBER 23
+#define SSL_PORT_NUMBER 992
 
-/* SendingX defines */
+/* sendingXState defines */
 #define SX_WANT_TO 5
-#define SX_SENT_x 1
+#define SENDING_X_STATE_SENT_COMMAND_X 1
 #define SX_SENT_NAME 2
 #define SX_REPLYING 3
 #define SX_SEND_NEXT 8
@@ -101,21 +102,21 @@ typedef struct
 #define CX_EXPRESS 2
 #define CX_INFO 3 /* not yet used */
 
-#define MAXLAST 20
+#define MAX_USER_NAME_HISTORY_COUNT 20
 typedef struct
 {
-   unsigned int posting : 1;        /* true if user is currently posting */
-   unsigned int lastsave : 1;       /* true if last time user edited they saved */
-   unsigned int check : 1;          /* true if waiting to check BBS for X's */
-   unsigned int configflag : 1;     /* true if we are in bbsrc config funcs */
-   unsigned int useansi : 1;        /* true if BBS is in ANSI color mode */
-   unsigned int usebold : 1;        /* true if using bold in ANSI color mode */
-   unsigned int offbold : 1;        /* true if we need to force bold ANSI off */
-   unsigned int moreflag : 1;       /* true if we are inside a MORE prompt */
-   unsigned int squelchpost : 1;    /* true if we should squelch enemy posts */
-   unsigned int squelchexpress : 1; /* true if we should squelch enemy express */
-   unsigned int ansiprompt : 1;     /* true if we automatically answer ANSI ? */
-   unsigned int browserbg : 1;      /* true if browser can be backgrounded */
+   unsigned int isPosting : 1;                    /* true if aryUser is currently posting */
+   unsigned int isLastSave : 1;                   /* true if last time aryUser edited they saved */
+   unsigned int shouldCheckExpress : 1;           /* true if waiting to check BBS for X's */
+   unsigned int isConfigMode : 1;                 /* true if we are in bbsrc config funcs */
+   unsigned int useAnsi : 1;                      /* true if BBS is in ANSI color mode */
+   unsigned int useBold : 1;                      /* true if using bold in ANSI color mode */
+   unsigned int shouldDisableBold : 1;            /* true if we need to force bold ANSI off */
+   unsigned int isMorePromptActive : 1;           /* true if we are inside a MORE prompt */
+   unsigned int shouldSquelchPost : 1;            /* true if we should squelch enemy posts */
+   unsigned int shouldSquelchExpress : 1;         /* true if we should squelch enemy express */
+   unsigned int shouldAutoAnswerAnsiPrompt : 1;   /* true if we automatically answer ANSI ? */
+   unsigned int shouldRunBrowserInBackground : 1; /* true if aryBrowser can be backgrounded */
 } Flags;
 
 typedef struct
@@ -136,10 +137,10 @@ typedef struct
 /* The ordering of this struct is important!  Do not change it! IO ERROR */
 typedef struct
 {
-   char text;   /* Plain text color */
-   char forum;  /* Forum prompt color */
-   char number; /* Numbers and Read cmd prompt color */
-   char err;    /* Warning/error messages color */
+   char text;           /* Plain text color */
+   char forum;          /* Forum prompt color */
+   char number;         /* Numbers and Read cmd prompt color */
+   char errorTextColor; /* Warning/error messages color */
    char reserved1;
    char reserved2;
    char reserved3;

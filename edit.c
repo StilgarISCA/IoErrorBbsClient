@@ -6,178 +6,178 @@
 #include "defs.h"
 #include "ext.h"
 
-void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
+void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
 {
-   int chr;
-   FILE *fp = tempfile;
-   int i;
-   int lnlngth;       /* line length */
-   int lastspace;     /* position of last space encountered */
-   int cancelspace;   /* true when last character is space */
-   char thisline[81]; /* array to save current line */
-   int old = '\n';
+   int inputChar;
+   FILE *ptrMessageFile = tempFile;
+   int itemIndex;
+   int lineLength;          /* line length */
+   int lastSpacePosition;   /* position of last space encountered */
+   int cancelspace;         /* true when last character is space */
+   char aryCurrentLine[81]; /* array to arySavedBytes current line */
+   int previousChar = '\n';
    unsigned int invalid = 0;
    int tabcount = 0;
 
-   flags.posting = 1;
-   if ( away )
+   flagsConfiguration.isPosting = 1;
+   if ( isAway )
    {
       printf( "[No longer away]\r\n" );
-      away = 0;
+      isAway = 0;
    }
    if ( capture )
    {
       printf( "[Capture to temp file turned OFF]\r\n" );
       capture = 0;
-      fflush( tempfile );
+      fflush( tempFile );
    }
-   rewind( fp );
-   if ( flags.lastsave )
+   rewind( ptrMessageFile );
+   if ( flagsConfiguration.isLastSave )
    {
-      if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+      if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
       {
-         fatalperror( "makemessage: freopen(tempfilename, \"w+\")", "Edit file error" );
+         fatalPerror( "makeMessage: freopen(aryTempFileName, \"w+\")", "Edit file error" );
       }
-      fp = tempfile;
-      flags.lastsave = 0;
+      ptrMessageFile = tempFile;
+      flagsConfiguration.isLastSave = 0;
    }
-   if ( getc( fp ) >= 0 )
+   if ( getc( ptrMessageFile ) >= 0 )
    {
-      rewind( fp );
+      rewind( ptrMessageFile );
       printf( "There is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
-      if ( yesno() )
+      if ( yesNo() )
       {
-         if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+         if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
          {
-            fatalperror( "makemessage: reopen temp file for truncate", "Edit file error" );
+            fatalPerror( "makeMessage: reopen temp file for truncate", "Edit file error" );
          }
-         fp = tempfile;
+         ptrMessageFile = tempFile;
       }
       else
       {
-         (void)checkfile( fp );
-         old = -1;
+         (void)checkFile( ptrMessageFile );
+         previousChar = -1;
       }
    }
-   lnlngth = 0;
-   lastspace = 0;
+   lineLength = 0;
+   lastSpacePosition = 0;
    cancelspace = 0;
 
    for ( ;; )
    {
-      if ( ftell( fp ) > 48700 )
+      if ( ftell( ptrMessageFile ) > 48700 )
       {
-         if ( old != -1 )
+         if ( previousChar != -1 )
          {
             printf( "\r\nMessage too long, must Abort or Save\r\n\n" );
             fflush( stdout );
-            mysleep( 1 );
-            flush_input( 0 );
+            mySleep( 1 );
+            flushInput( 0 );
             tabcount = 0;
          }
-         chr = CTRL_D;
-         old = '\n';
+         inputChar = CTRL_D;
+         previousChar = '\n';
       }
-      else if ( old < 0 )
+      else if ( previousChar < 0 )
       {
-         chr = 'P';
+         inputChar = 'P';
       }
       else if ( tabcount )
       {
          tabcount--;
-         chr = ' ';
+         inputChar = ' ';
       }
       else
       {
-         chr = inkey();
-         if ( iscntrl( chr ) && chr == CTRL_D && !upload )
+         inputChar = inKey();
+         if ( iscntrl( inputChar ) && inputChar == CTRL_D && !upload )
          {
-            chr = 1; /* Just a random invalid character */
+            inputChar = 1; /* Just a random invalid character */
          }
 
-         if ( chr != CTRL_D && chr != TAB && chr != '\b' && chr != '\n' && chr != CTRL_X && chr != CTRL_W && chr != CTRL_R && !isprint( chr ) )
+         if ( inputChar != CTRL_D && inputChar != TAB && inputChar != '\b' && inputChar != '\n' && inputChar != CTRL_X && inputChar != CTRL_W && inputChar != CTRL_R && !isprint( inputChar ) )
          {
             if ( invalid++ )
             {
-               flush_input( invalid );
+               flushInput( invalid );
             }
             continue;
          }
          invalid = 0;
       }
 
-      if ( chr == CTRL_R )
+      if ( inputChar == CTRL_R )
       {
-         thisline[lnlngth + 1] = 0;
-         printf( "\r\n%s", thisline + 1 );
+         aryCurrentLine[lineLength + 1] = 0;
+         printf( "\r\n%s", aryCurrentLine + 1 );
          continue;
       }
-      if ( chr == TAB )
+      if ( inputChar == TAB )
       {
-         tabcount = 7 - ( lnlngth & 7 );
-         chr = ' ';
+         tabcount = 7 - ( lineLength & 7 );
+         inputChar = ' ';
       }
-      if ( chr == '\b' )
+      if ( inputChar == '\b' )
       {
-         if ( lnlngth )
+         if ( lineLength )
          {
             putchar( '\b' );
             putchar( ' ' );
             putchar( '\b' );
-            if ( lnlngth-- == lastspace )
+            if ( lineLength-- == lastSpacePosition )
             {
-               for ( ; --lastspace && thisline[lastspace] != ' '; )
+               for ( ; --lastSpacePosition && aryCurrentLine[lastSpacePosition] != ' '; )
                {
                   ;
                }
             }
-            if ( !lnlngth )
+            if ( !lineLength )
             {
-               old = '\n';
+               previousChar = '\n';
             }
          }
          continue;
       }
-      if ( chr == CTRL_W )
+      if ( inputChar == CTRL_W )
       { /* ctrl-W is 'word erase' from Unix */
-         for ( i = 0; i < lnlngth; i++ )
+         for ( itemIndex = 0; itemIndex < lineLength; itemIndex++ )
          {
-            if ( thisline[i + 1] != ' ' )
+            if ( aryCurrentLine[itemIndex + 1] != ' ' )
             {
                break;
             }
          }
-         i = ( i == lnlngth );
-         for ( ; lnlngth && ( !i || thisline[lnlngth] != ' ' ); lnlngth-- )
+         itemIndex = ( itemIndex == lineLength );
+         for ( ; lineLength && ( !itemIndex || aryCurrentLine[lineLength] != ' ' ); lineLength-- )
          {
-            if ( thisline[lnlngth] != ' ' )
+            if ( aryCurrentLine[lineLength] != ' ' )
             {
-               i = 1;
+               itemIndex = 1;
             }
             putchar( '\b' );
             putchar( ' ' );
             putchar( '\b' );
          }
-         if ( !lnlngth || thisline[lnlngth] == ' ' )
+         if ( !lineLength || aryCurrentLine[lineLength] == ' ' )
          {
-            lastspace = lnlngth;
+            lastSpacePosition = lineLength;
          }
-         if ( !lnlngth )
+         if ( !lineLength )
          {
-            old = '\n';
+            previousChar = '\n';
          }
          continue;
       }
-      if ( chr == CTRL_X )
+      if ( inputChar == CTRL_X )
       { /* ctrl-X works like in normal Unix */
-         for ( ; lnlngth; lnlngth-- )
+         for ( ; lineLength; lineLength-- )
          {
             putchar( '\b' );
             putchar( ' ' );
             putchar( '\b' );
          }
-         lastspace = 0;
-         old = '\n';
+         lastSpacePosition = 0;
+         previousChar = '\n';
          continue;
       }
       /*
@@ -188,128 +188,130 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
       if ( cancelspace )
       {
          cancelspace = 0;
-         if ( chr == ' ' )
+         if ( inputChar == ' ' )
          {
             continue;
          }
       }
 
-      if ( chr != '\n' && chr != CTRL_D && old != -1 )
+      if ( inputChar != '\n' && inputChar != CTRL_D && previousChar != -1 )
       {
-         lnlngth++;
+         lineLength++;
       }
 
-      if ( chr == ' ' && ( lastspace = lnlngth ) == 80 )
+      if ( inputChar == ' ' && ( lastSpacePosition = lineLength ) == 80 )
       {
          cancelspace = 1;
-         chr = '\n';
-         for ( ; --lnlngth && thisline[lnlngth] == ' '; )
+         inputChar = '\n';
+         for ( ; --lineLength && aryCurrentLine[lineLength] == ' '; )
          {
             ;
          }
       }
-      if ( lnlngth == 80 )
+      if ( lineLength == 80 )
       {
-         if ( lastspace > ( 80 / 2 ) )
+         if ( lastSpacePosition > ( 80 / 2 ) )
          { /* don't autowrap past 40th column */
-            for ( i = 80 - 1; i && ( i > lastspace || thisline[i] == ' ' ); i-- )
+            for ( itemIndex = 80 - 1; itemIndex && ( itemIndex > lastSpacePosition || aryCurrentLine[itemIndex] == ' ' ); itemIndex-- )
             {
-               if ( i > lastspace )
+               if ( itemIndex > lastSpacePosition )
                {
                   putchar( '\b' );
                   putchar( ' ' );
                   putchar( '\b' );
                }
             }
-            for ( lnlngth = 1; lnlngth <= i; lnlngth++ )
+            for ( lineLength = 1; lineLength <= itemIndex; lineLength++ )
             {
-               if ( putc( thisline[lnlngth], fp ) < 0 )
+               if ( putc( aryCurrentLine[lineLength], ptrMessageFile ) < 0 )
                {
-                  tempfileerror();
+                  tempFileError();
                }
             }
-            if ( putc( '\n', fp ) < 0 )
+            if ( putc( '\n', ptrMessageFile ) < 0 )
             {
-               tempfileerror();
+               tempFileError();
             }
             printf( "\r\n" );
-            for ( lnlngth = 1; ( lnlngth + lastspace ) < 80; lnlngth++ )
+            for ( lineLength = 1; ( lineLength + lastSpacePosition ) < 80; lineLength++ )
             {
-               old = thisline[lnlngth + lastspace];
-               putchar( old );
-               thisline[lnlngth] = (char)old;
+               previousChar = aryCurrentLine[lineLength + lastSpacePosition];
+               putchar( previousChar );
+               aryCurrentLine[lineLength] = (char)previousChar;
             }
-            lastspace = 0;
+            lastSpacePosition = 0;
          }
          else
          {
-            for ( i = 1; i < 80; i++ )
+            for ( itemIndex = 1; itemIndex < 80; itemIndex++ )
             {
-               if ( putc( thisline[i], fp ) < 0 )
+               if ( putc( aryCurrentLine[itemIndex], ptrMessageFile ) < 0 )
                {
-                  tempfileerror();
+                  tempFileError();
                }
             }
-            if ( putc( '\n', fp ) < 0 )
+            if ( putc( '\n', ptrMessageFile ) < 0 )
             {
-               tempfileerror();
+               tempFileError();
             }
             printf( "\r\n" );
-            old = '\n';
-            lastspace = 0;
-            lnlngth = 1;
+            previousChar = '\n';
+            lastSpacePosition = 0;
+            lineLength = 1;
          }
       }
-      if ( chr != CTRL_D && chr != '\n' && old != -1 )
+      if ( inputChar != CTRL_D && inputChar != '\n' && previousChar != -1 )
       {
-         putchar( chr ); /* echo user's input to screen */
-         thisline[lnlngth] = (char)chr;
+         putchar( inputChar ); /* echo aryUser's input to screen */
+         aryCurrentLine[lineLength] = (char)inputChar;
       }
-      else if ( lnlngth && chr == CTRL_D )
+      else if ( lineLength && inputChar == CTRL_D )
       { /* simulate LF */
-         for ( i = 1; i <= lnlngth; i++ )
+         for ( itemIndex = 1; itemIndex <= lineLength; itemIndex++ )
          {
-            if ( putc( thisline[i], fp ) < 0 )
+            if ( putc( aryCurrentLine[itemIndex], ptrMessageFile ) < 0 )
             {
-               tempfileerror();
+               tempFileError();
             }
          }
-         if ( putc( '\n', fp ) < 0 )
+         if ( putc( '\n', ptrMessageFile ) < 0 )
          {
-            tempfileerror();
+            tempFileError();
          }
          printf( "\r\n" );
-         lastspace = lnlngth = 0;
+         lastSpacePosition = 0;
+         lineLength = 0;
       }
-      if ( ( old != '\n' || chr != '\n' || upload ) && chr != CTRL_D && old != -1 )
+      if ( ( previousChar != '\n' || inputChar != '\n' || upload ) && inputChar != CTRL_D && previousChar != -1 )
       {
-         old = chr;
-         if ( chr == '\n' )
+         previousChar = inputChar;
+         if ( inputChar == '\n' )
          {
-            for ( i = 1; i <= lnlngth; i++ )
+            for ( itemIndex = 1; itemIndex <= lineLength; itemIndex++ )
             {
-               if ( putc( thisline[i], fp ) < 0 )
+               if ( putc( aryCurrentLine[itemIndex], ptrMessageFile ) < 0 )
                {
-                  tempfileerror();
+                  tempFileError();
                }
             }
-            if ( putc( '\n', fp ) < 0 )
+            if ( putc( '\n', ptrMessageFile ) < 0 )
             {
-               tempfileerror();
+               tempFileError();
             }
             printf( "\r\n" );
-            lastspace = lnlngth = 0;
+            lastSpacePosition = 0;
+            lineLength = 0;
          }
          continue; /* go back and get next character */
       }
       else
       { /* 2 LFs in a rows (or a ctrl-D) */
-         if ( fflush( fp ) < 0 )
+         if ( fflush( ptrMessageFile ) < 0 )
          { /* make sure we've written it all */
-            tempfileerror();
+            tempFileError();
          }
 
-         if ( prompt( fp, &old, chr ) < 0 )
+         if ( prompt( ptrMessageFile, &previousChar, inputChar ) < 0 )
          {
             return;
          }
@@ -324,30 +326,30 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
  * also might even make this stuff easier for others to understand, but I doubt
  * it.
  */
-int prompt( FILE *fp, int *old, int cmd )
+int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
 {
-   FILE *cp;
-   int i;
-   int chr = cmd;
-   int lnlngth;
+   FILE *ptrCopyFile;
+   int itemIndex;
+   int inputChar = commandChar;
+   int lineLength;
    unsigned int invalid = 0;
    long size;
    int lines;
-   char thisline[80];
+   char aryCurrentLine[80];
 
-   for ( i = 0;; )
+   for ( itemIndex = 0;; )
    {
-      if ( *old != -1 )
+      if ( *previousChar != -1 )
       {
-         if ( i != 1 )
+         if ( itemIndex != 1 )
          {
-            sendblock();
-            net_putchar( CTRL_D );
-            net_putchar( 'c' );
+            sendBlock();
+            netPutChar( CTRL_D );
+            netPutChar( 'c' );
             byte += 2;
-            flags.check = 1;
-            (void)inkey();
-            if ( flags.useansi )
+            flagsConfiguration.shouldCheckExpress = 1;
+            (void)inKey();
+            if ( flagsConfiguration.useAnsi )
             {
                colorize( "@YA@Cbort  @YC@Continue  @YE@Cdit  @YP@Crint  @YS@Cave  @YX@Cpress -> @G " );
             }
@@ -357,46 +359,46 @@ int prompt( FILE *fp, int *old, int cmd )
             }
             fflush( stdout );
          }
-         i = 0;
-         /* Make 'x' work at this prompt for xland function */
-         if ( !( xland && xlandQueue->nobjs ) )
+         itemIndex = 0;
+         /* Make 'x' work at this prompt for isXland function */
+         if ( !( isXland && xlandQueue->nobjs ) )
          {
-            while ( !mystrchr( " \naAcCeEpPsSQtTx?/", chr = inkey() ) )
+            while ( !findChar( " \naAcCeEpPsSQtTx?/", inputChar = inKey() ) )
             {
                if ( invalid++ )
                {
-                  flush_input( invalid );
+                  flushInput( invalid );
                }
             }
             invalid = 0;
          }
          else
          {
-            chr = 'x';
+            inputChar = 'x';
          }
       }
-      switch ( chr )
+      switch ( inputChar )
       {
          case ' ':
          case '\n':
-            if ( !i++ )
+            if ( !itemIndex++ )
             {
                continue;
             }
-            flush_input( (unsigned)i ); /* FIXME: figure out what the hell this code is doing! */
+            flushInput( (unsigned)itemIndex ); /* FIXME: figure out what the hell this code is doing! */
             printf( "\r\n" );
             continue;
 
          case 'a':
          case 'A':
             printf( "Abort: are you sure? " );
-            if ( yesno() )
+            if ( yesNo() )
             {
-               sendblock();
-               net_putchar( CTRL_D );
-               net_putchar( 'a' );
+               sendBlock();
+               netPutChar( CTRL_D );
+               netPutChar( 'a' );
                byte += 2;
-               flags.posting = 0;
+               flagsConfiguration.isPosting = 0;
                return ( -1 );
             }
             continue;
@@ -404,77 +406,78 @@ int prompt( FILE *fp, int *old, int cmd )
          case 'c':
          case 'C':
             printf( "Continue...\r\n" );
-            if ( flags.useansi )
+            if ( flagsConfiguration.useAnsi )
             {
-               continued_post_helper(); /* KLUDGE */
+               continuedPostHelper(); /* KLUDGE */
             }
             break;
 
          case 'p':
          case 'P':
-            if ( *old == -1 )
+            if ( *previousChar == -1 )
             {
-               *old = '\n';
+               *previousChar = '\n';
             }
             else
             {
-               printf( "Print formatted\r\n\n%s", saveheader );
+               printf( "Print formatted\r\n\n%s", arySavedHeader );
             }
-            fseek( fp, 0L, SEEK_END );
-            size = ftell( fp );
-            rewind( fp );
+            fseek( ptrMessageFile, 0L, SEEK_END );
+            size = ftell( ptrMessageFile );
+            rewind( ptrMessageFile );
             lines = 2;
-            lnlngth = i = 0;
-            while ( ( chr = getc( fp ) ) > 0 )
+            lineLength = 0;
+            itemIndex = 0;
+            while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
-               i++;
-               if ( chr == TAB )
+               itemIndex++;
+               if ( inputChar == TAB )
                {
                   do
                   {
                      putchar( ' ' );
-                  } while ( ++lnlngth & 7 );
+                  } while ( ++lineLength & 7 );
                }
                else
                {
-                  if ( chr == '\n' )
+                  if ( inputChar == '\n' )
                   {
                      putchar( '\r' );
                   }
-                  putchar( chr );
-                  lnlngth++;
+                  putchar( inputChar );
+                  lineLength++;
                }
-               if ( chr == '\n' )
+               if ( inputChar == '\n' )
                {
-                  lnlngth = 0;
-                  if ( ++lines == rows && more( &lines, size > 0 ? (int)( i * 100 / size ) : 0 ) < 0 )
+                  lineLength = 0;
+                  if ( ++lines == rows && more( &lines, size > 0 ? (int)( itemIndex * 100 / size ) : 0 ) < 0 )
                   {
                      break;
                   }
                }
             }
-            fseek( fp, 0L, SEEK_END );
+            fseek( ptrMessageFile, 0L, SEEK_END );
             break;
 
          case 's':
          case 'S':
             printf( "Save message\r\n" );
-            if ( checkfile( fp ) )
+            if ( checkFile( ptrMessageFile ) )
             {
                continue;
             }
-            rewind( fp );
-            sendblock();
-            while ( ( chr = getc( fp ) ) > 0 )
+            rewind( ptrMessageFile );
+            sendBlock();
+            while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
-               net_putchar( chr );
+               netPutChar( inputChar );
                byte++;
             }
-            net_putchar( CTRL_D );
-            net_putchar( 's' );
+            netPutChar( CTRL_D );
+            netPutChar( 's' );
             byte += 2;
-            flags.lastsave = 1;
-            flags.posting = 0;
+            flagsConfiguration.isLastSave = 1;
+            flagsConfiguration.isPosting = 0;
             return ( -1 );
 
          case 'Q':
@@ -483,36 +486,36 @@ int prompt( FILE *fp, int *old, int cmd )
          case 'x':
          case '?':
          case '/':
-            sendblock();
-            net_putchar( CTRL_D );
-            net_putchar( chr );
+            sendBlock();
+            netPutChar( CTRL_D );
+            netPutChar( inputChar );
             byte += 2;
             looper();
-            net_putchar( 'c' );
+            netPutChar( 'c' );
             continue;
 
          case 'e':
          case 'E':
             printf( "Edit\r\n" );
-            if ( !*editor )
+            if ( !*aryEditor )
             {
-               printf( "[Error:  no editor available]\r\n" );
+               printf( "[Error:  no aryEditor available]\r\n" );
             }
             else
             {
-               if ( chr == 'E' )
+               if ( inputChar == 'E' )
                {
-                  fseek( fp, 0L, SEEK_END );
-                  if ( ftell( fp ) )
+                  fseek( ptrMessageFile, 0L, SEEK_END );
+                  if ( ftell( ptrMessageFile ) )
                   {
                      printf( "\r\nThere is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
-                     if ( yesno() )
+                     if ( yesNo() )
                      {
-                        if ( !( tempfile = freopen( tempfilename, "w+", tempfile ) ) )
+                        if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
                         {
-                           fatalperror( "load file into editor: reopen temp file for truncate", "Edit file error" );
+                           fatalPerror( "load file into aryEditor: reopen temp file for truncate", "Edit file error" );
                         }
-                        fp = tempfile;
+                        ptrMessageFile = tempFile;
                      }
                      else
                      {
@@ -520,54 +523,54 @@ int prompt( FILE *fp, int *old, int cmd )
                      }
                   }
                   printf( "\r\nFilename -> " );
-                  get_string( 67, thisline, -999 );
-                  if ( !*thisline )
+                  getString( 67, aryCurrentLine, -999 );
+                  if ( !*aryCurrentLine )
                   {
                      continue;
                   }
-                  if ( !( cp = fopen( thisline, "r" ) ) )
+                  if ( !( ptrCopyFile = fopen( aryCurrentLine, "r" ) ) )
                   {
                      printf( "\r\n[Error:  named file does not exist]\r\n\n" );
                      continue;
                   }
                   else
                   {
-                     while ( ( i = getc( cp ) ) >= 0 )
+                     while ( ( itemIndex = getc( ptrCopyFile ) ) >= 0 )
                      {
-                        if ( putc( i, fp ) < 0 )
+                        if ( putc( itemIndex, ptrMessageFile ) < 0 )
                         {
-                           tempfileerror();
+                           tempFileError();
                            break;
                         }
                      }
-                     if ( feof( cp ) && fflush( fp ) < 0 )
+                     if ( feof( ptrCopyFile ) && fflush( ptrMessageFile ) < 0 )
                      {
-                        tempfileerror();
+                        tempFileError();
                      }
-                     fclose( cp );
+                     fclose( ptrCopyFile );
                   }
                }
-               /* We have to close and reopen the tempfile due to locking */
-               fclose( tempfile );
-               run( editor, tempfilename );
-               if ( !( tempfile = fopen( tempfilename, "a+" ) ) )
+               /* We have to close and reopen the tempFile due to locking */
+               fclose( tempFile );
+               run( aryEditor, aryTempFileName );
+               if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
                {
-                  fatalperror( "opentmpfile: fopen", "Local error" );
+                  fatalPerror( "openTmpFile: fopen", "Local error" );
                }
-               if ( flags.useansi )
+               if ( flagsConfiguration.useAnsi )
                {
-                  printf( "\033[%cm\033[3%cm", flags.usebold ? '1' : '0', lastcolor );
+                  printf( "\033[%cm\033[3%cm", flagsConfiguration.useBold ? '1' : '0', lastColor );
                }
                printf( "[Editing complete]\r\n" );
-               if ( !( tempfile = freopen( tempfilename, "r+", tempfile ) ) )
+               if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )
                {
-                  fatalperror( "editor return: freopen(tempfilename, \"r+\")", "Edit file error" );
+                  fatalPerror( "aryEditor return: freopen(aryTempFileName, \"r+\")", "Edit file error" );
                }
-               fp = tempfile;
-               if ( checkfile( fp ) )
+               ptrMessageFile = tempFile;
+               if ( checkFile( ptrMessageFile ) )
                {
                   fflush( stdout );
-                  mysleep( 1 );
+                  mySleep( 1 );
                }
             }
             continue;
@@ -581,27 +584,38 @@ int prompt( FILE *fp, int *old, int cmd )
  * or the file itself being too long.  Returns 1 if the file has problems and
  * cannot be saved as is, 0 otherwise.
  */
-int checkfile( FILE *fp )
+int checkFile( FILE *ptrMessageFile )
 {
-   int i;
+   int itemIndex;
    int count = 0;
    int line = 1;
    int total = 0;
 
-   rewind( fp );
-   while ( !feof( fp ) )
+   rewind( ptrMessageFile );
+   while ( !feof( ptrMessageFile ) )
    {
-      if ( ( i = getc( fp ) ) != '\r' && i != '\n' )
+      if ( ( itemIndex = getc( ptrMessageFile ) ) != '\r' && itemIndex != '\n' )
       {
-         if ( ( i >= 0 && i < 32 && i != TAB ) || i >= DEL )
+         if ( ( itemIndex >= 0 && itemIndex < 32 && itemIndex != TAB ) || itemIndex >= DEL )
          {
             printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n", line );
             return ( 1 );
          }
-         else if ( ( count = i == TAB ? ( count + 8 ) & 0xf8 : count + 1 ) > 79 )
+         else
          {
-            printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
-            return ( 1 );
+            if ( itemIndex == TAB )
+            {
+               count = ( count + 8 ) & 0xf8;
+            }
+            else
+            {
+               count = count + 1;
+            }
+            if ( count > 79 )
+            {
+               printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
+               return ( 1 );
+            }
          }
       }
       else

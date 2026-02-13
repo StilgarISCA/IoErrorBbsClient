@@ -21,183 +21,184 @@
 #include "ext.h"
 #include "telnet.h"
 
-static char thisline[320]; /* Copy of the current line */
+static char thisline[320]; /* Copy of the current aryLine */
 
-void filter_wholist( register int c )
+void filterWhoList( register int inputChar )
 {
-   register int i; /* generic counter */
+   register int itemIndex; /* generic counter */
    static char new;
-   static int col;
-   static unsigned char who[21]; /* Buffer for current name in who list */
-   static unsigned char *whop = NULL;
-   static long timestamp = 0; /* Friend list timestamp */
-   static long timer = 0;     /* Friend list timestamp */
-   static long now = 0;       /* Current time */
-   static long extime = 0;    /* Extended time decoder */
-   char junk[80], work[100];
-   char *pc;
-   const friend *pf;
+   static int friendColumn;
+   static unsigned char aryWhoEntry[21]; /* Buffer for current name in aryWhoEntry list */
+   static unsigned char *ptrWhoEntryWrite = NULL;
+   static long timestamp = 0;      /* Friend list timestamp */
+   static long timer = 0;          /* Friend list timestamp */
+   static long elapsedSeconds = 0; /* Current time */
+   static long extime = 0;         /* Extended time decoder */
+   char aryTempText[80], aryDisplayLine[100];
+   char *ptrWhoCopy;
+   const friend *ptrFriend;
 
-   if ( !whop )
+   if ( !ptrWhoEntryWrite )
    { /* First time through */
-      whop = who;
-      *who = 0;
-      new = col = 0;
+      ptrWhoEntryWrite = aryWhoEntry;
+      *aryWhoEntry = 0;
+      new = 0;
+      friendColumn = 0;
    }
-   if ( c )
+   if ( inputChar )
    { /* received a character */
       new = 1;
-      *whop++ = (unsigned char)c;
-      *whop = 0;
+      *ptrWhoEntryWrite++ = (unsigned char)inputChar;
+      *ptrWhoEntryWrite = 0;
    }
    else
    { /* received a null */
       /*
     * DOC sends two NULs after S_WHO when we are supposed to display the
-    * saved who list.  We will eat the first character and only exit when
+    * saved aryWhoEntry list.  We will eat the first character and only exit when
     * the second NUL comes in.  Since it sends a single NUL to signal
-    * termination of the who list, this lets us distinguish.
+    * termination of the aryWhoEntry list, this lets us distinguish.
     * Follow carefully, lest you get lost in here.
     */
-      if ( who == whop )
+      if ( aryWhoEntry == ptrWhoEntryWrite )
       { /* Time to end it all */
          if ( new == 1 )
          {
-            if ( !savewhop )
+            if ( !savedWhoCount )
             { /* FIXME: I think this is buggy */
-               std_printf( "No friends online (new)" );
+               stdPrintf( "No friends online (new)" );
             }
-            whop = NULL;
+            ptrWhoEntryWrite = NULL;
             new = 0;
-            wholist = 0;
+            whoListProgress = 0;
          }
          else if ( new == 0 )
          {
-            now = time( NULL ) - timestamp;
-            if ( now - 66 == timer )
+            elapsedSeconds = time( NULL ) - timestamp;
+            if ( elapsedSeconds - 66 == timer )
             {
                timer = -1;
             }
             else
             {
-               timer = now;
+               timer = elapsedSeconds;
             }
-            if ( savewhop )
-            { /* we've stored an old wholist */
-               std_printf( timer == -1 ? "Die die die fornicate (666)\r\n\n" : "Your friends online (%d:%02d old)\r\n\n",
-                           (int)( now / 60 ),
-                           (int)( now % 60 ) );
-               for ( ; col++ < savewhop; )
+            if ( savedWhoCount )
+            { /* we've stored an old whoListProgress */
+               stdPrintf( timer == -1 ? "Die die die fornicate (666)\r\n\n" : "Your friends online (%d:%02d old)\r\n\n",
+                          (int)( elapsedSeconds / 60 ),
+                          (int)( elapsedSeconds % 60 ) );
+               for ( ; friendColumn++ < savedWhoCount; )
                {
                   /* FIXME: Finish writing this! */
-                  snprintf( junk, sizeof( junk ), "%s", (char *)savewho[col - 1] + 1 );
-                  snprintf( work, sizeof( work ), flags.useansi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n" : "%c%-18s%c    %2d:%02d  %s\r\n",
-                            *junk & 0x7f, junk + 1, *junk & 0x80 ? '*' : ' ',
-                            ( *savewho[col - 1] + (int)( now / 60 ) ) / 60,
-                            ( *savewho[col - 1] + (int)( now / 60 ) ) % 60,
-                            saveinfo[col - 1] );
-                  colorize( work );
+                  snprintf( aryTempText, sizeof( aryTempText ), "%s", (char *)arySavedWhoNames[friendColumn - 1] + 1 );
+                  snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n" : "%c%-18s%c    %2d:%02d  %s\r\n",
+                            *aryTempText & 0x7f, aryTempText + 1, *aryTempText & 0x80 ? '*' : ' ',
+                            ( *arySavedWhoNames[friendColumn - 1] + (int)( elapsedSeconds / 60 ) ) / 60,
+                            ( *arySavedWhoNames[friendColumn - 1] + (int)( elapsedSeconds / 60 ) ) % 60,
+                            arySavedWhoInfo[friendColumn - 1] );
+                  colorize( aryDisplayLine );
                }
-               col--; /* FIXME: filter.c has col = 0 ??? */
+               friendColumn--; /* FIXME: filter.inputChar has friendColumn = 0 ??? */
             }
             else
             {
-               std_printf( timer == -1 ? "Die die die (666)" : "No friends online (%d:%02d old)",
-                           (int)( now / 60 ), (int)( now % 60 ) );
+               stdPrintf( timer == -1 ? "Die die die (666)" : "No friends online (%d:%02d old)",
+                          (int)( elapsedSeconds / 60 ), (int)( elapsedSeconds % 60 ) );
             }
-            wholist = 0;
-            whop = NULL;
+            whoListProgress = 0;
+            ptrWhoEntryWrite = NULL;
          }
       }
       else
       { /* Received a friend */
-         whop = who;
-         if ( wholist++ == 1 )
+         ptrWhoEntryWrite = aryWhoEntry;
+         if ( whoListProgress++ == 1 )
          { /* List copy is OK */
-            savewhop = 0;
+            savedWhoCount = 0;
             slistDestroyItems( whoList );
             slistDestroy( whoList );
-            if ( !( whoList = slistCreate( 0, sortcmp_void ) ) )
+            if ( !( whoList = slistCreate( 0, sortCompareVoid ) ) )
             {
-               fatalexit( "Can't re-create saved who list!\r\n", "Fatal error" );
+               fatalExit( "Can't re-create saved aryWhoEntry list!\r\n", "Fatal error" );
             }
             for ( unsigned int ui = 0; ui < friendList->nitems; ui++ )
             {
-               pf = friendList->items[ui];
-               if ( !( pc = (char *)calloc( 1, strlen( pf->name ) + 1 ) ) )
+               ptrFriend = friendList->items[ui];
+               if ( !( ptrWhoCopy = (char *)calloc( 1, strlen( ptrFriend->name ) + 1 ) ) )
                {
-                  fatalexit( "Out of memory for list copy!\r\n", "Fatal error" );
+                  fatalExit( "Out of memory for list copy!\r\n", "Fatal error" );
                }
-               snprintf( pc, strlen( pf->name ) + 1, "%s", pf->name );
-               if ( !( slistAddItem( whoList, pc, 0 ) ) )
+               snprintf( ptrWhoCopy, strlen( ptrFriend->name ) + 1, "%s", ptrFriend->name );
+               if ( !( slistAddItem( whoList, ptrWhoCopy, 0 ) ) )
                {
-                  fatalexit( "Out of memory adding item in list copy!\r\n", "Fatal error" );
+                  fatalExit( "Out of memory adding item in list copy!\r\n", "Fatal error" );
                }
             }
          }
          /* Handle extended time information */
-         if ( *who == 0xfe )
+         if ( *aryWhoEntry == 0xfe )
          {
             /* Decode BCD */
             {
-               unsigned char *upc;
-               for ( upc = who + 1; *upc; upc++ )
+               unsigned char *ptrEncodedTime;
+               for ( ptrEncodedTime = aryWhoEntry + 1; *ptrEncodedTime; ptrEncodedTime++ )
                {
-                  extime = 10 * extime + *upc - 1;
+                  extime = 10 * extime + *ptrEncodedTime - 1;
                }
             }
          }
          else
          {
-            /* output name and info if user is on our 'friend' list */
-            snprintf( junk, sizeof( junk ), "%s", (char *)who + 1 );
-            *junk &= 0x7f;
-            if ( !( pc = (char *)calloc( 1, strlen( junk ) + 1 ) ) )
+            /* output name and info if aryUser is on our 'friend' list */
+            snprintf( aryTempText, sizeof( aryTempText ), "%s", (char *)aryWhoEntry + 1 );
+            *aryTempText &= 0x7f;
+            if ( !( ptrWhoCopy = (char *)calloc( 1, strlen( aryTempText ) + 1 ) ) )
             {
-               fatalexit( "Out of memory adding to saved who list!\r\n", "Fatal error" );
+               fatalExit( "Out of memory adding to saved aryWhoEntry list!\r\n", "Fatal error" );
             }
-            snprintf( pc, strlen( junk ) + 1, "%s", junk );
-            if ( slistFind( whoList, pc, strcmp_void ) == -1 )
+            snprintf( ptrWhoCopy, strlen( aryTempText ) + 1, "%s", aryTempText );
+            if ( slistFind( whoList, ptrWhoCopy, strCompareVoid ) == -1 )
             {
-               if ( !( slistAddItem( whoList, pc, 0 ) ) )
+               if ( !( slistAddItem( whoList, ptrWhoCopy, 0 ) ) )
                {
-                  fatalexit( "Can't add item to saved who list!\r\n", "Fatal error" );
+                  fatalExit( "Can't add item to saved aryWhoEntry list!\r\n", "Fatal error" );
                }
             }
             timestamp = time( NULL );
-            if ( ( c = slistFind( friendList, junk, fstrcmp_void ) ) != -1 )
+            if ( ( inputChar = slistFind( friendList, aryTempText, fStrCompareVoid ) ) != -1 )
             {
-               if ( !col++ )
+               if ( !friendColumn++ )
                {
-                  std_printf( "Your friends online (new)\r\n\n" );
+                  stdPrintf( "Your friends online (new)\r\n\n" );
                }
-               --*who;
-               if ( col <= 60 )
+               --*aryWhoEntry;
+               if ( friendColumn <= 60 )
                { /* FIXME: make saved list a real list? */
-                  pf = friendList->items[c];
+                  ptrFriend = friendList->items[inputChar];
                   if ( extime == 0 )
                   {
-                     extime = (long)( *who );
+                     extime = (long)( *aryWhoEntry );
                   }
                   if ( extime >= 1440 )
                   {
-                     snprintf( work, sizeof( work ), flags.useansi ? "@Y%-19s%c @R%2ldd%02ld:%02ld@G  @C%s\r\n" : "%-19s%c %2ldd%02ld:%02ld  %s\r\n",
-                               junk, who[1] & 0x80 ? '*' : ' ',
+                     snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%-19s%c @R%2ldd%02ld:%02ld@G  @C%s\r\n" : "%-19s%c %2ldd%02ld:%02ld  %s\r\n",
+                               aryTempText, aryWhoEntry[1] & 0x80 ? '*' : ' ',
                                extime / 1440,
                                ( extime % 1440 ) / 60, ( extime % 1440 ) % 60,
-                               pf->info );
+                               ptrFriend->info );
                   }
                   else
                   {
-                     snprintf( work, sizeof( work ), flags.useansi ? "@Y%-19s%c @R   %2ld:%02ld@G  @C%s\r\n" : "%-19s%c    %2ld:%02ld  %s\r\n",
-                               junk, who[1] & 0x80 ? '*' : ' ',
-                               extime / 60, extime % 60, pf->info );
+                     snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%-19s%c @R   %2ld:%02ld@G  @C%s\r\n" : "%-19s%c    %2ld:%02ld  %s\r\n",
+                               aryTempText, aryWhoEntry[1] & 0x80 ? '*' : ' ',
+                               extime / 60, extime % 60, ptrFriend->info );
                   }
-                  colorize( work );
-                  *savewho[savewhop] = *who;
-                  snprintf( (char *)savewho[savewhop] + 1, sizeof( savewho[savewhop] ) - 1, "%s", (char *)who + 1 );
-                  snprintf( (char *)saveinfo[savewhop], sizeof( saveinfo[savewhop] ), "%s", pf->info );
-                  savewhop++;
+                  colorize( aryDisplayLine );
+                  *arySavedWhoNames[savedWhoCount] = *aryWhoEntry;
+                  snprintf( (char *)arySavedWhoNames[savedWhoCount] + 1, sizeof( arySavedWhoNames[savedWhoCount] ) - 1, "%s", (char *)aryWhoEntry + 1 );
+                  snprintf( (char *)arySavedWhoInfo[savedWhoCount], sizeof( arySavedWhoInfo[savedWhoCount] ), "%s", ptrFriend->info );
+                  savedWhoCount++;
                }
             }
             extime = 0;
@@ -206,10 +207,10 @@ void filter_wholist( register int c )
    }
 }
 
-void filter_express( register int c )
+void filterExpress( register int inputChar )
 {
-   register int i;  /* generic counter */
-   static char *bp; /* comparison pointer */
+   register int itemIndex;     /* generic counter */
+   static char *ptrSenderName; /* comparison pointer */
    static struct
    {
       unsigned int crlf : 1;      /* Needs initial CR/LF */
@@ -218,12 +219,12 @@ void filter_express( register int c )
       unsigned int truncated : 1; /* X message exceeded buffer */
    } needs;
 
-   if ( c == -1 )
+   if ( inputChar == -1 )
    { /* signal from IAC to begin/end X */
-      if ( xmsgnow )
+      if ( isExpressMessageInProgress )
       { /* Need to re-init for new X */
-         xmsgbufp = xmsgbuf;
-         *xmsgbuf = 0;
+         ptrExpressMessageBuffer = aryExpressMessageBuffer;
+         *aryExpressMessageBuffer = 0;
          needs.ignore = 0;
          needs.crlf = 0;
          needs.prochdr = 1;
@@ -233,30 +234,30 @@ void filter_express( register int c )
       else if ( !needs.ignore )
       { /* Finished this X, dump it out */
          /* Process for automatic reply */
-         i = ExtractNumber( xmsgbuf );
+         itemIndex = extractNumber( aryExpressMessageBuffer );
          /* Don't queue if it's an outgoing X */
          /* Only send 'x' if it's a new incoming X */
-         if ( ( away || xland ) && !is_queued( bp, xlandQueue ) &&
-              i > highxmsg && !is_automatic_reply( xmsgbuf ) && bp )
+         if ( ( isAway || isXland ) && !isQueued( ptrSenderName, xlandQueue ) &&
+              itemIndex > highestExpressMessageId && !isAutomaticReply( aryExpressMessageBuffer ) && ptrSenderName )
          {
-            push_queue( bp, xlandQueue );
-            needx = 1;
+            pushQueue( ptrSenderName, xlandQueue );
+            shouldSendExpressMessage = 1;
          }
-         else if ( is_automatic_reply( xmsgbuf ) && i > highxmsg )
+         else if ( isAutomaticReply( aryExpressMessageBuffer ) && itemIndex > highestExpressMessageId )
          {
-            not_replying_transform_express( xmsgbuf, sizeof( xmsgbuf ) );
+            notReplyingTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
          }
-         /* Update highxmsg with greatest number seen */
-         if ( i > highxmsg )
+         /* Update highestExpressMessageId with greatest number seen */
+         if ( itemIndex > highestExpressMessageId )
          {
-            highxmsg = i;
+            highestExpressMessageId = itemIndex;
          }
-         replycode_transform_express( xmsgbuf, sizeof( xmsgbuf ) );
-         ansi_transform_express( xmsgbuf, sizeof( xmsgbuf ) );
-         std_printf( "%s%s", ( needs.crlf ) ? "\r\n" : "", xmsgbuf );
+         replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+         ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+         stdPrintf( "%s%s", ( needs.crlf ) ? "\r\n" : "", aryExpressMessageBuffer );
          if ( needs.truncated )
          {
-            std_printf( "\r\n[X message truncated]\r\n" );
+            stdPrintf( "\r\n[X message truncated]\r\n" );
          }
          return;
       }
@@ -271,48 +272,48 @@ void filter_express( register int c )
       return;
    }
 
-   if ( xmsgbuf == xmsgbufp )
+   if ( aryExpressMessageBuffer == ptrExpressMessageBuffer )
    { /* Check for initial CR/LF pair */
-      if ( c == '\r' || c == '\n' )
+      if ( inputChar == '\r' || inputChar == '\n' )
       {
          needs.crlf = 1;
          return;
       }
    }
    /* Insert character into the buffer (drop excess to avoid overflow) */
-   if ( xmsgbufp >= xmsgbuf + sizeof( xmsgbuf ) - 1 )
+   if ( ptrExpressMessageBuffer >= aryExpressMessageBuffer + sizeof( aryExpressMessageBuffer ) - 1 )
    {
       needs.truncated = 1;
       return;
    }
-   *xmsgbufp++ = (char)c;
-   *xmsgbufp = 0;
+   *ptrExpressMessageBuffer++ = (char)inputChar;
+   *ptrExpressMessageBuffer = 0;
 
    /* Extract URLs if any */
-   if ( !needs.prochdr && c == '\r' )
+   if ( !needs.prochdr && inputChar == '\r' )
    {
-      filter_url( xmsgbufp );
+      filterUrl( ptrExpressMessageBuffer );
    }
 
    /* If reached a \r it's time to do header processing */
-   if ( needs.prochdr && c == '\r' )
+   if ( needs.prochdr && inputChar == '\r' )
    {
       needs.prochdr = 0;
       /* Process for kill file */
-      if ( !mystrstr( xmsgbuf, "*** Message " ) &&
-           !mystrstr( xmsgbuf, "%%% Question " ) )
+      if ( !findSubstring( aryExpressMessageBuffer, "*** Message " ) &&
+           !findSubstring( aryExpressMessageBuffer, "%%% Question " ) )
       {
          /* not an X header we care about */
       }
       /* get name for ^N function */
-      bp = ExtractName( xmsgbuf );
+      ptrSenderName = extractName( aryExpressMessageBuffer );
       /* FIXME: move this down to where the msg is printed! so that enemies are
       not added to the ^N scroll */
-      if ( slistFind( enemyList, bp, strcmp_void ) != -1 )
+      if ( slistFind( enemyList, ptrSenderName, strCompareVoid ) != -1 )
       {
-         if ( !flags.squelchexpress )
+         if ( !flagsConfiguration.shouldSquelchExpress )
          {
-            std_printf( "\r\n[X message by %s killed]\r\n", bp );
+            stdPrintf( "\r\n[X message by %s killed]\r\n", ptrSenderName );
          }
          needs.ignore = 1;
          return;
@@ -321,7 +322,7 @@ void filter_express( register int c )
    return;
 }
 
-void filter_post( register int c )
+void filterPost( register int inputChar )
 {
    static int ansistate = 0; /* ANSI state count */
    static int numposts = 0;  /* count of the # of posts received so far */
@@ -329,18 +330,18 @@ void filter_post( register int c )
    static char *posthdrp;    /* pointer into posthdr */
    static struct
    {
-      unsigned int crlf : 1;     /* need to add a CR/LF */
-      unsigned int prochdr : 1;  /* process post header */
-      unsigned int ignore : 1;   /* kill this post */
-      unsigned int second_n : 1; /* send a second n */
+      unsigned int crlf : 1;    /* need to add a CR/LF */
+      unsigned int prochdr : 1; /* process post header */
+      unsigned int ignore : 1;  /* kill this post */
+      unsigned int secondN : 1; /* send a second n */
    } needs;
-   static char *bp; /* misc. pointer */
-   static char junk[160];
+   static char *ptrSenderName; /* misc. pointer */
+   static char aryTempText[160];
    static int isFriend; /* Current post is by a friend */
 
-   if ( c == -1 )
+   if ( inputChar == -1 )
    { /* control: begin/end of post */
-      if ( postnow )
+      if ( postProgressState )
       { /* beginning of post */
          posthdrp = posthdr;
          *posthdr = 0;
@@ -348,16 +349,16 @@ void filter_post( register int c )
          needs.prochdr = 1;
          isFriend = 0;
          needs.ignore = 0;
-         needs.second_n = 0;
+         needs.secondN = 0;
       }
       else
       { /* end of post */
-         if ( needs.second_n )
+         if ( needs.secondN )
          {
-            net_putchar( 'n' );
+            netPutChar( 'n' );
             byte++;
          }
-         filter_url( " " );
+         filterUrl( " " );
          numposts++;
       }
       return;
@@ -370,7 +371,7 @@ void filter_post( register int c )
 
    if ( posthdr == posthdrp )
    { /* Check for initial CR/LF pair */
-      if ( c == '\r' || c == '\n' )
+      if ( inputChar == '\r' || inputChar == '\n' )
       {
          needs.crlf = 1;
          return;
@@ -381,24 +382,24 @@ void filter_post( register int c )
      */
    if ( !needs.prochdr )
    {
-      /* Store this line for processing */
-      if ( c == '\n' )
+      /* Store this aryLine for processing */
+      if ( inputChar == '\n' )
       {
-         filter_url( thisline );
+         filterUrl( thisline );
          thisline[0] = 0;
       }
       else
       {
          /* This is a whole lot faster than calling strcat() */
-         char *p = thisline;
+         char *ptrCursor = thisline;
 
-         for ( ; *p; p++ )
+         for ( ; *ptrCursor; ptrCursor++ )
          { /* Find end of string */
             ;
          }
 
-         *p++ = (char)c; /* Copy character to end of string */
-         *p = 0;
+         *ptrCursor++ = (char)inputChar; /* Copy character to end of string */
+         *ptrCursor = 0;
       }
 
       /* Process ANSI codes in the middle of a post */
@@ -407,87 +408,88 @@ void filter_post( register int c )
          ansistate--;
          if ( ansistate == 1 )
          {
-            if ( flags.offbold && c == 109 )
+            if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
             { /* Turn boldface off */
                printf( "m\033[0" );
                ansistate--;
             }
             else
             {
-               lastcolor = ansi_transform_post( (char)c, isFriend );
-               c = lastcolor;
+               lastColor = ansiTransformPost( (char)inputChar, isFriend );
+               inputChar = lastColor;
             }
          }
       }
-      else if ( c == '\033' )
+      else if ( inputChar == '\033' )
       { /* Escape character */
          ansistate = 4;
-         if ( !flags.useansi )
+         if ( !flagsConfiguration.useAnsi )
          {
-            flags.useansi = 1;
-            if ( !flags.usebold )
+            flagsConfiguration.useAnsi = 1;
+            if ( !flagsConfiguration.useBold )
             {
-               flags.offbold = 1;
+               flagsConfiguration.shouldDisableBold = 1;
             }
          }
       }
       /* Change color for end of more prompt */
-      if ( flags.useansi && flags.moreflag && c == ' ' )
+      if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
       {
-         std_printf( "\033[3%cm", lastcolor = color.text ); /* assignment */
+         stdPrintf( "\033[3%cm", lastColor = color.text ); /* assignment */
       }
 
       /* Output character */
-      std_putchar( c );
+      stdPutChar( inputChar );
    }
    else
    {
-      *posthdrp++ = (char)c; /* store character in buffer */
+      *posthdrp++ = (char)inputChar; /* store character in buffer */
       *posthdrp = 0;
 
       /* If reached a \r it's time to do header processing */
-      if ( c == '\r' )
+      if ( inputChar == '\r' )
       {
          needs.prochdr = 0;
 
          /* Process for enemy list kill file */
-         snprintf( junk, sizeof( junk ), "%s", posthdr );
+         snprintf( aryTempText, sizeof( aryTempText ), "%s", posthdr );
          /* FIXME: name of enemy should not be added to ^N list */
-         bp = ExtractName( junk );
-         /*      strcpy(junk, posthdr);  * Why did I do this? */
-         isFriend = ( slistFind( friendList, bp, fstrcmp_void ) != -1 ) ? 1 : 0;
-         ansi_transform_posthdr( posthdr, isFriend );
-         snprintf( saveheader, sizeof( saveheader ), "%s\r\n", posthdr );
-         if ( slistFind( enemyList, bp, strcmp_void ) != -1 )
+         ptrSenderName = extractName( aryTempText );
+         /*      strcpy(aryTempText, posthdr);  * Why did I do this? */
+         isFriend = ( slistFind( friendList, ptrSenderName, fStrCompareVoid ) != -1 ) ? 1 : 0;
+         ansiTransformPostHeader( posthdr, isFriend );
+         snprintf( arySavedHeader, sizeof( arySavedHeader ), "%s\r\n", posthdr );
+         if ( slistFind( enemyList, ptrSenderName, strCompareVoid ) != -1 )
          {
             needs.ignore = 1;
-            postflag = postnow = -1;
-            net_printf( "%c%c%c%c", IAC, POST_K, numposts & 0xFF, 17 );
+            postHeaderActive = -1;
+            postProgressState = -1;
+            netPrintf( "%c%c%c%c", IAC, POST_K, numposts & 0xFF, 17 );
             netflush();
-            if ( !flags.squelchpost )
+            if ( !flagsConfiguration.shouldSquelchPost )
             {
-               std_printf( "%s[Post by %s killed]\r\n",
-                           *posthdr == '\n' ? "\r\n" : "", bp );
+               stdPrintf( "%s[Post by %s killed]\r\n",
+                          *posthdr == '\n' ? "\r\n" : "", ptrSenderName );
             }
             else
             {
-               eatline = ( needs.crlf ? 1 : 2 );
-               net_putchar( 'n' );
+               pendingLinesToEat = ( needs.crlf ? 1 : 2 );
+               netPutChar( 'n' );
                netflush();
                byte++;
             }
             return;
          }
-         std_printf( "%s%s\r", ( needs.crlf ) ? "\r\n" : "", posthdr );
+         stdPrintf( "%s%s\r", ( needs.crlf ) ? "\r\n" : "", posthdr );
       }
    }
 }
 
-void filter_url( const char *line )
+void filterUrl( const char *aryLine )
 {
    static int multiline = 0;
-   static char url[1024];
-   char *p, *q;
+   static char aryUrlBuffer[1024];
+   char *ptrCursor, *ptrNext;
 
    if ( !urlQueue )
    { /* Can't store URLs for some reason */
@@ -496,76 +498,76 @@ void filter_url( const char *line )
 
    if ( !multiline )
    {
-      snprintf( url, sizeof( url ), "%s", line );
+      snprintf( aryUrlBuffer, sizeof( aryUrlBuffer ), "%s", aryLine );
    }
    else
    {
-      size_t ulen = strlen( url );
-      if ( ulen < sizeof( url ) - 1 )
+      size_t ulen = strlen( aryUrlBuffer );
+      if ( ulen < sizeof( aryUrlBuffer ) - 1 )
       {
-         snprintf( url + ulen, sizeof( url ) - ulen, "%s", line );
+         snprintf( aryUrlBuffer + ulen, sizeof( aryUrlBuffer ) - ulen, "%s", aryLine );
       }
    }
 
    {
-      size_t len = strlen( url );
-      while ( len > 0 )
+      size_t urlLength = strlen( aryUrlBuffer );
+      while ( urlLength > 0 )
       {
-         size_t idx = len - 1;
-         if ( url[idx] == ' ' || url[idx] == '\t' || url[idx] == '\r' )
+         size_t index = urlLength - 1;
+         if ( aryUrlBuffer[index] == ' ' || aryUrlBuffer[index] == '\t' || aryUrlBuffer[index] == '\r' )
          {
-            url[idx] = 0;
+            aryUrlBuffer[index] = 0;
          }
          else
          {
             break;
          }
-         len = idx;
+         urlLength = index;
       }
    }
    {
-      size_t ulen = strlen( url );
-      if ( ulen < sizeof( url ) - 1 )
+      size_t ulen = strlen( aryUrlBuffer );
+      if ( ulen < sizeof( aryUrlBuffer ) - 1 )
       {
-         snprintf( url + ulen, sizeof( url ) - ulen, " " );
+         snprintf( aryUrlBuffer + ulen, sizeof( aryUrlBuffer ) - ulen, " " );
       }
    }
 
-   if ( !( p = strstr( url, "http://" ) ) )
+   if ( !( ptrCursor = strstr( aryUrlBuffer, "http://" ) ) )
    {
-      if ( !( p = strstr( url, "ftp://" ) ) )
+      if ( !( ptrCursor = strstr( aryUrlBuffer, "ftp://" ) ) )
       {
-         url[0] = 0;
+         aryUrlBuffer[0] = 0;
          multiline = 0;
          return;
       }
    }
    /* offset unused */
 
-   for ( q = p; *q; q++ )
+   for ( ptrNext = ptrCursor; *ptrNext; ptrNext++ )
    {
-      if ( mystrchr( ":/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$-_@.&+,=;?%~{|}", *q ) )
+      if ( findChar( ":/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$-_@.&+,=;?%~{|}", *ptrNext ) )
       {
          continue;
       }
-      *q = 0;
+      *ptrNext = 0;
       /* length unused */
 
-      /* Oops, looks like a multi-line URL */
-      if ( ( !multiline && p == line && q > p + 77 ) || ( multiline && strlen( line ) > 77 ) )
+      /* Oops, looks like a multi-aryLine URL */
+      if ( ( !multiline && ptrCursor == aryLine && ptrNext > ptrCursor + 77 ) || ( multiline && strlen( aryLine ) > 77 ) )
       {
-         if ( strlen( line ) > 77 )
+         if ( strlen( aryLine ) > 77 )
          {
             break;
          }
       }
 
-      if ( !is_queued( p, urlQueue ) )
+      if ( !isQueued( ptrCursor, urlQueue ) )
       {
-         char junk[1024];
-         while ( !push_queue( p, urlQueue ) )
+         char aryTempText[1024];
+         while ( !pushQueue( ptrCursor, urlQueue ) )
          {
-            pop_queue( junk, urlQueue );
+            popQueue( aryTempText, urlQueue );
          }
       }
       /*	    printf("\r\nSnarfed URL: <%s>\r\n", urls[nurls - 1]); */
@@ -574,70 +576,70 @@ void filter_url( const char *line )
    }
 
    multiline = 1;
-   /*	printf("Multiline URL, got <%s> so far.\r\n", url); */
+   /*	printf("Multiline URL, got <%s> so far.\r\n", aryUrlBuffer); */
    return;
 }
 
-void filter_data( register int c )
+void filterData( register int inputChar )
 {
    static int ansistate = 0; /* Counter for ANSI transformations */
 
-   /* Copy the current line (or what we have so far) */
-   if ( c == '\n' )
+   /* Copy the current aryLine (or what we have so far) */
+   if ( inputChar == '\n' )
    {
-      filter_url( thisline );
+      filterUrl( thisline );
       thisline[0] = 0;
    }
    else
    {
       /* This is faster than calling strcat() */
-      char *p = thisline;
+      char *ptrCursor = thisline;
 
-      while ( *p )
+      while ( *ptrCursor )
       { /* Find end of string */
-         p++;
+         ptrCursor++;
       }
 
-      *p++ = (char)c; /* Copy character to end of string */
-      *p = 0;
+      *ptrCursor++ = (char)inputChar; /* Copy character to end of string */
+      *ptrCursor = 0;
    }
 
    /* Auto-answer ANSI question */
-   if ( flags.ansiprompt && strstr( thisline, "Are you on an ANSI" ) )
+   if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt && strstr( thisline, "Are you on an ANSI" ) )
    {
-      net_putchar( 'y' );
+      netPutChar( 'y' );
       byte++;
       *thisline = 0; /* Kill it; we don't need it */
    }
 
    /* Automatic X reply */
    /*
-    if (SendingX == SX_SENT_NAME) {
-   SendingX = SX_SEND_NEXT;
+    if (sendingXState == SX_SENT_NAME) {
+   sendingXState = SX_SEND_NEXT;
 #if DEBUG
-   	std_printf("filter_data 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
+   	stdPrintf("filterData 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland);
 #endif
     }
     */
-   /*  if (SendingX == SX_SEND_NEXT && xlandQueue->nobjs && (away || xland))
-   send_an_x();
+   /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->nobjs && (isAway || isXland))
+   sendAnX();
    */
-   if ( SendingX == SX_SEND_NEXT && !*thisline && c == '\r' )
+   if ( sendingXState == SX_SEND_NEXT && !*thisline && inputChar == '\r' )
    {
-      SendingX = SX_NOT;
+      sendingXState = SX_NOT;
 #if DEBUG
-      std_printf( "filter_data 2 SendingX is %d, xland is %d\r\n", SendingX, xland );
+      stdPrintf( "filterData 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-      if ( xlandQueue->nobjs && ( away || xland ) )
+      if ( xlandQueue->nobjs && ( isAway || isXland ) )
       {
-         send_an_x();
+         sendAnX();
       }
    }
 
    /* Change color for end of more prompt */
-   if ( flags.useansi && flags.moreflag && c == ' ' )
+   if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
    {
-      std_printf( "\033[3%cm", lastcolor = color.text ); /* assignment */
+      stdPrintf( "\033[3%cm", lastColor = color.text ); /* assignment */
    }
 
    /* Parse ANSI sequences */
@@ -646,118 +648,118 @@ void filter_data( register int c )
       ansistate--;
       if ( ansistate == 1 )
       {
-         if ( flags.offbold && c == 109 )
+         if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
          { /* Turn boldface off */
-            std_printf( "m\033[0" );
+            stdPrintf( "m\033[0" );
             ansistate--;
          }
          else
          {
-            lastcolor = ansi_transform( (char)c );
-            c = lastcolor;
+            lastColor = ansiTransform( (char)inputChar );
+            inputChar = lastColor;
          }
       }
    }
-   else if ( c == '\033' )
+   else if ( inputChar == '\033' )
    { /* Escape character */
-      std_printf( "\033[4%cm", color.background );
+      stdPrintf( "\033[4%cm", color.background );
       ansistate = 4;
-      if ( !flags.useansi )
+      if ( !flagsConfiguration.useAnsi )
       {
-         flags.useansi = 1;
-         if ( !flags.usebold )
+         flagsConfiguration.useAnsi = 1;
+         if ( !flagsConfiguration.useBold )
          {
-            flags.offbold = 1;
+            flagsConfiguration.shouldDisableBold = 1;
          }
       }
    }
-   if ( eatline > 0 )
+   if ( pendingLinesToEat > 0 )
    {
-      if ( c == '\n' )
+      if ( inputChar == '\n' )
       {
-         eatline--;
+         pendingLinesToEat--;
       }
    }
    else
    {
-      eatline = 0; /* eatline should never be less than 0 */
-      std_putchar( c );
+      pendingLinesToEat = 0; /* pendingLinesToEat should never be less than 0 */
+      stdPutChar( inputChar );
    }
    return;
 }
 
-void reprint_line( void )
+void reprintLine( void )
 {
-   char line[320];
-   char *p;
+   char aryLine[320];
+   char *ptrCursor;
 
-   strncpy( line, thisline, 320 );
-   std_putchar( '\r' );
-   for ( p = line; *p; p++ )
+   strncpy( aryLine, thisline, 320 );
+   stdPutChar( '\r' );
+   for ( ptrCursor = aryLine; *ptrCursor; ptrCursor++ )
    {
-      filter_data( *p );
+      filterData( *ptrCursor );
    }
-   strncpy( thisline, line, 320 );
+   strncpy( thisline, aryLine, 320 );
 }
 
-void moreprompt_helper( void )
+void morePromptHelper( void )
 {
-   if ( !flags.useansi )
+   if ( !flagsConfiguration.useAnsi )
    {
       return;
    }
 
-   if ( postnow )
+   if ( postProgressState )
    {
-      continued_post_helper();
+      continuedPostHelper();
    }
    else
    {
-      continued_data_helper();
+      continuedDataHelper();
    }
 }
 
-void continued_post_helper( void )
+void continuedPostHelper( void )
 {
-   static char junk[] = "\033[32m";
-   char *s;
+   static char aryTempText[] = "\033[32m";
+   char *ptrText;
 
-   for ( s = junk; *s; s++ )
+   for ( ptrText = aryTempText; *ptrText; ptrText++ )
    {
-      filter_post( *s );
+      filterPost( *ptrText );
    }
 }
 
-void continued_data_helper( void )
+void continuedDataHelper( void )
 {
-   static char junk[] = "\033[32m";
-   char *s;
+   static char aryTempText[] = "\033[32m";
+   char *ptrText;
 
-   for ( s = junk; *s; s++ )
+   for ( ptrText = aryTempText; *ptrText; ptrText++ )
    {
-      filter_data( *s );
+      filterData( *ptrText );
    }
 }
 
 /* Check for an automatic reply message. Return 1 if this is such a message. */
-int is_automatic_reply( const char *message )
+int isAutomaticReply( const char *message )
 {
-   const char *p;
+   const char *ptrCursor;
 
-   /* Find first line */
-   p = mystrstr( message, ">" );
+   /* Find first aryLine */
+   ptrCursor = findSubstring( message, ">" );
 
-   /* Wasn't a first line? - move past '>' */
-   if ( !p )
+   /* Wasn't a first aryLine? - move past '>' */
+   if ( !ptrCursor )
    {
       return 0;
    }
-   p++;
+   ptrCursor++;
 
    /* Check for valid automatic reply messages */
-   if ( !strncmp( p, "+!R", 3 ) ||
-        !strncmp( p, "This message was automatically generated", 40 ) ||
-        !strncmp( p, "*** ISCA Windows Client", 23 ) )
+   if ( !strncmp( ptrCursor, "+!R", 3 ) ||
+        !strncmp( ptrCursor, "This message was automatically generated", 40 ) ||
+        !strncmp( ptrCursor, "*** ISCA Windows Client", 23 ) )
    {
       return 1;
    }
@@ -766,39 +768,39 @@ int is_automatic_reply( const char *message )
    return 0;
 }
 
-void not_replying_transform_express( char *s, size_t size )
+void notReplyingTransformExpress( char *ptrText, size_t size )
 {
-   char junk[580];
-   char *sp;
+   char aryTempText[580];
+   char *ptrMessageStart;
 
    /* Verify this is an X message and set up pointers */
-   sp = mystrstr( s, " at " );
-   if ( !sp )
+   ptrMessageStart = findSubstring( ptrText, " at " );
+   if ( !ptrMessageStart )
    {
       return;
    }
 
-   *( sp++ ) = 0;
+   *( ptrMessageStart++ ) = 0;
 
-   snprintf( junk, sizeof( junk ), "%s (not replying) %s", s, sp );
-   snprintf( s, size, "%s", junk );
+   snprintf( aryTempText, sizeof( aryTempText ), "%s (not replying) %s", ptrText, ptrMessageStart );
+   snprintf( ptrText, size, "%s", aryTempText );
 }
 
-void replycode_transform_express( char *s, size_t size )
+void replyCodeTransformExpress( char *ptrText, size_t size )
 {
-   char junk[580];
-   char *sp;
+   char aryTempText[580];
+   char *ptrMessageStart;
 
    /* Verify this is an auto reply and set up pointers */
-   sp = mystrstr( s, ">" );
-   if ( !sp || strncmp( sp, ">+!R ", 5 ) )
+   ptrMessageStart = findSubstring( ptrText, ">" );
+   if ( !ptrMessageStart || strncmp( ptrMessageStart, ">+!R ", 5 ) )
    {
       return;
    }
 
-   *( ++sp ) = 0;
-   sp += 4;
+   *( ++ptrMessageStart ) = 0;
+   ptrMessageStart += 4;
 
-   snprintf( junk, sizeof( junk ), "%s%s", s, sp );
-   snprintf( s, size, "%s", junk );
+   snprintf( aryTempText, sizeof( aryTempText ), "%s%s", ptrText, ptrMessageStart );
+   snprintf( ptrText, size, "%s", aryTempText );
 }

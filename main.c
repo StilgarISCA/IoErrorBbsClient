@@ -1,7 +1,7 @@
 /*
  * This is the main procedure, the details are elsewhere.  Since it is so
  * small, it is the only function in this whole program I can confidently say
- * is maybe probably sort of a bit slightly bug-free.
+ * is maybe probably sort of a bit slightly bug-free. 
  *
  *
  * ISCA BBS client v1.5    02/15/94 (des)
@@ -31,7 +31,7 @@
  *                         stuff, bbsrc is now self-generating and no longer
  *                         required to be installed when first setting up the
  *                         client, making things hopefully much easier for the
- *                         less than clueful hordes.
+ *                         less than clueful hordes. 
  * v1.31   11/01/93 (des)  Minor bug fixes.  Unix version now truncates file to
  *                         avoid extra blank lines.  Unreleased test version.
  * v1.4    11/08/93 (des)  Usual minor bug fixes.  Marco Polo comes through in
@@ -44,7 +44,7 @@
  *                         not conflict with any other hotkey.
  * v1.41   12/26/93 (des)  Minor bug fixes, added in ctrl-W line erase, plus
  *                         the character translation and stupid-term-program
- *                         protection of the real BBS (see inkey.c)  Finally
+ *                         protection of the real BBS (see inKey.c)  Finally
  *                         nabbed that real X message line wrapping bug, plus a
  *                         few others.  This release is more for testing these
  *                         fixes while I continue to look at the feasibility
@@ -53,7 +53,7 @@
  *                         more forgiving.
  * v1.42   12/31/93 (des)  Bug fixes, added compability for a few more
  *                         machines, including Amigas running Unix, BSDI, and
- *                         SCO/UnixWare.  Added "term" compatibility for Michael
+ *                         SCO/Xenix.  Added "term" compatibility for Michael
  *                         O'Reilly's term package courtesy of Ozy.
  * v1.5    02/15/94 (des)  Fixed nasty character dropping bug, made enemy list
  *                         work for > 1 screen posts properly, plus it now
@@ -79,25 +79,25 @@
 
 int main( int argc, char *argv[] )
 {
-   escape[0] = '\033';
-   escape[1] = '\0';
+   aryEscape[0] = '\033';
+   aryEscape[1] = '\0';
    if ( *argv[0] == '-' )
    {
-      login_shell = 1;
+      isLoginShell = 1;
    }
    else
    {
-      login_shell = 0;
+      isLoginShell = 0;
    }
    initialize( "v1.5" );
-   findhome();
-   readbbsrc();
-   opentmpfile();
+   findHome();
+   readBbsRc();
+   openTmpFile();
    arguments( argc, argv );
-   connectbbs();
-   siginit();
-   telinit();
-   setterm();
+   connectBbs();
+   sigInit();
+   telInit();
+   setTerm();
    looper();
    exit( 0 );
    return ( 0 );

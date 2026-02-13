@@ -15,7 +15,7 @@ static struct passwd *pw;
 #ifdef HAVE_OPENSSL
 SSL_CTX *ctx;
 
-void killSSL( void )
+void killSsl( void )
 {
    SSL_shutdown( ssl );
    SSL_free( ssl );
@@ -51,11 +51,11 @@ int initSSL( void )
 #endif /* HAVE_OPENSSL */
 
 /*
- * Wait for the next activity from either the user or the network -- we ignore
- * the user while we have a child process running.  Returns 1 for user input
+ * Wait for the next activity from either the aryUser or the network -- we ignore
+ * the aryUser while we have a child process running.  Returns 1 for aryUser input
  * pending, 2 for network input pending, 3 for both.
  */
-int waitnextevent( void )
+int waitNextEvent( void )
 {
    fd_set fdr;
    int result;
@@ -63,16 +63,16 @@ int waitnextevent( void )
    for ( ;; )
    {
       FD_ZERO( &fdr );
-      if ( !childpid && !flags.check )
+      if ( !childPid && !flagsConfiguration.shouldCheckExpress )
       {
          FD_SET( 0, &fdr );
       }
-      if ( !ignore_network )
+      if ( !shouldIgnoreNetwork )
       {
          FD_SET( net, &fdr );
       }
 
-      if ( select( ignore_network ? 1 : net + 1, &fdr, 0, 0, 0 ) < 0 )
+      if ( select( shouldIgnoreNetwork ? 1 : net + 1, &fdr, 0, 0, 0 ) < 0 )
       {
          if ( errno == EINTR )
          {
@@ -80,8 +80,8 @@ int waitnextevent( void )
          }
          else
          {
-            std_printf( "\r\n" );
-            fatalperror( "select", "Local error" );
+            stdPrintf( "\r\n" );
+            fatalPerror( "select", "Local error" );
          }
       }
 
@@ -93,28 +93,28 @@ int waitnextevent( void )
 }
 
 /*
- * Find the user's home directory (needed for .bbsrc and .bbstmp)
+ * Find the aryUser's home directory (needed for .bbsrc and .bbstmp)
  */
-void findhome( void )
+void findHome( void )
 {
    if ( ( pw = getpwuid( getuid() ) ) )
    {
-      snprintf( user, sizeof( user ), "%s", pw->pw_name );
+      snprintf( aryUser, sizeof( aryUser ), "%s", pw->pw_name );
    }
    else if ( getenv( "USER" ) )
    {
-      snprintf( user, sizeof( user ), "%s", getenv( "USER" ) );
+      snprintf( aryUser, sizeof( aryUser ), "%s", getenv( "USER" ) );
    }
    else
    {
-      fatalexit( "findhome: You don't exist, go away.", "Local error" );
+      fatalExit( "findHome: You don't exist, go away.", "Local error" );
    }
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      size_t len = strlen( user );
-      if ( len < sizeof( user ) - 1 )
+      size_t userNameLength = strlen( aryUser );
+      if ( userNameLength < sizeof( aryUser ) - 1 )
       {
-         snprintf( user + len, sizeof( user ) - len, "  (login shell)" );
+         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login aryShell)" );
       }
    }
 }
@@ -125,83 +125,83 @@ void findhome( void )
  * provided the BBSRC environment will specify the name of the BBSRC file if it
  * is set.  Returns a pointer to the file via openbbsrc().
  */
-FILE *findbbsrc( void )
+FILE *findBbsRc( void )
 {
-   FILE *f;
+   FILE *ptrFileHandle;
 
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      snprintf( bbsrcname, sizeof( bbsrcname ), "/tmp/bbsrc.%d", getpid() );
+      snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "/tmp/bbsrc.%d", getpid() );
    }
    else
    {
       if ( getenv( "BBSRC" ) )
       {
-         snprintf( bbsrcname, sizeof( bbsrcname ), "%s", getenv( "BBSRC" ) );
+         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", getenv( "BBSRC" ) );
       }
       else if ( pw )
       {
-         snprintf( bbsrcname, sizeof( bbsrcname ), "%s/.bbsrc", pw->pw_dir );
+         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s/.bbsrc", pw->pw_dir );
       }
       else if ( getenv( "HOME" ) )
       {
-         snprintf( bbsrcname, sizeof( bbsrcname ), "%s/.bbsrc", getenv( "HOME" ) );
+         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s/.bbsrc", getenv( "HOME" ) );
       }
       else
       {
-         fatalexit( "findbbsrc: You don't exist, go away.", "Local error" );
+         fatalExit( "findbbsrc: You don't exist, go away.", "Local error" );
       }
    }
-   if ( ( f = fopen( bbsrcname, "r" ) ) && chmod( bbsrcname, 0600 ) < 0 )
+   if ( ( ptrFileHandle = fopen( aryBbsRcName, "r" ) ) && chmod( aryBbsRcName, 0600 ) < 0 )
    {
-      s_perror( "Can't set access on bbsrc file", "Warning" );
+      sPerror( "Can't set access on bbsrc file", "Warning" );
    }
-   if ( f )
+   if ( ptrFileHandle )
    {
-      fclose( f );
+      fclose( ptrFileHandle );
    }
-   return ( openbbsrc() );
+   return ( openBbsRc() );
 }
 
 /* Added by Dave (Isoroku).  Finds .bbsfriends for friends list */
 /* Edited by IO ERROR.  We read-only the .bbsfriends now, if it exists. */
-FILE *findbbsfriends( void )
+FILE *findBbsFriends( void )
 {
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      snprintf( bbsfriendsname, sizeof( bbsfriendsname ), "/tmp/bbsfriends.%d", getpid() );
+      snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "/tmp/bbsfriends.%d", getpid() );
    }
    else
    {
       if ( getenv( "BBSFRIENDS" ) )
       {
-         snprintf( bbsfriendsname, sizeof( bbsfriendsname ), "%s", getenv( "BBSFRIENDS" ) );
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s", getenv( "BBSFRIENDS" ) );
       }
       else if ( pw )
       {
-         snprintf( bbsfriendsname, sizeof( bbsfriendsname ), "%s/.bbsfriends", pw->pw_dir );
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", pw->pw_dir );
       }
       else if ( getenv( "HOME" ) )
       {
-         snprintf( bbsfriendsname, sizeof( bbsfriendsname ), "%s/.bbsfriends", getenv( "HOME" ) );
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", getenv( "HOME" ) );
       }
       else
       {
-         fatalexit( "findbbsfriends: You don't exist, go away.", "Local error" );
+         fatalExit( "findBbsFriends: You don't exist, go away.", "Local error" );
       }
    }
-   chmod( bbsfriendsname, 0600 );
-   return ( openbbsfriends() );
+   chmod( aryBbsFriendsName, 0600 );
+   return ( openBbsFriends() );
 }
 
 /*
  * Truncates bbsrc file to the specified length.
  */
-void truncbbsrc( long len )
+void truncateBbsRc( long userNameLength )
 {
-   if ( ftruncate( fileno( bbsrc ), len ) < 0 )
+   if ( ftruncate( fileno( ptrBbsRc ), userNameLength ) < 0 )
    {
-      fatalexit( "ftruncate", "Local error" );
+      fatalExit( "ftruncate", "Local error" );
    }
 }
 
@@ -209,65 +209,65 @@ void truncbbsrc( long len )
  * Opens the temp file, ~/.bbstmp.  If the BBSTMP environment variable is set,
  * that file is used instead.
  */
-void opentmpfile( void )
+void openTmpFile( void )
 {
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      snprintf( tempfilename, sizeof( tempfilename ), "/tmp/bbstmp.%d", getpid() );
+      snprintf( aryTempFileName, sizeof( aryTempFileName ), "/tmp/bbstmp.%d", getpid() );
    }
    else
    {
       if ( getenv( "BBSTMP" ) )
       {
-         snprintf( tempfilename, sizeof( tempfilename ), "%s", getenv( "BBSTMP" ) );
+         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s", getenv( "BBSTMP" ) );
       }
       else if ( pw )
       {
-         snprintf( tempfilename, sizeof( tempfilename ), "%s/.bbstmp", pw->pw_dir );
+         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s/.bbstmp", pw->pw_dir );
       }
       else if ( getenv( "HOME" ) )
       {
-         snprintf( tempfilename, sizeof( tempfilename ), "%s/.bbstmp", getenv( "HOME" ) );
+         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s/.bbstmp", getenv( "HOME" ) );
       }
       else
       {
-         fatalexit( "opentmpfile: You don't exist, go away.", "Local error" );
+         fatalExit( "openTmpFile: You don't exist, go away.", "Local error" );
       }
    }
-   if ( !( tempfile = fopen( tempfilename, "a+" ) ) )
+   if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
    {
-      fatalperror( "opentmpfile: fopen", "Local error" );
+      fatalPerror( "openTmpFile: fopen", "Local error" );
    }
-   if ( chmod( tempfilename, 0600 ) < 0 )
+   if ( chmod( aryTempFileName, 0600 ) < 0 )
    {
-      s_perror( "opentmpfile: chmod", "Warning" );
+      sPerror( "openTmpFile: chmod", "Warning" );
    }
 }
 
-void titlebar( void )
+void titleBar( void )
 {
 #ifdef ENABLE_TITLEBAR
-   char title[80];
+   char aryTitle[80];
 
-   snprintf( title, sizeof( title ), "%s:%d%s - BBS Client %s (%s)",
-             cmdlinehost, cmdlineport, is_ssl ? " (Secure)" : "",
+   snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
+             aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
              VERSION, "Unix" );
    /* xterm */
    if ( !strcmp( getenv( "TERM" ), "xterm" ) )
    {
-      printf( "\033]0;%s\007", title );
+      printf( "\033]0;%s\007", aryTitle );
    }
    /* NeXT */
    if ( getenv( "STUART" ) )
    {
-      printf( "\033]1;%s\\", title );
-      printf( "\033]2;%s\\", title );
+      printf( "\033]1;%s\\", aryTitle );
+      printf( "\033]2;%s\\", aryTitle );
    }
 #endif
    return;
 }
 
-void notitlebar( void )
+void noTitleBar( void )
 {
 #ifdef ENABLE_TITLEBAR
    /* xterm */
@@ -290,56 +290,56 @@ void notitlebar( void )
 }
 
 /*
- * Open a socket connection to the bbs.  Defaults to BBSHOST with port BBSPORT
+ * Open a socket connection to the bbs.  Defaults to BBS_HOSTNAME with port BBS_PORT_NUMBER
  * (by default a standard telnet to bbs.isca.uiowa.edu) but can be overridden
  * in the bbsrc file if/when the source to the ISCA BBS is released and others
  * start their own on different machines and/or ports.
  */
-void connectbbs( void )
+void connectBbs( void )
 {
    register struct hostent *host;
-   register int err;
-   struct sockaddr_in sa;
+   register int connectResult;
+   struct sockaddr_in socketAddress;
 
-   if ( !*bbshost )
+   if ( !*aryBbsHost )
    {
-      snprintf( bbshost, sizeof( bbshost ), "%s", BBSHOST );
+      snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
    }
-   if ( !bbsport )
+   if ( !bbsPort )
    {
-      bbsport = BBSPORT;
+      bbsPort = BBS_PORT_NUMBER;
    }
-   if ( !*cmdlinehost )
+   if ( !*aryCommandLineHost )
    {
-      snprintf( cmdlinehost, sizeof( cmdlinehost ), "%s", bbshost );
+      snprintf( aryCommandLineHost, sizeof( aryCommandLineHost ), "%s", aryBbsHost );
    }
-   if ( !cmdlineport )
+   if ( !cmdLinePort )
    {
-      cmdlineport = bbsport;
+      cmdLinePort = bbsPort;
    }
-   strncpy( (char *)&sa, "", sizeof sa );
-   sa.sin_family = AF_INET;
-   sa.sin_port = htons( cmdlineport ); /* Spurious gcc warning */
-   if ( isdigit( *cmdlinehost ) )
+   strncpy( (char *)&socketAddress, "", sizeof socketAddress );
+   socketAddress.sin_family = AF_INET;
+   socketAddress.sin_port = htons( cmdLinePort ); /* Spurious gcc warning */
+   if ( isdigit( *aryCommandLineHost ) )
    {
-      sa.sin_addr.s_addr = inet_addr( cmdlinehost );
+      socketAddress.sin_addr.s_addr = inet_addr( aryCommandLineHost );
    }
-   else if ( !( host = gethostbyname( cmdlinehost ) ) )
+   else if ( !( host = gethostbyname( aryCommandLineHost ) ) )
    {
-      sa.sin_addr.s_addr = inet_addr( BBSIPNUM );
+      socketAddress.sin_addr.s_addr = inet_addr( BBS_IP_ADDRESS );
    }
    else
    {
-      strncpy( (char *)&sa.sin_addr, host->h_addr, sizeof sa.sin_addr );
+      strncpy( (char *)&socketAddress.sin_addr, host->h_addr, sizeof socketAddress.sin_addr );
    }
 
    net = socket( AF_INET, SOCK_STREAM, 0 );
    if ( net < 0 )
    {
-      fatalperror( "socket", "Local error" );
+      fatalPerror( "socket", "Local error" );
    }
-   err = connect( net, (struct sockaddr *)&sa, sizeof sa );
-   if ( err < 0 )
+   connectResult = connect( net, (struct sockaddr *)&socketAddress, sizeof socketAddress );
+   if ( connectResult < 0 )
    {
 #define BBSREFUSED "The BBS has refused connection, try again later.\r\n"
 #define BBSNETDOWN "Network problems prevent connection with the BBS, try again later.\r\n"
@@ -348,43 +348,43 @@ void connectbbs( void )
 #ifdef ECONNREFUSED
       if ( errno == ECONNREFUSED )
       {
-         std_printf( BBSREFUSED );
+         stdPrintf( BBSREFUSED );
       }
 #endif
 #ifdef ENETDOWN
       if ( errno == ENETDOWN )
       {
-         std_printf( BBSNETDOWN );
+         stdPrintf( BBSNETDOWN );
       }
 #endif
 #ifdef ENETUNREACH
       if ( errno == ENETUNREACH )
       {
-         std_printf( BBSNETDOWN );
+         stdPrintf( BBSNETDOWN );
       }
 #endif
 #ifdef ETIMEDOUT
       if ( errno == ETIMEDOUT )
       {
-         std_printf( BBSHOSTDOWN );
+         stdPrintf( BBSHOSTDOWN );
       }
 #endif
 #ifdef EHOSTDOWN
       if ( errno == EHOSTDOWN )
       {
-         std_printf( BBSHOSTDOWN );
+         stdPrintf( BBSHOSTDOWN );
       }
 #endif
 #ifdef EHOSTUNREACH
       if ( errno == EHOSTUNREACH )
       {
-         std_printf( BBSNETDOWN );
+         stdPrintf( BBSNETDOWN );
       }
 #endif
-      fatalperror( "connect", "Network error" );
+      fatalPerror( "connect", "Network error" );
    }
 #ifdef HAVE_OPENSSL
-   if ( want_ssl )
+   if ( shouldUseSsl )
    {
       initSSL();
       if ( SSL_set_fd( ssl, net ) != 1 )
@@ -393,66 +393,66 @@ void connectbbs( void )
          shutdown( net, 2 );
          exit( 1 );
       }
-      if ( ( err = SSL_connect( ssl ) ) != 1 )
+      if ( ( connectResult = SSL_connect( ssl ) ) != 1 )
       {
          printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
          shutdown( net, 2 );
          exit( 1 );
       }
-      is_ssl = 1;
+      isSsl = 1;
    }
 #endif
-   std_printf( "[%secure connection established]\n", ( want_ssl ) ? "S" : "Ins" );
-   titlebar();
+   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "Ins" );
+   titleBar();
    fflush( stdout );
 
    /*
      * We let the stdio libraries handle buffering issues for us.  Only for
      * output, there are portability problems with what is needed for input.
      */
-   if ( !( netofp = fdopen( net, "w" ) ) )
+   if ( !( netOutputFile = fdopen( net, "w" ) ) )
    {
-      fatalperror( "fdopen w", "Local error" );
+      fatalPerror( "fdopen w", "Local error" );
    }
 }
 
 /*
  * Suspend the client.  Restores terminal to previous state before suspending,
  * puts it back in proper mode when client restarts, and checks if the window
- * size was changed while we were away.
+ * size was changed while we were isAway.
  */
 void suspend( void )
 {
-   notitlebar();
-   resetterm();
+   noTitleBar();
+   resetTerm();
    kill( 0, SIGSTOP );
-   setterm();
-   titlebar();
+   setTerm();
+   titleBar();
    printf( "\r\n[Continue]\r\n" );
-   if ( oldrows != getwindowsize() && oldrows != -1 )
+   if ( oldRows != getWindowSize() && oldRows != -1 )
    {
-      sendnaws();
+      sendNaws();
    }
 }
 
 /*
  * Quits gracefully when we are given a HUP or STOP signal.
  */
-RETSIGTYPE bye( int signum )
+RETSIGTYPE bye( int signalNumber )
 {
-   (void)signum;
-   myexit();
+   (void)signalNumber;
+   myExit();
 }
 
 /*
  * Handles a WINCH signal given when the window is resized
  */
-RETSIGTYPE naws( int signum )
+RETSIGTYPE naws( int signalNumber )
 {
-   (void)signum;
-   if ( oldrows != -1 )
+   (void)signalNumber;
+   if ( oldRows != -1 )
    {
-      sendnaws();
+      sendNaws();
    }
 #ifdef SIGWINCH
    signal( SIGWINCH, naws );
@@ -465,20 +465,20 @@ RETSIGTYPE naws( int signum )
  * confusion we don't allow the child to be stopped -- therefore we attempt to
  * send a continue signal to the child here.  If it fails, we assume the child
  * did in fact die, and longjmp back to the function that forked it.  If it
- * doesn't fail, the child is restarted and the user is forced to exit the
+ * doesn't fail, the child is restarted and the aryUser is forced to exit the
  * child cleanly to get back into the main client.
  */
-RETSIGTYPE reapchild( int signum )
+RETSIGTYPE reapChild( int signalNumber )
 {
-   (void)signum;
+   (void)signalNumber;
    wait( 0 );
-   titlebar();
-   if ( kill( childpid, SIGCONT ) < 0 )
+   titleBar();
+   if ( kill( childPid, SIGCONT ) < 0 )
    {
 #ifdef USE_POSIX_SIGSETJMP
-      siglongjmp( jmpenv, 1 );
+      siglongjmp( jumpEnv, 1 );
 #else
-      longjmp( jmpenv, 1 );
+      longjmp( jumpEnv, 1 );
 #endif /* USE_POSIX_SIGSETJMP */
    }
 }
@@ -486,9 +486,9 @@ RETSIGTYPE reapchild( int signum )
 /*
  * Initialize necessary signals
  */
-void siginit( void )
+void sigInit( void )
 {
-   oldrows = -1;
+   oldRows = -1;
 
    signal( SIGINT, SIG_IGN );
    signal( SIGQUIT, SIG_IGN );
@@ -509,7 +509,7 @@ void siginit( void )
 /*
  * Turn off signals now that we are ready to terminate
  */
-void sigoff( void )
+void sigOff( void )
 {
    signal( SIGALRM, SIG_IGN );
 #ifdef SIGWINCH
@@ -519,7 +519,7 @@ void sigoff( void )
    signal( SIGTERM, SIG_IGN );
 }
 
-static int savedterm = 0;
+static int isTerminalStateSaved = 0;
 
 #ifdef HAVE_TERMIO_H
 static struct termio saveterm;
@@ -527,7 +527,7 @@ static struct termio saveterm;
 #else
 static struct sgttyb saveterm;
 static struct tchars savetchars;
-static struct ltchars saveltchars;
+static struct ltchars savedLocalTermChars;
 static int savelocalmode;
 
 #endif
@@ -535,31 +535,31 @@ static int savelocalmode;
 /*
  * Set terminal state to proper modes for running the client/bbs
  */
-void setterm( void )
+void setTerm( void )
 {
 #ifdef HAVE_TERMIO_H
    struct termio tmpterm;
 
 #else
    struct sgttyb tmpterm;
-   struct tchars tmptchars;
+   struct tchars temporaryTermChars;
    struct ltchars tmpltchars;
    int tmplocalmode;
 
 #endif
 
-   getwindowsize();
+   getWindowSize();
 
-   if ( flags.useansi )
+   if ( flagsConfiguration.useAnsi )
    {
-      printf( "\033[%cm\033[3%c;4%cm", flags.usebold ? '1' : '0', lastcolor,
+      printf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0', lastColor,
               color.background );
    }
    fflush( stdout );
 
-   titlebar();
+   titleBar();
 #ifdef HAVE_TERMIO_H
-   if ( !savedterm )
+   if ( !isTerminalStateSaved )
       ioctl( 0, TCGETA, &saveterm );
    tmpterm = saveterm;
    tmpterm.c_iflag &= ~( INLCR | IGNCR | ICRNL );
@@ -570,7 +570,7 @@ void setterm( void )
    tmpterm.c_cc[VTIME] = 0;
    ioctl( 0, TCSETA, &tmpterm );
 #else
-   if ( !savedterm )
+   if ( !isTerminalStateSaved )
    {
       ioctl( 0, TIOCGETP, (char *)&saveterm );
    }
@@ -578,21 +578,26 @@ void setterm( void )
    tmpterm.sg_flags &= ~( ECHO | CRMOD );
    tmpterm.sg_flags |= CBREAK | TANDEM;
    ioctl( 0, TIOCSETN, (char *)&tmpterm );
-   if ( !savedterm )
+   if ( !isTerminalStateSaved )
    {
       ioctl( 0, TIOCGETC, (char *)&savetchars );
    }
-   tmptchars = savetchars;
-   tmptchars.t_intrc = tmptchars.t_quitc = tmptchars.t_eofc = tmptchars.t_brkc = -1;
-   ioctl( 0, TIOCSETC, (char *)&tmptchars );
-   if ( !savedterm )
+   temporaryTermChars = savetchars;
+   temporaryTermChars.t_intrc = -1;
+   temporaryTermChars.t_quitc = -1;
+   temporaryTermChars.t_eofc = -1;
+   temporaryTermChars.t_brkc = -1;
+   ioctl( 0, TIOCSETC, (char *)&temporaryTermChars );
+   if ( !isTerminalStateSaved )
    {
-      ioctl( 0, TIOCGLTC, (char *)&saveltchars );
+      ioctl( 0, TIOCGLTC, (char *)&savedLocalTermChars );
    }
-   tmpltchars = saveltchars;
-   tmpltchars.t_suspc = tmpltchars.t_dsuspc = tmpltchars.t_rprntc = -1;
+   tmpltchars = savedLocalTermChars;
+   tmpltchars.t_suspc = -1;
+   tmpltchars.t_dsuspc = -1;
+   tmpltchars.t_rprntc = -1;
    ioctl( 0, TIOCSLTC, (char *)&tmpltchars );
-   if ( !savedterm )
+   if ( !isTerminalStateSaved )
    {
       ioctl( 0, TIOCLGET, (char *)&savelocalmode );
    }
@@ -601,21 +606,21 @@ void setterm( void )
    tmplocalmode |= LCRTBS;
    ioctl( 0, TIOCLSET, (char *)&tmplocalmode );
 #endif
-   savedterm = 1;
+   isTerminalStateSaved = 1;
 }
 
 /*
  * Reset the terminal to the previous state it was in when we started.
  */
-void resetterm( void )
+void resetTerm( void )
 {
-   if ( flags.useansi )
+   if ( flagsConfiguration.useAnsi )
    {
       /*	printf("\033[0m\033[1;37;49m"); */
       printf( "\033[0;39;49m" );
    }
    fflush( stdout );
-   if ( !savedterm )
+   if ( !isTerminalStateSaved )
    {
       return;
    }
@@ -624,7 +629,7 @@ void resetterm( void )
 #else
    ioctl( 0, TIOCSETN, (char *)&saveterm );
    ioctl( 0, TIOCSETC, (char *)&savetchars );
-   ioctl( 0, TIOCSLTC, (char *)&saveltchars );
+   ioctl( 0, TIOCSLTC, (char *)&savedLocalTermChars );
    ioctl( 0, TIOCLSET, (char *)&savelocalmode );
 #endif
 }
@@ -632,7 +637,7 @@ void resetterm( void )
 /*
  * Get the current window size.
  */
-int getwindowsize( void )
+int getWindowSize( void )
 {
 #ifdef TIOCGWINSZ
    struct winsize ws;
@@ -654,35 +659,35 @@ int getwindowsize( void )
 #endif
 }
 
-void mysleep( unsigned int sec )
+void mySleep( unsigned int sec )
 {
    sleep( sec );
 }
 
 /*
  * This function flushes the input buffer in the same manner as the BBS does.
- * By doing it on the client end we save the BBS the trouble of doing it, but
+ * By doing it on the client end we arySavedBytes the BBS the trouble of doing it, but
  * in general the same thing will happen on one end or the other, so you won't
  * speed things up at all by changing this, the sleep is there for your
- * protection to insure a cut and paste gone awry or line noise doesn't cause
+ * protection to insure a cut and paste gone awry or aryLine noise doesn't cause
  * you too much hassle of posting random garbage, changing your profile or
  * configuration or whatever.
  */
-void flush_input( unsigned int invalid )
+void flushInput( unsigned int invalid )
 {
-   int i;
+   int pendingInputBytes;
 
    if ( invalid / 2 )
    {
-      mysleep( invalid / 2 < 3 ? invalid / 2 : 3 );
+      mySleep( invalid / 2 < 3 ? invalid / 2 : 3 );
    }
 #ifdef FIONREAD
-   while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &i ) && i > 0 ) )
+   while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
    {
 #else
 #ifdef TCFLSH
-   i = 0;
-   ioctl( 0, TCFLSH, &i );
+   pendingInputBytes = 0;
+   ioctl( 0, TCFLSH, &pendingInputBytes );
 #endif
    while ( INPUT_LEFT( stdin ) )
 #endif
@@ -691,49 +696,49 @@ void flush_input( unsigned int invalid )
 }
 
 /*
- * Run the command 'cmd' with argument 'arg'.  Used only for running the editor
+ * Run the command 'aryCommand' with argument 'arg'.  Used only for running the aryEditor
  * right now.  In order to work properly with all the versions of Unix I've
  * tried to port this to so far without be overly complicated, I have to use a
- * setjmp to save the local stack context in this function, then longjmp back
+ * setjmp to arySavedBytes the local stack context in this function, then longjmp back
  * here once I receive a signal from the child that it has terminated. So I
  * guess there actually IS a use for setjmp/longjmp after all! :-)
  */
-void run( char *cmd, char *arg )
+void run( char *aryCommand, char *arg )
 {
    fflush( stdout );
 #ifdef USE_POSIX_SIGSETJMP
-   if ( sigsetjmp( jmpenv, 1 ) )
+   if ( sigsetjmp( jumpEnv, 1 ) )
    {
 #else
-   if ( setjmp( jmpenv ) )
+   if ( setjmp( jumpEnv ) )
    {
 #endif /* USE_POSIX_SIGSETJMP */
       signal( SIGCHLD, SIG_DFL );
-      if ( childpid < 0 )
+      if ( childPid < 0 )
       {
-         childpid = 0;
-         myexit();
+         childPid = 0;
+         myExit();
       }
       else
       {
-         setterm();
-         childpid = 0;
+         setTerm();
+         childPid = 0;
       }
    }
    else
    {
-      signal( SIGCHLD, reapchild );
-      notitlebar();
-      resetterm();
+      signal( SIGCHLD, reapChild );
+      noTitleBar();
+      resetTerm();
 
-      if ( !( childpid = fork() ) )
+      if ( !( childPid = fork() ) )
       {
-         execlp( cmd, cmd, arg, 0 );
+         execlp( aryCommand, aryCommand, arg, 0 );
          fprintf( stderr, "\r\n" );
-         s_perror( "exec", "Local error" );
+         sPerror( "exec", "Local error" );
          _exit( 0 );
       }
-      else if ( childpid > 0 )
+      else if ( childPid > 0 )
       {
 
          /*
@@ -741,44 +746,44 @@ void run( char *cmd, char *arg )
         * child process, we don't want it waiting for us when the child
         * is done.
         */
-         flush_input( 0 );
-         (void)inkey();
+         flushInput( 0 );
+         (void)inKey();
       }
       else
       {
-         fatalperror( "fork", "Local error" );
+         fatalPerror( "fork", "Local error" );
       }
    }
 }
 
-void techinfo( void )
+void techInfo( void )
 {
-   std_printf( "Technical information\r\n\n" );
+   stdPrintf( "Technical information\r\n\n" );
 
-   feed_pager( 3,
-               "ISCA BBS Client " VERSION " (Unix)\r\n",
-               "Compiled on: " HOSTTYPE "\r\n",
-               "With: "
+   feedPager( 3,
+              "ISCA BBS Client " VERSION " (Unix)\r\n",
+              "Compiled on: " HOSTTYPE "\r\n",
+              "With: "
 #ifdef __STDC__
-               "ANSI "
+              "ANSI "
 #endif
 #ifdef __cplusplus
-               "C++ "
+              "C++ "
 #endif
 #ifdef __GNUC__
-               "gcc "
+              "gcc "
 #endif
 #ifdef _POSIX_SOURCE
-               "POSIX "
+              "POSIX "
 #endif
 #ifdef ENABLE_SAVE_PASSWORD
-               "save-password "
+              "arySavedBytes-password "
 #endif
 #ifdef USE_POSIX_SIGSETJMP
-               "sigsetjmp "
+              "sigsetjmp "
 #endif
-               "\r\n",
-               (char *)NULL );
+              "\r\n",
+              (char *)NULL );
 }
 
 void initialize( const char *protocol )
@@ -789,130 +794,131 @@ void initialize( const char *protocol )
       exit( 0 );
    }
 
-   ptyifp = ptyibuf;
-   netifp = netibuf;
+   ptrPtyInput = aryPtyInputBuffer;
+   ptrNetInput = aryNetInputBuffer;
 
-   away = 0;
+   isAway = 0;
 
 #ifdef _IOFBF
    setvbuf( stdout, NULL, _IOFBF, 4096 );
 #endif
 
-   std_printf( "\nISCA BBS Client %s (%s)\n", VERSION,
-               "Unix" );
-   std_printf( "\nCopyright (C) 1995-2003 Michael Hampton.\n" );
-   std_printf( "OSI Certified Open Source Software.  GNU General Public License version 2.\n" );
-   std_printf( "For information about this client visit http://www.ioerror.us/client/\n\n" );
+   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION,
+              "Unix" );
+   stdPrintf( "\nCopyright (C) 1995-2003 Michael Hampton.\n" );
+   stdPrintf( "OSI Certified Open Source Software.  GNU General Public License version 2.\n" );
+   stdPrintf( "For information about this client visit http://www.ioerror.us/client/\n\n" );
 #if DEBUG
-   std_printf( "DEBUGGING VERSION - DEBUGGING CODE IS ENABLED!  DO NOT USE THIS CLIENT!\r\n\n" );
+   stdPrintf( "DEBUGGING VERSION - DEBUGGING CODE IS ENABLED!  DO NOT USE THIS CLIENT!\r\n\n" );
 #endif
    fflush( stdout );
-   xlandQueue = new_queue( 21, MAXLAST );
+   xlandQueue = newQueue( 21, MAX_USER_NAME_HISTORY_COUNT );
    if ( !xlandQueue )
    {
-      xland = 0;
+      isXland = 0;
    }
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      snprintf( shell, sizeof( shell ), "%s", "/bin/true" );
+      snprintf( aryShell, sizeof( aryShell ), "%s", "/bin/true" );
    }
    else
    {
       if ( getenv( "SHELL" ) )
       {
-         snprintf( shell, sizeof( shell ), "%s", getenv( "SHELL" ) );
+         snprintf( aryShell, sizeof( aryShell ), "%s", getenv( "SHELL" ) );
       }
       else
       {
-         snprintf( shell, sizeof( shell ), "%s", "/bin/sh" );
+         snprintf( aryShell, sizeof( aryShell ), "%s", "/bin/sh" );
       }
    }
-   if ( !login_shell )
+   if ( !isLoginShell )
    {
-      snprintf( browser, sizeof( browser ), "%s", "netscape -remote" );
+      snprintf( aryBrowser, sizeof( aryBrowser ), "%s", "netscape -remote" );
    }
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      snprintf( myeditor, sizeof( myeditor ), "%s", "" );
+      snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "" );
    }
    else
    {
       if ( getenv( "EDITOR" ) )
       {
-         snprintf( myeditor, sizeof( myeditor ), "%s", getenv( "EDITOR" ) );
+         snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", getenv( "EDITOR" ) );
       }
       else
       {
-         snprintf( myeditor, sizeof( myeditor ), "%s", "vi" );
+         snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "vi" );
       }
    }
 }
 
 void deinitialize( void )
 {
-   char tfile[PATH_MAX];
+   char aryTempFile[PATH_MAX];
 
-   notitlebar();
+   noTitleBar();
    /* Get rid of ~ file emacs always leaves behind */
-   snprintf( tfile, sizeof( tfile ), "%s~", tempfilename );
-   unlink( tfile );
-   if ( login_shell )
+   snprintf( aryTempFile, sizeof( aryTempFile ), "%s~", aryTempFileName );
+   unlink( aryTempFile );
+   if ( isLoginShell )
    {
-      unlink( tempfilename );
-      unlink( bbsrcname );
-      unlink( bbsfriendsname );
+      unlink( aryTempFileName );
+      unlink( aryBbsRcName );
+      unlink( aryBbsFriendsName );
    }
 }
 
-int deletefile( const char *pathname )
+int deleteFile( const char *pathname )
 {
    return unlink( pathname );
 }
 
-int s_prompt( const char *info, const char *question, int def )
+int sPrompt( const char *info, const char *question, int def )
 {
-   std_printf( "\r\n%s\r\n\n", info );
-   std_printf( "%s (%s) -> ", question, def ? "Yes" : "No" );
-   if ( yesnodefault( def ) )
+   stdPrintf( "\r\n%s\r\n\n", info );
+   stdPrintf( "%s (%s) -> ", question, def ? "Yes" : "No" );
+   if ( yesNoDefault( def ) )
    {
       return 1;
    }
    return 0;
 }
 
-void s_info( const char *info, const char *heading )
+void sInfo( const char *info, const char *heading )
 {
    (void)heading;
    /* Heading ignored for Unix */
-   std_printf( "\r\n%s\r\n\n", info );
+   stdPrintf( "\r\n%s\r\n\n", info );
    return;
 }
 
-void s_perror( const char *msg, const char *heading )
+void sPerror( const char *message, const char *heading )
 {
-   char buf[4096];
-   snprintf( buf, sizeof( buf ), "%s: %s", heading, msg );
-   perror( buf );
+   char aryErrorBuffer[4096];
+   snprintf( aryErrorBuffer, sizeof( aryErrorBuffer ), "%s: %s", heading, message );
+   perror( aryErrorBuffer );
    fprintf( stderr, "\r" );
    return;
 }
 
-void s_error( const char *msg, const char *heading )
+void sError( const char *message, const char *heading )
 {
-   char buf[4096];
-   snprintf( buf, sizeof( buf ), "%s: %s", heading, msg );
+   char aryErrorBuffer[4096];
+   snprintf( aryErrorBuffer, sizeof( aryErrorBuffer ), "%s: %s", heading, message );
    fflush( stdout );
-   fprintf( stderr, "%s\r\n", buf );
+   fprintf( stderr, "%s\r\n", aryErrorBuffer );
 }
 
 /* TODO: system() is kind of cheating */
 /* TODO: Peeking into the queue object itself is REALLY cheating */
-void open_browser( void )
+void openBrowser( void )
 {
-   int c, capturestate;
-   char line[4];
-   char cmd[4096];
-   char *p;
+   int inputIndex;
+   int originalCaptureState;
+   char aryLine[4];
+   char aryCommand[4096];
+   char *ptrUrlEntry;
 
    if ( urlQueue->nobjs < 1 )
    {
@@ -920,68 +926,68 @@ void open_browser( void )
    }
    if ( urlQueue->nobjs == 1 )
    {
-      snprintf( cmd, sizeof( cmd ), "%s \"%s\"%s", browser,
+      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", aryBrowser,
                 urlQueue->start + ( urlQueue->objsize * urlQueue->head ),
-                flags.browserbg ? " &" : "" );
-      system( cmd );
-      if ( !flags.browserbg )
+                flagsConfiguration.shouldRunBrowserInBackground ? " &" : "" );
+      system( aryCommand );
+      if ( !flagsConfiguration.shouldRunBrowserInBackground )
       {
-         reprint_line();
+         reprintLine();
       }
       return;
    }
 
-   capturestate = capture;
+   originalCaptureState = capture;
    capture = 0;
-   ignore_network = 1;
+   shouldIgnoreNetwork = 1;
    printf( "\r\n\n" );
-   p = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
-   for ( c = 0; c < urlQueue->nobjs; c++ )
+   ptrUrlEntry = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
+   for ( inputIndex = 0; inputIndex < urlQueue->nobjs; inputIndex++ )
    {
-      if ( strlen( p ) > 72 )
+      if ( strlen( ptrUrlEntry ) > 72 )
       {
          char junk[71];
 
-         strncpy( junk, p, 70 );
+         strncpy( junk, ptrUrlEntry, 70 );
          junk[70] = 0;
-         printf( "%d. %-70s...\r\n", c + 1, junk );
+         printf( "%d. %-70s...\r\n", inputIndex + 1, junk );
       }
       else
       {
-         printf( "%d. %s\r\n", c + 1, p );
+         printf( "%d. %s\r\n", inputIndex + 1, ptrUrlEntry );
       }
-      p += urlQueue->objsize;
-      if ( p >= (char *)( urlQueue->start + ( urlQueue->objsize * urlQueue->size ) ) )
+      ptrUrlEntry += urlQueue->objsize;
+      if ( ptrUrlEntry >= (char *)( urlQueue->start + ( urlQueue->objsize * urlQueue->size ) ) )
       {
-         p = urlQueue->start;
+         ptrUrlEntry = urlQueue->start;
       }
    }
 
    printf( "\r\nChoose the URL you want to view: " );
-   get_string( 3, line, 1 ); /* No more than 999 URLs in a post? */
+   getString( 3, aryLine, 1 ); /* No more than 999 URLs in a post? */
    printf( "\r\n" );
-   c = atoi( line );
-   p = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
-   if ( c > 0 && c <= urlQueue->nobjs )
+   inputIndex = atoi( aryLine );
+   ptrUrlEntry = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
+   if ( inputIndex > 0 && inputIndex <= urlQueue->nobjs )
    {
-      int j;
+      int urlIndex;
 
-      c -= 1;
-      for ( j = 0; j < c; j++ )
+      inputIndex -= 1;
+      for ( urlIndex = 0; urlIndex < inputIndex; urlIndex++ )
       {
-         p += urlQueue->objsize;
-         if ( p >= (char *)( urlQueue->start + ( urlQueue->objsize * urlQueue->size ) ) )
+         ptrUrlEntry += urlQueue->objsize;
+         if ( ptrUrlEntry >= (char *)( urlQueue->start + ( urlQueue->objsize * urlQueue->size ) ) )
          {
-            p = urlQueue->start;
+            ptrUrlEntry = urlQueue->start;
          }
       }
-      snprintf( cmd, sizeof( cmd ), "%s \"%s\"%s", browser, p,
-                flags.browserbg ? " &" : "" );
-      system( cmd );
+      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", aryBrowser, ptrUrlEntry,
+                flagsConfiguration.shouldRunBrowserInBackground ? " &" : "" );
+      system( aryCommand );
    }
-   ignore_network = 0;
-   reprint_line();
-   capture = capturestate;
+   shouldIgnoreNetwork = 0;
+   reprintLine();
+   capture = originalCaptureState;
    return;
 }
 
@@ -989,38 +995,38 @@ void open_browser( void )
  * Move oldpath to newpath if oldpath exists and newpath does not exist.
  * Then delete oldpath, even if newpath already exists.
  */
-void move_if_needed( const char *oldpath, const char *newpath )
+void moveIfNeeded( const char *oldpath, const char *newpath )
 {
-   FILE *old;
-   FILE *new;
-   char buf[BUFSIZ];
-   size_t i;
-   long s;
+   FILE *ptrOldFile;
+   FILE *ptrNewFile;
+   char aryCopyBuffer[BUFSIZ];
+   size_t bytesRead;
+   long targetSize;
 
-   old = fopen( oldpath, "r" );
-   if ( !old )
+   ptrOldFile = fopen( oldpath, "r" );
+   if ( !ptrOldFile )
    {
       return;
    }
 
-   new = fopen( newpath, "a" );
-   if ( !new )
+   ptrNewFile = fopen( newpath, "a" );
+   if ( !ptrNewFile )
    {
       return;
    }
 
-   s = ftell( new );
-   if ( s == 0 )
+   targetSize = ftell( ptrNewFile );
+   if ( targetSize == 0 )
    {
       /* Args 2 and 3 intentionally reversed */
-      while ( ( i = fread( buf, 1, BUFSIZ, old ) ) > 0 )
+      while ( ( bytesRead = fread( aryCopyBuffer, 1, BUFSIZ, ptrOldFile ) ) > 0 )
       {
-         i = fwrite( buf, 1, BUFSIZ, new );
+         bytesRead = fwrite( aryCopyBuffer, 1, BUFSIZ, ptrNewFile );
       }
    }
 
-   fclose( old );
-   fclose( new );
+   fclose( ptrOldFile );
+   fclose( ptrNewFile );
    unlink( oldpath );
    return;
 }

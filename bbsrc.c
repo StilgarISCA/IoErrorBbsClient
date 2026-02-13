@@ -11,632 +11,650 @@
  * character, translating '^z', '^Z', or an actual ctrl-Z to all be ctrl-Z, If
  * the character is not a control character, it is simply returned as is.
  */
-static int ctrl( const char *s )
+static int ctrl( const char *ptrToken )
 {
-   int c = *s;
+   int parseIndex = *ptrToken;
 
-   if ( c == '^' )
+   if ( parseIndex == '^' )
    {
-      if ( ( ( c = *++s ) >= '@' && c <= '_' ) || c == '?' )
+      if ( ( ( parseIndex = *++ptrToken ) >= '@' && parseIndex <= '_' ) || parseIndex == '?' )
       {
-         c ^= 0x40;
+         parseIndex ^= 0x40;
       }
-      else if ( c >= 'a' && c <= 'z' )
+      else if ( parseIndex >= 'a' && parseIndex <= 'z' )
       {
-         c ^= 0x60;
+         parseIndex ^= 0x60;
       }
    }
-   if ( c == '\r' )
+   if ( parseIndex == '\r' )
    {
-      c = '\n';
+      parseIndex = '\n';
    }
-   return ( c );
+   return ( parseIndex );
 }
 
 /*
  * Parses the bbsrc file, setting necessary globals depending on the content of
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
  */
-#define MAXLINELEN 83
-void readbbsrc( void )
+#define MAX_LINE_LENGTH 83
+void readBbsRc( void )
 {
-   char tmp[MAXLINELEN + 1];
-   char tmps[MAXLINELEN + 1];
-   int c;
-   const char *s;
-   char *m, *pc;
-   int l = 0;
+   char aryLine[MAX_LINE_LENGTH + 1];
+   char aryScratchLine[MAX_LINE_LENGTH + 1];
+   int parseIndex;
+   const char *ptrToken;
+   char *ptrMacroWrite, *ptrNameCopy;
+   int lineNumber = 0;
    int reads = 0;
-   int z;
+   int nameLength;
    size_t hold = 0;
    int tmpVersion = 0;
-   friend *pf = NULL;
+   friend *ptrFriend = NULL;
 
-   version = INTVERSION;
-   commandkey = shellkey = capturekey = suspkey = quitkey = awaykey = -1;
-   browserkey = -1;
-   if ( !( friendList = slistCreate( 0, fsortcmp_void ) ) )
+   version = INT_VERSION;
+   commandKey = -1;
+   shellKey = -1;
+   captureKey = -1;
+   suspKey = -1;
+   quitKey = -1;
+   awayKey = -1;
+   browserKey = -1;
+   if ( !( friendList = slistCreate( 0, fSortCompareVoid ) ) )
    {
-      fatalexit( "Can't create 'friend' list!\n", "Fatal error" );
+      fatalExit( "Can't create 'friend' list!\n", "Fatal error" );
    }
-   if ( !( enemyList = slistCreate( 0, sortcmp_void ) ) )
+   if ( !( enemyList = slistCreate( 0, sortCompareVoid ) ) )
    {
-      fatalexit( "Can't create 'enemy' list!\n", "Fatal error" );
+      fatalExit( "Can't create 'enemy' list!\n", "Fatal error" );
    }
-   if ( !( whoList = slistCreate( 0, sortcmp_void ) ) )
+   if ( !( whoList = slistCreate( 0, sortCompareVoid ) ) )
    {
-      fatalexit( "Can't create saved who list!\n", "Fatal error" );
+      fatalExit( "Can't create saved who list!\n", "Fatal error" );
    }
 
-   for ( c = 0; c <= 127; c++ )
+   for ( parseIndex = 0; parseIndex <= 127; parseIndex++ )
    {
-      keymap[c] = (char)c;
-      *macro[c] = 0;
+      aryKeyMap[parseIndex] = (char)parseIndex;
+      *aryMacro[parseIndex] = 0;
    }
-   xland = 1;
-   xlandQueue = new_queue( 21, MAXLAST );
+   isXland = 1;
+   xlandQueue = newQueue( 21, MAX_USER_NAME_HISTORY_COUNT );
    if ( !xlandQueue )
    {
-      xland = 0;
+      isXland = 0;
    }
-   urlQueue = new_queue( 1024, 10 );
+   urlQueue = newQueue( 1024, 10 );
 
-   autologgedin = 0;
-   *autoname = 0;
+   isAutoLoggedIn = 0;
+   *aryAutoName = 0;
 #ifdef ENABLE_SAVE_PASSWORD
-   autopasswdsent = 0;
-   *autopasswd = 0;
+   isAutoPasswordSent = 0;
+   *aryAutoPassword = 0;
 #endif
 
-   *editor = *bbshost = 0;
-   bbsrc = findbbsrc();
-   bbsfriends = findbbsfriends();
-   flags.useansi = flags.usebold = flags.offbold = flags.moreflag = 0;
-   flags.ansiprompt = 0;
-   flags.browserbg = 0;
+   *aryEditor = 0;
+   *aryBbsHost = 0;
+   ptrBbsRc = findBbsRc();
+   bbsFriends = findBbsFriends();
+   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.useBold = 0;
+   flagsConfiguration.shouldDisableBold = 0;
+   flagsConfiguration.isMorePromptActive = 0;
+   flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
+   flagsConfiguration.shouldRunBrowserInBackground = 0;
 
-   default_colors( 1 );
+   defaultColors( 1 );
 
-   wholist = postbufp = postflag = highxmsg = xmsgflag = 0;
-   postnow = postwas = xmsgnow = needx = eatline = 0;
-   want_ssl = 0;
-   xmsgbufp = xmsgbuf;
+   whoListProgress = 0;
+   ptrPostBuffer = 0;
+   postHeaderActive = 0;
+   highestExpressMessageId = 0;
+   isExpressMessageHeaderActive = 0;
+   postProgressState = 0;
+   isPostJustEnded = 0;
+   isExpressMessageInProgress = 0;
+   shouldSendExpressMessage = 0;
+   pendingLinesToEat = 0;
+   shouldUseSsl = 0;
+   ptrExpressMessageBuffer = aryExpressMessageBuffer;
 
-   while ( bbsrc && fgets( tmp, MAXLINELEN + 1, bbsrc ) )
+   while ( ptrBbsRc && fgets( aryLine, MAX_LINE_LENGTH + 1, ptrBbsRc ) )
    {
       reads++;
-      l++;
-      if ( (int)strlen( tmp ) >= MAXLINELEN )
+      lineNumber++;
+      if ( (int)strlen( aryLine ) >= MAX_LINE_LENGTH )
       {
-         std_printf( "Line %d in .bbsrc too long, ignored.\n", l );
-         while ( (int)strlen( tmp ) >= MAXLINELEN && tmp[MAXLINELEN - 1] != '\n' )
+         stdPrintf( "Line %d in .bbsrc too long, ignored.\n", lineNumber );
+         while ( (int)strlen( aryLine ) >= MAX_LINE_LENGTH && aryLine[MAX_LINE_LENGTH - 1] != '\n' )
          {
-            fgets( tmp, MAXLINELEN + 1, bbsrc );
+            fgets( aryLine, MAX_LINE_LENGTH + 1, ptrBbsRc );
          }
          continue;
       }
       {
-         size_t len = strlen( tmp );
-         while ( len > 0 )
+         size_t lineLength = strlen( aryLine );
+         while ( lineLength > 0 )
          {
-            size_t idx = len - 1;
-            if ( tmp[idx] == ' ' || tmp[idx] == '\t' || tmp[idx] == '\n' || tmp[idx] == '\r' )
+            size_t index = lineLength - 1;
+            if ( aryLine[index] == ' ' || aryLine[index] == '\t' || aryLine[index] == '\n' || aryLine[index] == '\r' )
             {
-               tmp[idx] = 0;
+               aryLine[index] = 0;
             }
             else
             {
                break;
             }
-            len = idx;
+            lineLength = index;
          }
       }
 
       /* Just ignore these for now, they'll be quietly erased... */
-      if ( !strncmp( tmp, "reread ", 7 ) )
+      if ( !strncmp( aryLine, "reread ", 7 ) )
       {
          ;
       }
-      else if ( !strncmp( tmp, "xwrap ", 6 ) )
+      else if ( !strncmp( aryLine, "xwrap ", 6 ) )
       {
          ;
 
          /* Client configuration options (current) */
       }
-      else if ( !strncmp( tmp, "bold", 4 ) )
+      else if ( !strncmp( aryLine, "bold", 4 ) )
       {
-         flags.usebold = 1;
+         flagsConfiguration.useBold = 1;
       }
-      else if ( !strncmp( tmp, "xland", 5 ) )
+      else if ( !strncmp( aryLine, "xland", 5 ) )
       {
-         xland = 0;
+         isXland = 0;
       }
-      else if ( !strncmp( tmp, "version ", 8 ) )
+      else if ( !strncmp( aryLine, "version ", 8 ) )
       {
-         tmpVersion = atoi( tmp + 8 );
+         tmpVersion = atoi( aryLine + 8 );
       }
-      else if ( !strncmp( tmp, "squelch ", 8 ) )
+      else if ( !strncmp( aryLine, "squelch ", 8 ) )
       {
-         switch ( atoi( tmp + 8 ) )
+         switch ( atoi( aryLine + 8 ) )
          {
             case 3:
-               flags.squelchpost = flags.squelchexpress = 1;
+               flagsConfiguration.shouldSquelchPost = 1;
+               flagsConfiguration.shouldSquelchExpress = 1;
                break;
             case 2:
-               flags.squelchpost = 1;
+               flagsConfiguration.shouldSquelchPost = 1;
                break;
             case 1:
-               flags.squelchexpress = 1;
+               flagsConfiguration.shouldSquelchExpress = 1;
                break;
             default:
                break;
          }
       }
-      else if ( !strncmp( tmp, "color ", 6 ) )
+      else if ( !strncmp( aryLine, "color ", 6 ) )
       {
-         if ( strlen( tmp ) != 6 + sizeof color )
+         if ( strlen( aryLine ) != 6 + sizeof color )
          {
-            std_printf( "Invalid 'color' scheme on line %d, ignored.\n", l );
+            stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n", lineNumber );
          }
          else
          {
-            bcopy( tmp + 6, (void *)&color, sizeof color );
+            bcopy( aryLine + 6, (void *)&color, sizeof color );
          }
       }
-      else if ( !strncmp( tmp, "autoname ", 9 ) )
+      else if ( !strncmp( aryLine, "aryAutoName ", sizeof( "aryAutoName " ) - 1 ) )
       {
-         if ( strncmp( tmp + 9, "Guest", 5 ) )
+         if ( strncmp( aryLine + ( sizeof( "aryAutoName " ) - 1 ), "Guest", 5 ) )
          {
-            strncpy( autoname, tmp + 9, 21 );
-            autoname[20] = 0;
+            strncpy( aryAutoName, aryLine + ( sizeof( "aryAutoName " ) - 1 ), 21 );
+            aryAutoName[20] = 0;
          }
       }
-      else if ( !strncmp( tmp, "autoansi", 9 ) )
+      else if ( !strncmp( aryLine, "autoansi", 9 ) )
       {
-         if ( strlen( tmp ) <= 9 || tmp[9] != 'N' )
+         if ( strlen( aryLine ) <= 9 || aryLine[9] != 'N' )
          {
-            flags.ansiprompt = 1;
+            flagsConfiguration.shouldAutoAnswerAnsiPrompt = 1;
          }
 #ifdef ENABLE_SAVE_PASSWORD
       }
-      else if ( !strncmp( tmp, "autopass ", 9 ) )
+      else if ( !strncmp( aryLine, "autopass ", 9 ) )
       {
-         strncpy( autopasswd, tmp + 9, 21 );
-         autopasswd[20] = 0;
+         strncpy( aryAutoPassword, aryLine + 9, 21 );
+         aryAutoPassword[20] = 0;
 #endif
       }
-      else if ( !strncmp( tmp, "browser ", 8 ) )
+      else if ( !strncmp( aryLine, "aryBrowser ", sizeof( "aryBrowser " ) - 1 ) )
       {
-         if ( strlen( tmp ) < 11 )
+         if ( strlen( aryLine ) < 13 )
          {
-            std_printf( "Invalid definition of 'browser' ignored.\n" );
+            stdPrintf( "Invalid definition of 'aryBrowser' ignored.\n" );
          }
          else
          {
-            flags.browserbg = ( tmp[8] == '0' ) ? 0 : 1;
-            strncpy( browser, tmp + 10, 80 );
+            flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '0' ) ? 0 : 1;
+            strncpy( aryBrowser, aryLine + 13, 80 );
          }
       }
-      else if ( !strncmp( tmp, "editor ", 7 ) )
+      else if ( !strncmp( aryLine, "aryEditor ", sizeof( "aryEditor " ) - 1 ) )
       {
-         if ( *editor )
+         if ( *aryEditor )
          {
-            std_printf( "Multiple definition of 'editor' ignored.\n" );
+            stdPrintf( "Multiple definition of 'aryEditor' ignored.\n" );
          }
          else
          {
-            strncpy( editor, tmp + 7, 72 );
+            strncpy( aryEditor, aryLine + ( sizeof( "aryEditor " ) - 1 ), 72 );
          }
       }
-      else if ( !strncmp( tmp, "site ", 5 ) )
+      else if ( !strncmp( aryLine, "site ", 5 ) )
       {
-         if ( *bbshost )
+         if ( *aryBbsHost )
          {
-            std_printf( "Multiple definition of 'site' ignored.\n" );
+            stdPrintf( "Multiple definition of 'site' ignored.\n" );
          }
          else
          {
-            for ( c = 5; ( bbshost[c - 5] = tmp[c] ) && tmp[c] != ' ' && c < 68; c++ )
+            for ( parseIndex = 5; ( aryBbsHost[parseIndex - 5] = aryLine[parseIndex] ) && aryLine[parseIndex] != ' ' && parseIndex < 68; parseIndex++ )
             {
                ;
             }
-            if ( c == 68 || c == 5 )
+            if ( parseIndex == 68 || parseIndex == 5 )
             {
-               std_printf( "Illegal hostname in 'site', using default.\n" );
-               *bbshost = 0;
+               stdPrintf( "Illegal hostname in 'site', using default.\n" );
+               *aryBbsHost = 0;
             }
             else
             {
-               bbshost[c - 5] = 0;
-               if ( tmp[c] )
+               aryBbsHost[parseIndex - 5] = 0;
+               if ( aryLine[parseIndex] )
                {
-                  bbsport = (unsigned short)atoi( tmp + c + 1 );
+                  bbsPort = (unsigned short)atoi( aryLine + parseIndex + 1 );
                }
                else
                {
-                  bbsport = BBSPORT;
+                  bbsPort = BBS_PORT_NUMBER;
                }
-               for ( ; tmp[c] && tmp[c] != ' '; c++ )
+               for ( ; aryLine[parseIndex] && aryLine[parseIndex] != ' '; parseIndex++ )
                {
                   ;
                }
-               if ( !strncmp( tmp + c, "secure", 6 ) )
+               if ( !strncmp( aryLine + parseIndex, "secure", 6 ) )
                {
-                  want_ssl = 1;
+                  shouldUseSsl = 1;
                }
             }
-            if ( !strcmp( bbshost, "128.255.200.69" ) ||
-                 !strcmp( bbshost, "128.255.85.69" ) ||
-                 !strcmp( bbshost, "128.255.95.69" ) ||
-                 !strcmp( bbshost, "128.255.3.160" ) ||
-                 !strcmp( bbshost, "bbs.iscabbs.info" ) )
-            {                                                         /* Old addresses */
-               snprintf( bbshost, sizeof( bbshost ), "%s", BBSHOST ); /* changed to new */
+            if ( !strcmp( aryBbsHost, "128.255.200.69" ) ||
+                 !strcmp( aryBbsHost, "128.255.85.69" ) ||
+                 !strcmp( aryBbsHost, "128.255.95.69" ) ||
+                 !strcmp( aryBbsHost, "128.255.3.160" ) ||
+                 !strcmp( aryBbsHost, "bbs.iscabbs.info" ) )
+            {                                                                    /* Old addresses */
+               snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME ); /* changed to new */
             }
          }
       }
-      else if ( ( !strncmp( tmp, "friend ", 7 ) ) && ( !bbsfriends || !fgets( tmps, MAXLINELEN + 1, bbsfriends ) ) )
+      else if ( ( !strncmp( aryLine, "friend ", 7 ) ) && ( !bbsFriends || !fgets( aryScratchLine, MAX_LINE_LENGTH + 1, bbsFriends ) ) )
       {
-         if ( strlen( tmp ) == 7 )
+         if ( strlen( aryLine ) == 7 )
          {
-            std_printf( "Empty username in 'friend'.\n" );
+            stdPrintf( "Empty username in 'friend'.\n" );
          }
          else
          {
-            if ( slistFind( friendList, tmp + 7, fstrcmp_void ) != -1 )
+            if ( slistFind( friendList, aryLine + 7, fStrCompareVoid ) != -1 )
             {
-               std_printf( "Duplicate username in 'friend'.\n" );
+               stdPrintf( "Duplicate username in 'friend'.\n" );
             }
-            else if ( strlen( tmp ) > 30 )
+            else if ( strlen( aryLine ) > 30 )
             {
-               pf = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !pf )
+               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
+               if ( !ptrFriend )
                {
-                  fatalexit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( pf->info, tmp + 30, 53 );
-               for ( z = 19; z > 0; z-- )
+               strncpy( ptrFriend->info, aryLine + 30, 53 );
+               for ( nameLength = 19; nameLength > 0; nameLength-- )
                {
-                  if ( tmp[7 + z] == ' ' )
+                  if ( aryLine[7 + nameLength] == ' ' )
                   {
-                     hold = (size_t)z;
+                     hold = (size_t)nameLength;
                   }
                   else
                   {
                      break;
                   }
                }
-               strncpy( pf->name, tmp + 7, hold );
+               strncpy( ptrFriend->name, aryLine + 7, hold );
             }
             else
             {
-               pf = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !pf )
+               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
+               if ( !ptrFriend )
                {
-                  fatalexit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( pf->name, tmp + 7, 19 );
-               hold = sizeof( pf->name );
-               snprintf( pf->info, sizeof( pf->info ), "%s", "(None)" );
+               strncpy( ptrFriend->name, aryLine + 7, 19 );
+               hold = sizeof( ptrFriend->name );
+               snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
             }
-            pf->magic = 0x3231;
-            if ( !slistAddItem( friendList, pf, 1 ) )
+            ptrFriend->magic = 0x3231;
+            if ( !slistAddItem( friendList, ptrFriend, 1 ) )
             {
-               fatalexit( "Can't add 'friend'!\n", "Fatal error" );
-            }
-         }
-      }
-      else if ( !strncmp( tmp, "enemy ", 6 ) )
-      {
-         if ( strlen( tmp ) == 6 )
-         {
-            std_printf( "Empty username in 'enemy'.\n" );
-         }
-         else if ( slistFind( enemyList, tmp + 6, strcmp_void ) != -1 )
-         {
-            std_printf( "Duplicate username in 'enemy'.\n" );
-         }
-         else
-         {
-            pc = (char *)calloc( 1, strlen( tmp + 6 ) + 1 );
-            if ( !pc )
-            {
-               fatalexit( "Out of memory adding 'enemy'!\n", "Fatal error" );
-            }
-            snprintf( pc, strlen( tmp + 6 ) + 1, "%s", tmp + 6 );
-            if ( !slistAddItem( enemyList, (void *)pc, 1 ) )
-            {
-               fatalexit( "Can't add 'enemy' to list!\n", "Fatal error" );
+               fatalExit( "Can't add 'friend'!\n", "Fatal error" );
             }
          }
       }
-      else if ( !strncmp( tmp, "commandkey ", 11 ) ||
-                !strncmp( tmp, "macrokey ", 9 ) )
+      else if ( !strncmp( aryLine, "enemy ", 6 ) )
       {
-         if ( commandkey >= 0 )
+         if ( strlen( aryLine ) == 6 )
          {
-            std_printf( "Additional definition for 'commandkey' ignored.\n" );
+            stdPrintf( "Empty username in 'enemy'.\n" );
+         }
+         else if ( slistFind( enemyList, aryLine + 6, strCompareVoid ) != -1 )
+         {
+            stdPrintf( "Duplicate username in 'enemy'.\n" );
          }
          else
          {
-            if ( !strncmp( tmp, "macrokey ", 9 ) )
+            ptrNameCopy = (char *)calloc( 1, strlen( aryLine + 6 ) + 1 );
+            if ( !ptrNameCopy )
             {
-               commandkey = ctrl( tmp + 9 );
+               fatalExit( "Out of memory adding 'enemy'!\n", "Fatal error" );
             }
-            else
+            snprintf( ptrNameCopy, strlen( aryLine + 6 ) + 1, "%s", aryLine + 6 );
+            if ( !slistAddItem( enemyList, (void *)ptrNameCopy, 1 ) )
             {
-               commandkey = ctrl( tmp + 11 );
-            }
-            if ( mystrchr( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f", commandkey ) || commandkey >= ' ' )
-            {
-               std_printf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
-               commandkey = 0x1b;
+               fatalExit( "Can't add 'enemy' to list!\n", "Fatal error" );
             }
          }
       }
-      else if ( !strncmp( tmp, "awaykey ", 8 ) )
+      else if ( !strncmp( aryLine, "commandkey ", 11 ) ||
+                !strncmp( aryLine, "macrokey ", 9 ) )
       {
-         if ( awaykey >= 0 )
+         if ( commandKey >= 0 )
          {
-            std_printf( "Additional definition for 'awaykey' ignored.\n" );
+            stdPrintf( "Additional definition for 'commandkey' ignored.\n" );
          }
          else
          {
-            awaykey = ctrl( tmp + 8 );
-         }
-      }
-      else if ( !strncmp( tmp, "quit ", 5 ) )
-      {
-         if ( quitkey >= 0 )
-         {
-            std_printf( "Additional definition for 'quit' ignored.\n" );
-         }
-         else
-         {
-            quitkey = ctrl( tmp + 5 );
-         }
-      }
-      else if ( !strncmp( tmp, "susp ", 5 ) )
-      {
-         if ( suspkey >= 0 )
-         {
-            std_printf( "Additional definition for 'susp' ignored.\n" );
-         }
-         else
-         {
-            suspkey = ctrl( tmp + 5 );
-         }
-      }
-      else if ( !strncmp( tmp, "capture ", 8 ) )
-      {
-         if ( capturekey >= 0 )
-         {
-            std_printf( "Additional definition for 'capture' ignored.\n" );
-         }
-         else
-         {
-            capturekey = ctrl( tmp + 8 );
-         }
-      }
-      else if ( !strncmp( tmp, "keymap ", 7 ) )
-      {
-         c = *( tmp + 7 );
-         s = tmp + 8;
-         if ( *s++ == ' ' && c > 32 && c < 128 )
-         {
-            keymap[c] = *s;
-         }
-         else
-         {
-            std_printf( "Invalid value for 'keymap' ignored.\n" );
-         }
-      }
-      else if ( !strncmp( tmp, "url ", 4 ) )
-      {
-         if ( browserkey >= 0 )
-         {
-            std_printf( "Additional definition for 'url' ignored.\n" );
-         }
-         else
-         {
-            browserkey = ctrl( tmp + 4 );
-         }
-      }
-      else if ( !strncmp( tmp, "macro ", 6 ) )
-      {
-         c = ctrl( tmp + 6 );
-         s = tmp + 7 + ( tmp[6] == '^' );
-         if ( *s++ == ' ' )
-         {
-            if ( *macro[c] )
+            if ( !strncmp( aryLine, "macrokey ", 9 ) )
             {
-               std_printf( "Additional definition of same 'macro' value ignored.\n" );
+               commandKey = ctrl( aryLine + 9 );
             }
             else
             {
-               /* Import 'i' macro to awaymsg */
-               if ( c == 'i' && !awaykey && tmpVersion < 220 )
+               commandKey = ctrl( aryLine + 11 );
+            }
+            if ( findChar( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f", commandKey ) || commandKey >= ' ' )
+            {
+               stdPrintf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
+               commandKey = 0x1b;
+            }
+         }
+      }
+      else if ( !strncmp( aryLine, "awaykey ", 8 ) )
+      {
+         if ( awayKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'awaykey' ignored.\n" );
+         }
+         else
+         {
+            awayKey = ctrl( aryLine + 8 );
+         }
+      }
+      else if ( !strncmp( aryLine, "quit ", 5 ) )
+      {
+         if ( quitKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'quit' ignored.\n" );
+         }
+         else
+         {
+            quitKey = ctrl( aryLine + 5 );
+         }
+      }
+      else if ( !strncmp( aryLine, "susp ", 5 ) )
+      {
+         if ( suspKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'susp' ignored.\n" );
+         }
+         else
+         {
+            suspKey = ctrl( aryLine + 5 );
+         }
+      }
+      else if ( !strncmp( aryLine, "capture ", 8 ) )
+      {
+         if ( captureKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'capture' ignored.\n" );
+         }
+         else
+         {
+            captureKey = ctrl( aryLine + 8 );
+         }
+      }
+      else if ( !strncmp( aryLine, "aryKeyMap ", sizeof( "aryKeyMap " ) - 1 ) )
+      {
+         parseIndex = *( aryLine + ( sizeof( "aryKeyMap " ) - 1 ) );
+         ptrToken = aryLine + sizeof( "aryKeyMap " );
+         if ( *ptrToken++ == ' ' && parseIndex > 32 && parseIndex < 128 )
+         {
+            aryKeyMap[parseIndex] = *ptrToken;
+         }
+         else
+         {
+            stdPrintf( "Invalid value for 'aryKeyMap' ignored.\n" );
+         }
+      }
+      else if ( !strncmp( aryLine, "url ", 4 ) )
+      {
+         if ( browserKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'url' ignored.\n" );
+         }
+         else
+         {
+            browserKey = ctrl( aryLine + 4 );
+         }
+      }
+      else if ( !strncmp( aryLine, "aryMacro ", sizeof( "aryMacro " ) - 1 ) )
+      {
+         parseIndex = ctrl( aryLine + ( sizeof( "aryMacro " ) - 1 ) );
+         ptrToken = aryLine + sizeof( "aryMacro " ) + ( aryLine[sizeof( "aryMacro " ) - 1] == '^' );
+         if ( *ptrToken++ == ' ' )
+         {
+            if ( *aryMacro[parseIndex] )
+            {
+               stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
+            }
+            else
+            {
+               /* Import 'i' aryMacro to aryAwayMessageLines */
+               if ( parseIndex == 'i' && !awayKey && tmpVersion < 220 )
                {
-                  int q = 0;
-                  m = awaymsg[0];
-                  awaykey = 'i';
-                  while ( ( c = *s++ ) )
+                  int messageLineIndex = 0;
+                  ptrMacroWrite = aryAwayMessageLines[0];
+                  awayKey = 'i';
+                  while ( ( parseIndex = *ptrToken++ ) )
                   {
-                     if ( c == '^' && *s != '^' )
+                     if ( parseIndex == '^' && *ptrToken != '^' )
                      {
-                        c = ctrl( s++ - 1 );
+                        parseIndex = ctrl( ptrToken++ - 1 );
                      }
-                     if ( c == '\r' )
+                     if ( parseIndex == '\r' )
                      {
-                        c = '\n';
+                        parseIndex = '\n';
                      }
-                     if ( c == '\n' )
+                     if ( parseIndex == '\n' )
                      {
-                        m = awaymsg[++q];
+                        ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
                      }
-                     else if ( iscntrl( c ) )
+                     else if ( iscntrl( parseIndex ) )
                      {
                         continue;
                      }
                      else
                      {
-                        *m++ = (char)c;
+                        *ptrMacroWrite++ = (char)parseIndex;
                      }
                   }
                }
                else
                {
-                  m = macro[c];
-                  while ( ( c = *s++ ) )
+                  ptrMacroWrite = aryMacro[parseIndex];
+                  while ( ( parseIndex = *ptrToken++ ) )
                   {
-                     if ( c == '^' && *s != '^' )
+                     if ( parseIndex == '^' && *ptrToken != '^' )
                      {
-                        c = ctrl( s++ - 1 );
+                        parseIndex = ctrl( ptrToken++ - 1 );
                      }
-                     if ( c == '\r' )
+                     if ( parseIndex == '\r' )
                      {
-                        c = '\n';
+                        parseIndex = '\n';
                      }
-                     *m++ = (char)c;
+                     *ptrMacroWrite++ = (char)parseIndex;
                   }
                }
             }
          }
          else
          {
-            std_printf( "Syntax error in 'macro', ignored.\n" );
+            stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
          }
       }
-      else if ( !strncmp( tmp, "awaymsg ", 8 ) )
+      else if ( !strncmp( aryLine, "aryAwayMessageLines ", sizeof( "aryAwayMessageLines " ) - 1 ) )
       {
-         /* Import old away messages */
-         int q = 0;
-         m = awaymsg[q];
-         s = tmp + 8;
-         while ( ( c = *s++ ) )
+         /* Import old isAway messages */
+         int messageLineIndex = 0;
+         ptrMacroWrite = aryAwayMessageLines[messageLineIndex];
+         ptrToken = aryLine + ( sizeof( "aryAwayMessageLines " ) - 1 );
+         while ( ( parseIndex = *ptrToken++ ) )
          {
-            if ( c == '^' && *s != '^' )
+            if ( parseIndex == '^' && *ptrToken != '^' )
             {
-               c = ctrl( s++ - 1 );
+               parseIndex = ctrl( ptrToken++ - 1 );
             }
-            if ( c == '\r' )
+            if ( parseIndex == '\r' )
             {
-               c = '\n';
+               parseIndex = '\n';
             }
-            if ( c == '\n' )
+            if ( parseIndex == '\n' )
             {
-               m = awaymsg[++q];
+               ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
             }
-            else if ( iscntrl( c ) )
+            else if ( iscntrl( parseIndex ) )
             {
                continue;
             }
             else
             {
-               *m++ = (char)c;
+               *ptrMacroWrite++ = (char)parseIndex;
             }
          }
       }
-      else if ( tmp[0] == 'a' && tmp[1] >= '1' && tmp[1] <= '5' &&
-                tmp[2] == ' ' )
+      else if ( aryLine[0] == 'a' && aryLine[1] >= '1' && aryLine[1] <= '5' &&
+                aryLine[2] == ' ' )
       {
-         /* New away messages */
-         snprintf( awaymsg[tmp[1] - '1'], sizeof( awaymsg[0] ), "%s", tmp + 3 );
+         /* New isAway messages */
+         snprintf( aryAwayMessageLines[aryLine[1] - '1'], sizeof( aryAwayMessageLines[0] ), "%s", aryLine + 3 );
       }
-      else if ( !strncmp( tmp, "shell ", 6 ) )
+      else if ( !strncmp( aryLine, "aryShell ", sizeof( "aryShell " ) - 1 ) )
       {
-         if ( shellkey >= 0 )
+         if ( shellKey >= 0 )
          {
-            std_printf( "Additional definition for 'shell' ignored.\n" );
+            stdPrintf( "Additional definition for 'aryShell' ignored.\n" );
          }
          else
          {
-            shellkey = ctrl( tmp + 6 );
+            shellKey = ctrl( aryLine + ( sizeof( "aryShell " ) - 1 ) );
          }
       }
-      else if ( *tmp != '#' && *tmp && strncmp( tmp, "friend ", 7 ) )
+      else if ( *aryLine != '#' && *aryLine && strncmp( aryLine, "friend ", 7 ) )
       {
-         std_printf( "Syntax error in .bbsrc file in line %d.\n", l );
+         stdPrintf( "Syntax error in .bbsrc file in line %d.\n", lineNumber );
       }
    }
 
-   if ( bbsfriends )
+   if ( bbsFriends )
    {
-      rewind( bbsfriends );
+      rewind( bbsFriends );
    }
-   while ( bbsfriends && fgets( tmp, MAXLINELEN + 1, bbsfriends ) )
+   while ( bbsFriends && fgets( aryLine, MAX_LINE_LENGTH + 1, bbsFriends ) )
    {
       reads++;
-      l++;
-      if ( strlen( tmp ) >= MAXLINELEN )
+      lineNumber++;
+      if ( strlen( aryLine ) >= MAX_LINE_LENGTH )
       {
-         std_printf( "Line %d in .bbsfriends too long, ignored.\n", l );
-         while ( strlen( tmp ) >= MAXLINELEN && tmp[MAXLINELEN - 1] != '\n' )
+         stdPrintf( "Line %d in .bbsfriends too long, ignored.\n", lineNumber );
+         while ( strlen( aryLine ) >= MAX_LINE_LENGTH && aryLine[MAX_LINE_LENGTH - 1] != '\n' )
          {
-            fgets( tmp, MAXLINELEN + 1, bbsfriends );
+            fgets( aryLine, MAX_LINE_LENGTH + 1, bbsFriends );
          }
          continue;
       }
       {
-         size_t len = strlen( tmp );
-         while ( len > 0 )
+         size_t lineLength = strlen( aryLine );
+         while ( lineLength > 0 )
          {
-            size_t idx = len - 1;
-            if ( tmp[idx] == ' ' || tmp[idx] == '\t' || tmp[idx] == '\n' || tmp[idx] == '\r' )
+            size_t index = lineLength - 1;
+            if ( aryLine[index] == ' ' || aryLine[index] == '\t' || aryLine[index] == '\n' || aryLine[index] == '\r' )
             {
-               tmp[idx] = 0;
+               aryLine[index] = 0;
             }
             else
             {
                break;
             }
-            len = idx;
+            lineLength = index;
          }
       }
 
-      if ( !strncmp( tmp, "friend ", 7 ) )
+      if ( !strncmp( aryLine, "friend ", 7 ) )
       {
-         if ( strlen( tmp ) == 7 )
+         if ( strlen( aryLine ) == 7 )
          {
-            std_printf( "Empty username in 'friend'.\n" );
+            stdPrintf( "Empty username in 'friend'.\n" );
          }
          else
          {
-            if ( slistFind( friendList, tmp + 7, fstrcmp_void ) != -1 )
+            if ( slistFind( friendList, aryLine + 7, fStrCompareVoid ) != -1 )
             {
-               std_printf( "Duplicate username in 'friend'.\n" );
+               stdPrintf( "Duplicate username in 'friend'.\n" );
             }
-            else if ( strlen( tmp ) > 30 )
+            else if ( strlen( aryLine ) > 30 )
             {
-               pf = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !pf )
+               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
+               if ( !ptrFriend )
                {
-                  fatalexit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( pf->info, tmp + 30, 53 );
-               for ( z = 19; z > 0; z-- )
+               strncpy( ptrFriend->info, aryLine + 30, 53 );
+               for ( nameLength = 19; nameLength > 0; nameLength-- )
                {
-                  if ( tmp[7 + z] == ' ' )
+                  if ( aryLine[7 + nameLength] == ' ' )
                   {
-                     hold = (size_t)z;
+                     hold = (size_t)nameLength;
                   }
                   else
                   {
                      break;
                   }
                }
-               strncpy( pf->name, tmp + 7, hold );
+               strncpy( ptrFriend->name, aryLine + 7, hold );
             }
             else
             {
-               strncpy( pf->name, tmp + 7, 19 );
-               hold = sizeof( pf->name );
-               snprintf( pf->info, sizeof( pf->info ), "%s", "(None)" );
+               strncpy( ptrFriend->name, aryLine + 7, 19 );
+               hold = sizeof( ptrFriend->name );
+               snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
             }
-            pf->magic = 0x3231;
-            if ( !slistAddItem( friendList, pf, 1 ) )
+            ptrFriend->magic = 0x3231;
+            if ( !slistAddItem( friendList, ptrFriend, 1 ) )
             {
-               fatalexit( "Can't add 'friend' to list!\n", "Fatal error" );
+               fatalExit( "Can't add 'friend' to list!\n", "Fatal error" );
             }
          }
       }
@@ -644,104 +662,104 @@ void readbbsrc( void )
 
    /*
     if (!bbsrc || !reads) {
-   commandkey = ESC;
-   awaykey = 'a';
-   quitkey = CTRL_D;
-   suspkey = CTRL_Z;
-   capturekey = 'c';
-   shellkey = '!';
+   commandKey = ESC;
+   awayKey = 'a';
+   quitKey = CTRL_D;
+   suspKey = CTRL_Z;
+   captureKey = 'c';
+   shellKey = '!';
     }
     */
-   if ( commandkey == -1 )
+   if ( commandKey == -1 )
    {
-      commandkey = ESC;
+      commandKey = ESC;
    }
-   if ( awaykey == -1 )
+   if ( awayKey == -1 )
    {
-      awaykey = 'a';
+      awayKey = 'a';
    }
-   if ( quitkey == -1 )
+   if ( quitKey == -1 )
    {
-      quitkey = CTRL_D;
+      quitKey = CTRL_D;
    }
-   if ( suspkey == -1 )
+   if ( suspKey == -1 )
    {
-      suspkey = CTRL_Z;
+      suspKey = CTRL_Z;
    }
-   if ( capturekey == -1 )
+   if ( captureKey == -1 )
    {
-      capturekey = 'c';
+      captureKey = 'c';
    }
-   if ( shellkey == -1 )
+   if ( shellKey == -1 )
    {
-      shellkey = '!';
+      shellKey = '!';
    }
-   if ( browserkey == -1 )
+   if ( browserKey == -1 )
    {
-      browserkey = 'w';
-   }
-
-   if ( !**awaymsg )
-   {
-      snprintf( awaymsg[0], sizeof( awaymsg[0] ), "%s", "I'm away from my keyboard right now." );
-      *awaymsg[1] = 0;
+      browserKey = 'w';
    }
 
-   default_colors( 0 );
+   if ( !**aryAwayMessageLines )
+   {
+      snprintf( aryAwayMessageLines[0], sizeof( aryAwayMessageLines[0] ), "%s", "I'm away from my keyboard right now." );
+      *aryAwayMessageLines[1] = 0;
+   }
 
-   if ( quitkey >= 0 && *macro[quitkey] )
+   defaultColors( 0 );
+
+   if ( quitKey >= 0 && *aryMacro[quitKey] )
    {
-      std_printf( "Warning: duplicate definition of 'macro' and 'quit'\n" );
+      stdPrintf( "Warning: duplicate definition of 'aryMacro' and 'quit'\n" );
    }
-   if ( suspkey >= 0 && *macro[suspkey] )
+   if ( suspKey >= 0 && *aryMacro[suspKey] )
    {
-      std_printf( "Warning: duplicate definition of 'macro' and 'susp'\n" );
+      stdPrintf( "Warning: duplicate definition of 'aryMacro' and 'susp'\n" );
    }
-   if ( capturekey >= 0 && *macro[capturekey] )
+   if ( captureKey >= 0 && *aryMacro[captureKey] )
    {
-      std_printf( "Warning: duplicate definition of 'macro' and 'capture'\n" );
+      stdPrintf( "Warning: duplicate definition of 'aryMacro' and 'capture'\n" );
    }
-   if ( shellkey >= 0 && *macro[capturekey] )
+   if ( shellKey >= 0 && *aryMacro[captureKey] )
    {
-      std_printf( "Warning: duplicate definition of 'macro' and 'shell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'aryMacro' and 'aryShell'\n" );
    }
-   if ( quitkey >= 0 && quitkey == suspkey )
+   if ( quitKey >= 0 && quitKey == suspKey )
    {
-      std_printf( "Warning: duplicate definition of 'quit' and 'susp'\n" );
+      stdPrintf( "Warning: duplicate definition of 'quit' and 'susp'\n" );
    }
-   if ( quitkey >= 0 && quitkey == capturekey )
+   if ( quitKey >= 0 && quitKey == captureKey )
    {
-      std_printf( "Warning: duplicate definition of 'quit' and 'capture'\n" );
+      stdPrintf( "Warning: duplicate definition of 'quit' and 'capture'\n" );
    }
-   if ( quitkey >= 0 && quitkey == shellkey )
+   if ( quitKey >= 0 && quitKey == shellKey )
    {
-      std_printf( "Warning: duplicate definition of 'quit' and 'shell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'quit' and 'aryShell'\n" );
    }
-   if ( suspkey >= 0 && suspkey == capturekey )
+   if ( suspKey >= 0 && suspKey == captureKey )
    {
-      std_printf( "Warning: duplicate definition of 'susp' and 'capture'\n" );
+      stdPrintf( "Warning: duplicate definition of 'susp' and 'capture'\n" );
    }
-   if ( suspkey >= 0 && suspkey == shellkey )
+   if ( suspKey >= 0 && suspKey == shellKey )
    {
-      std_printf( "Warning: duplicate definition of 'susp' and 'shell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'susp' and 'aryShell'\n" );
    }
-   if ( capturekey >= 0 && capturekey == shellkey )
+   if ( captureKey >= 0 && captureKey == shellKey )
    {
-      std_printf( "Warning: duplicate definition of 'capture' and 'shell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'capture' and 'aryShell'\n" );
    }
 
    /* Load who list */
    for ( unsigned int zi = 0; zi < friendList->nitems; zi++ )
    {
-      pf = friendList->items[zi];
-      if ( !( pc = (char *)calloc( 1, strlen( pf->name ) + 1 ) ) )
+      ptrFriend = friendList->items[zi];
+      if ( !( ptrNameCopy = (char *)calloc( 1, strlen( ptrFriend->name ) + 1 ) ) )
       {
-         fatalexit( "Out of memory for list copy!\r\n", "Fatal error" );
+         fatalExit( "Out of memory for list copy!\r\n", "Fatal error" );
       }
-      snprintf( pc, strlen( pf->name ) + 1, "%s", pf->name );
-      if ( !( slistAddItem( whoList, pc, 1 ) ) )
+      snprintf( ptrNameCopy, strlen( ptrFriend->name ) + 1, "%s", ptrFriend->name );
+      if ( !( slistAddItem( whoList, ptrNameCopy, 1 ) ) )
       {
-         fatalexit( "Out of memory adding item in list copy!\r\n", "Fatal error" );
+         fatalExit( "Out of memory adding item in list copy!\r\n", "Fatal error" );
       }
    }
 
@@ -749,14 +767,14 @@ void readbbsrc( void )
    slistSort( enemyList );
    slistSort( whoList );
 
-   if ( !*bbshost )
+   if ( !*aryBbsHost )
    {
-      snprintf( bbshost, sizeof( bbshost ), "%s", BBSHOST );
-      bbsport = BBSPORT;
+      snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
+      bbsPort = BBS_PORT_NUMBER;
    }
-   if ( !*editor )
+   if ( !*aryEditor )
    {
-      snprintf( editor, sizeof( editor ), "%s", myeditor );
+      snprintf( aryEditor, sizeof( aryEditor ), "%s", aryMyEditor );
    }
    if ( version != tmpVersion )
    {
@@ -769,11 +787,11 @@ void readbbsrc( void )
          setup( -1 );
       }
    }
-   if ( login_shell )
+   if ( isLoginShell )
    {
-      setterm();
-      configbbsrc();
-      resetterm();
+      setTerm();
+      configBbsRc();
+      resetTerm();
    }
 }
 
@@ -781,32 +799,32 @@ void readbbsrc( void )
  * Opens the bbsrc file, warning the user if it can't be opened or can't be
  * opened for write, returning the file pointer if it was opened successfully.
  */
-FILE *openbbsrc( void )
+FILE *openBbsRc( void )
 {
-   FILE *f;
-   int e;
+   FILE *ptrFileHandle;
+   int savedErrno;
 
-   f = fopen( bbsrcname, "r+" );
-   if ( !f )
+   ptrFileHandle = fopen( aryBbsRcName, "r+" );
+   if ( !ptrFileHandle )
    {
-      e = errno;
-      f = fopen( bbsrcname, "w+" );
+      savedErrno = errno;
+      ptrFileHandle = fopen( aryBbsRcName, "w+" );
    }
-   if ( !f )
+   if ( !ptrFileHandle )
    {
-      f = fopen( bbsrcname, "r" );
-      if ( f )
+      ptrFileHandle = fopen( aryBbsRcName, "r" );
+      if ( ptrFileHandle )
       {
-         bbsrcro = 1;
-         errno = e;
-         s_perror( "Configuration is read-only", "Warning" );
+         isBbsRcReadOnly = 1;
+         errno = savedErrno;
+         sPerror( "Configuration is read-only", "Warning" );
       }
       else
       {
-         s_perror( "Can't open configuration file", "Warning" );
+         sPerror( "Can't open configuration file", "Warning" );
       }
    }
-   return ( f );
+   return ( ptrFileHandle );
 }
 
 /*
@@ -814,10 +832,10 @@ FILE *openbbsrc( void )
  * be opened for write, returning the file pointer if it was opened
  * successfully.
  */
-FILE *openbbsfriends( void )
+FILE *openBbsFriends( void )
 {
-   FILE *f;
+   FILE *ptrFileHandle;
 
-   f = fopen( bbsfriendsname, "r" );
-   return ( f );
+   ptrFileHandle = fopen( aryBbsFriendsName, "r" );
+   return ( ptrFileHandle );
 }
