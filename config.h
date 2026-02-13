@@ -4,9 +4,6 @@
 /* Define this if you want to enable saving passwords */
 /* #undef ENABLE_SAVE_PASSWORD */
 
-/* Define this if you want to build in the SOCKS library */
-/* #undef ENABLE_SOCKS */
-
 /* Define this if you want to use xterm/NeXT titlebars */
 #define ENABLE_TITLEBAR 1
 

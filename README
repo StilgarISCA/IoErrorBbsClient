@@ -9,9 +9,6 @@ Quick Start:
 	make
 	make install
 
-Optional:
-	./configure --without-socks
-
 Formatting and Linting:
 	# Generate/refresh compile_commands.json for clang-tidy
 	bear -- make clean all -j4

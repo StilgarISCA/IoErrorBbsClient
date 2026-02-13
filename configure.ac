@@ -3,7 +3,6 @@ AC_INIT([IoErrorBbsClient],[2.3.10-Stilgar])
 AC_CONFIG_SRCDIR([filter.c])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
-AC_ARG_WITH(socks, [  --without-socks         exclude SOCKS firewall library (e.g. on Win32)], [], [with_socks=yes])
 AC_ARG_WITH(ssl,
    [  --with-ssl=PATH         use OpenSSL (no BBSs support this yet) ],
    [
@@ -48,7 +47,6 @@ solaris*)
    need_dash_r=1;
    ;;
 cygwin* | mingw*)
-   with_socks=no	# Can't build libsocks on cygwin yet
    AC_DEFINE(USE_CYGWIN,[1],[Define this if building in the Cygwin environment])
 #	PLATFORM_OBJS="${PLATFORM_OBJS} windows.o"
    CFLAGS="$CFLAGS -I/usr/include/w32api"
@@ -169,14 +167,6 @@ if test "x$ac_cv_openssldir" != "xno" ; then
 fi
 
 
-if test x$with_socks = xyes; then
-   AC_DEFINE(ENABLE_SOCKS,[1],[Define this if you want to build in the SOCKS library])
-   SOCKS_OBJS="socks/porttoserv.o socks/Rconnect.o socks/Rgethostbyname.o socks/SendGetDst.o socks/shell_cmd.o socks/socks_ckcf.o socks/socks_rdconf.o socks/socks_rdfz.o socks/utils.o"
-else
-   SOCKS_OBJS=""
-fi
-AM_CONDITIONAL([WITH_SOCKS], [test x$with_socks = xyes])
-
 if test x$enable_save_password = xyes; then
    AC_DEFINE(ENABLE_SAVE_PASSWORD,[1],[Define this if you want to enable saving passwords])
 fi
@@ -201,7 +191,6 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(select socket)
 
 
-AC_SUBST(SOCKS_OBJS)
 AC_SUBST(PLATFORM_OBJS)
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])

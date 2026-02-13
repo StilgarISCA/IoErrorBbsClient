@@ -112,12 +112,6 @@ void configbbsrc( void )
    }
    for ( ;; )
    {
-#ifdef ENABLE_SOCKS
-      if ( flags.useansi )
-         colorize( "\r\n@YC@Color  @YE@Cnemy list  @YF@Criend list  @YH@Cotkeys\r\n@YI@Cnfo  @YM@Cacros  @YO@Cptions  @YP@Croxy  @YX@Cpress  @YQ@Cuit@Y" );
-      else
-         std_printf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>nfo  <M>acros <O>ptions <P>roxy <X>press <Q>uit" );
-#else
       if ( flags.useansi )
       {
          colorize( "\r\n@YC@Color  @YE@Cnemy list  @YF@Criend list  @YH@Cotkeys\r\n@YI@Cnfo  @YM@Cacros  @YO@Cptions  @YX@Cpress  @YQ@Cuit@Y" );
@@ -126,18 +120,12 @@ void configbbsrc( void )
       {
          std_printf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>nfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
-#endif
       colorize( "\r\nClient config -> @G" );
       for ( invalid = 0;; )
       {
          c = inkey();
-#ifdef ENABLE_SOCKS
-         if ( !mystrchr( "CcEeFfHhIiKkMmOoPpQqXx \n", c ) )
-         {
-#else
          if ( !mystrchr( "CcEeFfHhIiKkMmOoQqXx \n", c ) )
          {
-#endif
             if ( invalid++ )
             {
                flush_input( invalid );
@@ -162,34 +150,6 @@ void configbbsrc( void )
          case 'I':
             information();
             break;
-
-#ifdef ENABLE_SOCKS
-         case 'p':
-         case 'P':
-            std_printf( "Proxy\r\n" );
-            std_printf( "\nUse SOCKS firewall to connect? (%s) -> ", use_socks ? "Yes" : "No" );
-            use_socks = yesnodefault( use_socks );
-            if ( use_socks )
-            {
-               std_printf( "Enter name of SOCKS server (%s) -> ", socks_fw );
-               get_string( 64, tmp, -999 );
-               if ( *tmp )
-               {
-                  snprintf( socks_fw, sizeof( socks_fw ), "%s", tmp );
-                  std_printf( "Enter SOCKS port number (%d) ->", socks_fw_port ? socks_fw_port : 1080 );
-                  get_string( 5, tmp, -999 );
-                  if ( *tmp )
-                     socks_fw_port = (unsigned short)atoi( tmp );
-                  if ( !socks_fw_port )
-                     socks_fw_port = 1080;
-               }
-               else
-               {
-                  use_socks = 0;
-               }
-            }
-            break;
-#endif
 
          case 'o':
          case 'O':
@@ -529,17 +489,6 @@ void writebbsrc( void )
    /* Change:  site line will always be written */
    fprintf( bbsrc, "site %s %d%s\n", bbshost, bbsport,
             want_ssl ? " secure" : "" );
-   if ( use_socks )
-   {
-      if ( socks_fw_port == 1080 )
-      {
-         fprintf( bbsrc, "socks %s\n", socks_fw );
-      }
-      else
-      {
-         fprintf( bbsrc, "socks %s %d\n", socks_fw, socks_fw_port );
-      }
-   }
    fprintf( bbsrc, "commandkey %s\n", strctrl( commandkey ) );
    fprintf( bbsrc, "quit %s\n", strctrl( quitkey ) );
    fprintf( bbsrc, "susp %s\n", strctrl( suspkey ) );

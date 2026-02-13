@@ -98,7 +98,7 @@ void readbbsrc( void )
 
    wholist = postbufp = postflag = highxmsg = xmsgflag = 0;
    postnow = postwas = xmsgnow = needx = eatline = 0;
-   use_socks = textonly = want_ssl = 0;
+   textonly = want_ssl = 0;
    xmsgbufp = xmsgbuf;
 
    while ( bbsrc && fgets( tmp, MAXLINELEN + 1, bbsrc ) )
@@ -275,31 +275,6 @@ void readbbsrc( void )
                  !strcmp( bbshost, "bbs.iscabbs.info" ) )
             {                                                         /* Old addresses */
                snprintf( bbshost, sizeof( bbshost ), "%s", BBSHOST ); /* changed to new */
-            }
-         }
-      }
-      else if ( !strncmp( tmp, "socks ", 6 ) )
-      {
-         for ( c = 6; ( socks_fw[c - 6] = tmp[c] ) && tmp[c] != ' ' && c < 69; c++ )
-         {
-            ;
-         }
-         if ( c == 69 || c == 6 )
-         {
-            std_printf( "Illegal hostname in 'socks', using default.\n" );
-            *socks_fw = 0;
-         }
-         else
-         {
-            socks_fw[c - 6] = 0;
-            use_socks = 1;
-            if ( tmp[c] )
-            {
-               socks_fw_port = (unsigned short)atoi( tmp + c + 1 );
-            }
-            else
-            {
-               socks_fw_port = 1080;
             }
          }
       }

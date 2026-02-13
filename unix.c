@@ -409,12 +409,7 @@ FILE *findbbsrc( void )
             {
                fatalperror( "socket", "Local error" );
             }
-#ifdef ENABLE_SOCKS
-            if ( use_socks )
-               err = Rconnect( net, (struct sockaddr *)&sa, sizeof sa );
-            else
-#endif
-               err = connect( net, (struct sockaddr *)&sa, sizeof sa );
+            err = connect( net, (struct sockaddr *)&sa, sizeof sa );
             if ( err < 0 )
             {
 #define BBSREFUSED "The BBS has refused connection, try again later.\r\n"
@@ -869,9 +864,6 @@ static int savelocalmode;
 #endif
 #ifdef USE_POSIX_SIGSETJMP
                         "sigsetjmp "
-#endif
-#ifdef ENABLE_SOCKS
-                        "SOCKS "
 #endif
                         "\r\n",
                         NULL );

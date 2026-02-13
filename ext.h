@@ -119,9 +119,6 @@ extern int xmsgnow;        /* True while we are receiving an X message */
 extern int needx;
 extern int eatline;
 
-extern int use_socks;                /* Use a SOCKS firewall server */
-extern char socks_fw[128];           /* Name of SOCKS firewall server */
-extern unsigned short socks_fw_port; /* Port number of SOCKS firewall server */
 extern queue *urlQueue;              /* Structure holding recently seen URLs */
 
 #endif /* EXT_H_INCLUDED */
