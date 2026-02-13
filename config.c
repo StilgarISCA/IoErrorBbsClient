@@ -471,7 +471,7 @@ void writebbsrc( void )
 {
    char junk[40];
    int i, j;
-   friend *pf;
+   const friend *pf;
 
    deletefile( bbsfriendsname );
    rewind( bbsrc );

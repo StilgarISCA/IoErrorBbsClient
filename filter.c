@@ -36,7 +36,7 @@ void filter_wholist( register int c )
    static long extime = 0;    /* Extended time decoder */
    char junk[80], work[100];
    char *pc;
-   friend *pf;
+   const friend *pf;
 
    if ( !whop )
    { /* First time through */
@@ -89,14 +89,6 @@ void filter_wholist( register int c )
                            (int)( now % 60 ) );
                for ( ; col++ < savewhop; )
                {
-                  if ( ( i = slistFind( friendList, savewho[col - 1], strcmp_void ) ) != -1 )
-                  {
-                     pf = friendList->items[i];
-                  }
-                  else
-                  {
-                     pf = NULL;
-                  }
                   /* FIXME: Finish writing this! */
                   snprintf( junk, sizeof( junk ), "%s", (char *)savewho[col - 1] + 1 );
                   snprintf( work, sizeof( work ), flags.useansi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n" : "%c%-18s%c    %2d:%02d  %s\r\n",
@@ -225,7 +217,6 @@ void filter_express( register int c )
       unsigned int ignore : 1;    /* Ignore the remainder of the X */
       unsigned int truncated : 1; /* X message exceeded buffer */
    } needs;
-   char *xline = xmsgbufp; /* Pointer to the current line */
 
    if ( c == -1 )
    { /* signal from IAC to begin/end X */
@@ -300,16 +291,13 @@ void filter_express( register int c )
    /* Extract URLs if any */
    if ( !needs.prochdr && c == '\r' )
    {
-      filter_url( xline );
-      xline = xmsgbufp;
+      filter_url( xmsgbufp );
    }
 
    /* If reached a \r it's time to do header processing */
    if ( needs.prochdr && c == '\r' )
    {
       needs.prochdr = 0;
-      xline = xmsgbufp;
-
       /* Process for kill file */
       if ( !mystrstr( xmsgbuf, "*** Message " ) &&
            !mystrstr( xmsgbuf, "%%% Question " ) )
@@ -754,7 +742,7 @@ void continued_data_helper( void )
 /* Check for an automatic reply message. Return 1 if this is such a message. */
 int is_automatic_reply( const char *message )
 {
-   char *p;
+   const char *p;
 
    /* Find first line */
    p = mystrstr( message, ">" );

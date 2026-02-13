@@ -56,7 +56,6 @@ void slistDestroy( slist *list )
    free( list->items );
    list->items = NULL;
    free( list );
-   list = NULL;
 }
 
 /*

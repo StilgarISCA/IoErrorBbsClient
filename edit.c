@@ -90,12 +90,12 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
       else
       {
          chr = inkey();
-         if ( old >= 0 && iscntrl( chr ) && chr == CTRL_D && !upload )
+         if ( iscntrl( chr ) && chr == CTRL_D && !upload )
          {
             chr = 1; /* Just a random invalid character */
          }
 
-         if ( old >= 0 && chr != CTRL_D && chr != TAB && chr != '\b' && chr != '\n' && chr != CTRL_X && chr != CTRL_W && chr != CTRL_R && !isprint( chr ) )
+         if ( chr != CTRL_D && chr != TAB && chr != '\b' && chr != '\n' && chr != CTRL_X && chr != CTRL_W && chr != CTRL_R && !isprint( chr ) )
          {
             if ( invalid++ )
             {
@@ -147,7 +147,8 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
                break;
             }
          }
-         for ( i = i == lnlngth; lnlngth && ( !i || thisline[lnlngth] != ' ' ); lnlngth-- )
+         i = ( i == lnlngth );
+         for ( ; lnlngth && ( !i || thisline[lnlngth] != ' ' ); lnlngth-- )
          {
             if ( thisline[lnlngth] != ' ' )
             {
@@ -184,9 +185,13 @@ void makemessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
     * and the first character typed on this line are both spaces.  This
     * makes free flow typing easier and properly formatted.
     */
-      if ( cancelspace && !( cancelspace = 0 ) && chr == ' ' )
+      if ( cancelspace )
       {
-         continue;
+         cancelspace = 0;
+         if ( chr == ' ' )
+         {
+            continue;
+         }
       }
 
       if ( chr != '\n' && chr != CTRL_D && old != -1 )
@@ -439,9 +444,13 @@ int prompt( FILE *fp, int *old, int cmd )
                   putchar( chr );
                   lnlngth++;
                }
-               if ( chr == '\n' && !( lnlngth = 0 ) && ++lines == rows && more( &lines, size > 0 ? (int)( i * 100 / size ) : 0 ) < 0 )
+               if ( chr == '\n' )
                {
-                  break;
+                  lnlngth = 0;
+                  if ( ++lines == rows && more( &lines, size > 0 ? (int)( i * 100 / size ) : 0 ) < 0 )
+                  {
+                     break;
+                  }
                }
             }
             fseek( fp, 0L, SEEK_END );

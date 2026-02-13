@@ -11,7 +11,7 @@
  * character, translating '^z', '^Z', or an actual ctrl-Z to all be ctrl-Z, If
  * the character is not a control character, it is simply returned as is.
  */
-static int ctrl( char *s )
+static int ctrl( const char *s )
 {
    int c = *s;
 
@@ -43,7 +43,8 @@ void readbbsrc( void )
    char tmp[MAXLINELEN + 1];
    char tmps[MAXLINELEN + 1];
    int c;
-   char *s, *m, *pc;
+   const char *s;
+   char *m, *pc;
    int l = 0;
    int reads = 0;
    int z;

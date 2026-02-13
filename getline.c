@@ -106,7 +106,8 @@ int smartname( char *buf, char *pe )
 {
    unsigned int i;
    int found = -1;
-   friend *pf = NULL, *pg;
+   const char *pf = NULL;
+   const char *pg;
    char hold = *pe;
    slist *listToUse;
 
@@ -117,7 +118,7 @@ int smartname( char *buf, char *pe )
       for ( i = 0; i < listToUse->nitems; i++ )
       {
          pf = listToUse->items[i];
-         if ( !strncmp( (const char *)pf, buf, buflen ) )
+         if ( !strncmp( pf, buf, buflen ) )
          { /* Partial match? */
             /* Partial match unique? */
             if ( i + 1 >= listToUse->nitems )
@@ -128,7 +129,7 @@ int smartname( char *buf, char *pe )
             else
             {
                pg = listToUse->items[i + 1];
-               if ( strncmp( (const char *)pg, buf, buflen ) )
+               if ( strncmp( pg, buf, buflen ) )
                {
                   found = (int)i;
                   break;
@@ -148,14 +149,14 @@ int smartname( char *buf, char *pe )
    }
    else
    {
-      snprintf( buf, MAXNAME + 1, "%s", (const char *)pf );
+      snprintf( buf, MAXNAME + 1, "%s", pf );
    }
    return 1;
 }
 
-void smartprint( char *buf, char *pe )
+void smartprint( const char *buf, const char *pe )
 {
-   char *pc = pe;
+   const char *pc = pe;
 
    for ( ; pc > buf; pc-- )
    {
@@ -183,9 +184,9 @@ void smartprint( char *buf, char *pe )
    }
 }
 
-void smarterase( char *pe )
+void smarterase( const char *pe )
 {
-   char *pc = pe;
+   const char *pc = pe;
 
    for ( ; *pc != 0; pc++ )
    {
@@ -573,7 +574,8 @@ void get_string( int length, char *result, int line )
                break;
             }
          }
-         for ( c = q == p; p > result && ( !c || p[-1] != ' ' ); p-- )
+         c = ( q == p );
+         for ( ; p > result && ( !c || p[-1] != ' ' ); p-- )
          {
             if ( p[-1] != ' ' )
             {

@@ -308,7 +308,7 @@ char *mystrchr( const char *str, int ch )
 
 /* ExtractName -- get the username out of a post or X message header */
 /* returns pointer to username as stored in the array */
-char *ExtractName( char *header )
+char *ExtractName( const char *header )
 {
    char *hp, *ours;
    int lastspace, i, which = -1;
@@ -384,7 +384,7 @@ char *ExtractName( char *header )
 /*
  * ExtractNumber - extract the X message number from an X message header.
  */
-int ExtractNumber( char *header )
+int ExtractNumber( const char *header )
 {
    char *p;
    int number = 0;

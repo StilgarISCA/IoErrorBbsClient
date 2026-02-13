@@ -64,7 +64,8 @@ int net_putchar( int c )
  */
 char *stripansi( char *c, size_t csize )
 {
-   char *p, *q;
+   const char *p;
+   char *q;
    q = swork;
    for ( p = c; *p != '\0'; p++ )
    {

@@ -51,7 +51,7 @@ int delete_queue( queue *q )
  * q is a pointer to the queue.  Returns 1 on success, 0 if the queue is
  * full.
  */
-int push_queue( char *obj, queue *q )
+int push_queue( const char *obj, queue *q )
 {
    int i;
    char *p; /* Pointer into the queue */
@@ -91,7 +91,7 @@ int push_queue( char *obj, queue *q )
 int pop_queue( char *obj, queue *q )
 {
    int i;
-   char *p; /* Pointer into the queue */
+   const char *p; /* Pointer into the queue */
 
    if ( q->nobjs <= 0 )
    {
@@ -123,7 +123,7 @@ int pop_queue( char *obj, queue *q )
 /* is_queued checks to see if a character string is currently queued.
  * Returns 1 if the string is queued, 0 if not.
  */
-int is_queued( char *obj, queue *q )
+int is_queued( const char *obj, queue *q )
 {
    char *p; /* Pointer inside queue */
    int i;   /* Object counter */
