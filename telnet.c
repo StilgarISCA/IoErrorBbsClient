@@ -26,77 +26,87 @@
 #include "ext.h"
 #include "telnet.h"
 
-
-int telrcv(int c)
+int telrcv( int c )
 {
-    static int state = TS_DATA;	/* Current state of telnet state machine */
-    static unsigned char buf[80];	/* Generic buffer */
-    static int bufp = 0;	/* Pointer into generic buffer */
-    register int i;
-    char *sp;
+   static int state = TS_DATA;   /* Current state of telnet state machine */
+   static unsigned char buf[80]; /* Generic buffer */
+   static int bufp = 0;          /* Pointer into generic buffer */
+   register int i;
+   char *sp;
 
-    switch (state) {
-    case TS_DATA:		/* normal data */
-   if (c == IAC) {		/* telnet Is A Command (IAC) byte */
-       state = TS_IAC;
-       break;
-   }
-   if (wholist)		/* We are currently receiving a wholist */
-       filter_wholist(c);
-   else if (xmsgnow)	/* We are currently receiving an X message */
-       filter_express(c);
-   else if (postnow)	/* We are currently receiving a post */
-       filter_post(c);
-   else			/* Garden-variety data (I hope!) */
-       filter_data(c);
-   break;
+   switch ( state )
+   {
+      case TS_DATA: /* normal data */
+         if ( c == IAC )
+         { /* telnet Is A Command (IAC) byte */
+            state = TS_IAC;
+            break;
+         }
+         if ( wholist )
+         { /* We are currently receiving a wholist */
+            filter_wholist( c );
+         }
+         else if ( xmsgnow )
+         { /* We are currently receiving an X message */
+            filter_express( c );
+         }
+         else if ( postnow )
+         { /* We are currently receiving a post */
+            filter_post( c );
+         }
+         else
+         { /* Garden-variety data (I hope!) */
+            filter_data( c );
+         }
+         break;
 
-   /* handle various telnet and client-specific IAC commands */
-    case TS_IAC:
-   switch (c) {
+         /* handle various telnet and client-specific IAC commands */
+      case TS_IAC:
+         switch ( c )
+         {
 
-       /*
+               /*
         * This is sent/received when the BBS thinks the client is
         * 'inactive' as per the normal 10 minute limit in the BBS -- the
         * actual inactive time limit for a client is an hour, this is done
         * to make sure the client is still alive on this end so dead
         * connections can be timed out and not be ghosted for an hour.
         */
-   case CLIENT:
+            case CLIENT:
 #if DEBUG
-       std_printf("{IAC CLIENT}");
+               std_printf( "{IAC CLIENT}" );
 #endif
-       state = TS_DATA;
-       net_putchar(IAC);
-       net_putchar(CLIENT);
-       break;
+               state = TS_DATA;
+               net_putchar( IAC );
+               net_putchar( CLIENT );
+               break;
 
-   case S_WHO:		/* start who list transfer */
+            case S_WHO: /* start who list transfer */
 #if DEBUG
-       std_printf("{IAC S_WHO}");
+               std_printf( "{IAC S_WHO}" );
 #endif
-       state = TS_DATA;
-       wholist = 1;
-       break;
+               state = TS_DATA;
+               wholist = 1;
+               break;
 
-   case G_POST:		/* get post */
-   case G_FIVE:		/* get five lines (X or profile info) */
-   case G_NAME:		/* get name */
-   case G_STR:		/* get string */
-   case CONFIG:		/* do configuration */
+            case G_POST: /* get post */
+            case G_FIVE: /* get five lines (X or profile info) */
+            case G_NAME: /* get name */
+            case G_STR:  /* get string */
+            case CONFIG: /* do configuration */
 #if DEBUG
-       std_printf("{IAC %s",
-   	       c == G_POST ? "G_POST" :
-   	       c == G_FIVE ? "G_FIVE" :
-   	       c == G_NAME ? "G_NAME" :
-   	       c == G_STR ? "G_STR" :
-   	       c == CONFIG ? "CONFIG" : "huh?");
+               std_printf( "{IAC %s",
+                           c == G_POST ? "G_POST" : c == G_FIVE ? "G_FIVE"
+                                                 : c == G_NAME  ? "G_NAME"
+                                                 : c == G_STR   ? "G_STR"
+                                                 : c == CONFIG  ? "CONFIG"
+                                                                : "huh?" );
 #endif
-       state = TS_GET;
-            buf[bufp++] = (unsigned char) c;
-       break;
+               state = TS_GET;
+               buf[bufp++] = (unsigned char)c;
+               break;
 
-       /*
+               /*
         * This code is used by the bbs to signal the client to synchronize
         * its count of the current byte we are on.  We then send back a
         * START to the bbs so it can synchronize with us.  NOTE:  If it
@@ -111,188 +121,205 @@ int telrcv(int c)
         * refuse to worry about this case, if it comes about it'll be after
         * I ever have to worry about or maintain that BBS code!
         */
-   case START:
+            case START:
 #if DEBUG
-       std_printf("{IAC START}");
+               std_printf( "{IAC START}" );
 #endif
-       state = TS_DATA;
-       byte = 1;
-       net_putchar(IAC);
-       net_putchar(START3);
-       break;
+               state = TS_DATA;
+               byte = 1;
+               net_putchar( IAC );
+               net_putchar( START3 );
+               break;
 
-   case POST_S:		/* Start of post transfer */
+            case POST_S: /* Start of post transfer */
 #if DEBUG
-       std_printf("{IAC POST_S}");
+               std_printf( "{IAC POST_S}" );
 #endif
-       state = TS_DATA;
-       postflag = postnow = 1;
-       filter_post(-1);	/* tell filter to start working */
-       break;
+               state = TS_DATA;
+               postflag = postnow = 1;
+               filter_post( -1 ); /* tell filter to start working */
+               break;
 
-   case POST_E:		/* End of post transfer */
+            case POST_E: /* End of post transfer */
 #if DEBUG
-       std_printf("{IAC POST_E}");
+               std_printf( "{IAC POST_E}" );
 #endif
-       state = TS_DATA;
-       postflag = postbufp = postnow = 0;
-       postwas = 1;
-       filter_post(-1);	/* Tell filter to end working */
-       break;
+               state = TS_DATA;
+               postflag = postbufp = postnow = 0;
+               postwas = 1;
+               filter_post( -1 ); /* Tell filter to end working */
+               break;
 
-   case MORE_M:		/* More prompt marker */
+            case MORE_M: /* More prompt marker */
 #if DEBUG
-       printf("{IAC MORE_M}");
+               printf( "{IAC MORE_M}" );
 #endif
-       state = TS_DATA;
-       flags.moreflag ^= 1;
-       if (!flags.moreflag && flags.useansi)
-   	moreprompt_helper();	/* KLUDGE */
-       break;
+               state = TS_DATA;
+               flags.moreflag ^= 1;
+               if ( !flags.moreflag && flags.useansi )
+               {
+                  moreprompt_helper(); /* KLUDGE */
+               }
+               break;
 
-   case XMSG_S:		/* Start of X message transfer */
+            case XMSG_S: /* Start of X message transfer */
 #if DEBUG
-       std_printf("{IAC XMSG_S}");
+               std_printf( "{IAC XMSG_S}" );
 #endif
-       state = TS_DATA;
-       *parsing = 0;
-       xmsgflag = xmsgnow = 1;
-       filter_express(-1);	/* tell filter to start working */
-       break;
+               state = TS_DATA;
+               *parsing = 0;
+               xmsgflag = xmsgnow = 1;
+               filter_express( -1 ); /* tell filter to start working */
+               break;
 
-   case XMSG_E:		/* End of X message transfer */
+            case XMSG_E: /* End of X message transfer */
 #if DEBUG
-       std_printf("{IAC XMSG_E}");
+               std_printf( "{IAC XMSG_E}" );
 #endif
-       state = TS_DATA;
-       *parsing = 0;
-       xmsgflag = xmsgnow = 0;
-       xmsgbufp = xmsgbuf;
-       filter_express(-1);	/* Tell filter to end working */
-       if (needx) {
-   	send_an_x();
-   	needx = 0;
-       }
-       break;
+               state = TS_DATA;
+               *parsing = 0;
+               xmsgflag = xmsgnow = 0;
+               xmsgbufp = xmsgbuf;
+               filter_express( -1 ); /* Tell filter to end working */
+               if ( needx )
+               {
+                  send_an_x();
+                  needx = 0;
+               }
+               break;
 
-       /* telnet DO/DONT/WILL/WONT option negotiation commands (ignored) */
-   case DO:
-   case DONT:
-   case WILL:
-   case WONT:
+               /* telnet DO/DONT/WILL/WONT option negotiation commands (ignored) */
+            case DO:
+            case DONT:
+            case WILL:
+            case WONT:
 #if DEBUG
-       std_printf("{IAC %s ",
-   	       c == DO ? "DO" :
-   	       c == DONT ? "DONT" :
-   	       c == WILL ? "WILL" :
-   	       c == WONT ? "WONT" : "wtf?");
+               std_printf( "{IAC %s ",
+                           c == DO ? "DO" : c == DONT ? "DONT"
+                                         : c == WILL  ? "WILL"
+                                         : c == WONT  ? "WONT"
+                                                      : "wtf?" );
 #endif
-       state = TS_VOID;
-       break;
+               state = TS_VOID;
+               break;
 
-   default:
+            default:
 #if DEBUG
-       std_printf("{IAC 0x%2X}", c);
+               std_printf( "{IAC 0x%2X}", c );
 #endif
-       state = TS_DATA;
-       break;
-   }
-   break;
+               state = TS_DATA;
+               break;
+         }
+         break;
 
-   /* Get local mode strings/lines/posts */
-    case TS_GET:
-        buf[bufp++] = (unsigned char) c;
-   if (bufp == 5) {
-       targetbyte = byte;
-       /* Decode the bbs' idea of what the current byte is */
-       byte = bytep = ((long) buf[2] << 16) + ((long) buf[3] << 8) + buf[4];
+         /* Get local mode strings/lines/posts */
+      case TS_GET:
+         buf[bufp++] = (unsigned char)c;
+         if ( bufp == 5 )
+         {
+            targetbyte = byte;
+            /* Decode the bbs' idea of what the current byte is */
+            byte = bytep = ( (long)buf[2] << 16 ) + ( (long)buf[3] << 8 ) + buf[4];
 
-       /*
+            /*
         * If we are more out of sync than our buffer size, we can't
         * recover.  If we are out of sync but not so far out of sync we
         * haven't overrun our buffers, we just go back into our buffer and
         * find out what we erroneously sent over the network, and reuse it.
         */
-       if (byte < targetbyte - (int) (sizeof save) - 1)
-   	std_printf("\r\n[Error:  characters lost during transmission]\r\n");
-       state = TS_DATA;
-       bufp = 0;
-       switch (*buf) {
-       case G_POST:	/* get post */
-   	if (flags.posting) {
-   	    flags.check = 0;
-   	    return (-1);
-   	}
+            if ( byte < targetbyte - (int)( sizeof save ) - 1 )
+            {
+               std_printf( "\r\n[Error:  characters lost during transmission]\r\n" );
+            }
+            state = TS_DATA;
+            bufp = 0;
+            switch ( *buf )
+            {
+               case G_POST: /* get post */
+                  if ( flags.posting )
+                  {
+                     flags.check = 0;
+                     return ( -1 );
+                  }
 #if DEBUG
-   	std_printf("}\r\n");
+                  std_printf( "}\r\n" );
 #endif
-   	makemessage(buf[1]);
-   	break;
+                  makemessage( buf[1] );
+                  break;
 
-       case G_FIVE:	/* get five lines (X message, profile) */
-   	get_five_lines(buf[1]);
-   	if (buf[1] == 1 && xlandQueue->nobjs > 0)
-   		send_an_x();
-   	break;
+               case G_FIVE: /* get five lines (X message, profile) */
+                  get_five_lines( buf[1] );
+                  if ( buf[1] == 1 && xlandQueue->nobjs > 0 )
+                  {
+                     send_an_x();
+                  }
+                  break;
 
-       case G_NAME:	/* get name */
-   	sendblock();
-   	sp = get_name(buf[1]);
-   	for (i = 0; sp[i]; i++)
-   	    net_putchar(sp[i]);
-   	if (*sp != CTRL_D) {
-   	    net_putchar('\n');
-   	    byte += i + 1;
-   	} else
-   	    byte++;
-   	break;
+               case G_NAME: /* get name */
+                  sendblock();
+                  sp = get_name( buf[1] );
+                  for ( i = 0; sp[i]; i++ )
+                  {
+                     net_putchar( sp[i] );
+                  }
+                  if ( *sp != CTRL_D )
+                  {
+                     net_putchar( '\n' );
+                     byte += i + 1;
+                  }
+                  else
+                  {
+                     byte++;
+                  }
+                  break;
 
-       case G_STR:	/* get string */
+               case G_STR: /* get string */
 #if DEBUG
-   	std_printf(" 0x%X} ", buf[1]);
+                  std_printf( " 0x%X} ", buf[1] );
 #endif
-   	sendblock();
-   	get_string(buf[1], (char *) buf, -1);
-   	for (i = 0; buf[i]; i++)
-   	    net_putchar(buf[i]);
-   	net_putchar('\n');
-   	byte += i + 1;
-   	break;
+                  sendblock();
+                  get_string( buf[1], (char *)buf, -1 );
+                  for ( i = 0; buf[i]; i++ )
+                  {
+                     net_putchar( buf[i] );
+                  }
+                  net_putchar( '\n' );
+                  byte += i + 1;
+                  break;
 
-       case CONFIG:	/* do configuration */
+               case CONFIG: /* do configuration */
 #if DEBUG
-   	std_printf("}");
+                  std_printf( "}" );
 #endif
-   	sendblock();
-   	configbbsrc();
-   	net_putchar('\n');
-   	byte++;
-   	break;
-       }
-   }
-   break;
+                  sendblock();
+                  configbbsrc();
+                  net_putchar( '\n' );
+                  byte++;
+                  break;
+            }
+         }
+         break;
 
-   /* Ignore next byte (used for ignoring negotations we don't care about) */
-    case TS_VOID:
+         /* Ignore next byte (used for ignoring negotations we don't care about) */
+      case TS_VOID:
 #if DEBUG
-   std_printf("0x%X}", c);
+         std_printf( "0x%X}", c );
 #endif
-   /*
+         /*
     * This patch sends IAC WONT in response to a telnet negotiation;
     * this provides compatibility with a standard telnet daemon, e.g.
     * Heinous BBS.  Added by IO ERROR.
     */
-   net_putchar(IAC);
-   net_putchar(WONT);
-   net_putchar(c);
-   /* Fall through */
-    default:
-   state = TS_DATA;
-   break;
-    }
-    return (0);
+         net_putchar( IAC );
+         net_putchar( WONT );
+         net_putchar( c );
+         /* Fall through */
+      default:
+         state = TS_DATA;
+         break;
+   }
+   return ( 0 );
 }
-
 
 /*
  * Send signal that block of data follows -- this is a signal to the bbs that
@@ -300,33 +327,38 @@ int telrcv(int c)
  * throwing away everything it receives from the time it sends an IAC G_*
  * command until the time it receives an IAC BLOCK command.
  */
-void sendblock(void)
+void sendblock( void )
 {
-    net_putchar(IAC);
-    net_putchar(BLOCK);
+   net_putchar( IAC );
+   net_putchar( BLOCK );
 }
-
 
 /*
  * Send a NAWS command to the bbs to tell it what our window size is.
  */
-void sendnaws(void)
+void sendnaws( void )
 {
-    char s[10];
-    register int i;
+   char s[10];
+   register int i;
 
-    if (oldrows != getwindowsize()) {
-   /* Old window max was 70 */
-   if (rows > 110 || rows < 10)
-       rows = 24;
-   else
-       oldrows = rows;
-   snprintf(s, sizeof(s), "%c%c%c%c%c%c%c%c%c", IAC, SB, TELOPT_NAWS, 0, 0, 0, rows, IAC, SE);
-   for (i = 0; i < 9; i++)
-       net_putchar(s[i]);
-    }
+   if ( oldrows != getwindowsize() )
+   {
+      /* Old window max was 70 */
+      if ( rows > 110 || rows < 10 )
+      {
+         rows = 24;
+      }
+      else
+      {
+         oldrows = rows;
+      }
+      snprintf( s, sizeof( s ), "%c%c%c%c%c%c%c%c%c", IAC, SB, TELOPT_NAWS, 0, 0, 0, rows, IAC, SE );
+      for ( i = 0; i < 9; i++ )
+      {
+         net_putchar( s[i] );
+      }
+   }
 }
-
 
 /*
  * Initialize telnet negotations with the bbs -- we don't really do the
@@ -335,20 +367,20 @@ void sendnaws(void)
  * BBS (the queue daemon actually) is kludged on its end as well by the IAC
  * CLIENT command.
  */
-void telinit(void)
+void telinit( void )
 {
-   net_putchar(IAC);
-   net_putchar(CLIENT2);
-   net_putchar(IAC);
-   net_putchar(SB);
-   net_putchar(TELOPT_ENVIRON);
-   net_putchar(0);
-   net_putchar(1);
-   net_putchar(0);
-   net_puts("USER");
-   net_putchar(0);
-   net_puts(user);
-   net_putchar(IAC);
-   net_putchar(SE);
+   net_putchar( IAC );
+   net_putchar( CLIENT2 );
+   net_putchar( IAC );
+   net_putchar( SB );
+   net_putchar( TELOPT_ENVIRON );
+   net_putchar( 0 );
+   net_putchar( 1 );
+   net_putchar( 0 );
+   net_puts( "USER" );
+   net_putchar( 0 );
+   net_puts( user );
+   net_putchar( IAC );
+   net_putchar( SE );
    sendnaws();
 }

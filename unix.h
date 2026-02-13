@@ -20,7 +20,7 @@
 #include <openssl/err.h>
 #endif
 
-#if defined(sun) && defined(unix) && !defined(FIONREAD) && !defined(__svr4__)
+#if defined( sun ) && defined( unix ) && !defined( FIONREAD ) && !defined( __svr4__ )
 #define __svr4__
 #endif
 
@@ -45,6 +45,6 @@
 #include <libc.h>
 #endif
 
-#if defined(AMIX) || defined(__svr4__)
+#if defined( AMIX ) || defined( __svr4__ )
 #include <sys/filio.h>
 #endif
