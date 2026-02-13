@@ -12,7 +12,6 @@ AC_ARG_WITH(ssl,
    ]
 )
 AC_ARG_ENABLE(titlebar, [  --disable-titlebar      disable xterm/NeXT titlebar (default is enabled)])
-AC_ARG_ENABLE(xlog, [  --enable-xlog           enable logging express messages (doesn't work yet)])
 AC_ARG_ENABLE(save-password, [  --enable-save-password  allow passwords to be saved])
 
 dnl Checks for programs.
@@ -173,10 +172,6 @@ fi
 
 if test x$enable_titlebar != xno; then
    AC_DEFINE(ENABLE_TITLEBAR,[1],[Define this if you want to use xterm/NeXT titlebars])
-fi
-
-if test x$enable_xlog = xyes; then
-   AC_DEFINE(ENABLE_XLOG,[1],[Define this to enable X message logging])
 fi
 
 dnl Checks for header files.

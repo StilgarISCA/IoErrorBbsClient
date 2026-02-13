@@ -119,6 +119,6 @@ extern int xmsgnow;        /* True while we are receiving an X message */
 extern int needx;
 extern int eatline;
 
-extern queue *urlQueue;              /* Structure holding recently seen URLs */
+extern queue *urlQueue; /* Structure holding recently seen URLs */
 
 #endif /* EXT_H_INCLUDED */

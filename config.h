@@ -7,9 +7,6 @@
 /* Define this if you want to use xterm/NeXT titlebars */
 #define ENABLE_TITLEBAR 1
 
-/* Define this to enable X message logging */
-/* #undef ENABLE_XLOG */
-
 /* Define to 1 if you don't have 'vprintf' but do have '_doprnt.' */
 /* #undef HAVE_DOPRNT */
 
