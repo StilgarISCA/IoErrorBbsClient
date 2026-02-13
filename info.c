@@ -65,7 +65,7 @@ void copyright( void )
                "  1994 David Bailey.              (GPL: Expanded friend list)\r\n",
                "  1994 Marc Dionne.               (GPL: Early patches to client core)\r\n",
                "  Above portions used with permission.\r\n",
-               NULL );
+               (char *)NULL );
 }
 
 void license( void )
@@ -295,7 +295,7 @@ void license( void )
                "POSSIBILITY OF SUCH DAMAGES.\r\n",
                "\r\n",
                "                     END OF TERMS AND CONDITIONS\r\n",
-               NULL );
+               (char *)NULL );
 }
 
 void warranty( void )
@@ -322,7 +322,7 @@ void warranty( void )
                "YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER\r\n",
                "PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE\r\n",
                "POSSIBILITY OF SUCH DAMAGES.\r\n",
-               NULL );
+               (char *)NULL );
 }
 
 /*
@@ -421,5 +421,5 @@ void otherinfo( void )
                "    your friend.  The Policy Board will always be your friend.\r\n",
                "8.  The BBS is never moving to Gestalt.\r\n",
                "9.  The performers may change, but the song is always the same.\r\n",
-               NULL );
+               (char *)NULL );
 }

@@ -778,7 +778,7 @@ void techinfo( void )
                "sigsetjmp "
 #endif
                "\r\n",
-               NULL );
+               (char *)NULL );
 }
 
 void initialize( const char *protocol )
