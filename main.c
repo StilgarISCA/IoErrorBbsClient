@@ -53,7 +53,7 @@
  *                         more forgiving.
  * v1.42   12/31/93 (des)  Bug fixes, added compability for a few more
  *                         machines, including Amigas running Unix, BSDI, and
- *                         SCO/Xenix.  Added "term" compatibility for Michael
+ *                         SCO/UnixWare.  Added "term" compatibility for Michael
  *                         O'Reilly's term package courtesy of Ozy.
  * v1.5    02/15/94 (des)  Fixed nasty character dropping bug, made enemy list
  *                         work for > 1 screen posts properly, plus it now

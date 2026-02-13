@@ -24,10 +24,6 @@
 #define __svr4__
 #endif
 
-#ifdef M_XENIX
-#define _IBCS2
-#endif
-
 #ifdef HAVE_TERMIO_H
 #include <termio.h>
 #else

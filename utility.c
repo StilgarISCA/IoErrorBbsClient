@@ -83,12 +83,8 @@ void myexit( void )
       childpid = ( -childpid );
       while ( childpid )
       {
-#ifndef __EMX__
          sigpause( 0 );
       }
-#else
-         sleep( 1 );
-#endif
    }
    resetterm();
 #ifdef HAVE_OPENSSL
