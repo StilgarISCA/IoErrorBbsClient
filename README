@@ -12,6 +12,24 @@ Quick Start:
 Optional:
 	./configure --without-socks
 
+Formatting and Linting:
+	# Generate/refresh compile_commands.json for clang-tidy
+	bear -- make clean all -j4
+
+	# Add required braces to control statements
+	clang-tidy -p . -fix -fix-errors -format-style=file \
+		-checks='-*,readability-braces-around-statements' \
+		--extra-arg=-isysroot \
+		--extra-arg="$(xcrun --sdk macosx --show-sdk-path)" \
+		$(git ls-files '*.c')
+
+	# Apply repository formatting rules (.clang-format)
+	clang-format -i $(git ls-files '*.c' '*.h')
+
+	# Verify build
+	make clean
+	make -j4
+
 This software is OSI Certified Open Source Software. OSI Certified is a
 certification mark of the Open Source Initiative.
 
