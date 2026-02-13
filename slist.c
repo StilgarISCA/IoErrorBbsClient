@@ -107,7 +107,7 @@ int slistRemoveItem( slist *list, int item )
    assert( item >= 0 );
    assert( (unsigned int)item < list->nitems );
 
-   printf( "slistRemoveItem(list, %d): nitems=%d\r\n", item, list->nitems );
+   printf( "slistRemoveItem(list, %d): nitems=%u\r\n", item, list->nitems );
    list->items[item] = NULL;
    if ( (unsigned int)item < --list->nitems )
    {
@@ -197,14 +197,13 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
    int n2;      /* Count of items processed */
    slist *dest; /* The list being created */
 
-   assert( list1 );
-   assert( list2 );
-   assert( list1->sortfn == list2->sortfn );
-
    if ( !list1 || !list2 || list1->sortfn != list2->sortfn )
    {
       return NULL;
    }
+   assert( list1 );
+   assert( list2 );
+   assert( list1->sortfn == list2->sortfn );
 
    n1 = 0;
    n2 = 0;
