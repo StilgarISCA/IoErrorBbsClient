@@ -98,7 +98,7 @@ void readbbsrc( void )
 
    wholist = postbufp = postflag = highxmsg = xmsgflag = 0;
    postnow = postwas = xmsgnow = needx = eatline = 0;
-   textonly = want_ssl = 0;
+   want_ssl = 0;
    xmsgbufp = xmsgbuf;
 
    while ( bbsrc && fgets( tmp, MAXLINELEN + 1, bbsrc ) )
@@ -145,10 +145,6 @@ void readbbsrc( void )
       else if ( !strncmp( tmp, "bold", 4 ) )
       {
          flags.usebold = 1;
-      }
-      else if ( !strncmp( tmp, "textonly", 8 ) )
-      {
-         textonly = 1;
       }
       else if ( !strncmp( tmp, "xland", 5 ) )
       {

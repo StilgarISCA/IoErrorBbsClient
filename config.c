@@ -224,8 +224,6 @@ void configbbsrc( void )
                   bbsport = BBSPORT;
                }
             }
-#ifndef USE_CYGWIN
-            /* The browser setting is ignored in Windows */
             std_printf( "Enter the Web browser to use (%s) -> ", browser );
             get_string( 80, tmp, -999 );
             if ( *tmp )
@@ -235,14 +233,6 @@ void configbbsrc( void )
             std_printf( "Does %s run in a separate window? (%s) -> ", browser,
                         flags.browserbg ? "Yes" : "No" );
             flags.browserbg = (unsigned int)yesnodefault( flags.browserbg );
-#else
-            flags.browserbg = 1;
-#endif
-#ifdef USE_CYGWIN
-            std_printf( "Use graphical controls such as dialog boxes? (%s) -> ",
-                        textonly ? "Yes" : "No" );
-            textonly = yesnodefault( textonly );
-#endif
             break;
 
          case 'h':
@@ -523,10 +513,6 @@ void writebbsrc( void )
    if ( flags.usebold )
    {
       fprintf( bbsrc, "bold\n" );
-   }
-   if ( textonly )
-   {
-      fprintf( bbsrc, "textonly\n" );
    }
    if ( !xland )
    {

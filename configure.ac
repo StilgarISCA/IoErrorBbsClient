@@ -45,11 +45,6 @@ netbsd*)
 solaris*)
    need_dash_r=1;
    ;;
-cygwin* | mingw*)
-   AC_DEFINE(USE_CYGWIN,[1],[Define this if building in the Cygwin environment])
-#	PLATFORM_OBJS="${PLATFORM_OBJS} windows.o"
-   CFLAGS="$CFLAGS -I/usr/include/w32api"
-   ;;
 esac
 
 if test x$with_ssl = xyes; then

@@ -114,9 +114,6 @@
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 
-/* Define this if building in the Cygwin environment */
-/* #undef USE_CYGWIN */
-
 /* Version number of package */
 #define VERSION "2.3.10-Stilgar"
 
