@@ -745,10 +745,13 @@ void editusers( slist *list, int ( *findfn )( const void *, const void * ), cons
                else
                { /* enemy list */
                   pc = (char *)calloc( 1, strlen( sp ) + 1 );
-                  snprintf( pc, strlen( sp ) + 1, "%s", sp ); /* 2.1.2 bugfix */
                   if ( !pc )
                   {
                      fatalexit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
+                  }
+                  else
+                  {
+                     snprintf( pc, strlen( sp ) + 1, "%s", sp ); /* 2.1.2 bugfix */
                   }
                   if ( !slistAddItem( list, pc, 0 ) )
                   {
