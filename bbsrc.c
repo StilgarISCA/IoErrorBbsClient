@@ -38,6 +38,102 @@ static int ctrl( const char *ptrToken )
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
  */
 #define MAX_LINE_LENGTH 83
+
+typedef enum
+{
+   BBRC_CMD_UNKNOWN = 0,
+   BBRC_CMD_AWAYKEY,
+   BBRC_CMD_AUTOANSI,
+   BBRC_CMD_AUTONAME,
+#ifdef ENABLE_SAVE_PASSWORD
+   BBRC_CMD_AUTOPASS,
+#endif
+   BBRC_CMD_BOLD,
+   BBRC_CMD_BROWSER,
+   BBRC_CMD_CAPTURE,
+   BBRC_CMD_COLOR,
+   BBRC_CMD_COMMANDKEY,
+   BBRC_CMD_EDITOR,
+   BBRC_CMD_ENEMY,
+   BBRC_CMD_FRIEND,
+   BBRC_CMD_KEYMAP,
+   BBRC_CMD_MACRO,
+   BBRC_CMD_NEW_AWAY,
+   BBRC_CMD_OLD_AWAY,
+   BBRC_CMD_QUIT,
+   BBRC_CMD_REREAD,
+   BBRC_CMD_SHELL,
+   BBRC_CMD_SITE,
+   BBRC_CMD_SQUELCH,
+   BBRC_CMD_SUSP,
+   BBRC_CMD_URL,
+   BBRC_CMD_VERSION,
+   BBRC_CMD_XLAND,
+   BBRC_CMD_XWRAP
+} BbsRcCommandId;
+
+typedef struct
+{
+   const char *ptrPrefix;
+   size_t prefixLength;
+   BbsRcCommandId commandId;
+} BbsRcCommandSpec;
+
+static bool isNewAwayMessageCommand( const char *ptrLine )
+{
+   return ptrLine[0] == 'a' && ptrLine[1] >= '1' &&
+          ptrLine[1] <= '5' && ptrLine[2] == ' ';
+}
+
+static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
+{
+   static const BbsRcCommandSpec aryCommands[] =
+      {
+         { "reread ", 7, BBRC_CMD_REREAD },
+         { "xwrap ", 6, BBRC_CMD_XWRAP },
+         { "bold", 4, BBRC_CMD_BOLD },
+         { "xland", 5, BBRC_CMD_XLAND },
+         { "version ", 8, BBRC_CMD_VERSION },
+         { "squelch ", 8, BBRC_CMD_SQUELCH },
+         { "color ", 6, BBRC_CMD_COLOR },
+         { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
+         { "autoansi", 9, BBRC_CMD_AUTOANSI },
+#ifdef ENABLE_SAVE_PASSWORD
+         { "autopass ", 9, BBRC_CMD_AUTOPASS },
+#endif
+         { "aryBrowser ", sizeof( "aryBrowser " ) - 1, BBRC_CMD_BROWSER },
+         { "aryEditor ", sizeof( "aryEditor " ) - 1, BBRC_CMD_EDITOR },
+         { "site ", 5, BBRC_CMD_SITE },
+         { "friend ", 7, BBRC_CMD_FRIEND },
+         { "enemy ", 6, BBRC_CMD_ENEMY },
+         { "commandkey ", 11, BBRC_CMD_COMMANDKEY },
+         { "macrokey ", 9, BBRC_CMD_COMMANDKEY },
+         { "awaykey ", 8, BBRC_CMD_AWAYKEY },
+         { "quit ", 5, BBRC_CMD_QUIT },
+         { "susp ", 5, BBRC_CMD_SUSP },
+         { "capture ", 8, BBRC_CMD_CAPTURE },
+         { "aryKeyMap ", sizeof( "aryKeyMap " ) - 1, BBRC_CMD_KEYMAP },
+         { "url ", 4, BBRC_CMD_URL },
+         { "aryMacro ", sizeof( "aryMacro " ) - 1, BBRC_CMD_MACRO },
+         { "aryAwayMessageLines ", sizeof( "aryAwayMessageLines " ) - 1, BBRC_CMD_OLD_AWAY },
+         { "aryShell ", sizeof( "aryShell " ) - 1, BBRC_CMD_SHELL } };
+   size_t itemIndex;
+
+   if ( isNewAwayMessageCommand( ptrLine ) )
+   {
+      return BBRC_CMD_NEW_AWAY;
+   }
+   for ( itemIndex = 0; itemIndex < sizeof( aryCommands ) / sizeof( aryCommands[0] ); itemIndex++ )
+   {
+      if ( !strncmp( ptrLine, aryCommands[itemIndex].ptrPrefix,
+                     aryCommands[itemIndex].prefixLength ) )
+      {
+         return aryCommands[itemIndex].commandId;
+      }
+   }
+   return BBRC_CMD_UNKNOWN;
+}
+
 void readBbsRc( void )
 {
    char aryLine[MAX_LINE_LENGTH + 1];
@@ -122,159 +218,158 @@ void readBbsRc( void )
    while ( readNormalizedLine( ptrBbsRc, aryLine, sizeof( aryLine ),
                                &lineNumber, &reads, ".bbsrc" ) )
    {
-      /* Just ignore these for now, they'll be quietly erased... */
-      if ( !strncmp( aryLine, "reread ", 7 ) )
-      {
-         ;
-      }
-      else if ( !strncmp( aryLine, "xwrap ", 6 ) )
-      {
-         ;
+      BbsRcCommandId commandId = detectBbsRcCommand( aryLine );
+      bool isHandled = true;
 
-         /* Client configuration options (current) */
-      }
-      else if ( !strncmp( aryLine, "bold", 4 ) )
+      switch ( commandId )
       {
-         flagsConfiguration.useBold = 1;
-      }
-      else if ( !strncmp( aryLine, "xland", 5 ) )
-      {
-         isXland = 0;
-      }
-      else if ( !strncmp( aryLine, "version ", 8 ) )
-      {
-         tmpVersion = atoi( aryLine + 8 );
-      }
-      else if ( !strncmp( aryLine, "squelch ", 8 ) )
-      {
-         switch ( atoi( aryLine + 8 ) )
-         {
-            case 3:
-               flagsConfiguration.shouldSquelchPost = 1;
-               flagsConfiguration.shouldSquelchExpress = 1;
-               break;
-            case 2:
-               flagsConfiguration.shouldSquelchPost = 1;
-               break;
-            case 1:
-               flagsConfiguration.shouldSquelchExpress = 1;
-               break;
-            default:
-               break;
-         }
-      }
-      else if ( !strncmp( aryLine, "color ", 6 ) )
-      {
-         if ( strlen( aryLine ) != 6 + sizeof color )
-         {
-            stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n", lineNumber );
-         }
-         else
-         {
-            bcopy( aryLine + 6, (void *)&color, sizeof color );
-         }
-      }
-      else if ( !strncmp( aryLine, "aryAutoName ", sizeof( "aryAutoName " ) - 1 ) )
-      {
-         if ( strncmp( aryLine + ( sizeof( "aryAutoName " ) - 1 ), "Guest", 5 ) )
-         {
-            strncpy( aryAutoName, aryLine + ( sizeof( "aryAutoName " ) - 1 ), 21 );
-            aryAutoName[20] = 0;
-         }
-      }
-      else if ( !strncmp( aryLine, "autoansi", 9 ) )
-      {
-         if ( strlen( aryLine ) <= 9 || aryLine[9] != 'N' )
-         {
-            flagsConfiguration.shouldAutoAnswerAnsiPrompt = 1;
-         }
-#ifdef ENABLE_SAVE_PASSWORD
-      }
-      else if ( !strncmp( aryLine, "autopass ", 9 ) )
-      {
-         strncpy( aryAutoPassword, aryLine + 9, 21 );
-         aryAutoPassword[20] = 0;
-#endif
-      }
-      else if ( !strncmp( aryLine, "aryBrowser ", sizeof( "aryBrowser " ) - 1 ) )
-      {
-         if ( strlen( aryLine ) < 13 )
-         {
-            stdPrintf( "Invalid definition of 'aryBrowser' ignored.\n" );
-         }
-         else
-         {
-            flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '0' ) ? 0 : 1;
-            strncpy( aryBrowser, aryLine + 13, 80 );
-         }
-      }
-      else if ( !strncmp( aryLine, "aryEditor ", sizeof( "aryEditor " ) - 1 ) )
-      {
-         if ( *aryEditor )
-         {
-            stdPrintf( "Multiple definition of 'aryEditor' ignored.\n" );
-         }
-         else
-         {
-            strncpy( aryEditor, aryLine + ( sizeof( "aryEditor " ) - 1 ), 72 );
-         }
-      }
-      else if ( !strncmp( aryLine, "site ", 5 ) )
-      {
-         if ( *aryBbsHost )
-         {
-            stdPrintf( "Multiple definition of 'site' ignored.\n" );
-         }
-         else
-         {
-            for ( parseIndex = 5; ( aryBbsHost[parseIndex - 5] = aryLine[parseIndex] ) && aryLine[parseIndex] != ' ' && parseIndex < 68; parseIndex++ )
+         case BBRC_CMD_REREAD:
+         case BBRC_CMD_XWRAP:
+            break;
+
+         case BBRC_CMD_BOLD:
+            flagsConfiguration.useBold = 1;
+            break;
+
+         case BBRC_CMD_XLAND:
+            isXland = 0;
+            break;
+
+         case BBRC_CMD_VERSION:
+            tmpVersion = atoi( aryLine + 8 );
+            break;
+
+         case BBRC_CMD_SQUELCH:
+            switch ( atoi( aryLine + 8 ) )
             {
-               ;
+               case 1:
+                  flagsConfiguration.shouldSquelchExpress = 1;
+                  break;
+               case 2:
+                  flagsConfiguration.shouldSquelchPost = 1;
+                  break;
+               case 3:
+                  flagsConfiguration.shouldSquelchPost = 1;
+                  flagsConfiguration.shouldSquelchExpress = 1;
+                  break;
+               default:
+                  break;
             }
-            if ( parseIndex == 68 || parseIndex == 5 )
+            break;
+
+         case BBRC_CMD_COLOR:
+            if ( strlen( aryLine ) != 6 + sizeof color )
             {
-               stdPrintf( "Illegal hostname in 'site', using default.\n" );
-               *aryBbsHost = 0;
+               stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n", lineNumber );
             }
             else
             {
-               aryBbsHost[parseIndex - 5] = 0;
-               if ( aryLine[parseIndex] )
-               {
-                  bbsPort = (unsigned short)atoi( aryLine + parseIndex + 1 );
-               }
-               else
-               {
-                  bbsPort = BBS_PORT_NUMBER;
-               }
-               for ( ; aryLine[parseIndex] && aryLine[parseIndex] != ' '; parseIndex++ )
+               bcopy( aryLine + 6, (void *)&color, sizeof color );
+            }
+            break;
+
+         case BBRC_CMD_AUTONAME:
+            if ( strncmp( aryLine + ( sizeof( "aryAutoName " ) - 1 ), "Guest", 5 ) )
+            {
+               strncpy( aryAutoName, aryLine + ( sizeof( "aryAutoName " ) - 1 ), 21 );
+               aryAutoName[20] = 0;
+            }
+            break;
+
+         case BBRC_CMD_AUTOANSI:
+            if ( strlen( aryLine ) <= 9 || aryLine[9] != 'N' )
+            {
+               flagsConfiguration.shouldAutoAnswerAnsiPrompt = 1;
+            }
+            break;
+
+#ifdef ENABLE_SAVE_PASSWORD
+         case BBRC_CMD_AUTOPASS:
+            strncpy( aryAutoPassword, aryLine + 9, 21 );
+            aryAutoPassword[20] = 0;
+            break;
+#endif
+
+         case BBRC_CMD_BROWSER:
+            if ( strlen( aryLine ) < 13 )
+            {
+               stdPrintf( "Invalid definition of 'aryBrowser' ignored.\n" );
+            }
+            else
+            {
+               flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '0' ) ? 0 : 1;
+               strncpy( aryBrowser, aryLine + 13, 80 );
+            }
+            break;
+
+         case BBRC_CMD_EDITOR:
+            if ( *aryEditor )
+            {
+               stdPrintf( "Multiple definition of 'aryEditor' ignored.\n" );
+            }
+            else
+            {
+               strncpy( aryEditor, aryLine + ( sizeof( "aryEditor " ) - 1 ), 72 );
+            }
+            break;
+
+         case BBRC_CMD_SITE:
+            if ( *aryBbsHost )
+            {
+               stdPrintf( "Multiple definition of 'site' ignored.\n" );
+            }
+            else
+            {
+               for ( parseIndex = 5; ( aryBbsHost[parseIndex - 5] = aryLine[parseIndex] ) && aryLine[parseIndex] != ' ' && parseIndex < 68; parseIndex++ )
                {
                   ;
                }
-               if ( !strncmp( aryLine + parseIndex, "secure", 6 ) )
+               if ( parseIndex == 68 || parseIndex == 5 )
                {
-                  shouldUseSsl = 1;
+                  stdPrintf( "Illegal hostname in 'site', using default.\n" );
+                  *aryBbsHost = 0;
+               }
+               else
+               {
+                  aryBbsHost[parseIndex - 5] = 0;
+                  if ( aryLine[parseIndex] )
+                  {
+                     bbsPort = (unsigned short)atoi( aryLine + parseIndex + 1 );
+                  }
+                  else
+                  {
+                     bbsPort = BBS_PORT_NUMBER;
+                  }
+                  for ( ; aryLine[parseIndex] && aryLine[parseIndex] != ' '; parseIndex++ )
+                  {
+                     ;
+                  }
+                  if ( !strncmp( aryLine + parseIndex, "secure", 6 ) )
+                  {
+                     shouldUseSsl = 1;
+                  }
+               }
+               if ( !strcmp( aryBbsHost, "128.255.200.69" ) ||
+                    !strcmp( aryBbsHost, "128.255.85.69" ) ||
+                    !strcmp( aryBbsHost, "128.255.95.69" ) ||
+                    !strcmp( aryBbsHost, "128.255.3.160" ) ||
+                    !strcmp( aryBbsHost, "bbs.iscabbs.info" ) )
+               {
+                  snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
                }
             }
-            if ( !strcmp( aryBbsHost, "128.255.200.69" ) ||
-                 !strcmp( aryBbsHost, "128.255.85.69" ) ||
-                 !strcmp( aryBbsHost, "128.255.95.69" ) ||
-                 !strcmp( aryBbsHost, "128.255.3.160" ) ||
-                 !strcmp( aryBbsHost, "bbs.iscabbs.info" ) )
-            {                                                                    /* Old addresses */
-               snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME ); /* changed to new */
+            break;
+
+         case BBRC_CMD_FRIEND:
+            if ( bbsFriends && fgets( aryScratchLine, MAX_LINE_LENGTH + 1, bbsFriends ) )
+            {
+               break;
             }
-         }
-      }
-      else if ( ( !strncmp( aryLine, "friend ", 7 ) ) && ( !bbsFriends || !fgets( aryScratchLine, MAX_LINE_LENGTH + 1, bbsFriends ) ) )
-      {
-         if ( strlen( aryLine ) == 7 )
-         {
-            stdPrintf( "Empty username in 'friend'.\n" );
-         }
-         else
-         {
-            if ( slistFind( friendList, aryLine + 7, fStrCompareVoid ) != -1 )
+            if ( strlen( aryLine ) == 7 )
+            {
+               stdPrintf( "Empty username in 'friend'.\n" );
+            }
+            else if ( slistFind( friendList, aryLine + 7, fStrCompareVoid ) != -1 )
             {
                stdPrintf( "Duplicate username in 'friend'.\n" );
             }
@@ -298,6 +393,11 @@ void readBbsRc( void )
                   }
                }
                strncpy( ptrFriend->name, aryLine + 7, hold );
+               ptrFriend->magic = 0x3231;
+               if ( !slistAddItem( friendList, ptrFriend, 1 ) )
+               {
+                  fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+               }
             }
             else
             {
@@ -309,144 +409,139 @@ void readBbsRc( void )
                strncpy( ptrFriend->name, aryLine + 7, 19 );
                hold = sizeof( ptrFriend->name );
                snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
+               ptrFriend->magic = 0x3231;
+               if ( !slistAddItem( friendList, ptrFriend, 1 ) )
+               {
+                  fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+               }
             }
-            ptrFriend->magic = 0x3231;
-            if ( !slistAddItem( friendList, ptrFriend, 1 ) )
+            break;
+
+         case BBRC_CMD_ENEMY:
+            if ( strlen( aryLine ) == 6 )
             {
-               fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+               stdPrintf( "Empty username in 'enemy'.\n" );
             }
-         }
-      }
-      else if ( !strncmp( aryLine, "enemy ", 6 ) )
-      {
-         if ( strlen( aryLine ) == 6 )
-         {
-            stdPrintf( "Empty username in 'enemy'.\n" );
-         }
-         else if ( slistFind( enemyList, aryLine + 6, strCompareVoid ) != -1 )
-         {
-            stdPrintf( "Duplicate username in 'enemy'.\n" );
-         }
-         else
-         {
-            ptrNameCopy = (char *)calloc( 1, strlen( aryLine + 6 ) + 1 );
-            if ( !ptrNameCopy )
+            else if ( slistFind( enemyList, aryLine + 6, strCompareVoid ) != -1 )
             {
-               fatalExit( "Out of memory adding 'enemy'!\n", "Fatal error" );
-            }
-            snprintf( ptrNameCopy, strlen( aryLine + 6 ) + 1, "%s", aryLine + 6 );
-            if ( !slistAddItem( enemyList, (void *)ptrNameCopy, 1 ) )
-            {
-               fatalExit( "Can't add 'enemy' to list!\n", "Fatal error" );
-            }
-         }
-      }
-      else if ( !strncmp( aryLine, "commandkey ", 11 ) ||
-                !strncmp( aryLine, "macrokey ", 9 ) )
-      {
-         if ( commandKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'commandkey' ignored.\n" );
-         }
-         else
-         {
-            if ( !strncmp( aryLine, "macrokey ", 9 ) )
-            {
-               commandKey = ctrl( aryLine + 9 );
+               stdPrintf( "Duplicate username in 'enemy'.\n" );
             }
             else
             {
-               commandKey = ctrl( aryLine + 11 );
+               ptrNameCopy = (char *)calloc( 1, strlen( aryLine + 6 ) + 1 );
+               if ( !ptrNameCopy )
+               {
+                  fatalExit( "Out of memory adding 'enemy'!\n", "Fatal error" );
+               }
+               snprintf( ptrNameCopy, strlen( aryLine + 6 ) + 1, "%s", aryLine + 6 );
+               if ( !slistAddItem( enemyList, (void *)ptrNameCopy, 1 ) )
+               {
+                  fatalExit( "Can't add 'enemy' to list!\n", "Fatal error" );
+               }
             }
-            if ( findChar( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f", commandKey ) || commandKey >= ' ' )
+            break;
+
+         case BBRC_CMD_COMMANDKEY:
+            if ( commandKey >= 0 )
             {
-               stdPrintf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
-               commandKey = 0x1b;
-            }
-         }
-      }
-      else if ( !strncmp( aryLine, "awaykey ", 8 ) )
-      {
-         if ( awayKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'awaykey' ignored.\n" );
-         }
-         else
-         {
-            awayKey = ctrl( aryLine + 8 );
-         }
-      }
-      else if ( !strncmp( aryLine, "quit ", 5 ) )
-      {
-         if ( quitKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'quit' ignored.\n" );
-         }
-         else
-         {
-            quitKey = ctrl( aryLine + 5 );
-         }
-      }
-      else if ( !strncmp( aryLine, "susp ", 5 ) )
-      {
-         if ( suspKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'susp' ignored.\n" );
-         }
-         else
-         {
-            suspKey = ctrl( aryLine + 5 );
-         }
-      }
-      else if ( !strncmp( aryLine, "capture ", 8 ) )
-      {
-         if ( captureKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'capture' ignored.\n" );
-         }
-         else
-         {
-            captureKey = ctrl( aryLine + 8 );
-         }
-      }
-      else if ( !strncmp( aryLine, "aryKeyMap ", sizeof( "aryKeyMap " ) - 1 ) )
-      {
-         parseIndex = *( aryLine + ( sizeof( "aryKeyMap " ) - 1 ) );
-         ptrToken = aryLine + sizeof( "aryKeyMap " );
-         if ( *ptrToken++ == ' ' && parseIndex > 32 && parseIndex < 128 )
-         {
-            aryKeyMap[parseIndex] = *ptrToken;
-         }
-         else
-         {
-            stdPrintf( "Invalid value for 'aryKeyMap' ignored.\n" );
-         }
-      }
-      else if ( !strncmp( aryLine, "url ", 4 ) )
-      {
-         if ( browserKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'url' ignored.\n" );
-         }
-         else
-         {
-            browserKey = ctrl( aryLine + 4 );
-         }
-      }
-      else if ( !strncmp( aryLine, "aryMacro ", sizeof( "aryMacro " ) - 1 ) )
-      {
-         parseIndex = ctrl( aryLine + ( sizeof( "aryMacro " ) - 1 ) );
-         ptrToken = aryLine + sizeof( "aryMacro " ) + ( aryLine[sizeof( "aryMacro " ) - 1] == '^' );
-         if ( *ptrToken++ == ' ' )
-         {
-            if ( *aryMacro[parseIndex] )
-            {
-               stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
+               stdPrintf( "Additional definition for 'commandkey' ignored.\n" );
             }
             else
             {
-               /* Import 'i' aryMacro to aryAwayMessageLines */
-               if ( parseIndex == 'i' && !awayKey && tmpVersion < 220 )
+               if ( !strncmp( aryLine, "macrokey ", 9 ) )
+               {
+                  commandKey = ctrl( aryLine + 9 );
+               }
+               else
+               {
+                  commandKey = ctrl( aryLine + 11 );
+               }
+               if ( findChar( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f", commandKey ) || commandKey >= ' ' )
+               {
+                  stdPrintf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
+                  commandKey = 0x1b;
+               }
+            }
+            break;
+
+         case BBRC_CMD_AWAYKEY:
+            if ( awayKey >= 0 )
+            {
+               stdPrintf( "Additional definition for 'awaykey' ignored.\n" );
+            }
+            else
+            {
+               awayKey = ctrl( aryLine + 8 );
+            }
+            break;
+
+         case BBRC_CMD_QUIT:
+            if ( quitKey >= 0 )
+            {
+               stdPrintf( "Additional definition for 'quit' ignored.\n" );
+            }
+            else
+            {
+               quitKey = ctrl( aryLine + 5 );
+            }
+            break;
+
+         case BBRC_CMD_SUSP:
+            if ( suspKey >= 0 )
+            {
+               stdPrintf( "Additional definition for 'susp' ignored.\n" );
+            }
+            else
+            {
+               suspKey = ctrl( aryLine + 5 );
+            }
+            break;
+
+         case BBRC_CMD_CAPTURE:
+            if ( captureKey >= 0 )
+            {
+               stdPrintf( "Additional definition for 'capture' ignored.\n" );
+            }
+            else
+            {
+               captureKey = ctrl( aryLine + 8 );
+            }
+            break;
+
+         case BBRC_CMD_KEYMAP:
+            parseIndex = *( aryLine + ( sizeof( "aryKeyMap " ) - 1 ) );
+            ptrToken = aryLine + sizeof( "aryKeyMap " );
+            if ( *ptrToken++ == ' ' && parseIndex > 32 && parseIndex < 128 )
+            {
+               aryKeyMap[parseIndex] = *ptrToken;
+            }
+            else
+            {
+               stdPrintf( "Invalid value for 'aryKeyMap' ignored.\n" );
+            }
+            break;
+
+         case BBRC_CMD_URL:
+            if ( browserKey >= 0 )
+            {
+               stdPrintf( "Additional definition for 'url' ignored.\n" );
+            }
+            else
+            {
+               browserKey = ctrl( aryLine + 4 );
+            }
+            break;
+
+         case BBRC_CMD_MACRO:
+            parseIndex = ctrl( aryLine + ( sizeof( "aryMacro " ) - 1 ) );
+            ptrToken = aryLine + sizeof( "aryMacro " ) + ( aryLine[sizeof( "aryMacro " ) - 1] == '^' );
+            if ( *ptrToken++ == ' ' )
+            {
+               if ( *aryMacro[parseIndex] )
+               {
+                  stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
+               }
+               else if ( parseIndex == 'i' && !awayKey && tmpVersion < 220 )
                {
                   int messageLineIndex = 0;
                   ptrMacroWrite = aryAwayMessageLines[0];
@@ -465,11 +560,7 @@ void readBbsRc( void )
                      {
                         ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
                      }
-                     else if ( iscntrl( parseIndex ) )
-                     {
-                        continue;
-                     }
-                     else
+                     else if ( !iscntrl( parseIndex ) )
                      {
                         *ptrMacroWrite++ = (char)parseIndex;
                      }
@@ -492,60 +583,62 @@ void readBbsRc( void )
                   }
                }
             }
-         }
-         else
-         {
-            stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
-         }
-      }
-      else if ( !strncmp( aryLine, "aryAwayMessageLines ", sizeof( "aryAwayMessageLines " ) - 1 ) )
-      {
-         /* Import old isAway messages */
-         int messageLineIndex = 0;
-         ptrMacroWrite = aryAwayMessageLines[messageLineIndex];
-         ptrToken = aryLine + ( sizeof( "aryAwayMessageLines " ) - 1 );
-         while ( ( parseIndex = *ptrToken++ ) )
-         {
-            if ( parseIndex == '^' && *ptrToken != '^' )
+            else
             {
-               parseIndex = ctrl( ptrToken++ - 1 );
+               stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
             }
-            if ( parseIndex == '\r' )
+            break;
+
+         case BBRC_CMD_OLD_AWAY:
             {
-               parseIndex = '\n';
+               int messageLineIndex = 0;
+               ptrMacroWrite = aryAwayMessageLines[messageLineIndex];
+               ptrToken = aryLine + ( sizeof( "aryAwayMessageLines " ) - 1 );
+               while ( ( parseIndex = *ptrToken++ ) )
+               {
+                  if ( parseIndex == '^' && *ptrToken != '^' )
+                  {
+                     parseIndex = ctrl( ptrToken++ - 1 );
+                  }
+                  if ( parseIndex == '\r' )
+                  {
+                     parseIndex = '\n';
+                  }
+                  if ( parseIndex == '\n' )
+                  {
+                     ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
+                  }
+                  else if ( !iscntrl( parseIndex ) )
+                  {
+                     *ptrMacroWrite++ = (char)parseIndex;
+                  }
+               }
+               break;
             }
-            if ( parseIndex == '\n' )
+
+         case BBRC_CMD_NEW_AWAY:
+            snprintf( aryAwayMessageLines[aryLine[1] - '1'], sizeof( aryAwayMessageLines[0] ), "%s", aryLine + 3 );
+            break;
+
+         case BBRC_CMD_SHELL:
+            if ( shellKey >= 0 )
             {
-               ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
-            }
-            else if ( iscntrl( parseIndex ) )
-            {
-               continue;
+               stdPrintf( "Additional definition for 'aryShell' ignored.\n" );
             }
             else
             {
-               *ptrMacroWrite++ = (char)parseIndex;
+               shellKey = ctrl( aryLine + ( sizeof( "aryShell " ) - 1 ) );
             }
-         }
+            break;
+
+         case BBRC_CMD_UNKNOWN:
+         default:
+            isHandled = false;
+            break;
       }
-      else if ( aryLine[0] == 'a' && aryLine[1] >= '1' && aryLine[1] <= '5' &&
-                aryLine[2] == ' ' )
-      {
-         /* New isAway messages */
-         snprintf( aryAwayMessageLines[aryLine[1] - '1'], sizeof( aryAwayMessageLines[0] ), "%s", aryLine + 3 );
-      }
-      else if ( !strncmp( aryLine, "aryShell ", sizeof( "aryShell " ) - 1 ) )
-      {
-         if ( shellKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'aryShell' ignored.\n" );
-         }
-         else
-         {
-            shellKey = ctrl( aryLine + ( sizeof( "aryShell " ) - 1 ) );
-         }
-      }
-      else if ( *aryLine != '#' && *aryLine && strncmp( aryLine, "friend ", 7 ) )
+
+      if ( !isHandled && *aryLine != '#' && *aryLine &&
+           strncmp( aryLine, "friend ", 7 ) )
       {
          stdPrintf( "Syntax error in .bbsrc file in line %d.\n", lineNumber );
       }
@@ -593,6 +686,11 @@ void readBbsRc( void )
             }
             else
             {
+               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
+               if ( !ptrFriend )
+               {
+                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+               }
                strncpy( ptrFriend->name, aryLine + 7, 19 );
                hold = sizeof( ptrFriend->name );
                snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
