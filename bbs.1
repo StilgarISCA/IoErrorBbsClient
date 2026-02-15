@@ -1,6 +1,6 @@
 .\" -*-Nroff-*-
 .\"
-.TH BBS 1 "20 Oct 2002 " " " "Unix User's Manual"
+.TH BBS 1 "15 Feb 2026" "2.3.10-Stilgar" "macOS User's Manual"
 .SH NAME
 bbs \- Connect to the ISCA BBS or a similar BBS.
 .SH SYNOPSIS
@@ -21,7 +21,7 @@ If no
 \fIport\fR
 is specified, the default is 23, and if no
 \fIhost\fR
-is specified, the default is bbs.isca.uiowa.edu (the ISCA BBS).
+is specified, the default is bbs.iscabbs.com (the ISCA BBS).
 .sp
 .B "bbs "
 implements just enough of the
@@ -68,13 +68,12 @@ quit key may be set to Ctrl-F.
 .TP
 .B Suspend Key
 You can suspend the client and return to your Unix shell by pressing the
-command key followed by the suspend key. This key does not apply to
-Windows clients unless running under the Bash shell. To return to the
+command key followed by the suspend key. To return to the
 client when suspended, type "fg". The default suspend key is Ctrl-Z.
 .TP
 .B New Shell Key
 You can start a subshell by pressing the command key followed by the new
-shell key. This key does not apply to Windows clients. To return to the
+shell key. To return to the
 client from your subshell, type "exit". The default new shell key is !.
 .TP
 .B Capture Key
@@ -97,10 +96,8 @@ your own post. To turn on or off capturing, press your command key followed
 by your capture key (e.g. Esc-c or Alt+c). Any text you view while capturing
 is turned on will be saved to your edit file.
 .sp
-The edit file is stored on UNIX systems as .bbstmp in your home directory.
-This is a hidden file, use "ls -al" to see it. On Windows systems, the
-edit file is stored as bbs.tmp in your user profile, or C:/.bbstmp if you
-do not use multi-user capability on Windows 9x.
+The edit file is stored as .bbstmp in your home directory.
+This is a hidden file; use "ls -al" to see it.
 .sp
 Once you have captured some text, you may copy or download the edit file
 to your own system for later reference. Or do nothing, and the contents of
@@ -141,7 +138,7 @@ user scheme.
 .TP
 .B Express messages
 By selecting the e\fBX\fRpress menu from the color menu, you can set up
-colors in which expresss messages will appear. You can set up a different
+colors in which express messages will appear. You can set up a different
 color scheme for express messages made by your friends as opposed to ordinary
 users. You will first be asked to choose which of these you want to set up.
 Choose \fBU\fRser or \fBF\fRriend.
@@ -177,7 +174,7 @@ color in which automatically completed text is displayed. See
 .TP
 .B Reset colors
 By selecting the \fBR\fReset colors option from the color menu, you can erase
-all color seettings and start over with the default colors. This is useful if
+all color settings and start over with the default colors. This is useful if
 you create a color configuration you don't like and wish to start over.
 .PP
 
@@ -197,10 +194,8 @@ the client's built-in editor. The editors available to you depend on
 what is installed on the system where your client is installed.
 .sp 
 To choose an external editor, use the \fBO\fRptions menu in the client
-configuration menu. Typical UNIX editors are vi, pico and emacs.
-Typical Windows editors are edit.com and notepad.exe. Typical Macintosh
-editors are SimpleText and BBEdit. Currently the external editor works
-only on Unix, Windows (with certain editors) and Mac OS X systems.
+configuration menu. Typical editors are vi, pico and emacs.
+On macOS you can also use editors available on your PATH.
 .sp
 To start your external editor for a message, press ENTER twice (or
 Ctrl-D if uploading) and choose \fBE\fRdit from the post menu. Once you
@@ -227,7 +222,7 @@ configuration e\fBX\fRpress menu.
 .B Automatic Reply
 You can now configure the client to automatically set up a reply to
 express messages you receive. The client will type x and the
-recipent's name for you, so all you have to do is type your response.
+recipient's name for you, so all you have to do is type your response.
 This feature is enabled by default. To disable it, use the \fBX\fRLand menu
 in the client configuration e\fBX\fRpress menu.
 .sp
@@ -267,27 +262,8 @@ key you defined. If your command key is defined as Esc then you have
 additional options for using a macro. For help with using macros in this
 manner, please ask in the Client> forum on ISCA BBS.
 .br
-UNIX - Native client in xterm/rxvt - Hold down ALT (or Meta) and press the
-key for your macro or command.
-.br
-UNIX - Native client on Linux/BSD console - Hold down ALT and press the key
-for your macro or command.
-.br
-UNIX - Native client on dumb terminal - Not usually available.
-.br
-Windows - Native client - Hold down ALT and press the key for your macro
-or command.
-.br
-Windows - CRT/SecureCRT - Enable "Emacs meta key" in preferences. Then
-hold down ALT and press the key for your macro or command.
-.br
-Windows - Windows Telnet - Not available.
-.br
-Mac OS X - Native client - Hold down Option (or Command on some systems)
-and press the key for your macro.
-.br
-Mac OS - Better Telnet - Enable "Emacs meta key = Option" in preferences.
-Then hold down Option and press the key for your macro.
+macOS Terminal/iTerm2 - Hold down Option (or Meta, if configured) and press
+the key for your macro or command.
 .PP
 
 .SH USER LISTS
@@ -373,12 +349,8 @@ not be changed unless you are connecting to a system other than ISCA BBS.
 .SH FILES
 .nf
 .ta
-~/.bbsrc              configuration file for Unix
-~/.bbstmp             temporary file for Unix
-$USERPROFILE/bbs.rc   configuration file for Windows 9x/NT
-$USERPROFILE/bbs.tmp  temporary file for Windows 9x/NT
-C:/.bbsrc             for single-user Windows
-C:/.bbstmp            for single-user Windows
+~/.bbsrc              configuration file
+~/.bbstmp             temporary edit file
 .fi
 
 .SH "SEE ALSO"
