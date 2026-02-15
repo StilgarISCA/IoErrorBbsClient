@@ -108,7 +108,7 @@ void looper( void )
    register int inputChar;
    unsigned int invalid = 0;
 
-   for ( ;; )
+   while ( true )
    {
       if ( ( inputChar = inKey() ) < 0 )
       {
@@ -218,7 +218,7 @@ int more( int *line, int percentComplete )
    {
       printf( "--MORE--" );
    }
-   for ( ;; )
+   while ( true )
    {
       inputChar = inKey();
       if ( inputChar == ' ' || inputChar == 'y' || inputChar == 'Y' )

@@ -60,7 +60,7 @@ int waitNextEvent( void )
    fd_set fdr;
    int result;
 
-   for ( ;; )
+   while ( true )
    {
       FD_ZERO( &fdr );
       if ( !childPid && !flagsConfiguration.shouldCheckExpress )

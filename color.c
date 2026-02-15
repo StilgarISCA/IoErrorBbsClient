@@ -218,12 +218,13 @@ void colorConfig( void )
    {
       stdPrintf( "\r\nWARNING:  Color is off.  You will not be able to preview your selections." );
    }
-   for ( ;; )
+   while ( true )
    {
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
       colorize( aryPromptText );
 
-      for ( invalid = 0;; )
+      invalid = 0;
+      while ( true )
       {
          inputChar = inKey();
          if ( !findChar( "GgIiPpXxOoRrQq \n", inputChar ) )
@@ -315,7 +316,7 @@ void generalColorConfig( void )
    int menuOption;
    char aryPromptText[100];
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( GEN_FMT_STR, color.background, color.forum,
                  color.text, color.errorTextColor, color.forum,
@@ -325,7 +326,8 @@ void generalColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      for ( invalid = 0;; )
+      invalid = 0;
+      while ( true )
       {
          menuOption = inKey();
          if ( !findChar( "BbEeFfNnTtQq \n", menuOption ) )
@@ -385,7 +387,7 @@ void inputColorConfig( void )
    int menuOption;
    char aryPromptText[100];
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( INPUT_FMT_STR, color.text, color.input1,
                  color.input2, color.input1, color.text );
@@ -393,7 +395,8 @@ void inputColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      for ( invalid = 0;; )
+      invalid = 0;
+      while ( true )
       {
          menuOption = inKey();
          if ( !findChar( "CcTtQq \n", menuOption ) )
@@ -434,7 +437,7 @@ void inputColorConfig( void )
 
 void postColorConfig( void )
 {
-   for ( ;; )
+   while ( true )
    {
       switch ( userOrFriend() )
       {
@@ -454,7 +457,7 @@ void postUserColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( POST_FMT_STR, color.postdate, color.posttext,
                  color.postname, A_USER, color.posttext, color.forum );
@@ -489,7 +492,7 @@ void postFriendColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( POST_FMT_STR, color.postfrienddate, color.postfriendtext,
                  color.postfriendname, A_FRIEND, color.postfriendtext,
@@ -530,7 +533,8 @@ char postColorMenu( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
+   invalid = 0;
+   while ( true )
    {
       inputChar = inKey();
       if ( !findChar( "DdNnTtQq \n", inputChar ) )
@@ -573,7 +577,7 @@ char postColorMenu( void )
 
 void expressColorConfig( void )
 {
-   for ( ;; )
+   while ( true )
    {
       switch ( userOrFriend() )
       {
@@ -593,7 +597,7 @@ void expressUserColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( EXPRESS_FMT_STR, color.expresstext,
                  color.expressname, A_USER, color.expresstext );
@@ -624,7 +628,7 @@ void expressFriendColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( EXPRESS_FMT_STR, color.expressfriendtext,
                  color.expressfriendname, A_FRIEND, color.expressfriendtext );
@@ -660,7 +664,8 @@ char expressColorMenu( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
+   invalid = 0;
+   while ( true )
    {
       inputChar = inKey();
       if ( !findChar( "NnTtQq \n", inputChar ) )
@@ -706,7 +711,8 @@ char userOrFriend( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
+   invalid = 0;
+   while ( true )
    {
       inputChar = inKey();
       if ( !findChar( "UuFfQq \n", inputChar ) )
@@ -749,7 +755,8 @@ char colorPicker( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
+   invalid = 0;
+   while ( true )
    {
       inputChar = inKey();
       if ( !findChar( "KkRrGgYyBbMmCcWw", inputChar ) )
@@ -825,7 +832,8 @@ char backgroundPicker( void )
              color.background );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
+   invalid = 0;
+   while ( true )
    {
       inputChar = inKey();
       if ( !findChar( "KkRrGgYyBbMmCcWwDd", inputChar ) )

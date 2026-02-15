@@ -10,7 +10,7 @@ void feedPager( int startrow, ... )
 
    currentRow = startrow;
    va_start( ap, startrow );
-   for ( ;; )
+   while ( true )
    {
       ptrText = va_arg( ap, char * );
       if ( !ptrText )
@@ -335,7 +335,7 @@ void information( void )
 
    stdPrintf( "Information\r\n" );
 
-   for ( ;; )
+   while ( true )
    {
       if ( flagsConfiguration.useAnsi )
       {
@@ -345,7 +345,8 @@ void information( void )
       {
          stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
       }
-      for ( invalid = 0;; )
+      invalid = 0;
+      while ( true )
       {
          inputChar = inKey();
          if ( !findChar( "CcLlOoWwTtQq \n", inputChar ) )

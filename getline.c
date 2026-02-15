@@ -251,12 +251,12 @@ char *getName( int quitPriv )
 #if DEBUG
    stdPrintf( "getName 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-   for ( ;; )
+   while ( true )
    {
       shouldUppercase = 1;
       isFirstChar = 1;
       ptrCursor = aryNameBuffer;
-      for ( ;; )
+      while ( true )
       {
          inputChar = inKey();
          if ( inputChar == '\n' )
@@ -521,7 +521,7 @@ void getString( int length, char *result, int line )
       }
    }
 #endif
-   for ( ;; )
+   while ( true )
    {
       inputChar = inKey();
       if ( inputChar == ' ' && length == 29 && ptrCursor == result )

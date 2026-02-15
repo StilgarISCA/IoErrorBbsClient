@@ -24,7 +24,7 @@ int inKey( void )
 {
    register int inputChar;
 
-   for ( ;; )
+   while ( true )
    {
       inputChar = getKey();
       if ( !lastCarriageReturn || inputChar != '\n' )
@@ -72,7 +72,7 @@ int getKey( void )
     * client.
     */
 
-   for ( ;; )
+   while ( true )
    {
 
       /*

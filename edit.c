@@ -63,7 +63,7 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
    lastSpacePosition = 0;
    cancelspace = 0;
 
-   for ( ;; )
+   while ( true )
    {
       if ( ftell( ptrMessageFile ) > 48700 )
       {
@@ -337,7 +337,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
    int lines;
    char aryCurrentLine[80];
 
-   for ( itemIndex = 0;; )
+   itemIndex = 0;
+   while ( true )
    {
       if ( *previousChar != -1 )
       {

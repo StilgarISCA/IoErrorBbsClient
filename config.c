@@ -110,7 +110,7 @@ void configBbsRc( void )
    {
       stdPrintf( "\r\nNo configuration file, cannot arySavedBytes configuration for next session.\r\n" );
    }
-   for ( ;; )
+   while ( true )
    {
       if ( flagsConfiguration.useAnsi )
       {
@@ -121,7 +121,8 @@ void configBbsRc( void )
          stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>aryInfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
       colorize( "\r\nClient config -> @G" );
-      for ( invalid = 0;; )
+      invalid = 0;
+      while ( true )
       {
          inputChar = inKey();
          if ( !findChar( "CcEeFfHhIiKkMmOoQqXx \n", inputChar ) )
@@ -239,7 +240,7 @@ void configBbsRc( void )
          case 'H':
             stdPrintf( "Hotkeys\r\n\n" );
             stdPrintf( "Enter command key (%s) -> ", strCtrl( commandKey ) );
-            for ( ;; )
+            while ( true )
             {
                stdPrintf( "%s\r\n", strCtrl( commandKey = newKey( commandKey ) ) );
                if ( commandKey < ' ' )
@@ -290,7 +291,8 @@ void configBbsRc( void )
                {
                   stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
                }
-               for ( invalid = 0;; )
+               invalid = 0;
+               while ( true )
                {
                   inputChar = inKey();
                   if ( !findChar( "EeLlQq \n", inputChar ) )
@@ -308,7 +310,7 @@ void configBbsRc( void )
                   case 'e':
                   case 'E':
                      stdPrintf( "Edit\r\n" );
-                     for ( ;; )
+                     while ( true )
                      {
                         stdPrintf( "\r\nMacro to edit (%s to end) -> ", strCtrl( commandKey ) );
                         inputChar = newKey( -1 );
@@ -381,7 +383,7 @@ void expressConfig( void )
 
    stdPrintf( "Express\r\n" );
 
-   for ( ;; )
+   while ( true )
    {
       if ( flagsConfiguration.useAnsi )
       {
@@ -392,7 +394,8 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      for ( invalid = 0;; )
+      invalid = 0;
+      while ( true )
       {
          inputChar = inKey();
          if ( !findChar( "AaXxQq \n", inputChar ) )
@@ -561,7 +564,7 @@ int newKey( int oldkey )
 {
    int inputChar;
 
-   for ( ;; )
+   while ( true )
    {
       inputChar = getKey();
       if ( ( ( inputChar == ' ' || inputChar == '\n' || inputChar == '\r' ) && oldkey >= 0 ) || inputChar == oldkey )
@@ -679,7 +682,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
    char *ptrEnemyName;
    friend *ptrFriend;
 
-   for ( ;; )
+   while ( true )
    {
       /* Build menu */
       if ( !strncmp( name, "enemy", 5 ) )
