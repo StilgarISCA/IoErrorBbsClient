@@ -713,7 +713,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
                      }
                      else
                      {
-                        snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName ); /* 2.1.2 bugfix */
+                        snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName );
                      }
                      if ( !slistAddItem( list, ptrEnemyName, 0 ) )
                      {
