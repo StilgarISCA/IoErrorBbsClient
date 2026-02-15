@@ -95,7 +95,10 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
             inputChar = 1; /* Just a random invalid character */
          }
 
-         if ( inputChar != CTRL_D && inputChar != TAB && inputChar != '\b' && inputChar != '\n' && inputChar != CTRL_X && inputChar != CTRL_W && inputChar != CTRL_R && !isprint( inputChar ) )
+         if ( inputChar != CTRL_D && inputChar != TAB &&
+              inputChar != '\b' && inputChar != '\n' &&
+              inputChar != CTRL_X && inputChar != CTRL_W &&
+              inputChar != CTRL_R && !isprint( inputChar ) )
          {
             if ( invalid++ )
             {
@@ -282,7 +285,8 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
          lastSpacePosition = 0;
          lineLength = 0;
       }
-      if ( ( previousChar != '\n' || inputChar != '\n' || upload ) && inputChar != CTRL_D && previousChar != -1 )
+      if ( ( previousChar != '\n' || inputChar != '\n' || upload ) &&
+           inputChar != CTRL_D && previousChar != -1 )
       {
          previousChar = inputChar;
          if ( inputChar == '\n' )
@@ -597,7 +601,9 @@ int checkFile( FILE *ptrMessageFile )
    {
       if ( ( itemIndex = getc( ptrMessageFile ) ) != '\r' && itemIndex != '\n' )
       {
-         if ( ( itemIndex >= 0 && itemIndex < 32 && itemIndex != TAB ) || itemIndex >= DEL )
+         if ( ( itemIndex >= 0 && itemIndex < 32 &&
+                itemIndex != TAB ) ||
+              itemIndex >= DEL )
          {
             printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n", line );
             return ( 1 );

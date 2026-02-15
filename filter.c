@@ -554,7 +554,9 @@ void filterUrl( const char *aryLine )
       /* length unused */
 
       /* Oops, looks like a multi-aryLine URL */
-      if ( ( !multiline && ptrCursor == aryLine && ptrNext > ptrCursor + 77 ) || ( multiline && strlen( aryLine ) > 77 ) )
+      if ( ( !multiline && ptrCursor == aryLine &&
+             ptrNext > ptrCursor + 77 ) ||
+           ( multiline && strlen( aryLine ) > 77 ) )
       {
          if ( strlen( aryLine ) > 77 )
          {

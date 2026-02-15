@@ -44,7 +44,9 @@ int capPutChar( int inputChar )
    {
       skipansi = 4;
    }
-   else if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive && inputChar != '\r' )
+   else if ( capture > 0 && !flagsConfiguration.isPosting &&
+             !flagsConfiguration.isMorePromptActive &&
+             inputChar != '\r' )
    {
       if ( putc( inputChar, tempFile ) < 0 )
       {

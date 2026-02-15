@@ -314,7 +314,8 @@ void configBbsRc( void )
                      {
                         stdPrintf( "\r\nMacro to edit (%s to end) -> ", strCtrl( commandKey ) );
                         inputChar = newKey( -1 );
-                        if ( inputChar == commandKey || inputChar == ' ' || inputChar == '\n' || inputChar == '\r' )
+                        if ( inputChar == commandKey || inputChar == ' ' ||
+                             inputChar == '\n' || inputChar == '\r' )
                         {
                            break;
                         }
@@ -567,11 +568,18 @@ int newKey( int oldkey )
    while ( true )
    {
       inputChar = getKey();
-      if ( ( ( inputChar == ' ' || inputChar == '\n' || inputChar == '\r' ) && oldkey >= 0 ) || inputChar == oldkey )
+      if ( ( ( inputChar == ' ' || inputChar == '\n' ||
+               inputChar == '\r' ) &&
+             oldkey >= 0 ) ||
+           inputChar == oldkey )
       {
          return ( oldkey );
       }
-      if ( oldkey >= 0 && ( inputChar == commandKey || inputChar == suspKey || inputChar == quitKey || inputChar == shellKey || inputChar == captureKey || inputChar == awayKey || inputChar == browserKey ) )
+      if ( oldkey >= 0 &&
+           ( inputChar == commandKey || inputChar == suspKey ||
+             inputChar == quitKey || inputChar == shellKey ||
+             inputChar == captureKey || inputChar == awayKey ||
+             inputChar == browserKey ) )
       {
          stdPrintf( "\r\nThat key is already in use for another hotkey, try again -> " );
       }

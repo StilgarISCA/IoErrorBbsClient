@@ -58,7 +58,9 @@ void getFiveLines( int which )
    {
       stdPrintf( ">" );
       getString( 78, arySendString[lineIndex], lineIndex );
-      if ( ( which && !strcmp( arySendString[lineIndex], "ABORT" ) ) || ( !( which & 16 ) && !lineIndex && !strcmp( *arySendString, "PING" ) ) )
+      if ( ( which && !strcmp( arySendString[lineIndex], "ABORT" ) ) ||
+           ( !( which & 16 ) && !lineIndex &&
+             !strcmp( *arySendString, "PING" ) ) )
       {
          lineIndex++;
          break;
@@ -223,7 +225,8 @@ char *getName( int quitPriv )
    {
       stdPrintf( "\033[3%cm", color.input1 );
    }
-   if ( quitPriv == 1 && *aryAutoName && strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
+   if ( quitPriv == 1 && *aryAutoName &&
+        strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
    {
       isAutoLoggedIn = 1;
       snprintf( junk, sizeof( junk ), "%s", aryAutoName );
@@ -343,7 +346,10 @@ char *getName( int quitPriv )
          {
             continue;
          }
-         if ( inputChar == '\b' || inputChar == CTRL_X || inputChar == CTRL_W || inputChar == CTRL_R || inputChar == ' ' || isalpha( inputChar ) || ( isdigit( inputChar ) && quitPriv == 3 ) )
+         if ( inputChar == '\b' || inputChar == CTRL_X ||
+              inputChar == CTRL_W || inputChar == CTRL_R ||
+              inputChar == ' ' || isalpha( inputChar ) ||
+              ( isdigit( inputChar ) && quitPriv == 3 ) )
          {
             invalid = 0;
          }
@@ -363,7 +369,9 @@ char *getName( int quitPriv )
          }
          do
          {
-            if ( ( inputChar == '\b' || inputChar == CTRL_X || inputChar == CTRL_W ) && ptrCursor > aryNameBuffer )
+            if ( ( inputChar == '\b' || inputChar == CTRL_X ||
+                   inputChar == CTRL_W ) &&
+                 ptrCursor > aryNameBuffer )
             {
                printf( "\b \b" );
                --ptrCursor;
@@ -382,7 +390,11 @@ char *getName( int quitPriv )
                   isFirstChar = 1;
                }
             }
-            else if ( ptrCursor < &aryNameBuffer[!quitPriv || quitPriv == 3 ? MAX_USER_NAME_INPUT_LENGTH : MAX_ALIAS_INPUT_LENGTH] && ( isalpha( inputChar ) || inputChar == ' ' || ( isdigit( inputChar ) && quitPriv == 3 ) ) )
+            else if ( ptrCursor <
+                         &aryNameBuffer[!quitPriv || quitPriv == 3 ? MAX_USER_NAME_INPUT_LENGTH : MAX_ALIAS_INPUT_LENGTH] &&
+                      ( isalpha( inputChar ) || inputChar == ' ' ||
+                        ( isdigit( inputChar ) &&
+                          quitPriv == 3 ) ) )
             {
                isFirstChar = 0;
                if ( shouldUppercase && isupper( inputChar ) )
@@ -532,7 +544,9 @@ void getString( int length, char *result, int line )
       {
          break;
       }
-      if ( inputChar < ' ' && inputChar != '\b' && inputChar != CTRL_X && inputChar != CTRL_W && inputChar != CTRL_R )
+      if ( inputChar < ' ' && inputChar != '\b' &&
+           inputChar != CTRL_X && inputChar != CTRL_W &&
+           inputChar != CTRL_R )
       {
          if ( invalid++ )
          {

@@ -137,7 +137,8 @@ void readBbsRc( void )
          while ( lineLength > 0 )
          {
             size_t index = lineLength - 1;
-            if ( aryLine[index] == ' ' || aryLine[index] == '\t' || aryLine[index] == '\n' || aryLine[index] == '\r' )
+            if ( aryLine[index] == ' ' || aryLine[index] == '\t' ||
+                 aryLine[index] == '\n' || aryLine[index] == '\r' )
             {
                aryLine[index] = 0;
             }
@@ -600,7 +601,8 @@ void readBbsRc( void )
          while ( lineLength > 0 )
          {
             size_t index = lineLength - 1;
-            if ( aryLine[index] == ' ' || aryLine[index] == '\t' || aryLine[index] == '\n' || aryLine[index] == '\r' )
+            if ( aryLine[index] == ' ' || aryLine[index] == '\t' ||
+                 aryLine[index] == '\n' || aryLine[index] == '\r' )
             {
                aryLine[index] = 0;
             }
