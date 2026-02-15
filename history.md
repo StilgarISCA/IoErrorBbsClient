@@ -1,22 +1,45 @@
 # Changelog (Legacy Rollup)
 
-This file merges the old docs that used to be in `old/`:
+## 1.x Series (1993-1994)
 
-- `README-1.5`
-- `README-2.2`
-- `ChangeLog-2.0.txt`
-- `ChangeLog-2.1.txt`
-- `ChangeLog-2.2.txt`
-- `INSTALL.unix`
-- `INSTALL.term`
-- `INSTALL.socks`
+### 1993-06
 
-## Pre-2.0 Notes
+- `v1.0` initial Unix client release.
 
-- Original ISCA BBS client line was maintained by volunteers.
-- Early docs were clear that support was limited and mostly community-driven.
-- Build/install was originally documented for many Unix/VMS setups.
-- By the 2.2 era, IO ERROR maintained the main feature line based on 1.5.1.
+### 1993-07
+
+- `v1.01` improved portability and added automatic X-message wrapping.
+- `v1.02` added more portability work and fixed X-wrap bugs.
+- `v1.03` fixed another X-wrap bug, added early VMS porting code, and improved invalid-character handling.
+- `v1.1` added NeXT window titles, added a shell key, and shipped the initial public VMS client.
+
+### 1993-08
+
+- `v1.11` minor bug fixes for Unix and VMS.
+
+### 1993-10
+
+- `v1.2` fixed multiple issues, improved Ctrl-W behavior, and improved capture output.
+- `v1.21` added `BBSRC` and `BBSTMP` environment variable support for Unix builds.
+- `v1.3` expanded `.bbsrc` setup so first-time install was easier.
+
+### 1993-11
+
+- `v1.31` minor fixes and better file truncation behavior; treated as an unreleased test version.
+- `v1.4` more bug fixes, VMS compatibility updates, and safer default file permissions.
+
+### 1993-12
+
+- `v1.41` added Ctrl-W line erase and fixed major X-message wrapping issues.
+- `v1.42` added broader machine compatibility and term compatibility support.
+
+### 1994-02
+
+- `v1.5` fixed a serious character-dropping bug.
+- Improved enemy-list behavior for long posts and ANSI mode.
+- Added Ctrl-R reprint behavior to match server-side changes.
+- Updated line-ending translation behavior for older BSD, VMS, and termio-style systems.
+- Historical note: this era was treated as the likely end of major 1.x feature work.
 
 ## 2.0 Series
 
@@ -106,11 +129,3 @@ This file merges the old docs that used to be in `old/`:
 - Added workaround for glibc `setjmp()` issue affecting second edit run.
 - Fixed non-ANSI MORE-prompt color leakage in `filter.c`.
 - Released `2.2.2`.
-
-## Legacy Build Notes (From Old INSTALL Files)
-
-- `INSTALL.unix`: classic Unix `make` + `make install` flow, plus a long list of supported systems from that era.
-- `INSTALL.term`: instructions for building/running through legacy `term` (`tredir`, `termnet.h`, `libtermnet.a`).
-- `INSTALL.socks`: instructions for building a SOCKS-aware binary with the old make target.
-
-These notes are kept for historical context only. Current build instructions for this fork are in `README.md`.
