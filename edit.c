@@ -383,7 +383,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             {
                continue;
             }
-            flushInput( (unsigned)itemIndex ); /* FIXME: figure out what the hell this code is doing! */
+            /* Flush repeated keystrokes before returning to edit mode. */
+            flushInput( (unsigned)itemIndex );
             printf( "\r\n" );
             continue;
 
@@ -405,7 +406,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             printf( "Continue...\r\n" );
             if ( flagsConfiguration.useAnsi )
             {
-               continuedPostHelper(); /* KLUDGE */
+               continuedPostHelper();
             }
             break;
 

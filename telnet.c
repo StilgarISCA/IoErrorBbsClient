@@ -161,7 +161,7 @@ int telReceive( int inputByte )
                flagsConfiguration.isMorePromptActive ^= 1;
                if ( !flagsConfiguration.isMorePromptActive && flagsConfiguration.useAnsi )
                {
-                  morePromptHelper(); /* KLUDGE */
+                  morePromptHelper();
                }
                break;
 
@@ -203,7 +203,7 @@ int telReceive( int inputByte )
                           inputByte == DO ? "DO" : inputByte == DONT ? "DONT"
                                                 : inputByte == WILL  ? "WILL"
                                                 : inputByte == WONT  ? "WONT"
-                                                                     : "wtf?" );
+                                                                     : "UNKNOWN" );
 #endif
                state = TS_VOID;
                break;
@@ -359,8 +359,7 @@ void sendNaws( void )
  * Initialize telnet negotations with the bbs -- we don't really do the
  * negotations, we just tell the bbs what it needs to hear, since we don't need
  * to negotiate because we know the correct state to put the terminal in. The
- * BBS (the queue daemon actually) is kludged on its end as well by the IAC
- * CLIENT command.
+ * BBS queue daemon also expects the IAC CLIENT command.
  */
 void telInit( void )
 {

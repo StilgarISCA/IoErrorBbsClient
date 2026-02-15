@@ -402,60 +402,88 @@ char *findChar( const char *ptrString, int targetChar )
    }
 }
 
-/* extractName -- get the username out of a post or X message header */
-/* returns pointer to username as stored in the array */
-char *extractName( const char *header )
+/* Parse the username out of a post or X message header into caller-provided storage. */
+static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize )
 {
    char *ptrHeaderName;
-   char *ptrExtractedName;
-   int isAfterSpace;
-   int charIndex;
-   int existingIndex = -1;
+   size_t nameLength;
+   bool isAfterSpace;
 
    ptrHeaderName = findSubstring( header, " from " );
    if ( !ptrHeaderName )
-   { /* This isn't an X message or a post */
-      return NULL;
+   {
+      /* This isn't an X message or a post */
+      return false;
    }
    ptrHeaderName += 6;
    if ( *ptrHeaderName == '\033' )
    {
       ptrHeaderName += 5;
    }
-   /* Now should be pointing to the aryUser name */
-   isAfterSpace = 1;
-   ptrExtractedName = duplicateString( ptrHeaderName );
+   isAfterSpace = true;
+   nameLength = 0;
    {
-      int nameLength = (int)strlen( ptrExtractedName );
-      for ( charIndex = 0; charIndex < nameLength; charIndex++ )
+      size_t itemIndex;
+      size_t sourceLength = strlen( ptrHeaderName );
+      /*
+       * Copy until we hit ANSI escape, a non-name delimiter, or we run out of
+       * destination space (leaving room for the trailing NULL).
+       */
+      for ( itemIndex = 0; itemIndex < sourceLength &&
+                           nameLength + 1 < nameBufferSize;
+            itemIndex++ )
       {
-         if ( ptrExtractedName[charIndex] == '\033' )
+         char inputChar = ptrHeaderName[itemIndex];
+
+         if ( inputChar == '\033' )
          {
             break;
          }
-         if ( isAfterSpace && !isupper( ptrExtractedName[charIndex] ) )
+         if ( isAfterSpace && !isupper( (unsigned char)inputChar ) )
          {
             break;
          }
-         if ( ptrExtractedName[charIndex] == ' ' )
+         ptrNameBuffer[nameLength++] = inputChar;
+         if ( inputChar == ' ' )
          {
-            isAfterSpace = 1;
+            isAfterSpace = true;
          }
          else
          {
-            isAfterSpace = 0;
+            isAfterSpace = false;
          }
       }
    }
-   ptrExtractedName[charIndex] = '\0';
-   charIndex--;
-   /* \r courtesy of Sbum, fixed enemy list in non-ANSI mode 2/9/2000 */
-   if ( ptrExtractedName[charIndex] == ' ' || ptrExtractedName[charIndex] == '\r' )
+   while ( nameLength > 0 &&
+           ( ptrNameBuffer[nameLength - 1] == ' ' ||
+             ptrNameBuffer[nameLength - 1] == '\r' ) )
    {
-      ptrExtractedName[charIndex] = '\0';
+      nameLength--;
    }
-   /* Is the name empty? */
-   if ( *ptrExtractedName == 0 )
+   ptrNameBuffer[nameLength] = '\0';
+   return nameLength > 0;
+}
+
+char *extractNameNoHistory( const char *header )
+{
+   static char aryExtractedName[sizeof( aryLastName[0] )];
+
+   if ( !tryParseNameFromHeader( header, aryExtractedName, sizeof( aryExtractedName ) ) )
+   {
+      return NULL;
+   }
+   return aryExtractedName;
+}
+
+/* extractName -- get the username out of a post or X message header */
+/* returns pointer to username as stored in the array */
+char *extractName( const char *header )
+{
+   int charIndex;
+   int existingIndex = -1;
+   char *ptrExtractedName = extractNameNoHistory( header );
+
+   if ( !ptrExtractedName )
    {
       return NULL;
    }
@@ -476,7 +504,6 @@ char *extractName( const char *header )
       }
       snprintf( aryLastName[0], sizeof( aryLastName[0] ), "%s", ptrExtractedName );
    }
-   free( ptrExtractedName );
    return (char *)aryLastName[0];
 }
 

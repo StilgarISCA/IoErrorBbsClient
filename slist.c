@@ -172,9 +172,8 @@ int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const v
 }
 
 /*
- * slistSort sorts the list using a bubble sort.  TODO:  This is slow as hell
- * and really should be reworked to be faster.  Sometime....  sortfn should
- * compare a to b and return <0 if a < b, >0 if a > b, or 0 if a == b.
+ * slistSort sorts the list using qsort. qsort may not be the best choice,
+ * but it's good-enough for the BBS client.
  */
 void slistSort( slist *list )
 {

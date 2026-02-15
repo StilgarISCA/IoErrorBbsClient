@@ -30,7 +30,7 @@ int capPutChar( int inputChar )
       if ( skipansi == 1 )
       {
          if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
-         { /* Damned weird kludge */
+         { /* Keep capture/reset state aligned when bold output is suppressed. */
             printf( "\033[0m" );
             skipansi--;
          }

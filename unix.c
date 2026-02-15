@@ -684,15 +684,18 @@ void flushInput( unsigned int invalid )
 #ifdef FIONREAD
    while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
    {
+      (void)ptyget();
+   }
 #else
 #ifdef TCFLSH
    pendingInputBytes = 0;
    ioctl( 0, TCFLSH, &pendingInputBytes );
 #endif
    while ( INPUT_LEFT( stdin ) )
-#endif
+   {
       (void)ptyget();
    }
+#endif
 }
 
 /*

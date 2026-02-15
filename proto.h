@@ -154,6 +154,7 @@ extern char
    colorPicker P( (void)),
    expressColorMenu P( (void)),
    *extractName P( (const char *)),
+   *extractNameNoHistory P( (const char *)),
    generalColorMenu P( (void)),
    *getName P( (int)),
    *findChar P( (const char *, int)),

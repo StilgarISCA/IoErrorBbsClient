@@ -65,7 +65,7 @@ void filterWhoList( register int inputChar )
          if ( new == 1 )
          {
             if ( !savedWhoCount )
-            { /* FIXME: I think this is buggy */
+            {
                stdPrintf( "No friends online (new)" );
             }
             ptrWhoEntryWrite = NULL;
@@ -90,7 +90,6 @@ void filterWhoList( register int inputChar )
                           (int)( elapsedSeconds % 60 ) );
                for ( ; friendColumn++ < savedWhoCount; )
                {
-                  /* FIXME: Finish writing this! */
                   snprintf( aryTempText, sizeof( aryTempText ), "%s", (char *)arySavedWhoNames[friendColumn - 1] + 1 );
                   snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n" : "%c%-18s%c    %2d:%02d  %s\r\n",
                             *aryTempText & 0x7f, aryTempText + 1, *aryTempText & 0x80 ? '*' : ' ',
@@ -99,7 +98,7 @@ void filterWhoList( register int inputChar )
                             arySavedWhoInfo[friendColumn - 1] );
                   colorize( aryDisplayLine );
                }
-               friendColumn--; /* FIXME: filter.inputChar has friendColumn = 0 ??? */
+               friendColumn--;
             }
             else
             {
@@ -174,7 +173,7 @@ void filterWhoList( register int inputChar )
                }
                --*aryWhoEntry;
                if ( friendColumn <= 60 )
-               { /* FIXME: make saved list a real list? */
+               {
                   ptrFriend = friendList->items[inputChar];
                   if ( extime == 0 )
                   {
@@ -305,11 +304,9 @@ void filterExpress( register int inputChar )
       {
          /* not an X header we care about */
       }
-      /* get name for ^N function */
-      ptrSenderName = extractName( aryExpressMessageBuffer );
-      /* FIXME: move this down to where the msg is printed! so that enemies are
-      not added to the ^N scroll */
-      if ( slistFind( enemyList, ptrSenderName, strCompareVoid ) != -1 )
+      ptrSenderName = extractNameNoHistory( aryExpressMessageBuffer );
+      if ( ptrSenderName &&
+           slistFind( enemyList, ptrSenderName, strCompareVoid ) != -1 )
       {
          if ( !flagsConfiguration.shouldSquelchExpress )
          {
@@ -317,6 +314,10 @@ void filterExpress( register int inputChar )
          }
          needs.ignore = 1;
          return;
+      }
+      if ( ptrSenderName )
+      {
+         ptrSenderName = extractName( aryExpressMessageBuffer );
       }
    }
    return;
@@ -449,17 +450,15 @@ void filterPost( register int inputChar )
       /* If reached a \r it's time to do header processing */
       if ( inputChar == '\r' )
       {
+         char *ptrSenderNameForChecks;
+
          needs.prochdr = 0;
 
          /* Process for enemy list kill file */
          snprintf( aryTempText, sizeof( aryTempText ), "%s", posthdr );
-         /* FIXME: name of enemy should not be added to ^N list */
-         ptrSenderName = extractName( aryTempText );
-         /*      strcpy(aryTempText, posthdr);  * Why did I do this? */
-         isFriend = ( slistFind( friendList, ptrSenderName, fStrCompareVoid ) != -1 ) ? 1 : 0;
-         ansiTransformPostHeader( posthdr, isFriend );
-         snprintf( arySavedHeader, sizeof( arySavedHeader ), "%s\r\n", posthdr );
-         if ( slistFind( enemyList, ptrSenderName, strCompareVoid ) != -1 )
+         ptrSenderNameForChecks = extractNameNoHistory( aryTempText );
+         if ( ptrSenderNameForChecks &&
+              slistFind( enemyList, ptrSenderNameForChecks, strCompareVoid ) != -1 )
          {
             needs.ignore = 1;
             postHeaderActive = -1;
@@ -469,7 +468,7 @@ void filterPost( register int inputChar )
             if ( !flagsConfiguration.shouldSquelchPost )
             {
                stdPrintf( "%s[Post by %s killed]\r\n",
-                          *posthdr == '\n' ? "\r\n" : "", ptrSenderName );
+                          *posthdr == '\n' ? "\r\n" : "", ptrSenderNameForChecks );
             }
             else
             {
@@ -480,6 +479,14 @@ void filterPost( register int inputChar )
             }
             return;
          }
+
+         ptrSenderName = extractName( aryTempText );
+         isFriend = ( ptrSenderName &&
+                      slistFind( friendList, ptrSenderName, fStrCompareVoid ) != -1 )
+                       ? 1
+                       : 0;
+         ansiTransformPostHeader( posthdr, isFriend );
+         snprintf( arySavedHeader, sizeof( arySavedHeader ), "%s\r\n", posthdr );
          stdPrintf( "%s%s\r", ( needs.crlf ) ? "\r\n" : "", posthdr );
       }
    }

@@ -667,58 +667,63 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       switch ( inputChar )
       {
          case 'a':
-            stdPrintf( "Add\r\n" );
-            stdPrintf( "\r\nUser to add to your %s list -> ", name );
-            ptrUserName = getName( -999 );
-            if ( *ptrUserName )
             {
-               if ( slistFind( list, ptrUserName, findfn ) != -1 )
+               bool shouldSkipAdd;
+
+               stdPrintf( "Add\r\n" );
+               stdPrintf( "\r\nUser to add to your %s list -> ", name );
+               ptrUserName = getName( -999 );
+               shouldSkipAdd = false;
+               if ( *ptrUserName )
                {
-                  stdPrintf( "\r\n%s is already on your %s list.\r\n", ptrUserName, name );
-                  itemIndex = -1;
-               }
+                  if ( slistFind( list, ptrUserName, findfn ) != -1 )
+                  {
+                     stdPrintf( "\r\n%s is already on your %s list.\r\n", ptrUserName, name );
+                     shouldSkipAdd = true;
+                  }
 #if DEBUG
-               printf( "{%d %s} ", itemIndex, ptrUserName );
+                  printf( "{%d %s} ", shouldSkipAdd ? -1 : 0, ptrUserName );
 #endif
-               if ( itemIndex < 0 )
-               {
-                  break;
-               }
-               if ( !strcmp( name, "friend" ) )
-               {
-                  if ( !( ptrFriend = (friend *)calloc( 1, sizeof( friend ) ) ) )
+                  if ( shouldSkipAdd )
                   {
-                     fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                     break;
                   }
-                  snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrUserName );
-                  stdPrintf( "Enter info for %s: ", ptrUserName );
-                  getString( 48, aryInfo, -999 );
-                  snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", ( *aryInfo ) ? aryInfo : "(None)" );
-                  ptrFriend->magic = 0x3231;
-                  if ( !slistAddItem( list, ptrFriend, 0 ) )
+                  if ( !strcmp( name, "friend" ) )
                   {
-                     fatalExit( "Can't add 'friend'!\n", "Fatal error" );
-                  }
-               }
-               else
-               { /* enemy list */
-                  ptrEnemyName = (char *)calloc( 1, strlen( ptrUserName ) + 1 );
-                  if ( !ptrEnemyName )
-                  {
-                     fatalExit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
+                     if ( !( ptrFriend = (friend *)calloc( 1, sizeof( friend ) ) ) )
+                     {
+                        fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                     }
+                     snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrUserName );
+                     stdPrintf( "Enter info for %s: ", ptrUserName );
+                     getString( 48, aryInfo, -999 );
+                     snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", ( *aryInfo ) ? aryInfo : "(None)" );
+                     ptrFriend->magic = 0x3231;
+                     if ( !slistAddItem( list, ptrFriend, 0 ) )
+                     {
+                        fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+                     }
                   }
                   else
-                  {
-                     snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName ); /* 2.1.2 bugfix */
+                  { /* enemy list */
+                     ptrEnemyName = (char *)calloc( 1, strlen( ptrUserName ) + 1 );
+                     if ( !ptrEnemyName )
+                     {
+                        fatalExit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
+                     }
+                     else
+                     {
+                        snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName ); /* 2.1.2 bugfix */
+                     }
+                     if ( !slistAddItem( list, ptrEnemyName, 0 ) )
+                     {
+                        fatalExit( "Can't add 'enemy'!\r\n", "Fatal error" );
+                     }
                   }
-                  if ( !slistAddItem( list, ptrEnemyName, 0 ) )
-                  {
-                     fatalExit( "Can't add 'enemy'!\r\n", "Fatal error" );
-                  }
+                  stdPrintf( "\r\n%s was added to your %s list.\r\n", ptrUserName, name );
                }
-               stdPrintf( "\r\n%s was added to your %s list.\r\n", ptrUserName, name );
+               break;
             }
-            break;
 
          case 'd':
             stdPrintf( "Delete\r\n\nUser to delete from your %s list -> ", name );

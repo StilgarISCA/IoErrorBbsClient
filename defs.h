@@ -55,7 +55,10 @@
 #include <openssl/ssl.h>
 #endif
 
-/* Workaround for buggy glibc 2.1+ */
+/*
+ * Use sigsetjmp/siglongjmp behavior when available so signal masks are
+ * preserved across jump boundaries.
+ */
 #define USE_POSIX_SIGSETJMP 1
 
 #include <errno.h>
