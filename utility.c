@@ -1,478 +1,603 @@
 /*
- * Various utility routines that didn't really belong elsewhere.  Yawn. 
+ * Various utility routines that didn't really belong elsewhere.  Yawn.
  */
 #include "defs.h"
 #include "ext.h"
 
-/* replyaway routines to reply to X's when you are away from keyboard */
+/* replyaway routines to reply to X's when you are isAway from keyboard */
 /* these globals used only in this file, so let 'em stay here */
-  /* Please do not change this message; it's used for reply suppression
+/* Please do not change this message; it's used for reply suppression
    * (see below).  If you alter this, you will draw the ire of the ISCA
    * BBS programmers.  Trust me, I know.  :)
    */
 char replymsg[5] = "+!R ";
 
-
-void send_an_x(void)
+void sendAnX( void )
 {
-    /* get the ball rolling with the bbs */
-    SendingX = SX_WANT_TO;
-#ifdef DEBUG
-		std_printf("send_an_x 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
+   /* get the ball rolling with the bbs */
+   sendingXState = SX_WANT_TO;
+#if DEBUG
+   stdPrintf( "sendAnX 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-    net_putchar('x');
-    byte++;
-    SendingX = SX_SENT_x;
-#ifdef DEBUG
-		std_printf("send_an_x 2 SendingX is %d, xland is %d\r\n", SendingX, xland);
-#endif
-}
-
-
-/* fake get_five_lines for the bbs */
-void replymessage()
-{
-    int i, k, control = 0;
-    char send;
-
-    sendblock();
-    for (i = 0; replymsg[i]; i++)
-	net_putchar(replymsg[i]);
-    byte += i;
-    for (i = 0; i < 5 && *awaymsg[i]; i++) {
-	for (k = 0; awaymsg[i][k]; k++)
-		net_putchar(awaymsg[i][k]);
-	net_putchar('\n');
-	byte += k + 1;
-	std_printf("%s\r\n", awaymsg[i]);
-    }
-    if (i < 5) {	/* less than five lines */
-	net_putchar('\n');
-	byte++;
-    }
-    SendingX = SX_NOT;
-#ifdef DEBUG
-		std_printf("replymessage 1 SendingX is %d, xland is %d\r\n", SendingX, xland);
+   netPutChar( 'x' );
+   byte++;
+   sendingXState = SENDING_X_STATE_SENT_COMMAND_X;
+#if DEBUG
+   stdPrintf( "sendAnX 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
 }
 
-
-void fatalperror(const char *error, const char *heading)
+/* fake getFiveLines for the bbs */
+void replyMessage( void )
 {
-    fflush(stdout);
-    s_perror(error, heading);
-    myexit();
-}
+   int lineIndex;
+   int charIndex;
 
-
-void fatalexit(const char *message, const char *heading)
-{
-    fflush(stdout);
-    s_error(message, heading);
-    myexit();
-}
-
-
-void myexit()
-{
-    fflush(stdout);
-    if (childpid) {
-	/* Wait for child to terminate */
-	sigoff();
-	childpid = (-childpid);
-	while (childpid)
-#ifndef __EMX__
-	    sigpause(0);
-#else
-	    sleep(1);
+   sendBlock();
+   for ( lineIndex = 0; replymsg[lineIndex]; lineIndex++ )
+   {
+      netPutChar( replymsg[lineIndex] );
+   }
+   byte += lineIndex;
+   for ( lineIndex = 0; lineIndex < 5 && *aryAwayMessageLines[lineIndex]; lineIndex++ )
+   {
+      for ( charIndex = 0; aryAwayMessageLines[lineIndex][charIndex]; charIndex++ )
+      {
+         netPutChar( aryAwayMessageLines[lineIndex][charIndex] );
+      }
+      netPutChar( '\n' );
+      byte += charIndex + 1;
+      stdPrintf( "%s\r\n", aryAwayMessageLines[lineIndex] );
+   }
+   if ( lineIndex < 5 )
+   { /* less than five lines */
+      netPutChar( '\n' );
+      byte++;
+   }
+   sendingXState = SX_NOT;
+#if DEBUG
+   stdPrintf( "replyMessage 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-    }
-    resetterm();
+}
+
+void fatalPerror( const char *error, const char *heading )
+{
+   fflush( stdout );
+   sPerror( error, heading );
+   myExit();
+}
+
+void fatalExit( const char *message, const char *heading )
+{
+   fflush( stdout );
+   sError( message, heading );
+   myExit();
+}
+
+void myExit( void )
+{
+   fflush( stdout );
+   if ( childPid )
+   {
+      /* Wait for child to terminate */
+      sigOff();
+      childPid = ( -childPid );
+      while ( childPid )
+      {
+         sigpause( 0 );
+      }
+   }
+   resetTerm();
 #ifdef HAVE_OPENSSL
-    if (is_ssl)
-	killSSL();
+   if ( isSsl )
+      killSsl();
 #endif
-    if (flags.lastsave)
-	(void) freopen(tempfilename, "w+", tempfile);
-    deinitialize();
-    exit(0);
+   if ( flagsConfiguration.isLastSave )
+   {
+      if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
+      {
+         sPerror( "myExit: reopen temp file before exit", "Shutdown warning" );
+      }
+   }
+   deinitialize();
+   exit( 0 );
 }
 
-
-void looper()
+void looper( void )
 {
-    register int c;
-    unsigned int invalid = 0;
+   register int inputChar;
+   unsigned int invalid = 0;
 
-    for (;;) {
-	if ((c = inkey()) < 0)
-	    return;
-	/* Don't bother sending stuff to the bbs it won't use anyway */
-	if ((c >= 32 && c <= 127) || mystrchr("\3\4\5\b\n\r\27\30\32", c)) {
-	    invalid = 0;
-	    net_putchar(keymap[c]);
-	    if (byte)
-		save[byte++ % sizeof save] = c;
-	} else if (invalid++)
-	    flush_input(invalid);
-    }
+   for ( ;; )
+   {
+      if ( ( inputChar = inKey() ) < 0 )
+      {
+         return;
+      }
+      /* Don't bother sending stuff to the bbs it won't use anyway */
+      if ( ( inputChar >= 32 && inputChar <= 127 ) || findChar( "\3\4\5\b\n\r\27\30\32", inputChar ) )
+      {
+         invalid = 0;
+         netPutChar( aryKeyMap[inputChar] );
+         if ( byte )
+         {
+            size_t index = (size_t)( byte % (long)sizeof arySavedBytes );
+            arySavedBytes[index] = (unsigned char)inputChar;
+            byte++;
+         }
+      }
+      else if ( invalid++ )
+      {
+         flushInput( invalid );
+      }
+   }
 }
 
-
-int yesno()
+int yesNo( void )
 {
-    register int c;
-    unsigned int invalid = 0;
+   register int inputChar;
+   unsigned int invalid = 0;
 
-    while (!mystrchr("nNyY", c = inkey()))
-	if (invalid++)
-	    flush_input(invalid);
-    if (c == 'y' || c == 'Y') {
-	std_printf("Yes\r\n");
-	return (1);
-    } else {
-	std_printf("No\r\n");
-	return (0);
-    }
+   while ( !findChar( "nNyY", inputChar = inKey() ) )
+   {
+      if ( invalid++ )
+      {
+         flushInput( invalid );
+      }
+   }
+   if ( inputChar == 'y' || inputChar == 'Y' )
+   {
+      stdPrintf( "Yes\r\n" );
+      return ( 1 );
+   }
+   else
+   {
+      stdPrintf( "No\r\n" );
+      return ( 0 );
+   }
 }
 
-int yesnodefault(def)
-int def;
+int yesNoDefault( int defaultAnswer )
 {
-    register int c;
-    unsigned int invalid = 0;
+   register int inputChar;
+   unsigned int invalid = 0;
 
-    while (!mystrchr("nNyY\n ", c = inkey()))
-	if (invalid++)
-	    flush_input(invalid);
-    if (c == '\n' || c == ' ')
-	c = (def ? 'Y' : 'N');
-    if (c == 'y' || c == 'Y') {
-	std_printf("Yes\r\n");
-	return (1);
-    } else if (c == 'n' || c == 'N') {
-	std_printf("No\r\n");
-	return (0);
-    } else {		/* This should never happen, means bug in mystrchr() */
-	char buf[160];
-	std_printf("\r\n");
-	sprintf(buf, "yesnodefault: 0x%x\r\n"
-		     "Please report this to IO ERROR\r\n", c);
-	fatalexit(buf, "Internal error");
-    }
+   while ( !findChar( "nNyY\n ", inputChar = inKey() ) )
+   {
+      if ( invalid++ )
+      {
+         flushInput( invalid );
+      }
+   }
+   if ( inputChar == '\n' || inputChar == ' ' )
+   {
+      inputChar = ( defaultAnswer ? 'Y' : 'N' );
+   }
+   if ( inputChar == 'y' || inputChar == 'Y' )
+   {
+      stdPrintf( "Yes\r\n" );
+      return ( 1 );
+   }
+   else if ( inputChar == 'n' || inputChar == 'N' )
+   {
+      stdPrintf( "No\r\n" );
+      return ( 0 );
+   }
+   else
+   { /* This should never happen, means bug in findChar() */
+      char aryBuffer[160];
+      stdPrintf( "\r\n" );
+      snprintf( aryBuffer, sizeof( aryBuffer ), "yesNoDefault: 0x%x\r\n"
+                                                "Please report this to IO ERROR\r\n",
+                inputChar );
+      fatalExit( aryBuffer, "Internal error" );
+   }
+   return 0;
 }
 
-
-void tempfileerror()
+void tempFileError( void )
 {
-	if (errno == EINTR)
-		return;
-	fprintf(stderr, "\r\n");
-	s_perror("writing tempfile", "Local error");
+   if ( errno == EINTR )
+   {
+      return;
+   }
+   fprintf( stderr, "\r\n" );
+   sPerror( "writing tempfile", "Local error" );
 }
 
-
-
-int more(line, pct)
-int *line;
-int pct;
+int more( int *line, int percentComplete )
 {
-    register int c;
-    unsigned int invalid = 0;
+   register int inputChar;
+   unsigned int invalid = 0;
 
-    if (pct >= 0)
-	printf("--MORE--(%d%%)", pct);
-    else
-	printf("--MORE--");
-    for (;;) {
-	c = inkey();
-	if (c == ' ' || c == 'y' || c == 'Y')
-	    *line = 1;
-	else if (c == '\n')
-	    -- * line;
-	else if (mystrchr("nNqsS", c))
-	    *line = -1;
-	else if (invalid++) {
-	    flush_input(invalid);
-	    continue;
-	}
-	printf("\r              \r");
-	break;
-    }
-    return (*line < 0 ? -1 : 0);
+   if ( percentComplete >= 0 )
+   {
+      printf( "--MORE--(%d%%)", percentComplete );
+   }
+   else
+   {
+      printf( "--MORE--" );
+   }
+   for ( ;; )
+   {
+      inputChar = inKey();
+      if ( inputChar == ' ' || inputChar == 'y' || inputChar == 'Y' )
+      {
+         *line = 1;
+      }
+      else if ( inputChar == '\n' )
+      {
+         --*line;
+      }
+      else if ( findChar( "nNqsS", inputChar ) )
+      {
+         *line = -1;
+      }
+      else if ( invalid++ )
+      {
+         flushInput( invalid );
+         continue;
+      }
+      printf( "\r              \r" );
+      break;
+   }
+   return ( *line < 0 ? -1 : 0 );
 }
-
 
 /*
  * Not all systems have strstr(), so I roll my own...
  */
-char *
- mystrstr(str, substr)
-const char *str;
-const char *substr;
+char *findSubstring( const char *ptrString, const char *ptrSubstring )
 {
-    register char *s;
+   const char *ptrSearch;
 
-    for (s = (char *)str; *s; s++)
-	if (*s == *substr && !strncmp(s, substr, strlen(substr)))
-	    break;
-    if (!*s)
-	return ((char *) NULL);
-    else
-	return (s);
+   for ( ptrSearch = ptrString; *ptrSearch; ptrSearch++ )
+   {
+      if ( *ptrSearch == *ptrSubstring && !strncmp( ptrSearch, ptrSubstring, strlen( ptrSubstring ) ) )
+      {
+         break;
+      }
+   }
+   if ( !*ptrSearch )
+   {
+      return ( (char *)NULL );
+   }
+   else
+   {
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#endif
+      char *ptrResult = (char *)ptrSearch;
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
+      return ptrResult;
+   }
 }
-
-
 
 /*
  * Not all systems have strchr() either (they usually have index() instead, but
  * I don't want to count on that or check for it)
  */
-char *
- mystrchr(str, ch)
-const char *str;
-int ch;
+char *findChar( const char *ptrString, int targetChar )
 {
-    register char *s;
+   const char *ptrSearch;
 
-    s = (char *)str;
-    while (*s && ch != *s)
-	s++;
-    if (*s)
-	return (s);
-    else
-	return ((char *) NULL);
+   ptrSearch = ptrString;
+   while ( *ptrSearch && targetChar != *ptrSearch )
+   {
+      ptrSearch++;
+   }
+   if ( *ptrSearch )
+   {
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#endif
+      char *ptrResult = (char *)ptrSearch;
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
+      return ptrResult;
+   }
+   else
+   {
+      return ( (char *)NULL );
+   }
 }
 
-
-/* ExtractName -- get the username out of a post or X message header */
+/* extractName -- get the username out of a post or X message header */
 /* returns pointer to username as stored in the array */
-char *ExtractName(header)
-char *header;
+char *extractName( const char *header )
 {
-    char *hp, *ours;
-    int lastspace, i, which = -1;
+   char *ptrHeaderName;
+   char *ptrExtractedName;
+   int isAfterSpace;
+   int charIndex;
+   int existingIndex = -1;
 
-    hp = mystrstr(header, " from ");
-    if (!hp)			/* This isn't an X message or a post */
-	return NULL;
-    hp += 6;
-    if (*hp == '\033')
-	hp += 5;
-    /* Now should be pointing to the user name */
-    lastspace = 1;
-    ours = mystrdup(hp);
-    for (i = 0; i < strlen(ours); i++) {
-	if (ours[i] == '\033')
-	    break;
-	if (lastspace && !isupper(ours[i]))
-	    break;
-	if (ours[i] == ' ')
-	    lastspace = 1;
-	else
-	    lastspace = 0;
-    }
-    ours[i] = '\0';
-    i--;
-    /* \r courtesy of Sbum, fixed enemy list in non-ANSI mode 2/9/2000 */
-    if (ours[i] == ' ' || ours[i] == '\r')
-	ours[i] = '\0';
-    /* Is the name empty? */
-    if (*ours == 0)
-	return NULL;
-    /* check for dupes first */
-    for (i = 0; i < MAXLAST; i++)
-	if (!strcmp(lastname[i], ours))
-	    which = i;
-    /* insert the name */
-    if (which != 0) {
-	for (i = (which > 0) ? which - 1 : MAXLAST - 2; i >= 0; --i)
-	    strcpy(lastname[i + 1], lastname[i]);
-	strcpy(lastname[0], ours);
-    }
-    free(ours);
-    return (char *) lastname[0];
+   ptrHeaderName = findSubstring( header, " from " );
+   if ( !ptrHeaderName )
+   { /* This isn't an X message or a post */
+      return NULL;
+   }
+   ptrHeaderName += 6;
+   if ( *ptrHeaderName == '\033' )
+   {
+      ptrHeaderName += 5;
+   }
+   /* Now should be pointing to the aryUser name */
+   isAfterSpace = 1;
+   ptrExtractedName = duplicateString( ptrHeaderName );
+   {
+      int nameLength = (int)strlen( ptrExtractedName );
+      for ( charIndex = 0; charIndex < nameLength; charIndex++ )
+      {
+         if ( ptrExtractedName[charIndex] == '\033' )
+         {
+            break;
+         }
+         if ( isAfterSpace && !isupper( ptrExtractedName[charIndex] ) )
+         {
+            break;
+         }
+         if ( ptrExtractedName[charIndex] == ' ' )
+         {
+            isAfterSpace = 1;
+         }
+         else
+         {
+            isAfterSpace = 0;
+         }
+      }
+   }
+   ptrExtractedName[charIndex] = '\0';
+   charIndex--;
+   /* \r courtesy of Sbum, fixed enemy list in non-ANSI mode 2/9/2000 */
+   if ( ptrExtractedName[charIndex] == ' ' || ptrExtractedName[charIndex] == '\r' )
+   {
+      ptrExtractedName[charIndex] = '\0';
+   }
+   /* Is the name empty? */
+   if ( *ptrExtractedName == 0 )
+   {
+      return NULL;
+   }
+   /* check for dupes first */
+   for ( charIndex = 0; charIndex < MAX_USER_NAME_HISTORY_COUNT; charIndex++ )
+   {
+      if ( !strcmp( aryLastName[charIndex], ptrExtractedName ) )
+      {
+         existingIndex = charIndex;
+      }
+   }
+   /* insert the name */
+   if ( existingIndex != 0 )
+   {
+      for ( charIndex = ( existingIndex > 0 ) ? existingIndex - 1 : MAX_USER_NAME_HISTORY_COUNT - 2; charIndex >= 0; --charIndex )
+      {
+         snprintf( aryLastName[charIndex + 1], sizeof( aryLastName[charIndex + 1] ), "%s", aryLastName[charIndex] );
+      }
+      snprintf( aryLastName[0], sizeof( aryLastName[0] ), "%s", ptrExtractedName );
+   }
+   free( ptrExtractedName );
+   return (char *)aryLastName[0];
 }
-
 
 /*
- * ExtractNumber - extract the X message number from an X message header.
+ * extractNumber - extract the X message number from an X message header.
  */
-int ExtractNumber(header)
-char *header;
+int extractNumber( const char *header )
 {
-    char *p;
-    int number = 0;
+   char *ptrMessageNumber;
+   int number = 0;
 
-    p = mystrstr(header, "(#");
-    if (!p)			/* This isn't an X message */
-	return 0;
+   ptrMessageNumber = findSubstring( header, "(#" );
+   if ( !ptrMessageNumber )
+   { /* This isn't an X message */
+      return 0;
+   }
 
-    for (p += 2; *p != ')'; p++)
-	number += number * 10 + (*p - '0');
+   for ( ptrMessageNumber += 2; *ptrMessageNumber != ')'; ptrMessageNumber++ )
+   {
+      number += number * 10 + ( *ptrMessageNumber - '0' );
+   }
 
-    return number;
+   return number;
 }
 
-
-char *mystrdup(s)
-const char *s;
+char *duplicateString( const char *ptrSource )
 {
-    int i;
-    char *p;
+   size_t length;
+   char *ptrCopy;
 
-    i = strlen(s) + 2;
-    p = (char *) calloc(1, (unsigned) i);
-    if (p)
-	strcpy(p, s);
-    return p;
+   length = strlen( ptrSource ) + 2;
+   ptrCopy = (char *)calloc( 1, length );
+   if ( ptrCopy )
+   {
+      snprintf( ptrCopy, length, "%s", ptrSource );
+   }
+   return ptrCopy;
 }
 
-#define ifansi	if (flags.useansi)
+#define ifansi if ( flagsConfiguration.useAnsi )
 
-int colorize(str)
-const char *str;
+int colorize( const char *str )
 {
-    char *p;
+   const char *ptrText;
 
-    for (p = (char *)str; *p; p++)
-	if (*p == '@')
-	    if (!*(p + 1))
-		p--;
-	    else
-		switch (*++p) {
-		case '@':
-		    putchar((int) '@');
-		    break;
-		case 'k':
-		    ifansi printf("\033[40m");
-		    break;
-		case 'K':
-		    ifansi printf("\033[30m");
-		    break;
-		case 'r':
-		    ifansi printf("\033[41m");
-		    break;
-		case 'R':
-		    ifansi printf("\033[31m");
-		    break;
-		case 'g':
-		    ifansi printf("\033[42m");
-		    break;
-		case 'G':
-		    ifansi printf("\033[32m");
-		    break;
-		case 'y':
-		    ifansi printf("\033[43m");
-		    break;
-		case 'Y':
-		    ifansi printf("\033[33m");
-		    break;
-		case 'b':
-		    ifansi printf("\033[44m");
-		    break;
-		case 'B':
-		    ifansi printf("\033[34m");
-		    break;
-		case 'm':
-		case 'p':
-		    ifansi printf("\033[45m");
-		    break;
-		case 'M':
-		case 'P':
-		    ifansi printf("\033[35m");
-		    break;
-		case 'c':
-		    ifansi printf("\033[46m");
-		    break;
-		case 'C':
-		    ifansi printf("\033[36m");
-		    break;
-		case 'w':
-		    ifansi printf("\033[47m");
-		    break;
-		case 'W':
-		    ifansi printf("\033[37m");
-		    break;
-		case 'd':
-		    ifansi printf("\033[49m");
-		    break;
-		case 'D':
-		    ifansi printf("\033[39m");
-		    break;
-		default:
-		    break;
-	} else
-	    std_putchar((int) *p);
-    return 1;
+   for ( ptrText = str; *ptrText; ptrText++ )
+   {
+      if ( *ptrText == '@' )
+      {
+         if ( !*( ptrText + 1 ) )
+         {
+            ptrText--;
+         }
+         else
+         {
+            switch ( *++ptrText )
+            {
+               case '@':
+                  putchar( (int)'@' );
+                  break;
+               case 'k':
+                  ifansi printf( "\033[40m" );
+                  break;
+               case 'K':
+                  ifansi printf( "\033[30m" );
+                  break;
+               case 'r':
+                  ifansi printf( "\033[41m" );
+                  break;
+               case 'R':
+                  ifansi printf( "\033[31m" );
+                  break;
+               case 'g':
+                  ifansi printf( "\033[42m" );
+                  break;
+               case 'G':
+                  ifansi printf( "\033[32m" );
+                  break;
+               case 'y':
+                  ifansi printf( "\033[43m" );
+                  break;
+               case 'Y':
+                  ifansi printf( "\033[33m" );
+                  break;
+               case 'b':
+                  ifansi printf( "\033[44m" );
+                  break;
+               case 'B':
+                  ifansi printf( "\033[34m" );
+                  break;
+               case 'm':
+               case 'p':
+                  ifansi printf( "\033[45m" );
+                  break;
+               case 'M':
+               case 'P':
+                  ifansi printf( "\033[35m" );
+                  break;
+               case 'c':
+                  ifansi printf( "\033[46m" );
+                  break;
+               case 'C':
+                  ifansi printf( "\033[36m" );
+                  break;
+               case 'w':
+                  ifansi printf( "\033[47m" );
+                  break;
+               case 'W':
+                  ifansi printf( "\033[37m" );
+                  break;
+               case 'd':
+                  ifansi printf( "\033[49m" );
+                  break;
+               case 'D':
+                  ifansi printf( "\033[39m" );
+                  break;
+               default:
+                  break;
+            }
+         }
+      }
+      else
+      {
+         stdPutChar( (int)*ptrText );
+      }
+   }
+   return 1;
 }
-
 
 /*
  * Process command line arguments.  argv[1] is an alternate host, if present,
  * and argv[2] is an alternate port, if present, and argv[1] is also present.
  */
-void arguments(argc, argv)
-int argc;
-char **argv;
+void arguments( int argc, char **argv )
 {
-    if (argc > 1) {
-	strcpy(cmdlinehost, argv[1]);
-    } else {
-	*cmdlinehost = 0;
-    }
-    if (argc > 2) {
-	cmdlineport = atoi(argv[2]);
-    } else {
-	cmdlineport = 0;
-    }
-    if (argc > 3) {
-	if (!strncmp(argv[3], "secure", 6) || !strncmp(argv[3], "ssl", 6)) {
-	    want_ssl = 1;
-	} else {
-	    want_ssl = 0;
-	}
-    }
+   if ( argc > 1 )
+   {
+      snprintf( aryCommandLineHost, sizeof( aryCommandLineHost ), "%s", argv[1] );
+   }
+   else
+   {
+      *aryCommandLineHost = 0;
+   }
+   if ( argc > 2 )
+   {
+      cmdLinePort = (unsigned short)atoi( argv[2] );
+   }
+   else
+   {
+      cmdLinePort = 0;
+   }
+   if ( argc > 3 )
+   {
+      if ( !strncmp( argv[3], "secure", 6 ) || !strncmp( argv[3], "ssl", 6 ) )
+      {
+         shouldUseSsl = 1;
+      }
+      else
+      {
+         shouldUseSsl = 0;
+      }
+   }
 }
-
 
 /*
  * strcmp() wrapper for friend entries; grabs the correct entry from the
  * struct, which is arg 2.
  */
-int fstrcmp(a, b)
-char *a;
-friend *b;
+int fStrCompare( const char *ptrName, const friend *ptrFriend )
 {
-    return strcmp(a, b->name);
+   return strcmp( ptrName, ptrFriend->name );
 }
 
+int fStrCompareVoid( const void *ptrName, const void *ptrFriend )
+{
+   return fStrCompare( (const char *)ptrName, (const friend *)ptrFriend );
+}
 
-
-/* 
- * strcmp() wrapper for char entries. 
+/*
+ * strcmp() wrapper for char entries.
  */
-int sortcmp(a, b)
-char **a, **b;
+int sortCompare( char **ptrLeft, char **ptrRight )
 {
-    return strcmp(*a, *b);
+   return strcmp( *ptrLeft, *ptrRight );
 }
 
+int sortCompareVoid( const void *ptrLeft, const void *ptrRight )
+{
+   const char *const *ptrLeftString = (const char *const *)ptrLeft;
+   const char *const *ptrRightString = (const char *const *)ptrRight;
+   return strcmp( *ptrLeftString, *ptrRightString );
+}
+
+int strCompareVoid( const void *ptrLeft, const void *ptrRight )
+{
+   return strcmp( (const char *)ptrLeft, (const char *)ptrRight );
+}
 
 /*
  * strcmp() wrapper for friend entries; takes two friend * args.
  */
-int fsortcmp(a, b)
-friend **a, **b;
+int fSortCompare( const friend *const *ptrLeft, const friend *const *ptrRight )
 {
-    assert((*a)->magic == 0x3231);
-    assert((*b)->magic == 0x3231);
+   assert( ( *ptrLeft )->magic == 0x3231 );
+   assert( ( *ptrRight )->magic == 0x3231 );
 
-    return strcmp((*a)->name, (*b)->name);
+   return strcmp( ( *ptrLeft )->name, ( *ptrRight )->name );
+}
+
+int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
+{
+   return fSortCompare( (const friend *const *)ptrLeft, (const friend *const *)ptrRight );
 }
 
 #ifdef ENABLE_SAVE_PASSWORD
-/* 
+/*
  * Encode/decode password with a simple algorithm.
  * jhp 5Feb95 (Marx Marvelous)
  *
@@ -480,30 +605,33 @@ friend **a, **b;
  * you care about!  Also note it's closely tied to ASCII and won't
  * work with a non-ASCII system.  - IO
  */
-char *jhpencode(char *dest, const char *src, size_t len)
+char *jhpencode( char *ptrDestination, const char *src, size_t seedLength )
 {
-	char *di;	/* dest iterator */
-	char x;		/* a single character */
+   char *ptrDestIterator; /* dest iterator */
+   char inputChar;        /* a single character */
 
-	di = dest;
-	while ((x = *src++) != 0) {
-		*di++ = (x - 32 - len + 95) % 95 + 32;
-		len = x - 32;
-	}
-	*di = 0;
-	return dest;
+   ptrDestIterator = ptrDestination;
+   while ( ( inputChar = *src++ ) != 0 )
+   {
+      *ptrDestIterator++ = ( inputChar - 32 - seedLength + 95 ) % 95 + 32;
+      seedLength = inputChar - 32;
+   }
+   *ptrDestIterator = 0;
+   return ptrDestination;
 }
 
-char *jhpdecode(char *dest, const char *src, size_t len)
+char *jhpdecode( char *ptrDestination, const char *src, size_t seedLength )
 {
-	char *di;	/* dest iterator */
-	char x;		/* a single character */
+   char *ptrDestIterator; /* dest iterator */
+   char inputChar;        /* a single character */
 
-	di = dest;
-	while ((x = *src++) != 0) {
-		*di++ = (len = (len + x - 32) % 95) + 32;
-	}
-	*di = 0;
-	return dest;
+   ptrDestIterator = ptrDestination;
+   while ( ( inputChar = *src++ ) != 0 )
+   {
+      seedLength = ( seedLength + inputChar - 32 ) % 95;
+      *ptrDestIterator++ = seedLength + 32;
+   }
+   *ptrDestIterator = 0;
+   return ptrDestination;
 }
 #endif

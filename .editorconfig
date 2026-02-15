@@ -1,0 +1,35 @@
+#################
+# Common Settings
+#################
+
+root = true
+
+[*]
+indent_style = space
+indent_size = 3
+trim_trailing_whitespace = true
+insert_final_newline = false
+charset = utf-8
+end_of_line = lf
+
+###############
+# C Conventions
+###############
+
+[*.{c,h}]
+indent_style = space
+indent_size = 3
+
+########################
+# Build/Config Conventions
+########################
+
+[Makefile]
+indent_style = tab
+
+[Makefile.am]
+indent_style = tab
+
+[*.{ac,m4,sh}]
+indent_style = space
+indent_size = 3

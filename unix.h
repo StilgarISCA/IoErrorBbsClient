@@ -1,6 +1,6 @@
 /*
  * This is where all the system-specific #include files go, and all the #ifdefs
- * for portability to different Unix systems belong here and in unix.c. 
+ * for portability to different Unix systems belong here and in unix.c.
  */
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -20,12 +20,8 @@
 #include <openssl/err.h>
 #endif
 
-#if defined(sun) && defined(unix) && !defined(FIONREAD) && !defined(__svr4__)
+#if defined( sun ) && defined( unix ) && !defined( FIONREAD ) && !defined( __svr4__ )
 #define __svr4__
-#endif
-
-#ifdef M_XENIX
-#define _IBCS2
 #endif
 
 #ifdef HAVE_TERMIO_H
@@ -45,6 +41,6 @@
 #include <libc.h>
 #endif
 
-#if defined(AMIX) || defined(__svr4__)
+#if defined( AMIX ) || defined( __svr4__ )
 #include <sys/filio.h>
 #endif

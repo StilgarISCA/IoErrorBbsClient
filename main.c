@@ -44,7 +44,7 @@
  *                         not conflict with any other hotkey.
  * v1.41   12/26/93 (des)  Minor bug fixes, added in ctrl-W line erase, plus
  *                         the character translation and stupid-term-program
- *                         protection of the real BBS (see inkey.c)  Finally
+ *                         protection of the real BBS (see inKey.c)  Finally
  *                         nabbed that real X message line wrapping bug, plus a
  *                         few others.  This release is more for testing these
  *                         fixes while I continue to look at the feasibility
@@ -77,24 +77,28 @@
 #include "defs.h"
 #include "ext.h"
 
-int main(int argc, char *argv[])
+int main( int argc, char *argv[] )
 {
-    escape[0] = '\033';
-    escape[1] = '\0';
-    if (*argv[0] == '-')
-	login_shell = 1;
-    else
-	login_shell = 0;
-    initialize("v1.5");
-    findhome();
-    readbbsrc();
-    opentmpfile();
-    arguments(argc, argv);
-    connectbbs();
-    siginit();
-    telinit();
-    setterm();
-    looper();
-    exit(0);
-    return (0);
+   aryEscape[0] = '\033';
+   aryEscape[1] = '\0';
+   if ( *argv[0] == '-' )
+   {
+      isLoginShell = 1;
+   }
+   else
+   {
+      isLoginShell = 0;
+   }
+   initialize( "v1.5" );
+   findHome();
+   readBbsRc();
+   openTmpFile();
+   arguments( argc, argv );
+   connectBbs();
+   sigInit();
+   telInit();
+   setTerm();
+   looper();
+   exit( 0 );
+   return ( 0 );
 }

@@ -1,0 +1,35 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+UseTab: Never
+IndentWidth: 3
+TabWidth: 3
+ContinuationIndentWidth: 3
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeElse: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortBlocksOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+SpaceBeforeParens: ControlStatements
+SpacesInParens: Custom
+SpacesInParensOptions:
+  InConditionalStatements: true
+  Other: true
+  InEmptyParentheses: false
+PointerAlignment: Right
+DerivePointerAlignment: false
+SortIncludes: false
+ReflowComments: false
+ColumnLimit: 0
+IndentCaseLabels: true
+IndentCaseBlocks: true
+...
