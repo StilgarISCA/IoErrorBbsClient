@@ -355,10 +355,7 @@ char *getName( int quitPriv )
          }
          else
          {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
+            handleInvalidInput( &invalid );
             continue;
          }
          if ( inputChar == CTRL_R )
@@ -548,10 +545,7 @@ void getString( int length, char *result, int line )
            inputChar != CTRL_X && inputChar != CTRL_W &&
            inputChar != CTRL_R )
       {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
+         handleInvalidInput( &invalid );
          continue;
       }
       else

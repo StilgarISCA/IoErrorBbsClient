@@ -209,7 +209,6 @@ void ansiTransformPostHeader( char *ptrText, int isFriend )
 
 void colorConfig( void )
 {
-   unsigned int invalid = 0;
    char aryPromptText[110];
    int inputChar;
 
@@ -223,20 +222,7 @@ void colorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
       colorize( aryPromptText );
 
-      invalid = 0;
-      while ( true )
-      {
-         inputChar = inKey();
-         if ( !findChar( "GgIiPpXxOoRrQq \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedKey( "GgIiPpXxOoRrQq \n" );
 
       switch ( inputChar )
       {
@@ -312,7 +298,6 @@ void colorOptions( void )
 
 void generalColorConfig( void )
 {
-   unsigned int invalid = 0;
    int menuOption;
    char aryPromptText[100];
 
@@ -326,20 +311,7 @@ void generalColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      invalid = 0;
-      while ( true )
-      {
-         menuOption = inKey();
-         if ( !findChar( "BbEeFfNnTtQq \n", menuOption ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      menuOption = readValidatedKey( "BbEeFfNnTtQq \n" );
 
       switch ( menuOption )
       {
@@ -383,7 +355,6 @@ void generalColorConfig( void )
 
 void inputColorConfig( void )
 {
-   unsigned int invalid = 0;
    int menuOption;
    char aryPromptText[100];
 
@@ -395,20 +366,7 @@ void inputColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      invalid = 0;
-      while ( true )
-      {
-         menuOption = inKey();
-         if ( !findChar( "CcTtQq \n", menuOption ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      menuOption = readValidatedKey( "CcTtQq \n" );
 
       switch ( menuOption )
       {
@@ -526,27 +484,13 @@ void postFriendColorConfig( void )
 
 char postColorMenu( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   invalid = 0;
-   while ( true )
-   {
-      inputChar = inKey();
-      if ( !findChar( "DdNnTtQq \n", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedKey( "DdNnTtQq \n" );
 
    switch ( inputChar )
    {
@@ -657,27 +601,13 @@ void expressFriendColorConfig( void )
 
 char expressColorMenu( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   invalid = 0;
-   while ( true )
-   {
-      inputChar = inKey();
-      if ( !findChar( "NnTtQq \n", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedKey( "NnTtQq \n" );
 
    switch ( inputChar )
    {
@@ -704,27 +634,13 @@ char expressColorMenu( void )
 
 char userOrFriend( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
    colorize( aryPromptText );
 
-   invalid = 0;
-   while ( true )
-   {
-      inputChar = inKey();
-      if ( !findChar( "UuFfQq \n", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedKey( "UuFfQq \n" );
 
    switch ( inputChar )
    {
@@ -748,27 +664,13 @@ char userOrFriend( void )
 
 char colorPicker( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
    colorize( aryPromptText );
 
-   invalid = 0;
-   while ( true )
-   {
-      inputChar = inKey();
-      if ( !findChar( "KkRrGgYyBbMmCcWw", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedKey( "KkRrGgYyBbMmCcWw" );
 
    switch ( inputChar )
    {
@@ -824,7 +726,6 @@ char colorPicker( void )
 
 char backgroundPicker( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[140];
 
@@ -832,20 +733,7 @@ char backgroundPicker( void )
              color.background );
    colorize( aryPromptText );
 
-   invalid = 0;
-   while ( true )
-   {
-      inputChar = inKey();
-      if ( !findChar( "KkRrGgYyBbMmCcWwDd", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedKey( "KkRrGgYyBbMmCcWwDd" );
 
    switch ( inputChar )
    {

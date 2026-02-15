@@ -126,25 +126,42 @@ void looper( void )
             byte++;
          }
       }
-      else if ( invalid++ )
+      else
       {
-         flushInput( invalid );
+         handleInvalidInput( &invalid );
       }
+   }
+}
+
+void handleInvalidInput( unsigned int *ptrInvalidCount )
+{
+   if ( ( *ptrInvalidCount )++ )
+   {
+      flushInput( *ptrInvalidCount );
+   }
+}
+
+int readValidatedKey( const char *allowedChars )
+{
+   int inputChar;
+   unsigned int invalid = 0;
+
+   while ( true )
+   {
+      inputChar = inKey();
+      if ( findChar( allowedChars, inputChar ) )
+      {
+         return inputChar;
+      }
+      handleInvalidInput( &invalid );
    }
 }
 
 int yesNo( void )
 {
    register int inputChar;
-   unsigned int invalid = 0;
 
-   while ( !findChar( "nNyY", inputChar = inKey() ) )
-   {
-      if ( invalid++ )
-      {
-         flushInput( invalid );
-      }
-   }
+   inputChar = readValidatedKey( "nNyY" );
    if ( inputChar == 'y' || inputChar == 'Y' )
    {
       stdPrintf( "Yes\r\n" );
@@ -160,15 +177,8 @@ int yesNo( void )
 int yesNoDefault( int defaultAnswer )
 {
    register int inputChar;
-   unsigned int invalid = 0;
 
-   while ( !findChar( "nNyY\n ", inputChar = inKey() ) )
-   {
-      if ( invalid++ )
-      {
-         flushInput( invalid );
-      }
-   }
+   inputChar = readValidatedKey( "nNyY\n " );
    if ( inputChar == '\n' || inputChar == ' ' )
    {
       inputChar = ( defaultAnswer ? 'Y' : 'N' );
@@ -233,9 +243,9 @@ int more( int *line, int percentComplete )
       {
          *line = -1;
       }
-      else if ( invalid++ )
+      else
       {
-         flushInput( invalid );
+         handleInvalidInput( &invalid );
          continue;
       }
       printf( "\r              \r" );

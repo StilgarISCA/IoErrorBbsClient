@@ -98,7 +98,6 @@ void configBbsRc( void )
    register int inputChar;
    register int itemIndex;
    register int innerIndex;
-   unsigned int invalid;
    int lines;
 
    flagsConfiguration.isConfigMode = 1;
@@ -121,20 +120,7 @@ void configBbsRc( void )
          stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>aryInfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
       colorize( "\r\nClient config -> @G" );
-      invalid = 0;
-      while ( true )
-      {
-         inputChar = inKey();
-         if ( !findChar( "CcEeFfHhIiKkMmOoQqXx \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedKey( "CcEeFfHhIiKkMmOoQqXx \n" );
       switch ( inputChar )
       {
          case 'c':
@@ -291,20 +277,7 @@ void configBbsRc( void )
                {
                   stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
                }
-               invalid = 0;
-               while ( true )
-               {
-                  inputChar = inKey();
-                  if ( !findChar( "EeLlQq \n", inputChar ) )
-                  {
-                     if ( invalid++ )
-                     {
-                        flushInput( invalid );
-                     }
-                     continue;
-                  }
-                  break;
-               }
+               inputChar = readValidatedKey( "EeLlQq \n" );
                switch ( inputChar )
                {
                   case 'e':
@@ -379,7 +352,6 @@ void configBbsRc( void )
 
 void expressConfig( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
 
    stdPrintf( "Express\r\n" );
@@ -395,20 +367,7 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      invalid = 0;
-      while ( true )
-      {
-         inputChar = inKey();
-         if ( !findChar( "AaXxQq \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedKey( "AaXxQq \n" );
 
       switch ( inputChar )
       {
@@ -835,10 +794,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             }
             else
             {
-               if ( invalid++ )
-               {
-                  flushInput( invalid );
-               }
+               handleInvalidInput( &invalid );
                continue;
             }
 
@@ -903,10 +859,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             /* Fall through */
 
          default:
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
+            handleInvalidInput( &invalid );
             continue;
       }
       invalid = 0;

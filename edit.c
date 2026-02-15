@@ -100,10 +100,7 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
               inputChar != CTRL_X && inputChar != CTRL_W &&
               inputChar != CTRL_R && !isprint( inputChar ) )
          {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
+            handleInvalidInput( &invalid );
             continue;
          }
          invalid = 0;
@@ -370,10 +367,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          {
             while ( !findChar( " \naAcCeEpPsSQtTx?/", inputChar = inKey() ) )
             {
-               if ( invalid++ )
-               {
-                  flushInput( invalid );
-               }
+               handleInvalidInput( &invalid );
             }
             invalid = 0;
          }

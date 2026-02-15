@@ -331,7 +331,6 @@ void warranty( void )
 void information( void )
 {
    int inputChar;
-   unsigned int invalid = 0;
 
    stdPrintf( "Information\r\n" );
 
@@ -345,20 +344,7 @@ void information( void )
       {
          stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
       }
-      invalid = 0;
-      while ( true )
-      {
-         inputChar = inKey();
-         if ( !findChar( "CcLlOoWwTtQq \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedKey( "CcLlOoWwTtQq \n" );
       switch ( inputChar )
       {
          case 'c':
