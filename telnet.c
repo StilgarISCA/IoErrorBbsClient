@@ -264,18 +264,11 @@ int telReceive( int inputByte )
                case G_NAME: /* get name */
                   sendBlock();
                   ptrInputString = getName( aryTelnetBuffer[1] );
-                  for ( outputIndex = 0; ptrInputString[outputIndex]; outputIndex++ )
-                  {
-                     netPutChar( ptrInputString[outputIndex] );
-                  }
+                  outputIndex = (int)strlen( ptrInputString );
+                  sendTrackedBuffer( ptrInputString, (size_t)outputIndex );
                   if ( *ptrInputString != CTRL_D )
                   {
-                     netPutChar( '\n' );
-                     byte += outputIndex + 1;
-                  }
-                  else
-                  {
-                     byte++;
+                     sendTrackedNewline();
                   }
                   break;
 
@@ -285,12 +278,9 @@ int telReceive( int inputByte )
 #endif
                   sendBlock();
                   getString( aryTelnetBuffer[1], (char *)aryTelnetBuffer, -1 );
-                  for ( outputIndex = 0; aryTelnetBuffer[outputIndex]; outputIndex++ )
-                  {
-                     netPutChar( aryTelnetBuffer[outputIndex] );
-                  }
-                  netPutChar( '\n' );
-                  byte += outputIndex + 1;
+                  outputIndex = (int)strlen( (char *)aryTelnetBuffer );
+                  sendTrackedBuffer( (char *)aryTelnetBuffer, (size_t)outputIndex );
+                  sendTrackedNewline();
                   break;
 
                case CONFIG: /* do configuration */
@@ -299,8 +289,7 @@ int telReceive( int inputByte )
 #endif
                   sendBlock();
                   configBbsRc();
-                  netPutChar( '\n' );
-                  byte++;
+                  sendTrackedNewline();
                   break;
             }
          }

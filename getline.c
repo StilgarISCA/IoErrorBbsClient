@@ -88,12 +88,9 @@ void getFiveLines( int which )
    }
    for ( sendLineIndex = 0; sendLineIndex < lineIndex; sendLineIndex++ )
    {
-      for ( sendCharIndex = 0; arySendString[sendLineIndex][sendCharIndex]; sendCharIndex++ )
-      {
-         netPutChar( arySendString[sendLineIndex][sendCharIndex] );
-      }
-      netPutChar( '\n' );
-      byte += sendCharIndex + 1;
+      sendCharIndex = (int)strlen( arySendString[sendLineIndex] );
+      sendTrackedBuffer( arySendString[sendLineIndex], (size_t)sendCharIndex );
+      sendTrackedNewline();
    }
    if ( flagsConfiguration.useAnsi )
    {

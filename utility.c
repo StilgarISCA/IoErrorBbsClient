@@ -61,6 +61,28 @@ int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
    return 0;
 }
 
+void sendTrackedChar( int inputChar )
+{
+   netPutChar( inputChar );
+   byte++;
+}
+
+void sendTrackedBuffer( const char *ptrBuffer, size_t length )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < length; itemIndex++ )
+   {
+      netPutChar( ptrBuffer[itemIndex] );
+   }
+   byte += (long)length;
+}
+
+void sendTrackedNewline( void )
+{
+   sendTrackedChar( '\n' );
+}
+
 void sendAnX( void )
 {
    /* get the ball rolling with the bbs */
@@ -68,8 +90,7 @@ void sendAnX( void )
 #if DEBUG
    stdPrintf( "sendAnX 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-   netPutChar( 'x' );
-   byte++;
+   sendTrackedChar( 'x' );
    sendingXState = SENDING_X_STATE_SENT_COMMAND_X;
 #if DEBUG
    stdPrintf( "sendAnX 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
@@ -83,25 +104,18 @@ void replyMessage( void )
    int charIndex;
 
    sendBlock();
-   for ( lineIndex = 0; replymsg[lineIndex]; lineIndex++ )
-   {
-      netPutChar( replymsg[lineIndex] );
-   }
-   byte += lineIndex;
+   lineIndex = (int)strlen( replymsg );
+   sendTrackedBuffer( replymsg, (size_t)lineIndex );
    for ( lineIndex = 0; lineIndex < 5 && *aryAwayMessageLines[lineIndex]; lineIndex++ )
    {
-      for ( charIndex = 0; aryAwayMessageLines[lineIndex][charIndex]; charIndex++ )
-      {
-         netPutChar( aryAwayMessageLines[lineIndex][charIndex] );
-      }
-      netPutChar( '\n' );
-      byte += charIndex + 1;
+      charIndex = (int)strlen( aryAwayMessageLines[lineIndex] );
+      sendTrackedBuffer( aryAwayMessageLines[lineIndex], (size_t)charIndex );
+      sendTrackedNewline();
       stdPrintf( "%s\r\n", aryAwayMessageLines[lineIndex] );
    }
    if ( lineIndex < 5 )
    { /* less than five lines */
-      netPutChar( '\n' );
-      byte++;
+      sendTrackedNewline();
    }
    sendingXState = SX_NOT;
 #if DEBUG

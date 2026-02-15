@@ -346,9 +346,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          if ( itemIndex != 1 )
          {
             sendBlock();
-            netPutChar( CTRL_D );
-            netPutChar( 'c' );
-            byte += 2;
+            sendTrackedChar( CTRL_D );
+            sendTrackedChar( 'c' );
             flagsConfiguration.shouldCheckExpress = 1;
             (void)inKey();
             if ( flagsConfiguration.useAnsi )
@@ -394,9 +393,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             if ( yesNo() )
             {
                sendBlock();
-               netPutChar( CTRL_D );
-               netPutChar( 'a' );
-               byte += 2;
+               sendTrackedChar( CTRL_D );
+               sendTrackedChar( 'a' );
                flagsConfiguration.isPosting = 0;
                return ( -1 );
             }
@@ -469,12 +467,10 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             sendBlock();
             while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
-               netPutChar( inputChar );
-               byte++;
+               sendTrackedChar( inputChar );
             }
-            netPutChar( CTRL_D );
-            netPutChar( 's' );
-            byte += 2;
+            sendTrackedChar( CTRL_D );
+            sendTrackedChar( 's' );
             flagsConfiguration.isLastSave = 1;
             flagsConfiguration.isPosting = 0;
             return ( -1 );
@@ -486,9 +482,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          case '?':
          case '/':
             sendBlock();
-            netPutChar( CTRL_D );
-            netPutChar( inputChar );
-            byte += 2;
+            sendTrackedChar( CTRL_D );
+            sendTrackedChar( inputChar );
             looper();
             netPutChar( 'c' );
             continue;
