@@ -178,7 +178,9 @@ void looper( void )
          return;
       }
       /* Don't bother sending stuff to the bbs it won't use anyway */
-      if ( ( inputChar >= 32 && inputChar <= 127 ) || findChar( "\3\4\5\b\n\r\27\30\32", inputChar ) )
+      if ( ( inputChar >= ASCII_PRINTABLE_MIN &&
+             inputChar <= ASCII_PRINTABLE_MAX ) ||
+           findChar( ALLOWED_INPUT_CONTROL_CHARS, inputChar ) )
       {
          invalid = 0;
          netPutChar( aryKeyMap[inputChar] );

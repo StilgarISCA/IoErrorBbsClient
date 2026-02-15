@@ -644,18 +644,18 @@ int getWindowSize( void )
 
    if ( ioctl( 0, TIOCGWINSZ, (char *)&ws ) < 0 )
    {
-      return ( rows = 24 );
+      return ( rows = WINDOW_ROWS_DEFAULT );
    }
-   else if ( ( rows = ws.ws_row ) < 5 || rows > 120 )
+   else if ( ( rows = ws.ws_row ) < WINDOW_ROWS_MIN || rows > WINDOW_ROWS_MAX )
    {
-      return ( rows = 24 );
+      return ( rows = WINDOW_ROWS_DEFAULT );
    }
    else
    {
       return ( rows );
    }
 #else
-   return ( rows = 24 );
+   return ( rows = WINDOW_ROWS_DEFAULT );
 #endif
 }
 

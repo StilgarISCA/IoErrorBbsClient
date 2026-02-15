@@ -38,6 +38,11 @@ static int ctrl( const char *ptrToken )
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
  */
 #define MAX_LINE_LENGTH 83
+#define FRIEND_COMMAND_PREFIX_LEN 7
+#define FRIEND_NAME_PARSE_LENGTH 19
+#define FRIEND_INFO_OFFSET 30
+#define FRIEND_INFO_COPY_LENGTH 53
+#define FRIEND_RECORD_MAGIC 0x3231
 
 typedef enum
 {
@@ -104,7 +109,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "aryBrowser ", sizeof( "aryBrowser " ) - 1, BBRC_CMD_BROWSER },
          { "aryEditor ", sizeof( "aryEditor " ) - 1, BBRC_CMD_EDITOR },
          { "site ", 5, BBRC_CMD_SITE },
-         { "friend ", 7, BBRC_CMD_FRIEND },
+         { "friend ", FRIEND_COMMAND_PREFIX_LEN, BBRC_CMD_FRIEND },
          { "enemy ", 6, BBRC_CMD_ENEMY },
          { "commandkey ", 11, BBRC_CMD_COMMANDKEY },
          { "macrokey ", 9, BBRC_CMD_COMMANDKEY },
@@ -365,25 +370,25 @@ void readBbsRc( void )
             {
                break;
             }
-            if ( strlen( aryLine ) == 7 )
+            if ( strlen( aryLine ) == FRIEND_COMMAND_PREFIX_LEN )
             {
                stdPrintf( "Empty username in 'friend'.\n" );
             }
-            else if ( slistFind( friendList, aryLine + 7, fStrCompareVoid ) != -1 )
+            else if ( slistFind( friendList, aryLine + FRIEND_COMMAND_PREFIX_LEN, fStrCompareVoid ) != -1 )
             {
                stdPrintf( "Duplicate username in 'friend'.\n" );
             }
-            else if ( strlen( aryLine ) > 30 )
+            else if ( strlen( aryLine ) > FRIEND_INFO_OFFSET )
             {
                ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
                if ( !ptrFriend )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( ptrFriend->info, aryLine + 30, 53 );
-               for ( nameLength = 19; nameLength > 0; nameLength-- )
+               strncpy( ptrFriend->info, aryLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
+               for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
                {
-                  if ( aryLine[7 + nameLength] == ' ' )
+                  if ( aryLine[FRIEND_COMMAND_PREFIX_LEN + nameLength] == ' ' )
                   {
                      hold = (size_t)nameLength;
                   }
@@ -392,8 +397,8 @@ void readBbsRc( void )
                      break;
                   }
                }
-               strncpy( ptrFriend->name, aryLine + 7, hold );
-               ptrFriend->magic = 0x3231;
+               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, hold );
+               ptrFriend->magic = FRIEND_RECORD_MAGIC;
                if ( !slistAddItem( friendList, ptrFriend, 1 ) )
                {
                   fatalExit( "Can't add 'friend'!\n", "Fatal error" );
@@ -406,10 +411,10 @@ void readBbsRc( void )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( ptrFriend->name, aryLine + 7, 19 );
+               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
                hold = sizeof( ptrFriend->name );
                snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
-               ptrFriend->magic = 0x3231;
+               ptrFriend->magic = FRIEND_RECORD_MAGIC;
                if ( !slistAddItem( friendList, ptrFriend, 1 ) )
                {
                   fatalExit( "Can't add 'friend'!\n", "Fatal error" );
@@ -638,7 +643,7 @@ void readBbsRc( void )
       }
 
       if ( !isHandled && *aryLine != '#' && *aryLine &&
-           strncmp( aryLine, "friend ", 7 ) )
+           strncmp( aryLine, "friend ", FRIEND_COMMAND_PREFIX_LEN ) )
       {
          stdPrintf( "Syntax error in .bbsrc file in line %d.\n", lineNumber );
       }
@@ -651,29 +656,29 @@ void readBbsRc( void )
    while ( readNormalizedLine( bbsFriends, aryLine, sizeof( aryLine ),
                                &lineNumber, &reads, ".bbsfriends" ) )
    {
-      if ( !strncmp( aryLine, "friend ", 7 ) )
+      if ( !strncmp( aryLine, "friend ", FRIEND_COMMAND_PREFIX_LEN ) )
       {
-         if ( strlen( aryLine ) == 7 )
+         if ( strlen( aryLine ) == FRIEND_COMMAND_PREFIX_LEN )
          {
             stdPrintf( "Empty username in 'friend'.\n" );
          }
          else
          {
-            if ( slistFind( friendList, aryLine + 7, fStrCompareVoid ) != -1 )
+            if ( slistFind( friendList, aryLine + FRIEND_COMMAND_PREFIX_LEN, fStrCompareVoid ) != -1 )
             {
                stdPrintf( "Duplicate username in 'friend'.\n" );
             }
-            else if ( strlen( aryLine ) > 30 )
+            else if ( strlen( aryLine ) > FRIEND_INFO_OFFSET )
             {
                ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
                if ( !ptrFriend )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( ptrFriend->info, aryLine + 30, 53 );
-               for ( nameLength = 19; nameLength > 0; nameLength-- )
+               strncpy( ptrFriend->info, aryLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
+               for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
                {
-                  if ( aryLine[7 + nameLength] == ' ' )
+                  if ( aryLine[FRIEND_COMMAND_PREFIX_LEN + nameLength] == ' ' )
                   {
                      hold = (size_t)nameLength;
                   }
@@ -682,7 +687,7 @@ void readBbsRc( void )
                      break;
                   }
                }
-               strncpy( ptrFriend->name, aryLine + 7, hold );
+               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, hold );
             }
             else
             {
@@ -691,11 +696,11 @@ void readBbsRc( void )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
                }
-               strncpy( ptrFriend->name, aryLine + 7, 19 );
+               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
                hold = sizeof( ptrFriend->name );
                snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
             }
-            ptrFriend->magic = 0x3231;
+            ptrFriend->magic = FRIEND_RECORD_MAGIC;
             if ( !slistAddItem( friendList, ptrFriend, 1 ) )
             {
                fatalExit( "Can't add 'friend' to list!\n", "Fatal error" );

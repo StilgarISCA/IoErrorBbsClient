@@ -5,6 +5,10 @@
 #include "defs.h"
 #include "ext.h"
 
+static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
+static const char *CONFIG_MACRO_MENU_KEYS = "elq \n";
+static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
+
 #define GREETING \
    "\r\nWelcome to IO ERROR's ISCA BBS Client!  Please take a moment to familiarize\r\nyourself with some of our new features.\r\n\n"
 #define UPGRADE \
@@ -120,7 +124,7 @@ void configBbsRc( void )
          stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>aryInfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
       colorize( "\r\nClient config -> @G" );
-      inputChar = readValidatedMenuKey( "cefhikmoqx \n" );
+      inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
       switch ( inputChar )
       {
          case 'c':
@@ -269,7 +273,7 @@ void configBbsRc( void )
                {
                   stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
                }
-               inputChar = readValidatedMenuKey( "elq \n" );
+               inputChar = readValidatedMenuKey( CONFIG_MACRO_MENU_KEYS );
                switch ( inputChar )
                {
                   case 'e':
@@ -355,7 +359,7 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      inputChar = readValidatedMenuKey( "axq \n" );
+      inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
 
       switch ( inputChar )
       {

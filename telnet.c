@@ -339,9 +339,9 @@ void sendNaws( void )
    if ( oldRows != getWindowSize() )
    {
       /* Old window max was 70 */
-      if ( rows > 110 || rows < 10 )
+      if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
       {
-         rows = 24;
+         rows = WINDOW_ROWS_DEFAULT;
       }
       else
       {

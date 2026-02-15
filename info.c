@@ -2,6 +2,8 @@
 #include "ext.h"
 #include <stdarg.h>
 
+static const char *INFO_MENU_KEYS = "clowtq \n";
+
 void feedPager( int startrow, ... )
 {
    int currentRow;
@@ -341,7 +343,7 @@ void information( void )
       {
          stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
       }
-      inputChar = readValidatedMenuKey( "clowtq \n" );
+      inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
       switch ( inputChar )
       {
          case 'c':

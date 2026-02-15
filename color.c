@@ -20,6 +20,15 @@
 #include "defs.h"
 #include "ext.h"
 
+static const char *COLOR_MAIN_MENU_KEYS = "gipxorq \n";
+static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
+static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
+static const char *COLOR_POST_MENU_KEYS = "dntq \n";
+static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
+static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
+static const char *COLOR_FOREGROUND_KEYS = "krgybmcw";
+static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd";
+
 /*
  * defaultColors is called once with an arg of 1 before the bbsrc file is
  * read.  This initializes all the color variables.  It is then called again
@@ -222,7 +231,7 @@ void colorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
       colorize( aryPromptText );
 
-      inputChar = readValidatedMenuKey( "gipxorq \n" );
+      inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
 
       switch ( inputChar )
       {
@@ -304,7 +313,7 @@ void generalColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      menuOption = readValidatedMenuKey( "befntq \n" );
+      menuOption = readValidatedMenuKey( COLOR_GENERAL_MENU_KEYS );
 
       switch ( menuOption )
       {
@@ -353,7 +362,7 @@ void inputColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      menuOption = readValidatedMenuKey( "ctq \n" );
+      menuOption = readValidatedMenuKey( COLOR_INPUT_MENU_KEYS );
 
       switch ( menuOption )
       {
@@ -466,7 +475,7 @@ char postColorMenu( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   inputChar = readValidatedMenuKey( "dntq \n" );
+   inputChar = readValidatedMenuKey( COLOR_POST_MENU_KEYS );
 
    switch ( inputChar )
    {
@@ -573,7 +582,7 @@ char expressColorMenu( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   inputChar = readValidatedMenuKey( "ntq \n" );
+   inputChar = readValidatedMenuKey( COLOR_EXPRESS_MENU_KEYS );
 
    switch ( inputChar )
    {
@@ -603,7 +612,7 @@ char userOrFriend( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
    colorize( aryPromptText );
 
-   inputChar = readValidatedMenuKey( "ufq \n" );
+   inputChar = readValidatedMenuKey( COLOR_USER_OR_FRIEND_KEYS );
 
    switch ( inputChar )
    {
@@ -629,7 +638,7 @@ char colorPicker( void )
    snprintf( aryPromptText, sizeof( aryPromptText ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
    colorize( aryPromptText );
 
-   inputChar = readValidatedMenuKey( "krgybmcw" );
+   inputChar = readValidatedMenuKey( COLOR_FOREGROUND_KEYS );
 
    switch ( inputChar )
    {
@@ -683,7 +692,7 @@ char backgroundPicker( void )
              color.background );
    colorize( aryPromptText );
 
-   inputChar = readValidatedMenuKey( "krgybmcwd" );
+   inputChar = readValidatedMenuKey( COLOR_BACKGROUND_KEYS );
 
    switch ( inputChar )
    {
