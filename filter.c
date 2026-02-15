@@ -25,7 +25,6 @@ static char thisline[320]; /* Copy of the current aryLine */
 
 void filterWhoList( register int inputChar )
 {
-   register int itemIndex; /* generic counter */
    static char new;
    static int friendColumn;
    static unsigned char aryWhoEntry[21]; /* Buffer for current name in aryWhoEntry list */
