@@ -27,11 +27,8 @@ void feedPager( int startrow, ... )
          switch ( inKey() )
          {
             case 'n':
-            case 'N':
             case 's':
-            case 'S':
             case 'q':
-            case 'Q':
                printf( "\r        \r" );
                va_end( ap );
                return;
@@ -344,31 +341,25 @@ void information( void )
       {
          stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
       }
-      inputChar = readValidatedKey( "CcLlOoWwTtQq \n" );
+      inputChar = readValidatedMenuKey( "clowtq \n" );
       switch ( inputChar )
       {
          case 'c':
-         case 'C':
             copyright();
             break;
          case 'l':
-         case 'L':
             license();
             break;
          case 'o':
-         case 'O':
             otherInfo();
             break;
          case 't':
-         case 'T':
             techInfo();
             break;
          case 'w':
-         case 'W':
             warranty();
             break;
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );

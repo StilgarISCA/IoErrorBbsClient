@@ -120,26 +120,22 @@ void configBbsRc( void )
          stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>aryInfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
       colorize( "\r\nClient config -> @G" );
-      inputChar = readValidatedKey( "CcEeFfHhIiKkMmOoQqXx \n" );
+      inputChar = readValidatedMenuKey( "cefhikmoqx \n" );
       switch ( inputChar )
       {
          case 'c':
-         case 'C':
             colorConfig();
             break;
 
          case 'x':
-         case 'X':
             expressConfig();
             break;
 
          case 'i':
-         case 'I':
             information();
             break;
 
          case 'o':
-         case 'O':
             stdPrintf( "Options\r\n" );
             if ( !isLoginShell )
             {
@@ -223,7 +219,6 @@ void configBbsRc( void )
             break;
 
          case 'h':
-         case 'H':
             stdPrintf( "Hotkeys\r\n\n" );
             stdPrintf( "Enter command key (%s) -> ", strCtrl( commandKey ) );
             while ( true )
@@ -253,19 +248,16 @@ void configBbsRc( void )
             break;
 
          case 'f':
-         case 'F':
             stdPrintf( "Friend list\r\n" );
             editUsers( friendList, fStrCompareVoid, "friend" );
             break;
 
          case 'e':
-         case 'E':
             stdPrintf( "Enemy list\r\n" );
             editUsers( enemyList, strCompareVoid, "enemy" );
             break;
 
          case 'm':
-         case 'M':
             stdPrintf( "Macros\r\n" );
             for ( ; inputChar != 'q'; )
             {
@@ -277,11 +269,10 @@ void configBbsRc( void )
                {
                   stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
                }
-               inputChar = readValidatedKey( "EeLlQq \n" );
+               inputChar = readValidatedMenuKey( "elq \n" );
                switch ( inputChar )
                {
                   case 'e':
-                  case 'E':
                      stdPrintf( "Edit\r\n" );
                      while ( true )
                      {
@@ -299,7 +290,6 @@ void configBbsRc( void )
                      break;
 
                   case 'l':
-                  case 'L':
                      stdPrintf( "List\r\n\n" );
                      for ( itemIndex = 0, lines = 1; itemIndex < 128; itemIndex++ )
                      {
@@ -320,7 +310,6 @@ void configBbsRc( void )
                      break;
 
                   case 'q':
-                  case 'Q':
                   case ' ':
                   case '\n':
                      stdPrintf( "Quit\r\n" );
@@ -331,7 +320,6 @@ void configBbsRc( void )
             break;
 
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
@@ -367,24 +355,21 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      inputChar = readValidatedKey( "AaXxQq \n" );
+      inputChar = readValidatedMenuKey( "axq \n" );
 
       switch ( inputChar )
       {
          case 'a':
-         case 'A':
             stdPrintf( "Away from keyboard\r\n\n" );
             newAwayMessage();
             break;
 
          case 'x':
-         case 'X':
             stdPrintf( "XLand\r\n\nAutomatically reply to X messages you receive? (%s) -> ", isXland ? "Yes" : "No" );
             isXland = yesNoDefault( isXland );
             break;
 
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
@@ -678,7 +663,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       switch ( inputChar )
       {
          case 'a':
-         case 'A':
             stdPrintf( "Add\r\n" );
             stdPrintf( "\r\nUser to add to your %s list -> ", name );
             ptrUserName = getName( -999 );
@@ -733,7 +717,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             break;
 
          case 'd':
-         case 'D':
             stdPrintf( "Delete\r\n\nUser to delete from your %s list -> ", name );
             ptrUserName = getName( -999 );
             if ( *ptrUserName )
@@ -756,7 +739,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             break;
 
          case 'e':
-         case 'E':
             if ( !strncmp( name, "friend", 6 ) )
             {
                stdPrintf( "Edit\r\nName of aryUser to edit: " );
@@ -799,7 +781,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             }
 
          case 'l':
-         case 'L':
             stdPrintf( "List\r\n\n" );
             if ( !strcmp( name, "friend" ) )
             {
@@ -839,14 +820,12 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             break;
 
          case 'q':
-         case 'Q':
          case '\n':
          case ' ':
             stdPrintf( "Quit\r\n" );
             return;
 
          case 'o':
-         case 'O':
             if ( !strncmp( name, "enemy", 5 ) )
             {
                stdPrintf( "Options\r\n\nNotify when an enemy's post is killed? (%s) -> ",

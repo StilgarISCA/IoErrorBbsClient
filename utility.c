@@ -206,6 +206,26 @@ int readValidatedKey( const char *allowedChars )
    }
 }
 
+int readValidatedMenuKey( const char *allowedCharsLowercase )
+{
+   int inputChar;
+   unsigned int invalid = 0;
+
+   while ( true )
+   {
+      inputChar = inKey();
+      if ( isalpha( inputChar ) )
+      {
+         inputChar = tolower( inputChar );
+      }
+      if ( findChar( allowedCharsLowercase, inputChar ) )
+      {
+         return inputChar;
+      }
+      handleInvalidInput( &invalid );
+   }
+}
+
 int yesNo( void )
 {
    register int inputChar;

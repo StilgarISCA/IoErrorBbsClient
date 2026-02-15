@@ -86,7 +86,7 @@
 #define HAVE_VPRINTF 1
 
 /* Define to the canonical host */
-#define HOSTTYPE "arm-apple-darwin24.6.0"
+#define HOSTTYPE "aarch64-apple-darwin24.6.0"
 
 /* Name of package */
 #define PACKAGE "ioerrorbbsclient"
@@ -110,7 +110,7 @@
 #define PACKAGE_VERSION "2.3.10-Stilgar"
 
 /* Define to 1 if all of the C89 standard headers exist (not just the ones
-   required in a freestanding environment). This aryMacro is provided for
+   required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 

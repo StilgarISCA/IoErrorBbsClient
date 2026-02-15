@@ -126,6 +126,7 @@ extern int
    pushQueue P( (const char *, queue *)),
    readValidatedKey P( (const char *)),
    readNormalizedLine P( (FILE *, char *, size_t, int *, int *, const char *)),
+   readValidatedMenuKey P( (const char *)),
    safeDeleteQueue P( (queue *)),
    slistAddItem P( (slist *, void *, int)),
    slistFind P( ( slist *, void *, int ( *findfn )( const void *, const void * ) ) ),
