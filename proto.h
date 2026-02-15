@@ -91,6 +91,7 @@ extern void
    telInit P( (void)),
    tempFileError P( (void)),
    titleBar P( (void)),
+   trimTrailingWhitespace P( (char *)),
    truncateBbsRc P( (long)),
    warranty P( (void)),
    writeBbsRc P( (void));
@@ -124,6 +125,7 @@ extern int
    prompt P( (FILE *, int *, int)),
    pushQueue P( (const char *, queue *)),
    readValidatedKey P( (const char *)),
+   readNormalizedLine P( (FILE *, char *, size_t, int *, int *, const char *)),
    safeDeleteQueue P( (queue *)),
    slistAddItem P( (slist *, void *, int)),
    slistFind P( ( slist *, void *, int ( *findfn )( const void *, const void * ) ) ),

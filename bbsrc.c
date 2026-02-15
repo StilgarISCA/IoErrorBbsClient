@@ -119,37 +119,9 @@ void readBbsRc( void )
    shouldUseSsl = 0;
    ptrExpressMessageBuffer = aryExpressMessageBuffer;
 
-   while ( ptrBbsRc && fgets( aryLine, MAX_LINE_LENGTH + 1, ptrBbsRc ) )
+   while ( readNormalizedLine( ptrBbsRc, aryLine, sizeof( aryLine ),
+                               &lineNumber, &reads, ".bbsrc" ) )
    {
-      reads++;
-      lineNumber++;
-      if ( (int)strlen( aryLine ) >= MAX_LINE_LENGTH )
-      {
-         stdPrintf( "Line %d in .bbsrc too long, ignored.\n", lineNumber );
-         while ( (int)strlen( aryLine ) >= MAX_LINE_LENGTH && aryLine[MAX_LINE_LENGTH - 1] != '\n' )
-         {
-            fgets( aryLine, MAX_LINE_LENGTH + 1, ptrBbsRc );
-         }
-         continue;
-      }
-      {
-         size_t lineLength = strlen( aryLine );
-         while ( lineLength > 0 )
-         {
-            size_t index = lineLength - 1;
-            if ( aryLine[index] == ' ' || aryLine[index] == '\t' ||
-                 aryLine[index] == '\n' || aryLine[index] == '\r' )
-            {
-               aryLine[index] = 0;
-            }
-            else
-            {
-               break;
-            }
-            lineLength = index;
-         }
-      }
-
       /* Just ignore these for now, they'll be quietly erased... */
       if ( !strncmp( aryLine, "reread ", 7 ) )
       {
@@ -583,37 +555,9 @@ void readBbsRc( void )
    {
       rewind( bbsFriends );
    }
-   while ( bbsFriends && fgets( aryLine, MAX_LINE_LENGTH + 1, bbsFriends ) )
+   while ( readNormalizedLine( bbsFriends, aryLine, sizeof( aryLine ),
+                               &lineNumber, &reads, ".bbsfriends" ) )
    {
-      reads++;
-      lineNumber++;
-      if ( strlen( aryLine ) >= MAX_LINE_LENGTH )
-      {
-         stdPrintf( "Line %d in .bbsfriends too long, ignored.\n", lineNumber );
-         while ( strlen( aryLine ) >= MAX_LINE_LENGTH && aryLine[MAX_LINE_LENGTH - 1] != '\n' )
-         {
-            fgets( aryLine, MAX_LINE_LENGTH + 1, bbsFriends );
-         }
-         continue;
-      }
-      {
-         size_t lineLength = strlen( aryLine );
-         while ( lineLength > 0 )
-         {
-            size_t index = lineLength - 1;
-            if ( aryLine[index] == ' ' || aryLine[index] == '\t' ||
-                 aryLine[index] == '\n' || aryLine[index] == '\r' )
-            {
-               aryLine[index] = 0;
-            }
-            else
-            {
-               break;
-            }
-            lineLength = index;
-         }
-      }
-
       if ( !strncmp( aryLine, "friend ", 7 ) )
       {
          if ( strlen( aryLine ) == 7 )
