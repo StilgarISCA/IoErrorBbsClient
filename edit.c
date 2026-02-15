@@ -609,7 +609,7 @@ int checkFile( FILE *ptrMessageFile )
             }
             else
             {
-               count = count + 1;
+               count++;
             }
             if ( count > 79 )
             {
