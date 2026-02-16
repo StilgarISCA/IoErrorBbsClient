@@ -301,10 +301,9 @@ int telReceive( int inputByte )
          stdPrintf( "0x%X}", inputByte );
 #endif
          /*
-    * This patch sends IAC WONT in response to a telnet negotiation;
-    * this provides compatibility with a standard telnet daemon, e.g.
-    * Heinous BBS.  Added by IO ERROR.
-    */
+          * Send IAC WONT in response to a telnet negotiation so unsupported
+          * options do not alter the expected client state.
+          */
          netPutChar( IAC );
          netPutChar( WONT );
          netPutChar( inputByte );

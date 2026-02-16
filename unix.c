@@ -163,8 +163,7 @@ FILE *findBbsRc( void )
    return ( openBbsRc() );
 }
 
-/* Added by Dave (Isoroku).  Finds .bbsfriends for friends list */
-/* Edited by IO ERROR.  We read-only the .bbsfriends now, if it exists. */
+/* Locate .bbsfriends and keep permissions restricted when the file exists. */
 FILE *findBbsFriends( void )
 {
    if ( isLoginShell )

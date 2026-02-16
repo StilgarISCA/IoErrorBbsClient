@@ -146,7 +146,7 @@ typedef struct
    time_t time;   /* Time online */
 } friend;         /* User list entry */
 
-/* The ordering of this struct is important!  Do not change it! IO ERROR */
+/* The ordering of this struct is important. Do not change it. */
 typedef struct
 {
    char text;           /* Plain text color */

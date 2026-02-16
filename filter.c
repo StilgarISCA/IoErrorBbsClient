@@ -1,6 +1,4 @@
-/* IO ERROR's BBS client 2.3, Michael Hampton.  Modified from the original
- * ISCA BBS client 1.5 and patches.  Copyright 1999 Michael Hampton.
- * Internet: error@citadel.org  WWW: http://ioerror.bbsclient.net/
+/* Copyright 1999 Michael Hampton.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free

@@ -129,3 +129,10 @@
 - Added workaround for glibc `setjmp()` issue affecting second edit run.
 - Fixed non-ANSI MORE-prompt color leakage in `filter.c`.
 - Released `2.2.2`.
+
+## Contributor Notes Moved Out of Source Comments
+
+- Telnet negotiation fallback behavior (sending `IAC WONT` for unsupported options, including Heinous-compatible behavior) was added in the IO ERROR era.
+- `.bbsfriends` discovery support was introduced by Dave (Isoroku) and later updated by IO ERROR to use read-only handling when the file exists.
+- Struct layout ordering requirements were documented during IO ERROR-era refactors and retained as technical constraints.
+- Legacy module banner attributions for `color.c` and `filter.c` were consolidated here: IO ERROR (Michael Hampton) maintained the 2.x client line based on the earlier ISCA client base and patches.

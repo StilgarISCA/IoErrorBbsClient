@@ -5,6 +5,18 @@ This fork is **2.3.10-Stilgar** by IO ERROR, based on the ISCABBS client 1.5.1
 
 Project page: <http://ioerror.bbsclient.net/>
 
+## Historical Contributors
+
+- Michael Hampton (IO ERROR)
+- Doug Siebert (Serendipity)
+- Marc Dionne (Marco Polo)
+- David Bailey
+- Dave Lacey
+- Dave (Isoroku)
+- Client 9 / Blackout Group
+
+More background is documented in `history.md`.
+
 ## Quick Start
 
 ```bash
