@@ -500,7 +500,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             printf( "Edit\r\n" );
             if ( !*aryEditor )
             {
-               printf( "[Error:  no aryEditor available]\r\n" );
+               printf( "[Error:  No editor available]\r\n" );
             }
             else
             {

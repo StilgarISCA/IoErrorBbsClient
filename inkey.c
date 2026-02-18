@@ -174,7 +174,7 @@ int getKey( void )
             {
                if ( !isLoginShell )
                {
-                  printf( "\r\n[New aryShell]\r\n" );
+                  printf( "\r\n[New shell]\r\n" );
                   run( aryShell, 0 );
                   printf( "\r\n[Continue]\r\n" );
                }

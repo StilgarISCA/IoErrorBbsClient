@@ -120,7 +120,7 @@ void findHome( void )
       size_t userNameLength = strlen( aryUser );
       if ( userNameLength < sizeof( aryUser ) - 1 )
       {
-         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login aryShell)" );
+         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login shell)" );
       }
    }
 }
@@ -785,7 +785,7 @@ void techInfo( void )
               "POSIX "
 #endif
 #ifdef ENABLE_SAVE_PASSWORD
-              "arySavedBytes-password "
+              "save-password "
 #endif
 #ifdef USE_POSIX_SIGSETJMP
               "sigsetjmp "

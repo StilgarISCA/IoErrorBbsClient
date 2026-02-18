@@ -113,11 +113,11 @@ void configBbsRc( void )
    flagsConfiguration.isConfigMode = 1;
    if ( isBbsRcReadOnly )
    {
-      stdPrintf( "\r\nConfiguration file is read-only, cannot arySavedBytes configuration for next session.\r\n" );
+      stdPrintf( "\r\nConfiguration file is read-only, unable to save configuration for next session.\r\n" );
    }
    else if ( !ptrBbsRc )
    {
-      stdPrintf( "\r\nNo configuration file, cannot arySavedBytes configuration for next session.\r\n" );
+      stdPrintf( "\r\nNo configuration file, unable to save configuration for next session.\r\n" );
    }
    while ( true )
    {
@@ -127,7 +127,7 @@ void configBbsRc( void )
       }
       else
       {
-         stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>aryInfo  <M>acros <O>ptions <X>press <Q>uit" );
+         stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>nfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
       colorize( "\r\nClient config -> @G" );
       inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
@@ -149,7 +149,7 @@ void configBbsRc( void )
             stdPrintf( "Options\r\n" );
             if ( !isLoginShell )
             {
-               stdPrintf( "\r\nEnter name of local aryEditor to use (%s) -> ", aryEditor );
+               stdPrintf( "\r\nEnter name of local editor to use (%s) -> ", aryEditor );
                getString( 72, aryMenuLine, -999 );
                if ( *aryMenuLine )
                {
@@ -246,7 +246,7 @@ void configBbsRc( void )
             {
                stdPrintf( "Enter key to suspend client (%s) -> ", strCtrl( suspKey ) );
                stdPrintf( "%s\r\n", strCtrl( suspKey = newKey( suspKey ) ) );
-               stdPrintf( "Enter key to start a new aryShell (%s) -> ", strCtrl( shellKey ) );
+               stdPrintf( "Enter key to start a new shell (%s) -> ", strCtrl( shellKey ) );
                stdPrintf( "%s\r\n", strCtrl( shellKey = newKey( shellKey ) ) );
             }
             stdPrintf( "Enter key to toggle capture mode (%s) -> ", strCtrl( captureKey ) );
@@ -742,7 +742,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
                   free( list->items[itemIndex] );
                   if ( !slistRemoveItem( list, itemIndex ) )
                   {
-                     fatalExit( "Can't remove aryUser!\r\n", "Fatal error" );
+                     fatalExit( "Can't remove user!\r\n", "Fatal error" );
                   }
                   stdPrintf( "\r\n%s was deleted from your %s list.\r\n", ptrUserName, name );
                }
@@ -756,7 +756,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
          case 'e':
             if ( !strncmp( name, "friend", 6 ) )
             {
-               stdPrintf( "Edit\r\nName of aryUser to edit: " );
+               stdPrintf( "Edit\r\nName of user to edit: " );
                ptrUserName = getName( -999 );
                if ( *ptrUserName )
                {
