@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This is where I've put all the #include files, to keep them separate in a
  * single location.  Pure C stuff goes here, the system-specific stuff is kept
  * over in unix.h.

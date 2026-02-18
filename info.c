@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 #include "defs.h"
 #include "ext.h"
 #include <stdarg.h>
@@ -55,7 +61,8 @@ void copyright( void )
    stdPrintf( "Copyright\r\n\n" );
 
    feedPager( 3, "Copyright (C)\r\n",
-              "  1995-2003 Michael Hampton.      (GPL: Cool stuff; current maintainer)\r\n",
+              "  2024-2026 Stilgar.             (GPL: Updates, fixes)\r\n",
+              "  1995-2003 Michael Hampton.      (GPL: Cool stuff)\r\n",
               "  1993-1994 Doug Siebert.         (GPL: Client core)\r\n",
               "Portions Copyright (C)\r\n",
 #ifdef ENABLE_SAVE_PASSWORD
@@ -73,6 +80,8 @@ void license( void )
 
    feedPager( 3,
               "                    GNU GENERAL PUBLIC LICENSE\r\n",
+              "                       Version 2, June 1991\r\n",
+              "\r\n",
               "   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION\r\n",
               "\r\n",
               "  0. This License applies to any program or other work which contains\r\n",
@@ -116,13 +125,13 @@ void license( void )
               "    part thereof, to be licensed as a whole at no charge to all third\r\n",
               "    parties under the terms of this License.\r\n",
               "\r\n",
-              "    inputChar) If the modified program normally reads commands interactively\r\n",
+              "    c) If the modified program normally reads commands interactively\r\n",
               "    when run, you must cause it, when started running for such\r\n",
               "    interactive use in the most ordinary way, to print or display an\r\n",
               "    announcement including an appropriate copyright notice and a\r\n",
               "    notice that there is no warranty (or else, saying that you provide\r\n",
               "    a warranty) and that users may redistribute the program under\r\n",
-              "    these conditions, and telling the aryUser how to view a copy of this\r\n",
+              "    these conditions, and telling the user how to view a copy of this\r\n",
               "    License.  (Exception: if the Program itself is interactive but\r\n",
               "    does not normally print such an announcement, your work based on\r\n",
               "    the Program is not required to print an announcement.)\r\n",
@@ -162,7 +171,7 @@ void license( void )
               "    distributed under the terms of Sections 1 and 2 above on a medium\r\n",
               "    customarily used for software interchange; or,\r\n",
               "\r\n",
-              "    inputChar) Accompany it with the information you received as to the offer\r\n",
+              "    c) Accompany it with the information you received as to the offer\r\n",
               "    to distribute corresponding source code.  (This alternative is\r\n",
               "    allowed only for noncommercial distribution and only if you\r\n",
               "    received the program in object code or executable form with such\r\n",
@@ -300,6 +309,7 @@ void license( void )
 void warranty( void )
 {
    stdPrintf( "Warranty\r\n\n" );
+   stdPrintf( "This is the GPL no-warranty disclaimer (full legal text follows).\r\n\n" );
 
    feedPager( 3,
               "BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY\r\n",

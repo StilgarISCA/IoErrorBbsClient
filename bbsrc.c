@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This file handles parsing of the bbsrc file, and setting of all the options
  * it allows.  It is just generic C code, easily extensible to allow the
  * addition of features in the future.

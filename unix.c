@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * Everything Unix/system specific goes in this file.  If you are looking to
  * port to some system the code currently doesn't work on, most if not all of
  * your problems should restricted to this file.
@@ -763,7 +769,7 @@ void techInfo( void )
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
-              "ISCA BBS Client " VERSION " (Unix)\r\n",
+              "ISCA BBS Client " VERSION " (macOS/Unix)\r\n",
               "Compiled on: " HOSTTYPE "\r\n",
               "With: "
 #ifdef __STDC__
@@ -805,11 +811,11 @@ void initialize( const char *protocol )
    setvbuf( stdout, NULL, _IOFBF, 4096 );
 #endif
 
-   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION,
-              "Unix" );
-   stdPrintf( "\nCopyright (C) 1995-2003 Michael Hampton.\n" );
-   stdPrintf( "OSI Certified Open Source Software.  GNU General Public License version 2.\n" );
-   stdPrintf( "For information about this client visit http://www.ioerror.us/client/\n\n" );
+   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION, "macOS/Unix" );
+   stdPrintf( "Copyright (C) 2024-2026 Stilgar\n" );
+   stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
+   stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
+   stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
 #if DEBUG
    stdPrintf( "DEBUGGING VERSION - DEBUGGING CODE IS ENABLED!  DO NOT USE THIS CLIENT!\r\n\n" );
 #endif

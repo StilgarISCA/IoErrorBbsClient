@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This handles getting of short strings or groups of strings of information
  * and sending them off to the BBS.  Even though you might think doing this for
  * an 8 character password is a waste, it does cut down network traffic (and

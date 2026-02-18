@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This handles the information flowing into the client from the BBS.  It
  * basically understands a very limited subset of the telnet protocol (enough
  * to "fake it" with the BBS) with some extensions to allow the extra features

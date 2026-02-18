@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This is just a hacked-up version of the editor from the BBS...ugly, isn't
  * it?  You don't need to mess with this unless you have a lot of time to waste
  * on a lost cause.  Use a real editor, that is what '.edit' is for!

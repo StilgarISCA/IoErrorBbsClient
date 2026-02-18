@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * Return next letter the aryUser typed.  This function can be indirectly
  * recursive -- inKey may call telReceive(), which calls other functions which can
  * call inKey()...

@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This is where all the system-specific #include files go, and all the #ifdefs
  * for portability to different Unix systems belong here and in unix.c.
  */
