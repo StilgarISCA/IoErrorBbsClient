@@ -856,7 +856,7 @@ void initialize( const char *protocol )
       }
       else
       {
-         snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "vi" );
+         snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
       }
    }
 }
