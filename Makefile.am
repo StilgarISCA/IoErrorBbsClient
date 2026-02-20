@@ -20,7 +20,7 @@ bbs_SOURCES = \
 	unix.c
 
 if HAVE_CMOCKA
-check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline
+check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey
 TESTS = $(check_PROGRAMS)
 test_queue_SOURCES = test/test_queue.c queue.c
 test_queue_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
@@ -37,6 +37,9 @@ test_bbsrc_LDADD = $(CMOCKA_LIBS)
 test_getline_SOURCES = test/test_getline.c getline.c slist.c global.c
 test_getline_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_getline_LDADD = $(CMOCKA_LIBS)
+test_inkey_SOURCES = test/test_inkey.c inkey.c global.c
+test_inkey_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
+test_inkey_LDADD = $(CMOCKA_LIBS)
 else
 TESTS =
 endif
