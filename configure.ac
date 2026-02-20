@@ -180,6 +180,23 @@ dnl Checks for library functions.
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(select socket)
 
+AC_PATH_PROG([PKG_CONFIG], [pkg-config], [no])
+CMOCKA_CFLAGS=""
+CMOCKA_LIBS=""
+have_cmocka=no
+if test "x$PKG_CONFIG" != "xno"; then
+   if $PKG_CONFIG --exists cmocka; then
+      have_cmocka=yes
+      CMOCKA_CFLAGS=`$PKG_CONFIG --cflags cmocka`
+      CMOCKA_LIBS=`$PKG_CONFIG --libs cmocka`
+   fi
+fi
+AM_CONDITIONAL([HAVE_CMOCKA], [test "x$have_cmocka" = "xyes"])
+if test "x$have_cmocka" = "xyes"; then
+   AC_DEFINE([HAVE_CMOCKA], [1], [Define if cmocka is available for unit tests])
+fi
+AC_SUBST([CMOCKA_CFLAGS])
+AC_SUBST([CMOCKA_LIBS])
 
 AC_SUBST(PLATFORM_OBJS)
 AC_CONFIG_HEADERS([config.h])

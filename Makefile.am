@@ -19,6 +19,16 @@ bbs_SOURCES = \
 	utility.c \
 	unix.c
 
+if HAVE_CMOCKA
+check_PROGRAMS = test_queue
+TESTS = $(check_PROGRAMS)
+test_queue_SOURCES = test/test_queue.c queue.c
+test_queue_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
+test_queue_LDADD = $(CMOCKA_LIBS)
+else
+TESTS =
+endif
+
 install-exec-hook:
 	@echo 'Now hot Asian sluts will come out of your computer whenever you type "bbs".'
 

@@ -13,6 +13,9 @@
 /* Define this if you want to use xterm/NeXT titlebars */
 #define ENABLE_TITLEBAR 1
 
+/* Define if cmocka is available for unit tests */
+#define HAVE_CMOCKA 1
+
 /* Define to 1 if you don't have 'vprintf' but do have '_doprnt.' */
 /* #undef HAVE_DOPRNT */
 
