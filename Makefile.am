@@ -20,7 +20,7 @@ bbs_SOURCES = \
 	unix.c
 
 if HAVE_CMOCKA
-check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey test_filter test_color test_config test_sysio
+check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey test_filter test_color test_config test_sysio test_edit
 TESTS = $(check_PROGRAMS)
 test_queue_SOURCES = test/test_queue.c queue.c
 test_queue_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
@@ -52,6 +52,9 @@ test_config_LDADD = $(CMOCKA_LIBS)
 test_sysio_SOURCES = test/test_sysio.c sysio.c global.c
 test_sysio_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_sysio_LDADD = $(CMOCKA_LIBS)
+test_edit_SOURCES = test/test_edit.c edit.c global.c
+test_edit_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
+test_edit_LDADD = $(CMOCKA_LIBS)
 else
 TESTS =
 endif
