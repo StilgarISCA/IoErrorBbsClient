@@ -1,0 +1,395 @@
+/*
+ * Copyright (C) 2024-2026 Stilgar
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
+
+#include "defs.h"
+#include "ext.h"
+#include "proto.h"
+#include "telnet.h"
+
+static unsigned char aryNetOutput[4096];
+static size_t netOutputCount;
+static int stubWindowRows;
+static int filterDataCallCount;
+static int filterExpressCallCount;
+static int filterPostCallCount;
+static int filterWhoListCallCount;
+static int lastFilterDataChar;
+static int lastFilterExpressChar;
+static int getFiveLinesCallCount;
+static int getFiveLinesArg;
+static int getNameCallCount;
+static int getNameArg;
+static int makeMessageCallCount;
+static int makeMessageArg;
+static int configBbsRcCallCount;
+static int sendAnXCallCount;
+static int morePromptHelperCallCount;
+static char aryNameResponse[64];
+static char aryStringResponse[256];
+
+static void resetNetOutput( void )
+{
+   netOutputCount = 0;
+   aryNetOutput[0] = 0;
+}
+
+static void syncTelnetStateToData( void )
+{
+   int syncIndex;
+
+   for ( syncIndex = 0; syncIndex < 10; ++syncIndex )
+   {
+      (void)telReceive( 0 );
+   }
+   (void)telReceive( IAC );
+   (void)telReceive( 0 );
+   resetNetOutput();
+}
+
+static void resetState( void )
+{
+   stubWindowRows = 24;
+   snprintf( aryNameResponse, sizeof( aryNameResponse ), "%s", "Dr Strange" );
+   aryStringResponse[0] = '\0';
+
+   byte = 0;
+   targetByte = 0;
+   bytePosition = 0;
+   whoListProgress = 0;
+   isExpressMessageInProgress = 0;
+   isExpressMessageHeaderActive = 0;
+   postProgressState = 0;
+   postHeaderActive = 0;
+   isPostJustEnded = 0;
+   shouldSendExpressMessage = 0;
+   ptrPostBuffer = 0;
+   oldRows = 24;
+   rows = 24;
+   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.isMorePromptActive = 0;
+   aryExpressParsing[0] = '\0';
+   aryExpressMessageBuffer[0] = '\0';
+   ptrExpressMessageBuffer = aryExpressMessageBuffer;
+
+   if ( xlandQueue == NULL )
+   {
+      xlandQueue = newQueue( 21, 5 );
+      if ( xlandQueue == NULL )
+      {
+         fail_msg( "newQueue failed while preparing xlandQueue for telnet tests" );
+         return;
+      }
+   }
+
+   syncTelnetStateToData();
+
+   filterDataCallCount = 0;
+   filterExpressCallCount = 0;
+   filterPostCallCount = 0;
+   filterWhoListCallCount = 0;
+   lastFilterDataChar = 0;
+   lastFilterExpressChar = 0;
+   getFiveLinesCallCount = 0;
+   getFiveLinesArg = 0;
+   getNameCallCount = 0;
+   getNameArg = 0;
+   makeMessageCallCount = 0;
+   makeMessageArg = 0;
+   configBbsRcCallCount = 0;
+   sendAnXCallCount = 0;
+   morePromptHelperCallCount = 0;
+}
+
+/* telnet.c dependencies outside these tests. */
+void configBbsRc( void )
+{
+   configBbsRcCallCount++;
+}
+
+void filterData( int inputChar )
+{
+   filterDataCallCount++;
+   lastFilterDataChar = inputChar;
+}
+
+void filterExpress( int inputChar )
+{
+   filterExpressCallCount++;
+   lastFilterExpressChar = inputChar;
+}
+
+void filterPost( int inputChar )
+{
+   filterPostCallCount++;
+   (void)inputChar;
+}
+
+void filterWhoList( int inputChar )
+{
+   filterWhoListCallCount++;
+   (void)inputChar;
+}
+
+void getFiveLines( int which )
+{
+   getFiveLinesCallCount++;
+   getFiveLinesArg = which;
+}
+
+char *getName( int quitPriv )
+{
+   getNameCallCount++;
+   getNameArg = quitPriv;
+   return aryNameResponse;
+}
+
+void getString( int length, char *result, int line )
+{
+   (void)length;
+   (void)line;
+   snprintf( result, 80, "%s", aryStringResponse );
+}
+
+int getWindowSize( void )
+{
+   rows = stubWindowRows;
+   return stubWindowRows;
+}
+
+void makeMessage( int upload )
+{
+   makeMessageCallCount++;
+   makeMessageArg = upload;
+}
+
+void morePromptHelper( void )
+{
+   morePromptHelperCallCount++;
+}
+
+int netPutChar( int inputChar )
+{
+   if ( netOutputCount < sizeof( aryNetOutput ) )
+   {
+      aryNetOutput[netOutputCount++] = (unsigned char)inputChar;
+   }
+   return inputChar;
+}
+
+int netPuts( const char *ptrText )
+{
+   const char *ptrRead;
+
+   for ( ptrRead = ptrText; *ptrRead != '\0'; ++ptrRead )
+   {
+      netPutChar( (unsigned char)*ptrRead );
+   }
+   return 1;
+}
+
+void sendAnX( void )
+{
+   sendAnXCallCount++;
+}
+
+int stdPrintf( const char *format, ... )
+{
+   va_list argList;
+
+   va_start( argList, format );
+   va_end( argList );
+   return 1;
+}
+
+static void sendBlock_WhenCalled_WritesIacBlockSequence( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   sendBlock();
+
+   // Assert
+   if ( netOutputCount != 2 || aryNetOutput[0] != IAC || aryNetOutput[1] != BLOCK )
+   {
+      fail_msg( "sendBlock should write IAC,BLOCK sequence; got count=%zu values=%u,%u",
+                netOutputCount, aryNetOutput[0], aryNetOutput[1] );
+   }
+}
+
+static void sendNaws_WhenWindowSizeChanged_SendsNawsPayload( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   oldRows = 10;
+   rows = 200;
+   stubWindowRows = 200;
+
+   // Act
+   sendNaws();
+
+   // Assert
+   if ( netOutputCount != 9 )
+   {
+      fail_msg( "sendNaws should emit 9-byte NAWS payload on size change; got %zu bytes", netOutputCount );
+   }
+   if ( aryNetOutput[0] != IAC || aryNetOutput[1] != SB || aryNetOutput[2] != TELOPT_NAWS ||
+        aryNetOutput[7] != IAC || aryNetOutput[8] != SE )
+   {
+      fail_msg( "sendNaws payload framing is invalid" );
+   }
+   if ( rows != 24 )
+   {
+      fail_msg( "sendNaws should clamp invalid row counts to 24; got %d", rows );
+   }
+}
+
+static void telReceive_WhenClientProbeReceived_RespondsWithClientAck( void **state )
+{
+   // Arrange
+   int result;
+
+   (void)state;
+
+   resetState();
+
+   // Act
+   (void)telReceive( IAC );
+   result = telReceive( CLIENT );
+
+   // Assert
+   if ( result != 0 )
+   {
+      fail_msg( "telReceive should return 0 for client keepalive handling; got %d", result );
+   }
+   if ( netOutputCount != 2 || aryNetOutput[0] != IAC || aryNetOutput[1] != CLIENT )
+   {
+      fail_msg( "CLIENT probe should be answered with IAC CLIENT; got count=%zu", netOutputCount );
+   }
+}
+
+static void telReceive_WhenGetNameCommandArrives_SendsNameResponse( void **state )
+{
+   // Arrange
+   int result;
+
+   (void)state;
+
+   resetState();
+   byte = 3;
+   snprintf( aryNameResponse, sizeof( aryNameResponse ), "%s", "Meatball" );
+
+   // Act
+   (void)telReceive( IAC );
+   (void)telReceive( G_NAME );
+   (void)telReceive( 2 );
+   (void)telReceive( 0 );
+   (void)telReceive( 0 );
+   result = telReceive( 10 );
+
+   // Assert
+   if ( result != 0 )
+   {
+      fail_msg( "telReceive G_NAME flow should return 0; got %d", result );
+   }
+   if ( getNameCallCount != 1 || getNameArg != 2 )
+   {
+      fail_msg( "G_NAME flow should call getName once with arg 2; got count=%d arg=%d", getNameCallCount, getNameArg );
+   }
+   if ( netOutputCount < 2 || aryNetOutput[0] != IAC || aryNetOutput[1] != BLOCK )
+   {
+      fail_msg( "G_NAME flow should start by sending BLOCK sequence" );
+   }
+   if ( aryNetOutput[netOutputCount - 1] != '\n' )
+   {
+      fail_msg( "G_NAME flow should terminate with newline" );
+   }
+   if ( byte != 19 )
+   {
+      fail_msg( "G_NAME flow should update byte counter from parsed position + name length; got %ld", byte );
+   }
+}
+
+static void telReceive_WhenXMessageEndsAndPendingSend_TriggersSendAnX( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   shouldSendExpressMessage = 1;
+   isExpressMessageInProgress = 1;
+
+   // Act
+   (void)telReceive( IAC );
+   (void)telReceive( XMSG_E );
+
+   // Assert
+   if ( filterExpressCallCount == 0 || lastFilterExpressChar != -1 )
+   {
+      fail_msg( "XMSG_E should signal filterExpress(-1) at end of X transfer" );
+   }
+   if ( sendAnXCallCount != 1 )
+   {
+      fail_msg( "XMSG_E with shouldSendExpressMessage should trigger sendAnX once; got %d", sendAnXCallCount );
+   }
+   if ( shouldSendExpressMessage != 0 || isExpressMessageInProgress != 0 )
+   {
+      fail_msg( "XMSG_E should clear pending-send and in-progress flags" );
+   }
+}
+
+static void telReceive_WhenDataByteReceived_RoutesToCorrectFilter( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   whoListProgress = 1;
+
+   // Act
+   (void)telReceive( 'A' );
+
+   // Assert
+   if ( filterWhoListCallCount != 1 || filterDataCallCount != 0 )
+   {
+      fail_msg( "when whoListProgress is active, data should route to filterWhoList only" );
+   }
+
+   // Arrange
+   resetState();
+   isExpressMessageInProgress = 1;
+
+   // Act
+   (void)telReceive( 'B' );
+
+   // Assert
+   if ( filterExpressCallCount != 1 || lastFilterExpressChar != 'B' )
+   {
+      fail_msg( "when express transfer is active, data should route to filterExpress with byte payload" );
+   }
+}
+
+int main( void )
+{
+   const struct CMUnitTest aryTests[] = {
+      cmocka_unit_test( sendBlock_WhenCalled_WritesIacBlockSequence ),
+      cmocka_unit_test( sendNaws_WhenWindowSizeChanged_SendsNawsPayload ),
+      cmocka_unit_test( telReceive_WhenClientProbeReceived_RespondsWithClientAck ),
+      cmocka_unit_test( telReceive_WhenGetNameCommandArrives_SendsNameResponse ),
+      cmocka_unit_test( telReceive_WhenXMessageEndsAndPendingSend_TriggersSendAnX ),
+      cmocka_unit_test( telReceive_WhenDataByteReceived_RoutesToCorrectFilter ),
+   };
+
+   return cmocka_run_group_tests( aryTests, NULL, NULL );
+}
