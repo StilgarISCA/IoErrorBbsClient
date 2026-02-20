@@ -1,24 +1,20 @@
-/* IO ERROR's BBS client 2.3, Michael Hampton.  Modified from the original
- * ISCA BBS client 1.5 and patches.  Copyright 1999 Michael Hampton.
- * Internet: error@citadel.org  WWW: http://ioerror.bbsclient.net/
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2, or (at your option) any later
- * version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 675 Mass
- * Ave, Cambridge, MA 02139, USA.
+/*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 #include "defs.h"
 #include "ext.h"
+
+static const char *COLOR_MAIN_MENU_KEYS = "gipxorq \n";
+static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
+static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
+static const char *COLOR_POST_MENU_KEYS = "dntq \n";
+static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
+static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
+static const char *COLOR_FOREGROUND_KEYS = "krgybmcw";
+static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd";
 
 /*
  * defaultColors is called once with an arg of 1 before the bbsrc file is
@@ -209,7 +205,6 @@ void ansiTransformPostHeader( char *ptrText, int isFriend )
 
 void colorConfig( void )
 {
-   unsigned int invalid = 0;
    char aryPromptText[110];
    int inputChar;
 
@@ -218,63 +213,44 @@ void colorConfig( void )
    {
       stdPrintf( "\r\nWARNING:  Color is off.  You will not be able to preview your selections." );
    }
-   for ( ;; )
+   while ( true )
    {
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
       colorize( aryPromptText );
 
-      for ( invalid = 0;; )
-      {
-         inputChar = inKey();
-         if ( !findChar( "GgIiPpXxOoRrQq \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
 
       switch ( inputChar )
       {
          case 'g':
-         case 'G':
             stdPrintf( "General\r\n\n" );
             generalColorConfig();
             break;
          case 'i':
-         case 'I':
             stdPrintf( "Input\r\n\n" );
             inputColorConfig();
             break;
          case 'o':
-         case 'O':
             stdPrintf( "Options\r\n\n" );
             colorOptions();
             break;
 
          case 'p':
-         case 'P':
             stdPrintf( "Post colors\r\n\n" );
             postColorConfig();
             break;
 
          case 'r':
-         case 'R':
             stdPrintf( "Reset colors\r\n" );
             defaultColors( 1 );
             break;
 
          case 'x':
-         case 'X':
             stdPrintf( "Express colors\r\n\n" );
             expressColorConfig();
             break;
 
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
@@ -311,11 +287,10 @@ void colorOptions( void )
 
 void generalColorConfig( void )
 {
-   unsigned int invalid = 0;
    int menuOption;
    char aryPromptText[100];
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( GEN_FMT_STR, color.background, color.forum,
                  color.text, color.errorTextColor, color.forum,
@@ -325,51 +300,33 @@ void generalColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      for ( invalid = 0;; )
-      {
-         menuOption = inKey();
-         if ( !findChar( "BbEeFfNnTtQq \n", menuOption ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      menuOption = readValidatedMenuKey( COLOR_GENERAL_MENU_KEYS );
 
       switch ( menuOption )
       {
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
             return;
             /* NOTREACHED */
          case 'b':
-         case 'B':
             stdPrintf( "Background\r\n\n" );
             color.background = backgroundPicker();
             break;
          case 'e':
-         case 'E':
             stdPrintf( "Error\r\n\n" );
             color.errorTextColor = colorPicker();
             break;
          case 'f':
-         case 'F':
             stdPrintf( "Forum\r\n\n" );
             color.forum = colorPicker();
             break;
          case 'n':
-         case 'N':
             stdPrintf( "Number\r\n\n" );
             color.number = colorPicker();
             break;
          case 't':
-         case 'T':
             stdPrintf( "Text\r\n\n" );
             color.text = colorPicker();
             break;
@@ -381,11 +338,10 @@ void generalColorConfig( void )
 
 void inputColorConfig( void )
 {
-   unsigned int invalid = 0;
    int menuOption;
    char aryPromptText[100];
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( INPUT_FMT_STR, color.text, color.input1,
                  color.input2, color.input1, color.text );
@@ -393,36 +349,21 @@ void inputColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      for ( invalid = 0;; )
-      {
-         menuOption = inKey();
-         if ( !findChar( "CcTtQq \n", menuOption ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      menuOption = readValidatedMenuKey( COLOR_INPUT_MENU_KEYS );
 
       switch ( menuOption )
       {
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
             return;
             /* NOTREACHED */
          case 'c':
-         case 'C':
             stdPrintf( "Completion\r\n\n" );
             color.input2 = colorPicker();
             break;
          case 't':
-         case 'T':
             stdPrintf( "Text\r\n\n" );
             color.input1 = colorPicker();
             break;
@@ -434,7 +375,7 @@ void inputColorConfig( void )
 
 void postColorConfig( void )
 {
-   for ( ;; )
+   while ( true )
    {
       switch ( userOrFriend() )
       {
@@ -454,7 +395,7 @@ void postUserColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( POST_FMT_STR, color.postdate, color.posttext,
                  color.postname, A_USER, color.posttext, color.forum );
@@ -462,21 +403,17 @@ void postUserColorConfig( void )
       switch ( menuOption )
       {
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             return;
             /* NOTREACHED */
          case 'd':
-         case 'D':
             color.postdate = colorPicker();
             break;
          case 'n':
-         case 'N':
             color.postname = colorPicker();
             break;
          case 't':
-         case 'T':
             color.posttext = colorPicker();
             break;
          default:
@@ -489,7 +426,7 @@ void postFriendColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( POST_FMT_STR, color.postfrienddate, color.postfriendtext,
                  color.postfriendname, A_FRIEND, color.postfriendtext,
@@ -498,21 +435,17 @@ void postFriendColorConfig( void )
       switch ( menuOption )
       {
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             return;
             /* NOTREACHED */
          case 'd':
-         case 'D':
             color.postfrienddate = colorPicker();
             break;
          case 'n':
-         case 'N':
             color.postfriendname = colorPicker();
             break;
          case 't':
-         case 'T':
             color.postfriendtext = colorPicker();
             break;
          default:
@@ -523,43 +456,26 @@ void postFriendColorConfig( void )
 
 char postColorMenu( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
-   {
-      inputChar = inKey();
-      if ( !findChar( "DdNnTtQq \n", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedMenuKey( COLOR_POST_MENU_KEYS );
 
    switch ( inputChar )
    {
       case 'd':
-      case 'D':
          stdPrintf( "Date\r\n\n" );
          break;
       case 'n':
-      case 'N':
          stdPrintf( "Name\r\n\n" );
          break;
       case 't':
-      case 'T':
          stdPrintf( "Text\r\n\n" );
          break;
       case 'q':
-      case 'Q':
       case ' ':
       case '\n':
          stdPrintf( "Quit\r\n\n" );
@@ -573,7 +489,7 @@ char postColorMenu( void )
 
 void expressColorConfig( void )
 {
-   for ( ;; )
+   while ( true )
    {
       switch ( userOrFriend() )
       {
@@ -593,7 +509,7 @@ void expressUserColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( EXPRESS_FMT_STR, color.expresstext,
                  color.expressname, A_USER, color.expresstext );
@@ -601,17 +517,14 @@ void expressUserColorConfig( void )
       switch ( menuOption )
       {
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             return;
             /* NOTREACHED */
          case 'n':
-         case 'N':
             color.expressname = colorPicker();
             break;
          case 't':
-         case 'T':
             color.expresstext = colorPicker();
             break;
          default:
@@ -624,7 +537,7 @@ void expressFriendColorConfig( void )
 {
    int menuOption;
 
-   for ( ;; )
+   while ( true )
    {
       stdPrintf( EXPRESS_FMT_STR, color.expressfriendtext,
                  color.expressfriendname, A_FRIEND, color.expressfriendtext );
@@ -632,17 +545,14 @@ void expressFriendColorConfig( void )
       switch ( menuOption )
       {
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             return;
             /* NOTREACHED */
          case 'n':
-         case 'N':
             color.expressfriendname = colorPicker();
             break;
          case 't':
-         case 'T':
             color.expressfriendtext = colorPicker();
             break;
          default:
@@ -653,39 +563,23 @@ void expressFriendColorConfig( void )
 
 char expressColorMenu( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
-   {
-      inputChar = inKey();
-      if ( !findChar( "NnTtQq \n", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedMenuKey( COLOR_EXPRESS_MENU_KEYS );
 
    switch ( inputChar )
    {
       case 'n':
-      case 'N':
          stdPrintf( "Name\r\n\n" );
          break;
       case 't':
-      case 'T':
          stdPrintf( "Text\r\n\n" );
          break;
       case 'q':
-      case 'Q':
       case ' ':
       case '\n':
          stdPrintf( "Quit\r\n\n" );
@@ -699,36 +593,19 @@ char expressColorMenu( void )
 
 char userOrFriend( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
-   {
-      inputChar = inKey();
-      if ( !findChar( "UuFfQq \n", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedMenuKey( COLOR_USER_OR_FRIEND_KEYS );
 
    switch ( inputChar )
    {
-      case 'U':
-         inputChar = 'u';
       case 'u':
          stdPrintf( "User\r\n\n" );
          break;
-      case 'F':
-         inputChar = 'f';
       case 'f':
          stdPrintf( "Friend\r\n\n" );
          break;
@@ -742,68 +619,46 @@ char userOrFriend( void )
 
 char colorPicker( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[100];
 
    snprintf( aryPromptText, sizeof( aryPromptText ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
-   {
-      inputChar = inKey();
-      if ( !findChar( "KkRrGgYyBbMmCcWw", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedMenuKey( COLOR_FOREGROUND_KEYS );
 
    switch ( inputChar )
    {
       case 'r':
-      case 'R':
          stdPrintf( "Red\r\n\n" );
          inputChar = '1';
          break;
       case 'g':
-      case 'G':
          stdPrintf( "Green\r\n\n" );
          inputChar = '2';
          break;
       case 'y':
-      case 'Y':
          stdPrintf( "Yellow\r\n\n" );
          inputChar = '3';
          break;
       case 'b':
-      case 'B':
          stdPrintf( "Blue\r\n\n" );
          inputChar = '4';
          break;
       case 'm':
-      case 'M':
       case 'p': /* Some people call it purple */
-      case 'P':
          stdPrintf( "Magenta\r\n\n" );
          inputChar = '5';
          break;
       case 'c':
-      case 'C':
          stdPrintf( "Cyan\r\n\n" );
          inputChar = '6';
          break;
       case 'w':
-      case 'W':
          stdPrintf( "White\r\n\n" );
          inputChar = '7';
          break;
       case 'k':
-      case 'K':
          stdPrintf( "Black\r\n\n" );
          inputChar = '0';
          break;
@@ -817,7 +672,6 @@ char colorPicker( void )
 
 char backgroundPicker( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
    char aryPromptText[140];
 
@@ -825,66 +679,44 @@ char backgroundPicker( void )
              color.background );
    colorize( aryPromptText );
 
-   for ( invalid = 0;; )
-   {
-      inputChar = inKey();
-      if ( !findChar( "KkRrGgYyBbMmCcWwDd", inputChar ) )
-      {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
-         continue;
-      }
-      break;
-   }
+   inputChar = readValidatedMenuKey( COLOR_BACKGROUND_KEYS );
 
    switch ( inputChar )
    {
       case 'k':
-      case 'K':
          stdPrintf( "Black\r\n" );
          inputChar = '0';
          break;
       case 'r':
-      case 'R':
          stdPrintf( "Red\r\n" );
          inputChar = '1';
          break;
       case 'g':
-      case 'G':
          stdPrintf( "Green\r\n" );
          inputChar = '2';
          break;
       case 'y':
-      case 'Y':
          stdPrintf( "Yellow\r\n" );
          inputChar = '3';
          break;
       case 'b':
-      case 'B':
          stdPrintf( "Blue\r\n" );
          inputChar = '4';
          break;
       case 'm':
-      case 'M':
       case 'p': /* Some people call it purple */
-      case 'P':
          stdPrintf( "Magenta\r\n" );
          inputChar = '5';
          break;
       case 'c':
-      case 'C':
          stdPrintf( "Cyan\r\n" );
          inputChar = '6';
          break;
       case 'w':
-      case 'W':
          stdPrintf( "White\r\n" );
          inputChar = '7';
          break;
       case 'd':
-      case 'D':
          stdPrintf( "Default\r\n" );
          inputChar = '9';
          break;

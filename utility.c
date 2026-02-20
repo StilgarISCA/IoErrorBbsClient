@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * Various utility routines that didn't really belong elsewhere.  Yawn.
  */
 #include "defs.h"
@@ -12,6 +18,77 @@
    */
 char replymsg[5] = "+!R ";
 
+void trimTrailingWhitespace( char *ptrLine )
+{
+   size_t lineLength = strlen( ptrLine );
+
+   while ( lineLength > 0 )
+   {
+      size_t index = lineLength - 1;
+      if ( ptrLine[index] == ' ' || ptrLine[index] == '\t' ||
+           ptrLine[index] == '\n' || ptrLine[index] == '\r' )
+      {
+         ptrLine[index] = 0;
+      }
+      else
+      {
+         break;
+      }
+      lineLength = index;
+   }
+}
+
+int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
+                        int *ptrLineNumber, int *ptrReadCount,
+                        const char *ptrSourceName )
+{
+   size_t maxLineLength = lineSize - 1;
+
+   while ( ptrFileHandle && fgets( ptrLine, (int)lineSize, ptrFileHandle ) )
+   {
+      ( *ptrReadCount )++;
+      ( *ptrLineNumber )++;
+      if ( strlen( ptrLine ) >= maxLineLength )
+      {
+         stdPrintf( "Line %d in %s too long, ignored.\n", *ptrLineNumber, ptrSourceName );
+         while ( strlen( ptrLine ) >= maxLineLength &&
+                 ptrLine[maxLineLength - 1] != '\n' )
+         {
+            if ( !fgets( ptrLine, (int)lineSize, ptrFileHandle ) )
+            {
+               break;
+            }
+         }
+         continue;
+      }
+      trimTrailingWhitespace( ptrLine );
+      return 1;
+   }
+   return 0;
+}
+
+void sendTrackedChar( int inputChar )
+{
+   netPutChar( inputChar );
+   byte++;
+}
+
+void sendTrackedBuffer( const char *ptrBuffer, size_t length )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < length; itemIndex++ )
+   {
+      netPutChar( ptrBuffer[itemIndex] );
+   }
+   byte += (long)length;
+}
+
+void sendTrackedNewline( void )
+{
+   sendTrackedChar( '\n' );
+}
+
 void sendAnX( void )
 {
    /* get the ball rolling with the bbs */
@@ -19,8 +96,7 @@ void sendAnX( void )
 #if DEBUG
    stdPrintf( "sendAnX 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-   netPutChar( 'x' );
-   byte++;
+   sendTrackedChar( 'x' );
    sendingXState = SENDING_X_STATE_SENT_COMMAND_X;
 #if DEBUG
    stdPrintf( "sendAnX 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
@@ -34,25 +110,18 @@ void replyMessage( void )
    int charIndex;
 
    sendBlock();
-   for ( lineIndex = 0; replymsg[lineIndex]; lineIndex++ )
-   {
-      netPutChar( replymsg[lineIndex] );
-   }
-   byte += lineIndex;
+   lineIndex = (int)strlen( replymsg );
+   sendTrackedBuffer( replymsg, (size_t)lineIndex );
    for ( lineIndex = 0; lineIndex < 5 && *aryAwayMessageLines[lineIndex]; lineIndex++ )
    {
-      for ( charIndex = 0; aryAwayMessageLines[lineIndex][charIndex]; charIndex++ )
-      {
-         netPutChar( aryAwayMessageLines[lineIndex][charIndex] );
-      }
-      netPutChar( '\n' );
-      byte += charIndex + 1;
+      charIndex = (int)strlen( aryAwayMessageLines[lineIndex] );
+      sendTrackedBuffer( aryAwayMessageLines[lineIndex], (size_t)charIndex );
+      sendTrackedNewline();
       stdPrintf( "%s\r\n", aryAwayMessageLines[lineIndex] );
    }
    if ( lineIndex < 5 )
    { /* less than five lines */
-      netPutChar( '\n' );
-      byte++;
+      sendTrackedNewline();
    }
    sendingXState = SX_NOT;
 #if DEBUG
@@ -108,14 +177,16 @@ void looper( void )
    register int inputChar;
    unsigned int invalid = 0;
 
-   for ( ;; )
+   while ( true )
    {
       if ( ( inputChar = inKey() ) < 0 )
       {
          return;
       }
       /* Don't bother sending stuff to the bbs it won't use anyway */
-      if ( ( inputChar >= 32 && inputChar <= 127 ) || findChar( "\3\4\5\b\n\r\27\30\32", inputChar ) )
+      if ( ( inputChar >= ASCII_PRINTABLE_MIN &&
+             inputChar <= ASCII_PRINTABLE_MAX ) ||
+           findChar( ALLOWED_INPUT_CONTROL_CHARS, inputChar ) )
       {
          invalid = 0;
          netPutChar( aryKeyMap[inputChar] );
@@ -126,25 +197,62 @@ void looper( void )
             byte++;
          }
       }
-      else if ( invalid++ )
+      else
       {
-         flushInput( invalid );
+         handleInvalidInput( &invalid );
       }
+   }
+}
+
+void handleInvalidInput( unsigned int *ptrInvalidCount )
+{
+   if ( ( *ptrInvalidCount )++ )
+   {
+      flushInput( *ptrInvalidCount );
+   }
+}
+
+int readValidatedKey( const char *allowedChars )
+{
+   int inputChar;
+   unsigned int invalid = 0;
+
+   while ( true )
+   {
+      inputChar = inKey();
+      if ( findChar( allowedChars, inputChar ) )
+      {
+         return inputChar;
+      }
+      handleInvalidInput( &invalid );
+   }
+}
+
+int readValidatedMenuKey( const char *allowedCharsLowercase )
+{
+   int inputChar;
+   unsigned int invalid = 0;
+
+   while ( true )
+   {
+      inputChar = inKey();
+      if ( isalpha( inputChar ) )
+      {
+         inputChar = tolower( inputChar );
+      }
+      if ( findChar( allowedCharsLowercase, inputChar ) )
+      {
+         return inputChar;
+      }
+      handleInvalidInput( &invalid );
    }
 }
 
 int yesNo( void )
 {
    register int inputChar;
-   unsigned int invalid = 0;
 
-   while ( !findChar( "nNyY", inputChar = inKey() ) )
-   {
-      if ( invalid++ )
-      {
-         flushInput( invalid );
-      }
-   }
+   inputChar = readValidatedKey( "nNyY" );
    if ( inputChar == 'y' || inputChar == 'Y' )
    {
       stdPrintf( "Yes\r\n" );
@@ -160,15 +268,8 @@ int yesNo( void )
 int yesNoDefault( int defaultAnswer )
 {
    register int inputChar;
-   unsigned int invalid = 0;
 
-   while ( !findChar( "nNyY\n ", inputChar = inKey() ) )
-   {
-      if ( invalid++ )
-      {
-         flushInput( invalid );
-      }
-   }
+   inputChar = readValidatedKey( "nNyY\n " );
    if ( inputChar == '\n' || inputChar == ' ' )
    {
       inputChar = ( defaultAnswer ? 'Y' : 'N' );
@@ -218,7 +319,7 @@ int more( int *line, int percentComplete )
    {
       printf( "--MORE--" );
    }
-   for ( ;; )
+   while ( true )
    {
       inputChar = inKey();
       if ( inputChar == ' ' || inputChar == 'y' || inputChar == 'Y' )
@@ -233,9 +334,9 @@ int more( int *line, int percentComplete )
       {
          *line = -1;
       }
-      else if ( invalid++ )
+      else
       {
-         flushInput( invalid );
+         handleInvalidInput( &invalid );
          continue;
       }
       printf( "\r              \r" );
@@ -307,60 +408,88 @@ char *findChar( const char *ptrString, int targetChar )
    }
 }
 
-/* extractName -- get the username out of a post or X message header */
-/* returns pointer to username as stored in the array */
-char *extractName( const char *header )
+/* Parse the username out of a post or X message header into caller-provided storage. */
+static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize )
 {
    char *ptrHeaderName;
-   char *ptrExtractedName;
-   int isAfterSpace;
-   int charIndex;
-   int existingIndex = -1;
+   size_t nameLength;
+   bool isAfterSpace;
 
    ptrHeaderName = findSubstring( header, " from " );
    if ( !ptrHeaderName )
-   { /* This isn't an X message or a post */
-      return NULL;
+   {
+      /* This isn't an X message or a post */
+      return false;
    }
    ptrHeaderName += 6;
    if ( *ptrHeaderName == '\033' )
    {
       ptrHeaderName += 5;
    }
-   /* Now should be pointing to the aryUser name */
-   isAfterSpace = 1;
-   ptrExtractedName = duplicateString( ptrHeaderName );
+   isAfterSpace = true;
+   nameLength = 0;
    {
-      int nameLength = (int)strlen( ptrExtractedName );
-      for ( charIndex = 0; charIndex < nameLength; charIndex++ )
+      size_t itemIndex;
+      size_t sourceLength = strlen( ptrHeaderName );
+      /*
+       * Copy until we hit ANSI escape, a non-name delimiter, or we run out of
+       * destination space (leaving room for the trailing NULL).
+       */
+      for ( itemIndex = 0; itemIndex < sourceLength &&
+                           nameLength + 1 < nameBufferSize;
+            itemIndex++ )
       {
-         if ( ptrExtractedName[charIndex] == '\033' )
+         char inputChar = ptrHeaderName[itemIndex];
+
+         if ( inputChar == '\033' )
          {
             break;
          }
-         if ( isAfterSpace && !isupper( ptrExtractedName[charIndex] ) )
+         if ( isAfterSpace && !isupper( (unsigned char)inputChar ) )
          {
             break;
          }
-         if ( ptrExtractedName[charIndex] == ' ' )
+         ptrNameBuffer[nameLength++] = inputChar;
+         if ( inputChar == ' ' )
          {
-            isAfterSpace = 1;
+            isAfterSpace = true;
          }
          else
          {
-            isAfterSpace = 0;
+            isAfterSpace = false;
          }
       }
    }
-   ptrExtractedName[charIndex] = '\0';
-   charIndex--;
-   /* \r courtesy of Sbum, fixed enemy list in non-ANSI mode 2/9/2000 */
-   if ( ptrExtractedName[charIndex] == ' ' || ptrExtractedName[charIndex] == '\r' )
+   while ( nameLength > 0 &&
+           ( ptrNameBuffer[nameLength - 1] == ' ' ||
+             ptrNameBuffer[nameLength - 1] == '\r' ) )
    {
-      ptrExtractedName[charIndex] = '\0';
+      nameLength--;
    }
-   /* Is the name empty? */
-   if ( *ptrExtractedName == 0 )
+   ptrNameBuffer[nameLength] = '\0';
+   return nameLength > 0;
+}
+
+char *extractNameNoHistory( const char *header )
+{
+   static char aryExtractedName[sizeof( aryLastName[0] )];
+
+   if ( !tryParseNameFromHeader( header, aryExtractedName, sizeof( aryExtractedName ) ) )
+   {
+      return NULL;
+   }
+   return aryExtractedName;
+}
+
+/* extractName -- get the username out of a post or X message header */
+/* returns pointer to username as stored in the array */
+char *extractName( const char *header )
+{
+   int charIndex;
+   int existingIndex = -1;
+   char *ptrExtractedName = extractNameNoHistory( header );
+
+   if ( !ptrExtractedName )
    {
       return NULL;
    }
@@ -381,7 +510,6 @@ char *extractName( const char *header )
       }
       snprintf( aryLastName[0], sizeof( aryLastName[0] ), "%s", ptrExtractedName );
    }
-   free( ptrExtractedName );
    return (char *)aryLastName[0];
 }
 

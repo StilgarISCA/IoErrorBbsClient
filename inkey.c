@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * Return next letter the aryUser typed.  This function can be indirectly
  * recursive -- inKey may call telReceive(), which calls other functions which can
  * call inKey()...
@@ -24,7 +30,7 @@ int inKey( void )
 {
    register int inputChar;
 
-   for ( ;; )
+   while ( true )
    {
       inputChar = getKey();
       if ( !lastCarriageReturn || inputChar != '\n' )
@@ -72,7 +78,7 @@ int getKey( void )
     * client.
     */
 
-   for ( ;; )
+   while ( true )
    {
 
       /*
@@ -168,7 +174,7 @@ int getKey( void )
             {
                if ( !isLoginShell )
                {
-                  printf( "\r\n[New aryShell]\r\n" );
+                  printf( "\r\n[New shell]\r\n" );
                   run( aryShell, 0 );
                   printf( "\r\n[Continue]\r\n" );
                }

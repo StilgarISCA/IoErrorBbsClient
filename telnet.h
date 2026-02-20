@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * Generic telnet protocol #defines, along with some special protocol that is
  * spoken between the ISCA BBS and a connected client.  You don't want to
  * change this, it depends on this being the same on both ends, and you can't

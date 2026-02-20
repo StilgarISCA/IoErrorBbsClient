@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 /* System I/O routines.
  */
 
@@ -30,7 +36,7 @@ int capPutChar( int inputChar )
       if ( skipansi == 1 )
       {
          if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
-         { /* Damned weird kludge */
+         { /* Keep capture/reset state aligned when bold output is suppressed. */
             printf( "\033[0m" );
             skipansi--;
          }
@@ -44,7 +50,9 @@ int capPutChar( int inputChar )
    {
       skipansi = 4;
    }
-   else if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive && inputChar != '\r' )
+   else if ( capture > 0 && !flagsConfiguration.isPosting &&
+             !flagsConfiguration.isMorePromptActive &&
+             inputChar != '\r' )
    {
       if ( putc( inputChar, tempFile ) < 0 )
       {

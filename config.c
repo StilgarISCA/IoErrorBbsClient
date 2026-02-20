@@ -1,9 +1,19 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This file handles configuration of the bbsrc file.  Its somewhat sloppy but
  * it should do the job.  Someone else can put a nicer interface on it.
  */
 #include "defs.h"
 #include "ext.h"
+
+static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
+static const char *CONFIG_MACRO_MENU_KEYS = "elq \n";
+static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 
 #define GREETING \
    "\r\nWelcome to IO ERROR's ISCA BBS Client!  Please take a moment to familiarize\r\nyourself with some of our new features.\r\n\n"
@@ -98,19 +108,18 @@ void configBbsRc( void )
    register int inputChar;
    register int itemIndex;
    register int innerIndex;
-   unsigned int invalid;
    int lines;
 
    flagsConfiguration.isConfigMode = 1;
    if ( isBbsRcReadOnly )
    {
-      stdPrintf( "\r\nConfiguration file is read-only, cannot arySavedBytes configuration for next session.\r\n" );
+      stdPrintf( "\r\nConfiguration file is read-only, unable to save configuration for next session.\r\n" );
    }
    else if ( !ptrBbsRc )
    {
-      stdPrintf( "\r\nNo configuration file, cannot arySavedBytes configuration for next session.\r\n" );
+      stdPrintf( "\r\nNo configuration file, unable to save configuration for next session.\r\n" );
    }
-   for ( ;; )
+   while ( true )
    {
       if ( flagsConfiguration.useAnsi )
       {
@@ -118,45 +127,29 @@ void configBbsRc( void )
       }
       else
       {
-         stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>aryInfo  <M>acros <O>ptions <X>press <Q>uit" );
+         stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>nfo  <M>acros <O>ptions <X>press <Q>uit" );
       }
       colorize( "\r\nClient config -> @G" );
-      for ( invalid = 0;; )
-      {
-         inputChar = inKey();
-         if ( !findChar( "CcEeFfHhIiKkMmOoQqXx \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
       switch ( inputChar )
       {
          case 'c':
-         case 'C':
             colorConfig();
             break;
 
          case 'x':
-         case 'X':
             expressConfig();
             break;
 
          case 'i':
-         case 'I':
             information();
             break;
 
          case 'o':
-         case 'O':
             stdPrintf( "Options\r\n" );
             if ( !isLoginShell )
             {
-               stdPrintf( "\r\nEnter name of local aryEditor to use (%s) -> ", aryEditor );
+               stdPrintf( "\r\nEnter name of local editor to use (%s) -> ", aryEditor );
                getString( 72, aryMenuLine, -999 );
                if ( *aryMenuLine )
                {
@@ -236,10 +229,9 @@ void configBbsRc( void )
             break;
 
          case 'h':
-         case 'H':
             stdPrintf( "Hotkeys\r\n\n" );
             stdPrintf( "Enter command key (%s) -> ", strCtrl( commandKey ) );
-            for ( ;; )
+            while ( true )
             {
                stdPrintf( "%s\r\n", strCtrl( commandKey = newKey( commandKey ) ) );
                if ( commandKey < ' ' )
@@ -254,7 +246,7 @@ void configBbsRc( void )
             {
                stdPrintf( "Enter key to suspend client (%s) -> ", strCtrl( suspKey ) );
                stdPrintf( "%s\r\n", strCtrl( suspKey = newKey( suspKey ) ) );
-               stdPrintf( "Enter key to start a new aryShell (%s) -> ", strCtrl( shellKey ) );
+               stdPrintf( "Enter key to start a new shell (%s) -> ", strCtrl( shellKey ) );
                stdPrintf( "%s\r\n", strCtrl( shellKey = newKey( shellKey ) ) );
             }
             stdPrintf( "Enter key to toggle capture mode (%s) -> ", strCtrl( captureKey ) );
@@ -266,19 +258,16 @@ void configBbsRc( void )
             break;
 
          case 'f':
-         case 'F':
             stdPrintf( "Friend list\r\n" );
             editUsers( friendList, fStrCompareVoid, "friend" );
             break;
 
          case 'e':
-         case 'E':
             stdPrintf( "Enemy list\r\n" );
             editUsers( enemyList, strCompareVoid, "enemy" );
             break;
 
          case 'm':
-         case 'M':
             stdPrintf( "Macros\r\n" );
             for ( ; inputChar != 'q'; )
             {
@@ -290,29 +279,17 @@ void configBbsRc( void )
                {
                   stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
                }
-               for ( invalid = 0;; )
-               {
-                  inputChar = inKey();
-                  if ( !findChar( "EeLlQq \n", inputChar ) )
-                  {
-                     if ( invalid++ )
-                     {
-                        flushInput( invalid );
-                     }
-                     continue;
-                  }
-                  break;
-               }
+               inputChar = readValidatedMenuKey( CONFIG_MACRO_MENU_KEYS );
                switch ( inputChar )
                {
                   case 'e':
-                  case 'E':
                      stdPrintf( "Edit\r\n" );
-                     for ( ;; )
+                     while ( true )
                      {
                         stdPrintf( "\r\nMacro to edit (%s to end) -> ", strCtrl( commandKey ) );
                         inputChar = newKey( -1 );
-                        if ( inputChar == commandKey || inputChar == ' ' || inputChar == '\n' || inputChar == '\r' )
+                        if ( inputChar == commandKey || inputChar == ' ' ||
+                             inputChar == '\n' || inputChar == '\r' )
                         {
                            break;
                         }
@@ -323,7 +300,6 @@ void configBbsRc( void )
                      break;
 
                   case 'l':
-                  case 'L':
                      stdPrintf( "List\r\n\n" );
                      for ( itemIndex = 0, lines = 1; itemIndex < 128; itemIndex++ )
                      {
@@ -344,7 +320,6 @@ void configBbsRc( void )
                      break;
 
                   case 'q':
-                  case 'Q':
                   case ' ':
                   case '\n':
                      stdPrintf( "Quit\r\n" );
@@ -355,7 +330,6 @@ void configBbsRc( void )
             break;
 
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
@@ -376,12 +350,11 @@ void configBbsRc( void )
 
 void expressConfig( void )
 {
-   unsigned int invalid = 0;
    int inputChar;
 
    stdPrintf( "Express\r\n" );
 
-   for ( ;; )
+   while ( true )
    {
       if ( flagsConfiguration.useAnsi )
       {
@@ -392,36 +365,21 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      for ( invalid = 0;; )
-      {
-         inputChar = inKey();
-         if ( !findChar( "AaXxQq \n", inputChar ) )
-         {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
-            continue;
-         }
-         break;
-      }
+      inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
 
       switch ( inputChar )
       {
          case 'a':
-         case 'A':
             stdPrintf( "Away from keyboard\r\n\n" );
             newAwayMessage();
             break;
 
          case 'x':
-         case 'X':
             stdPrintf( "XLand\r\n\nAutomatically reply to X messages you receive? (%s) -> ", isXland ? "Yes" : "No" );
             isXland = yesNoDefault( isXland );
             break;
 
          case 'q':
-         case 'Q':
          case ' ':
          case '\n':
             stdPrintf( "Quit\r\n" );
@@ -561,14 +519,21 @@ int newKey( int oldkey )
 {
    int inputChar;
 
-   for ( ;; )
+   while ( true )
    {
       inputChar = getKey();
-      if ( ( ( inputChar == ' ' || inputChar == '\n' || inputChar == '\r' ) && oldkey >= 0 ) || inputChar == oldkey )
+      if ( ( ( inputChar == ' ' || inputChar == '\n' ||
+               inputChar == '\r' ) &&
+             oldkey >= 0 ) ||
+           inputChar == oldkey )
       {
          return ( oldkey );
       }
-      if ( oldkey >= 0 && ( inputChar == commandKey || inputChar == suspKey || inputChar == quitKey || inputChar == shellKey || inputChar == captureKey || inputChar == awayKey || inputChar == browserKey ) )
+      if ( oldkey >= 0 &&
+           ( inputChar == commandKey || inputChar == suspKey ||
+             inputChar == quitKey || inputChar == shellKey ||
+             inputChar == captureKey || inputChar == awayKey ||
+             inputChar == browserKey ) )
       {
          stdPrintf( "\r\nThat key is already in use for another hotkey, try again -> " );
       }
@@ -679,7 +644,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
    char *ptrEnemyName;
    friend *ptrFriend;
 
-   for ( ;; )
+   while ( true )
    {
       /* Build menu */
       if ( !strncmp( name, "enemy", 5 ) )
@@ -708,62 +673,65 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       switch ( inputChar )
       {
          case 'a':
-         case 'A':
-            stdPrintf( "Add\r\n" );
-            stdPrintf( "\r\nUser to add to your %s list -> ", name );
-            ptrUserName = getName( -999 );
-            if ( *ptrUserName )
             {
-               if ( slistFind( list, ptrUserName, findfn ) != -1 )
+               bool shouldSkipAdd;
+
+               stdPrintf( "Add\r\n" );
+               stdPrintf( "\r\nUser to add to your %s list -> ", name );
+               ptrUserName = getName( -999 );
+               shouldSkipAdd = false;
+               if ( *ptrUserName )
                {
-                  stdPrintf( "\r\n%s is already on your %s list.\r\n", ptrUserName, name );
-                  itemIndex = -1;
-               }
+                  if ( slistFind( list, ptrUserName, findfn ) != -1 )
+                  {
+                     stdPrintf( "\r\n%s is already on your %s list.\r\n", ptrUserName, name );
+                     shouldSkipAdd = true;
+                  }
 #if DEBUG
-               printf( "{%d %s} ", itemIndex, ptrUserName );
+                  printf( "{%d %s} ", shouldSkipAdd ? -1 : 0, ptrUserName );
 #endif
-               if ( itemIndex < 0 )
-               {
-                  break;
-               }
-               if ( !strcmp( name, "friend" ) )
-               {
-                  if ( !( ptrFriend = (friend *)calloc( 1, sizeof( friend ) ) ) )
+                  if ( shouldSkipAdd )
                   {
-                     fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                     break;
                   }
-                  snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrUserName );
-                  stdPrintf( "Enter info for %s: ", ptrUserName );
-                  getString( 48, aryInfo, -999 );
-                  snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", ( *aryInfo ) ? aryInfo : "(None)" );
-                  ptrFriend->magic = 0x3231;
-                  if ( !slistAddItem( list, ptrFriend, 0 ) )
+                  if ( !strcmp( name, "friend" ) )
                   {
-                     fatalExit( "Can't add 'friend'!\n", "Fatal error" );
-                  }
-               }
-               else
-               { /* enemy list */
-                  ptrEnemyName = (char *)calloc( 1, strlen( ptrUserName ) + 1 );
-                  if ( !ptrEnemyName )
-                  {
-                     fatalExit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
+                     if ( !( ptrFriend = (friend *)calloc( 1, sizeof( friend ) ) ) )
+                     {
+                        fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                     }
+                     snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrUserName );
+                     stdPrintf( "Enter info for %s: ", ptrUserName );
+                     getString( 48, aryInfo, -999 );
+                     snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", ( *aryInfo ) ? aryInfo : "(None)" );
+                     ptrFriend->magic = 0x3231;
+                     if ( !slistAddItem( list, ptrFriend, 0 ) )
+                     {
+                        fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+                     }
                   }
                   else
-                  {
-                     snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName ); /* 2.1.2 bugfix */
+                  { /* enemy list */
+                     ptrEnemyName = (char *)calloc( 1, strlen( ptrUserName ) + 1 );
+                     if ( !ptrEnemyName )
+                     {
+                        fatalExit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
+                     }
+                     else
+                     {
+                        snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName );
+                     }
+                     if ( !slistAddItem( list, ptrEnemyName, 0 ) )
+                     {
+                        fatalExit( "Can't add 'enemy'!\r\n", "Fatal error" );
+                     }
                   }
-                  if ( !slistAddItem( list, ptrEnemyName, 0 ) )
-                  {
-                     fatalExit( "Can't add 'enemy'!\r\n", "Fatal error" );
-                  }
+                  stdPrintf( "\r\n%s was added to your %s list.\r\n", ptrUserName, name );
                }
-               stdPrintf( "\r\n%s was added to your %s list.\r\n", ptrUserName, name );
+               break;
             }
-            break;
 
          case 'd':
-         case 'D':
             stdPrintf( "Delete\r\n\nUser to delete from your %s list -> ", name );
             ptrUserName = getName( -999 );
             if ( *ptrUserName )
@@ -774,7 +742,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
                   free( list->items[itemIndex] );
                   if ( !slistRemoveItem( list, itemIndex ) )
                   {
-                     fatalExit( "Can't remove aryUser!\r\n", "Fatal error" );
+                     fatalExit( "Can't remove user!\r\n", "Fatal error" );
                   }
                   stdPrintf( "\r\n%s was deleted from your %s list.\r\n", ptrUserName, name );
                }
@@ -786,10 +754,9 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             break;
 
          case 'e':
-         case 'E':
             if ( !strncmp( name, "friend", 6 ) )
             {
-               stdPrintf( "Edit\r\nName of aryUser to edit: " );
+               stdPrintf( "Edit\r\nName of user to edit: " );
                ptrUserName = getName( -999 );
                if ( *ptrUserName )
                {
@@ -824,15 +791,11 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             }
             else
             {
-               if ( invalid++ )
-               {
-                  flushInput( invalid );
-               }
+               handleInvalidInput( &invalid );
                continue;
             }
 
          case 'l':
-         case 'L':
             stdPrintf( "List\r\n\n" );
             if ( !strcmp( name, "friend" ) )
             {
@@ -872,14 +835,12 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             break;
 
          case 'q':
-         case 'Q':
          case '\n':
          case ' ':
             stdPrintf( "Quit\r\n" );
             return;
 
          case 'o':
-         case 'O':
             if ( !strncmp( name, "enemy", 5 ) )
             {
                stdPrintf( "Options\r\n\nNotify when an enemy's post is killed? (%s) -> ",
@@ -892,10 +853,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             /* Fall through */
 
          default:
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
+            handleInvalidInput( &invalid );
             continue;
       }
       invalid = 0;

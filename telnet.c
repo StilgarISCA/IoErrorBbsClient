@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This handles the information flowing into the client from the BBS.  It
  * basically understands a very limited subset of the telnet protocol (enough
  * to "fake it" with the BBS) with some extensions to allow the extra features
@@ -161,7 +167,7 @@ int telReceive( int inputByte )
                flagsConfiguration.isMorePromptActive ^= 1;
                if ( !flagsConfiguration.isMorePromptActive && flagsConfiguration.useAnsi )
                {
-                  morePromptHelper(); /* KLUDGE */
+                  morePromptHelper();
                }
                break;
 
@@ -203,7 +209,7 @@ int telReceive( int inputByte )
                           inputByte == DO ? "DO" : inputByte == DONT ? "DONT"
                                                 : inputByte == WILL  ? "WILL"
                                                 : inputByte == WONT  ? "WONT"
-                                                                     : "wtf?" );
+                                                                     : "UNKNOWN" );
 #endif
                state = TS_VOID;
                break;
@@ -264,18 +270,11 @@ int telReceive( int inputByte )
                case G_NAME: /* get name */
                   sendBlock();
                   ptrInputString = getName( aryTelnetBuffer[1] );
-                  for ( outputIndex = 0; ptrInputString[outputIndex]; outputIndex++ )
-                  {
-                     netPutChar( ptrInputString[outputIndex] );
-                  }
+                  outputIndex = (int)strlen( ptrInputString );
+                  sendTrackedBuffer( ptrInputString, (size_t)outputIndex );
                   if ( *ptrInputString != CTRL_D )
                   {
-                     netPutChar( '\n' );
-                     byte += outputIndex + 1;
-                  }
-                  else
-                  {
-                     byte++;
+                     sendTrackedNewline();
                   }
                   break;
 
@@ -285,12 +284,9 @@ int telReceive( int inputByte )
 #endif
                   sendBlock();
                   getString( aryTelnetBuffer[1], (char *)aryTelnetBuffer, -1 );
-                  for ( outputIndex = 0; aryTelnetBuffer[outputIndex]; outputIndex++ )
-                  {
-                     netPutChar( aryTelnetBuffer[outputIndex] );
-                  }
-                  netPutChar( '\n' );
-                  byte += outputIndex + 1;
+                  outputIndex = (int)strlen( (char *)aryTelnetBuffer );
+                  sendTrackedBuffer( (char *)aryTelnetBuffer, (size_t)outputIndex );
+                  sendTrackedNewline();
                   break;
 
                case CONFIG: /* do configuration */
@@ -299,8 +295,7 @@ int telReceive( int inputByte )
 #endif
                   sendBlock();
                   configBbsRc();
-                  netPutChar( '\n' );
-                  byte++;
+                  sendTrackedNewline();
                   break;
             }
          }
@@ -312,10 +307,9 @@ int telReceive( int inputByte )
          stdPrintf( "0x%X}", inputByte );
 #endif
          /*
-    * This patch sends IAC WONT in response to a telnet negotiation;
-    * this provides compatibility with a standard telnet daemon, e.g.
-    * Heinous BBS.  Added by IO ERROR.
-    */
+          * Send IAC WONT in response to a telnet negotiation so unsupported
+          * options do not alter the expected client state.
+          */
          netPutChar( IAC );
          netPutChar( WONT );
          netPutChar( inputByte );
@@ -350,9 +344,9 @@ void sendNaws( void )
    if ( oldRows != getWindowSize() )
    {
       /* Old window max was 70 */
-      if ( rows > 110 || rows < 10 )
+      if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
       {
-         rows = 24;
+         rows = WINDOW_ROWS_DEFAULT;
       }
       else
       {
@@ -370,8 +364,7 @@ void sendNaws( void )
  * Initialize telnet negotations with the bbs -- we don't really do the
  * negotations, we just tell the bbs what it needs to hear, since we don't need
  * to negotiate because we know the correct state to put the terminal in. The
- * BBS (the queue daemon actually) is kludged on its end as well by the IAC
- * CLIENT command.
+ * BBS queue daemon also expects the IAC CLIENT command.
  */
 void telInit( void )
 {

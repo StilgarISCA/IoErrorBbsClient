@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This is just a hacked-up version of the editor from the BBS...ugly, isn't
  * it?  You don't need to mess with this unless you have a lot of time to waste
  * on a lost cause.  Use a real editor, that is what '.edit' is for!
@@ -63,7 +69,7 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
    lastSpacePosition = 0;
    cancelspace = 0;
 
-   for ( ;; )
+   while ( true )
    {
       if ( ftell( ptrMessageFile ) > 48700 )
       {
@@ -95,12 +101,12 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
             inputChar = 1; /* Just a random invalid character */
          }
 
-         if ( inputChar != CTRL_D && inputChar != TAB && inputChar != '\b' && inputChar != '\n' && inputChar != CTRL_X && inputChar != CTRL_W && inputChar != CTRL_R && !isprint( inputChar ) )
+         if ( inputChar != CTRL_D && inputChar != TAB &&
+              inputChar != '\b' && inputChar != '\n' &&
+              inputChar != CTRL_X && inputChar != CTRL_W &&
+              inputChar != CTRL_R && !isprint( inputChar ) )
          {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
+            handleInvalidInput( &invalid );
             continue;
          }
          invalid = 0;
@@ -282,7 +288,8 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
          lastSpacePosition = 0;
          lineLength = 0;
       }
-      if ( ( previousChar != '\n' || inputChar != '\n' || upload ) && inputChar != CTRL_D && previousChar != -1 )
+      if ( ( previousChar != '\n' || inputChar != '\n' || upload ) &&
+           inputChar != CTRL_D && previousChar != -1 )
       {
          previousChar = inputChar;
          if ( inputChar == '\n' )
@@ -337,16 +344,16 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
    int lines;
    char aryCurrentLine[80];
 
-   for ( itemIndex = 0;; )
+   itemIndex = 0;
+   while ( true )
    {
       if ( *previousChar != -1 )
       {
          if ( itemIndex != 1 )
          {
             sendBlock();
-            netPutChar( CTRL_D );
-            netPutChar( 'c' );
-            byte += 2;
+            sendTrackedChar( CTRL_D );
+            sendTrackedChar( 'c' );
             flagsConfiguration.shouldCheckExpress = 1;
             (void)inKey();
             if ( flagsConfiguration.useAnsi )
@@ -365,10 +372,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          {
             while ( !findChar( " \naAcCeEpPsSQtTx?/", inputChar = inKey() ) )
             {
-               if ( invalid++ )
-               {
-                  flushInput( invalid );
-               }
+               handleInvalidInput( &invalid );
             }
             invalid = 0;
          }
@@ -385,7 +389,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             {
                continue;
             }
-            flushInput( (unsigned)itemIndex ); /* FIXME: figure out what the hell this code is doing! */
+            /* Flush repeated keystrokes before returning to edit mode. */
+            flushInput( (unsigned)itemIndex );
             printf( "\r\n" );
             continue;
 
@@ -395,9 +400,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             if ( yesNo() )
             {
                sendBlock();
-               netPutChar( CTRL_D );
-               netPutChar( 'a' );
-               byte += 2;
+               sendTrackedChar( CTRL_D );
+               sendTrackedChar( 'a' );
                flagsConfiguration.isPosting = 0;
                return ( -1 );
             }
@@ -408,7 +412,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             printf( "Continue...\r\n" );
             if ( flagsConfiguration.useAnsi )
             {
-               continuedPostHelper(); /* KLUDGE */
+               continuedPostHelper();
             }
             break;
 
@@ -470,12 +474,10 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             sendBlock();
             while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
-               netPutChar( inputChar );
-               byte++;
+               sendTrackedChar( inputChar );
             }
-            netPutChar( CTRL_D );
-            netPutChar( 's' );
-            byte += 2;
+            sendTrackedChar( CTRL_D );
+            sendTrackedChar( 's' );
             flagsConfiguration.isLastSave = 1;
             flagsConfiguration.isPosting = 0;
             return ( -1 );
@@ -487,9 +489,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          case '?':
          case '/':
             sendBlock();
-            netPutChar( CTRL_D );
-            netPutChar( inputChar );
-            byte += 2;
+            sendTrackedChar( CTRL_D );
+            sendTrackedChar( inputChar );
             looper();
             netPutChar( 'c' );
             continue;
@@ -499,7 +500,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             printf( "Edit\r\n" );
             if ( !*aryEditor )
             {
-               printf( "[Error:  no aryEditor available]\r\n" );
+               printf( "[Error:  No editor available]\r\n" );
             }
             else
             {
@@ -596,7 +597,9 @@ int checkFile( FILE *ptrMessageFile )
    {
       if ( ( itemIndex = getc( ptrMessageFile ) ) != '\r' && itemIndex != '\n' )
       {
-         if ( ( itemIndex >= 0 && itemIndex < 32 && itemIndex != TAB ) || itemIndex >= DEL )
+         if ( ( itemIndex >= 0 && itemIndex < 32 &&
+                itemIndex != TAB ) ||
+              itemIndex >= DEL )
          {
             printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n", line );
             return ( 1 );
@@ -609,7 +612,7 @@ int checkFile( FILE *ptrMessageFile )
             }
             else
             {
-               count = count + 1;
+               count++;
             }
             if ( count > 79 )
             {

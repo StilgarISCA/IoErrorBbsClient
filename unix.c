@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * Everything Unix/system specific goes in this file.  If you are looking to
  * port to some system the code currently doesn't work on, most if not all of
  * your problems should restricted to this file.
@@ -60,7 +66,7 @@ int waitNextEvent( void )
    fd_set fdr;
    int result;
 
-   for ( ;; )
+   while ( true )
    {
       FD_ZERO( &fdr );
       if ( !childPid && !flagsConfiguration.shouldCheckExpress )
@@ -114,7 +120,7 @@ void findHome( void )
       size_t userNameLength = strlen( aryUser );
       if ( userNameLength < sizeof( aryUser ) - 1 )
       {
-         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login aryShell)" );
+         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login shell)" );
       }
    }
 }
@@ -163,8 +169,7 @@ FILE *findBbsRc( void )
    return ( openBbsRc() );
 }
 
-/* Added by Dave (Isoroku).  Finds .bbsfriends for friends list */
-/* Edited by IO ERROR.  We read-only the .bbsfriends now, if it exists. */
+/* Locate .bbsfriends and keep permissions restricted when the file exists. */
 FILE *findBbsFriends( void )
 {
    if ( isLoginShell )
@@ -644,18 +649,18 @@ int getWindowSize( void )
 
    if ( ioctl( 0, TIOCGWINSZ, (char *)&ws ) < 0 )
    {
-      return ( rows = 24 );
+      return ( rows = WINDOW_ROWS_DEFAULT );
    }
-   else if ( ( rows = ws.ws_row ) < 5 || rows > 120 )
+   else if ( ( rows = ws.ws_row ) < WINDOW_ROWS_MIN || rows > WINDOW_ROWS_MAX )
    {
-      return ( rows = 24 );
+      return ( rows = WINDOW_ROWS_DEFAULT );
    }
    else
    {
       return ( rows );
    }
 #else
-   return ( rows = 24 );
+   return ( rows = WINDOW_ROWS_DEFAULT );
 #endif
 }
 
@@ -684,15 +689,18 @@ void flushInput( unsigned int invalid )
 #ifdef FIONREAD
    while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
    {
+      (void)ptyget();
+   }
 #else
 #ifdef TCFLSH
    pendingInputBytes = 0;
    ioctl( 0, TCFLSH, &pendingInputBytes );
 #endif
    while ( INPUT_LEFT( stdin ) )
-#endif
+   {
       (void)ptyget();
    }
+#endif
 }
 
 /*
@@ -761,7 +769,7 @@ void techInfo( void )
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
-              "ISCA BBS Client " VERSION " (Unix)\r\n",
+              "ISCA BBS Client " VERSION " (macOS/Unix)\r\n",
               "Compiled on: " HOSTTYPE "\r\n",
               "With: "
 #ifdef __STDC__
@@ -777,7 +785,7 @@ void techInfo( void )
               "POSIX "
 #endif
 #ifdef ENABLE_SAVE_PASSWORD
-              "arySavedBytes-password "
+              "save-password "
 #endif
 #ifdef USE_POSIX_SIGSETJMP
               "sigsetjmp "
@@ -803,11 +811,11 @@ void initialize( const char *protocol )
    setvbuf( stdout, NULL, _IOFBF, 4096 );
 #endif
 
-   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION,
-              "Unix" );
-   stdPrintf( "\nCopyright (C) 1995-2003 Michael Hampton.\n" );
-   stdPrintf( "OSI Certified Open Source Software.  GNU General Public License version 2.\n" );
-   stdPrintf( "For information about this client visit http://www.ioerror.us/client/\n\n" );
+   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION, "macOS/Unix" );
+   stdPrintf( "Copyright (C) 2024-2026 Stilgar\n" );
+   stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
+   stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
+   stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
 #if DEBUG
    stdPrintf( "DEBUGGING VERSION - DEBUGGING CODE IS ENABLED!  DO NOT USE THIS CLIENT!\r\n\n" );
 #endif
@@ -848,7 +856,7 @@ void initialize( const char *protocol )
       }
       else
       {
-         snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "vi" );
+         snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
       }
    }
 }

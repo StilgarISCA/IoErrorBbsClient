@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  *  This is the home of function prototypes for all the global functions.
  */
 
@@ -42,6 +48,7 @@ extern void
    generalColorConfig P( (void)),
    getFiveLines P( (int)),
    getString P( (int, char *, int)),
+   handleInvalidInput P( (unsigned int *)),
    information P( (void)),
    initialize P( (const char *)),
    inputColorConfig P( (void)),
@@ -73,6 +80,9 @@ extern void
    sendAnX P( (void)),
    sendBlock P( (void)),
    sendNaws P( (void)),
+   sendTrackedBuffer P( (const char *, size_t)),
+   sendTrackedChar P( (int)),
+   sendTrackedNewline P( (void)),
    setTerm P( (void)),
    sError P( (const char *, const char *)),
    setup P( (int)),
@@ -90,6 +100,7 @@ extern void
    telInit P( (void)),
    tempFileError P( (void)),
    titleBar P( (void)),
+   trimTrailingWhitespace P( (char *)),
    truncateBbsRc P( (long)),
    warranty P( (void)),
    writeBbsRc P( (void));
@@ -122,6 +133,9 @@ extern int
    popQueue P( (char *, queue *)),
    prompt P( (FILE *, int *, int)),
    pushQueue P( (const char *, queue *)),
+   readValidatedKey P( (const char *)),
+   readNormalizedLine P( (FILE *, char *, size_t, int *, int *, const char *)),
+   readValidatedMenuKey P( (const char *)),
    safeDeleteQueue P( (queue *)),
    slistAddItem P( (slist *, void *, int)),
    slistFind P( ( slist *, void *, int ( *findfn )( const void *, const void * ) ) ),
@@ -146,6 +160,7 @@ extern char
    colorPicker P( (void)),
    expressColorMenu P( (void)),
    *extractName P( (const char *)),
+   *extractNameNoHistory P( (const char *)),
    generalColorMenu P( (void)),
    *getName P( (int)),
    *findChar P( (const char *, int)),

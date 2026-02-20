@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This handles getting of short strings or groups of strings of information
  * and sending them off to the BBS.  Even though you might think doing this for
  * an 8 character password is a waste, it does cut down network traffic (and
@@ -58,7 +64,9 @@ void getFiveLines( int which )
    {
       stdPrintf( ">" );
       getString( 78, arySendString[lineIndex], lineIndex );
-      if ( ( which && !strcmp( arySendString[lineIndex], "ABORT" ) ) || ( !( which & 16 ) && !lineIndex && !strcmp( *arySendString, "PING" ) ) )
+      if ( ( which && !strcmp( arySendString[lineIndex], "ABORT" ) ) ||
+           ( !( which & 16 ) && !lineIndex &&
+             !strcmp( *arySendString, "PING" ) ) )
       {
          lineIndex++;
          break;
@@ -86,12 +94,9 @@ void getFiveLines( int which )
    }
    for ( sendLineIndex = 0; sendLineIndex < lineIndex; sendLineIndex++ )
    {
-      for ( sendCharIndex = 0; arySendString[sendLineIndex][sendCharIndex]; sendCharIndex++ )
-      {
-         netPutChar( arySendString[sendLineIndex][sendCharIndex] );
-      }
-      netPutChar( '\n' );
-      byte += sendCharIndex + 1;
+      sendCharIndex = (int)strlen( arySendString[sendLineIndex] );
+      sendTrackedBuffer( arySendString[sendLineIndex], (size_t)sendCharIndex );
+      sendTrackedNewline();
    }
    if ( flagsConfiguration.useAnsi )
    {
@@ -223,7 +228,8 @@ char *getName( int quitPriv )
    {
       stdPrintf( "\033[3%cm", color.input1 );
    }
-   if ( quitPriv == 1 && *aryAutoName && strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
+   if ( quitPriv == 1 && *aryAutoName &&
+        strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
    {
       isAutoLoggedIn = 1;
       snprintf( junk, sizeof( junk ), "%s", aryAutoName );
@@ -251,12 +257,12 @@ char *getName( int quitPriv )
 #if DEBUG
    stdPrintf( "getName 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-   for ( ;; )
+   while ( true )
    {
       shouldUppercase = 1;
       isFirstChar = 1;
       ptrCursor = aryNameBuffer;
-      for ( ;; )
+      while ( true )
       {
          inputChar = inKey();
          if ( inputChar == '\n' )
@@ -343,16 +349,16 @@ char *getName( int quitPriv )
          {
             continue;
          }
-         if ( inputChar == '\b' || inputChar == CTRL_X || inputChar == CTRL_W || inputChar == CTRL_R || inputChar == ' ' || isalpha( inputChar ) || ( isdigit( inputChar ) && quitPriv == 3 ) )
+         if ( inputChar == '\b' || inputChar == CTRL_X ||
+              inputChar == CTRL_W || inputChar == CTRL_R ||
+              inputChar == ' ' || isalpha( inputChar ) ||
+              ( isdigit( inputChar ) && quitPriv == 3 ) )
          {
             invalid = 0;
          }
          else
          {
-            if ( invalid++ )
-            {
-               flushInput( invalid );
-            }
+            handleInvalidInput( &invalid );
             continue;
          }
          if ( inputChar == CTRL_R )
@@ -363,7 +369,9 @@ char *getName( int quitPriv )
          }
          do
          {
-            if ( ( inputChar == '\b' || inputChar == CTRL_X || inputChar == CTRL_W ) && ptrCursor > aryNameBuffer )
+            if ( ( inputChar == '\b' || inputChar == CTRL_X ||
+                   inputChar == CTRL_W ) &&
+                 ptrCursor > aryNameBuffer )
             {
                printf( "\b \b" );
                --ptrCursor;
@@ -382,7 +390,11 @@ char *getName( int quitPriv )
                   isFirstChar = 1;
                }
             }
-            else if ( ptrCursor < &aryNameBuffer[!quitPriv || quitPriv == 3 ? MAX_USER_NAME_INPUT_LENGTH : MAX_ALIAS_INPUT_LENGTH] && ( isalpha( inputChar ) || inputChar == ' ' || ( isdigit( inputChar ) && quitPriv == 3 ) ) )
+            else if ( ptrCursor <
+                         &aryNameBuffer[!quitPriv || quitPriv == 3 ? MAX_USER_NAME_INPUT_LENGTH : MAX_ALIAS_INPUT_LENGTH] &&
+                      ( isalpha( inputChar ) || inputChar == ' ' ||
+                        ( isdigit( inputChar ) &&
+                          quitPriv == 3 ) ) )
             {
                isFirstChar = 0;
                if ( shouldUppercase && isupper( inputChar ) )
@@ -521,7 +533,7 @@ void getString( int length, char *result, int line )
       }
    }
 #endif
-   for ( ;; )
+   while ( true )
    {
       inputChar = inKey();
       if ( inputChar == ' ' && length == 29 && ptrCursor == result )
@@ -532,12 +544,11 @@ void getString( int length, char *result, int line )
       {
          break;
       }
-      if ( inputChar < ' ' && inputChar != '\b' && inputChar != CTRL_X && inputChar != CTRL_W && inputChar != CTRL_R )
+      if ( inputChar < ' ' && inputChar != '\b' &&
+           inputChar != CTRL_X && inputChar != CTRL_W &&
+           inputChar != CTRL_R )
       {
-         if ( invalid++ )
-         {
-            flushInput( invalid );
-         }
+         handleInvalidInput( &invalid );
          continue;
       }
       else

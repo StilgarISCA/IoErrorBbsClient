@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2024-2026 Stilgar
+ * Copyright (C) 1995-2003 Michael Hampton
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/*
  * This is where I've put all the #include files, to keep them separate in a
  * single location.  Pure C stuff goes here, the system-specific stuff is kept
  * over in unix.h.
@@ -55,7 +61,10 @@
 #include <openssl/ssl.h>
 #endif
 
-/* Workaround for buggy glibc 2.1+ */
+/*
+ * Use sigsetjmp/siglongjmp behavior when available so signal masks are
+ * preserved across jump boundaries.
+ */
 #define USE_POSIX_SIGSETJMP 1
 
 #include <errno.h>
@@ -83,6 +92,10 @@ typedef struct
 #define ESC 27
 #define DEL 127
 
+#define ASCII_PRINTABLE_MIN 32
+#define ASCII_PRINTABLE_MAX 127
+#define ALLOWED_INPUT_CONTROL_CHARS "\3\4\5\b\n\r\27\30\32"
+
 #define BBS_HOSTNAME "bbs.iscabbs.com"
 #define BBS_IP_ADDRESS "64.198.88.46"
 #define BBS_PORT_NUMBER 23
@@ -103,6 +116,11 @@ typedef struct
 #define CX_INFO 3 /* not yet used */
 
 #define MAX_USER_NAME_HISTORY_COUNT 20
+#define WINDOW_ROWS_DEFAULT 24
+#define WINDOW_ROWS_MIN 5
+#define WINDOW_ROWS_MAX 120
+#define NAWS_ROWS_MIN 10
+#define NAWS_ROWS_MAX 110
 typedef struct
 {
    unsigned int isPosting : 1;                    /* true if aryUser is currently posting */
@@ -134,7 +152,7 @@ typedef struct
    time_t time;   /* Time online */
 } friend;         /* User list entry */
 
-/* The ordering of this struct is important!  Do not change it! IO ERROR */
+/* The ordering of this struct is important. Do not change it. */
 typedef struct
 {
    char text;           /* Plain text color */
