@@ -20,11 +20,14 @@ bbs_SOURCES = \
 	unix.c
 
 if HAVE_CMOCKA
-check_PROGRAMS = test_queue
+check_PROGRAMS = test_queue test_slist
 TESTS = $(check_PROGRAMS)
 test_queue_SOURCES = test/test_queue.c queue.c
 test_queue_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_queue_LDADD = $(CMOCKA_LIBS)
+test_slist_SOURCES = test/test_slist.c slist.c
+test_slist_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
+test_slist_LDADD = $(CMOCKA_LIBS)
 else
 TESTS =
 endif
