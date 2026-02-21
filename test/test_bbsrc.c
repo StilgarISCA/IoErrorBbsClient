@@ -199,7 +199,11 @@ static void openBbsRc_WhenPathMissing_CreatesWritableConfigurationFile( void **s
 
    resetTracking();
    isBbsRcReadOnly = 0;
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for openBbsRc missing-path test" );
+      return;
+   }
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
 
    // Act
@@ -237,8 +241,17 @@ static void openBbsRc_WhenPathIsReadOnly_SetsReadOnlyAndWarns( void **state )
 
    resetTracking();
    isBbsRcReadOnly = 0;
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
-   writeFileContentsOrFail( aryPath, "version 2310\n", "openBbsRc read-only test" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for openBbsRc read-only test" );
+      return;
+   }
+   if ( !tryWriteFileContents( aryPath, "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration file for openBbsRc read-only test" );
+      return;
+   }
    chmod( aryPath, S_IRUSR | S_IRGRP | S_IROTH );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
 
@@ -277,8 +290,17 @@ static void readBbsRc_WhenConfigIsEmpty_AppliesDefaults( void **state )
 
    cleanupReadState();
    resetTracking();
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
-   writeFileContentsOrFail( aryPath, "", "readBbsRc empty-config test" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for readBbsRc empty-config test" );
+      return;
+   }
+   if ( !tryWriteFileContents( aryPath, "" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write empty configuration for readBbsRc empty-config test" );
+      return;
+   }
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;
@@ -327,25 +349,33 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
 
    cleanupReadState();
    resetTracking();
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
-   writeFileContentsOrFail(
-      aryPath,
-      "site bbs.example.net 2323\n"
-      "commandkey ^[\n"
-      "quit ^D\n"
-      "susp ^Z\n"
-      "capture c\n"
-      "awaykey a\n"
-      "aryShell !\n"
-      "aryBrowser 0 lynx\n"
-      "aryEditor nano\n"
-      "a1 Back in five.\n"
-      "enemy Meatball\n"
-      "enemy Meatball\n"
-      "friend Dr Strange           Time traveler\n"
-      "version 2310\n"
-      "xland\n",
-      "readBbsRc parse-config test" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for readBbsRc parse-config test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "site bbs.example.net 2323\n"
+           "commandkey ^[\n"
+           "quit ^D\n"
+           "susp ^Z\n"
+           "capture c\n"
+           "awaykey a\n"
+           "aryShell !\n"
+           "aryBrowser 0 lynx\n"
+           "aryEditor nano\n"
+           "a1 Back in five.\n"
+           "enemy Meatball\n"
+           "enemy Meatball\n"
+           "friend Dr Strange           Time traveler\n"
+           "version 2310\n"
+           "xland\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for readBbsRc parse-config test" );
+      return;
+   }
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "vi" );
    isLoginShell = 0;
@@ -411,14 +441,22 @@ static void readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError( void
 
    cleanupReadState();
    resetTracking();
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
-   writeFileContentsOrFail(
-      aryPath,
-      "site bbs.example.net 2323\n"
-      "mysterysetting 42\n"
-      "quit ^D\n"
-      "version 2310\n",
-      "readBbsRc invalid-directive test" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for invalid-directive test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "site bbs.example.net 2323\n"
+           "mysterysetting 42\n"
+           "quit ^D\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for invalid-directive test" );
+      return;
+   }
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;
@@ -450,12 +488,20 @@ static void readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning( void **state
 
    cleanupReadState();
    resetTracking();
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
-   writeFileContentsOrFail(
-      aryPath,
-      "color 12345\n"
-      "version 2310\n",
-      "readBbsRc invalid-color test" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for invalid-color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color 12345\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for invalid-color test" );
+      return;
+   }
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;
@@ -484,7 +530,11 @@ static void readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults( void **s
 
    cleanupReadState();
    resetTracking();
-   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for missing-config test" );
+      return;
+   }
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;

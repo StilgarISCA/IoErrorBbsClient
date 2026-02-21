@@ -135,7 +135,12 @@ static void checkFile_WhenLineExceeds79Chars_ReturnsOne( void **state )
       fail_msg( "tmpfile failed in line-length test setup" );
       return;
    }
-   writeRepeatedCharOrFail( ptrMessageFile, 'A', 80, "line-length test" );
+   if ( !tryWriteRepeatedChar( ptrMessageFile, 'A', 80 ) )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Arrange failed: unable to write long line content for line-length test" );
+      return;
+   }
    fputc( '\n', ptrMessageFile );
    fflush( ptrMessageFile );
 
@@ -197,7 +202,12 @@ static void checkFile_WhenTabExpansionPushesPast79_ReturnsOne( void **state )
       fail_msg( "tmpfile failed in tab-expansion test setup" );
       return;
    }
-   writeRepeatedCharOrFail( ptrMessageFile, 'A', 73, "tab-expansion test" );
+   if ( !tryWriteRepeatedChar( ptrMessageFile, 'A', 73 ) )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Arrange failed: unable to write message content for tab-expansion test" );
+      return;
+   }
    fputc( '\t', ptrMessageFile );
    fputc( '\n', ptrMessageFile );
    fflush( ptrMessageFile );
@@ -231,7 +241,12 @@ static void checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne( void **state 
    }
    for ( lineIndex = 0; lineIndex < 620; ++lineIndex )
    {
-      writeRepeatedCharOrFail( ptrMessageFile, 'A', 79, "message-size test" );
+      if ( !tryWriteRepeatedChar( ptrMessageFile, 'A', 79 ) )
+      {
+         fclose( ptrMessageFile );
+         fail_msg( "Arrange failed: unable to write message content for size-limit test" );
+         return;
+      }
       fputc( '\n', ptrMessageFile );
    }
    fflush( ptrMessageFile );

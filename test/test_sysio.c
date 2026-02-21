@@ -90,7 +90,12 @@ static void capPuts_WhenCaptureEnabled_WritesStrippedTextToTempFile( void **stat
 
    // Assert
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBufferOrFail( tempFile, aryCaptured, sizeof( aryCaptured ), "capPuts capture test" );
+   if ( !tryReadFileIntoBuffer( tempFile, aryCaptured, sizeof( aryCaptured ) ) )
+   {
+      resetState();
+      fail_msg( "Assert failed: unable to read captured output in capPuts test" );
+      return;
+   }
    if ( strcmp( aryCaptured, "Alert message" ) != 0 )
    {
       fail_msg( "capPuts should capture stripped text; got '%s'", aryCaptured );
@@ -127,7 +132,12 @@ static void capPutChar_WhenAnsiSequenceProvided_SkipsAnsiAndTracksLastColor( voi
 
    // Assert
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBufferOrFail( tempFile, aryCaptured, sizeof( aryCaptured ), "capPutChar ANSI test" );
+   if ( !tryReadFileIntoBuffer( tempFile, aryCaptured, sizeof( aryCaptured ) ) )
+   {
+      resetState();
+      fail_msg( "Assert failed: unable to read captured output in capPutChar ANSI test" );
+      return;
+   }
    if ( strcmp( aryCaptured, "X" ) != 0 )
    {
       fail_msg( "capPutChar should not capture ANSI bytes; expected only payload 'X', got '%s'", aryCaptured );
@@ -161,7 +171,12 @@ static void capPutChar_WhenCarriageReturnReceived_DoesNotCaptureIt( void **state
 
    // Assert
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBufferOrFail( tempFile, aryCaptured, sizeof( aryCaptured ), "capPutChar carriage-return test" );
+   if ( !tryReadFileIntoBuffer( tempFile, aryCaptured, sizeof( aryCaptured ) ) )
+   {
+      resetState();
+      fail_msg( "Assert failed: unable to read captured output in capPutChar carriage-return test" );
+      return;
+   }
    if ( strcmp( aryCaptured, "AB" ) != 0 )
    {
       fail_msg( "capPutChar should skip carriage return while capturing; got '%s'", aryCaptured );
@@ -189,7 +204,12 @@ static void netPuts_WhenOutputFileSet_WritesAllCharacters( void **state )
    // Assert
    fflush( netOutputFile );
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBufferOrFail( netOutputFile, aryCaptured, sizeof( aryCaptured ), "netPuts output test" );
+   if ( !tryReadFileIntoBuffer( netOutputFile, aryCaptured, sizeof( aryCaptured ) ) )
+   {
+      resetState();
+      fail_msg( "Assert failed: unable to read network output in netPuts test" );
+      return;
+   }
    if ( strcmp( aryCaptured, "Watson" ) != 0 )
    {
       fail_msg( "netPuts should write full string to netOutputFile; got '%s'", aryCaptured );
@@ -217,7 +237,12 @@ static void netPrintf_WhenFormattingText_WritesFormattedOutput( void **state )
    // Assert
    fflush( netOutputFile );
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBufferOrFail( netOutputFile, aryCaptured, sizeof( aryCaptured ), "netPrintf output test" );
+   if ( !tryReadFileIntoBuffer( netOutputFile, aryCaptured, sizeof( aryCaptured ) ) )
+   {
+      resetState();
+      fail_msg( "Assert failed: unable to read network output in netPrintf test" );
+      return;
+   }
    if ( strcmp( aryCaptured, "msg#42" ) != 0 )
    {
       fail_msg( "netPrintf should write formatted string; got '%s'", aryCaptured );

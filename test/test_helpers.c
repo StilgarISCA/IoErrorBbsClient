@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -73,99 +69,114 @@ size_t copyStringPointerArray(
    return copiedCount;
 }
 
-void createTempPathOrFail( char *aryPath, size_t pathSize, const char *ptrTemplate )
+bool tryCreateTempPath( char *aryPath, size_t pathSize, const char *ptrTemplate )
 {
    char aryTemplate[128];
    int fileDescriptor;
+
+   if ( aryPath == NULL || pathSize == 0 || ptrTemplate == NULL )
+   {
+      return false;
+   }
 
    snprintf( aryTemplate, sizeof( aryTemplate ), "%s", ptrTemplate );
    fileDescriptor = mkstemp( aryTemplate );
    if ( fileDescriptor < 0 )
    {
-      fail_msg( "mkstemp failed while creating temporary path template '%s'", ptrTemplate );
-      return;
+      return false;
    }
    close( fileDescriptor );
 
    if ( unlink( aryTemplate ) != 0 )
    {
-      fail_msg( "unlink failed for temporary path '%s'", aryTemplate );
-      return;
+      return false;
    }
 
    snprintf( aryPath, pathSize, "%s", aryTemplate );
+   return true;
 }
 
-char *duplicateStringOrFail( const char *ptrSource, const char *ptrContext )
+bool tryDuplicateString( const char *ptrSource, char **ptrOutCopy )
 {
    char *ptrCopy;
    size_t sourceLength;
+
+   if ( ptrSource == NULL || ptrOutCopy == NULL )
+   {
+      return false;
+   }
 
    sourceLength = strlen( ptrSource );
    ptrCopy = calloc( sourceLength + 1, sizeof( char ) );
    if ( ptrCopy == NULL )
    {
-      fail_msg( "calloc failed while duplicating '%s' in %s", ptrSource, ptrContext );
-      return NULL;
+      return false;
    }
 
    memcpy( ptrCopy, ptrSource, sourceLength );
-   return ptrCopy;
+   *ptrOutCopy = ptrCopy;
+   return true;
 }
 
-void readFileIntoBufferOrFail( FILE *ptrFile, char *aryBuffer, size_t bufferSize, const char *ptrContext )
+bool tryReadFileIntoBuffer( FILE *ptrFile, char *aryBuffer, size_t bufferSize )
 {
    size_t bytesRead;
 
-   if ( ptrFile == NULL )
+   if ( ptrFile == NULL || aryBuffer == NULL || bufferSize == 0 )
    {
-      fail_msg( "readFileIntoBufferOrFail called with NULL file in %s", ptrContext );
-      return;
-   }
-   if ( bufferSize == 0 )
-   {
-      fail_msg( "readFileIntoBufferOrFail called with empty destination buffer in %s", ptrContext );
-      return;
+      return false;
    }
 
    rewind( ptrFile );
    bytesRead = fread( aryBuffer, 1, bufferSize - 1, ptrFile );
+   if ( ferror( ptrFile ) != 0 )
+   {
+      return false;
+   }
    aryBuffer[bytesRead] = '\0';
+   return true;
 }
 
-void writeFileContentsOrFail( const char *ptrPath, const char *ptrContents, const char *ptrContext )
+bool tryWriteFileContents( const char *ptrPath, const char *ptrContents )
 {
    FILE *ptrFile;
+
+   if ( ptrPath == NULL || ptrContents == NULL )
+   {
+      return false;
+   }
 
    ptrFile = fopen( ptrPath, "w" );
    if ( ptrFile == NULL )
    {
-      fail_msg( "fopen failed while writing '%s' in %s", ptrPath, ptrContext );
-      return;
+      return false;
    }
 
    if ( fputs( ptrContents, ptrFile ) < 0 )
    {
       fclose( ptrFile );
-      fail_msg( "fputs failed while writing '%s' in %s", ptrPath, ptrContext );
-      return;
+      return false;
    }
 
    fclose( ptrFile );
+   return true;
 }
 
-void writeRepeatedCharOrFail( FILE *ptrFile, char value, int count, const char *ptrContext )
+bool tryWriteRepeatedChar( FILE *ptrFile, char value, int count )
 {
    int charIndex;
 
    if ( ptrFile == NULL )
    {
-      fail_msg( "writeRepeatedCharOrFail called with NULL file in %s", ptrContext );
-      return;
+      return false;
    }
 
    for ( charIndex = 0; charIndex < count; ++charIndex )
    {
-      fputc( value, ptrFile );
+      if ( fputc( value, ptrFile ) == EOF )
+      {
+         return false;
+      }
    }
+   return true;
 }

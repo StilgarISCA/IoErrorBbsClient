@@ -43,6 +43,9 @@ static void resetTracking( void )
 
 static void setupWhoList( const char *ptrFirst, const char *ptrSecond )
 {
+   char *ptrFirstCopy;
+   char *ptrSecondCopy;
+
    whoList = slistCreate( 0, compareStringPointer );
    if ( whoList == NULL )
    {
@@ -50,9 +53,25 @@ static void setupWhoList( const char *ptrFirst, const char *ptrSecond )
       return;
    }
 
-   if ( !slistAddItem( whoList, duplicateStringOrFail( ptrFirst, "getline whoList setup" ), 1 ) ||
-        !slistAddItem( whoList, duplicateStringOrFail( ptrSecond, "getline whoList setup" ), 1 ) )
+   ptrFirstCopy = NULL;
+   ptrSecondCopy = NULL;
+   if ( !tryDuplicateString( ptrFirst, &ptrFirstCopy ) || !tryDuplicateString( ptrSecond, &ptrSecondCopy ) )
    {
+      free( ptrFirstCopy );
+      free( ptrSecondCopy );
+      fail_msg( "Arrange failed: unable to duplicate whoList names for getline tests" );
+      return;
+   }
+   if ( !slistAddItem( whoList, ptrFirstCopy, 1 ) )
+   {
+      free( ptrFirstCopy );
+      free( ptrSecondCopy );
+      fail_msg( "slistAddItem failed while preparing whoList for getline tests" );
+      return;
+   }
+   if ( !slistAddItem( whoList, ptrSecondCopy, 1 ) )
+   {
+      free( ptrSecondCopy );
       fail_msg( "slistAddItem failed while preparing whoList for getline tests" );
       return;
    }

@@ -58,9 +58,20 @@ static void slistAddItem_WhenDeferSortIsOff_KeepsListSorted( void **state )
       fail_msg( "slistCreate failed in Arrange for sorted add test" );
    }
 
-   ptrBeta = duplicateStringOrFail( "beta", "slistAddItem sorted add test" );
-   ptrAlpha = duplicateStringOrFail( "alpha", "slistAddItem sorted add test" );
-   ptrCharlie = duplicateStringOrFail( "charlie", "slistAddItem sorted add test" );
+   ptrBeta = NULL;
+   ptrAlpha = NULL;
+   ptrCharlie = NULL;
+   if ( !tryDuplicateString( "beta", &ptrBeta ) ||
+        !tryDuplicateString( "alpha", &ptrAlpha ) ||
+        !tryDuplicateString( "charlie", &ptrCharlie ) )
+   {
+      free( ptrBeta );
+      free( ptrAlpha );
+      free( ptrCharlie );
+      slistDestroy( ptrList );
+      fail_msg( "Arrange failed: unable to duplicate strings for sorted add test" );
+      return;
+   }
 
    // Act
    addBetaResult = slistAddItem( ptrList, ptrBeta, 0 );
@@ -93,6 +104,9 @@ static void slistFind_WhenItemExists_ReturnsMatchingIndex( void **state )
    // Arrange
    slist *ptrList;
    int foundIndex;
+   char *ptrBeta;
+   char *ptrAlpha;
+   char *ptrCharlie;
 
    (void)state;
 
@@ -101,9 +115,23 @@ static void slistFind_WhenItemExists_ReturnsMatchingIndex( void **state )
    {
       fail_msg( "slistCreate failed in Arrange for slistFind existing-item test" );
    }
-   slistAddItem( ptrList, duplicateStringOrFail( "beta", "slistFind existing-item test" ), 0 );
-   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistFind existing-item test" ), 0 );
-   slistAddItem( ptrList, duplicateStringOrFail( "charlie", "slistFind existing-item test" ), 0 );
+   ptrBeta = NULL;
+   ptrAlpha = NULL;
+   ptrCharlie = NULL;
+   if ( !tryDuplicateString( "beta", &ptrBeta ) ||
+        !tryDuplicateString( "alpha", &ptrAlpha ) ||
+        !tryDuplicateString( "charlie", &ptrCharlie ) )
+   {
+      free( ptrBeta );
+      free( ptrAlpha );
+      free( ptrCharlie );
+      slistDestroy( ptrList );
+      fail_msg( "Arrange failed: unable to duplicate strings for slistFind existing-item test" );
+      return;
+   }
+   slistAddItem( ptrList, ptrBeta, 0 );
+   slistAddItem( ptrList, ptrAlpha, 0 );
+   slistAddItem( ptrList, ptrCharlie, 0 );
 
    // Act
    foundIndex = slistFind( ptrList, "beta", compareStringItem );
@@ -123,6 +151,8 @@ static void slistFind_WhenItemDoesNotExist_ReturnsMinusOne( void **state )
    // Arrange
    slist *ptrList;
    int foundIndex;
+   char *ptrAlpha;
+   char *ptrCharlie;
 
    (void)state;
 
@@ -131,8 +161,18 @@ static void slistFind_WhenItemDoesNotExist_ReturnsMinusOne( void **state )
    {
       fail_msg( "slistCreate failed in Arrange for slistFind missing-item test" );
    }
-   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistFind missing-item test" ), 0 );
-   slistAddItem( ptrList, duplicateStringOrFail( "charlie", "slistFind missing-item test" ), 0 );
+   ptrAlpha = NULL;
+   ptrCharlie = NULL;
+   if ( !tryDuplicateString( "alpha", &ptrAlpha ) || !tryDuplicateString( "charlie", &ptrCharlie ) )
+   {
+      free( ptrAlpha );
+      free( ptrCharlie );
+      slistDestroy( ptrList );
+      fail_msg( "Arrange failed: unable to duplicate strings for slistFind missing-item test" );
+      return;
+   }
+   slistAddItem( ptrList, ptrAlpha, 0 );
+   slistAddItem( ptrList, ptrCharlie, 0 );
 
    // Act
    foundIndex = slistFind( ptrList, "beta", compareStringItem );
@@ -152,6 +192,9 @@ static void slistRemoveItem_WhenMiddleItemRemoved_ShiftsRemainingItems( void **s
    // Arrange
    slist *ptrList;
    char *ptrRemovedItem;
+   char *ptrAlpha;
+   char *ptrBeta;
+   char *ptrCharlie;
    int removeResult;
 
    (void)state;
@@ -161,9 +204,23 @@ static void slistRemoveItem_WhenMiddleItemRemoved_ShiftsRemainingItems( void **s
    {
       fail_msg( "slistCreate failed in Arrange for slistRemoveItem test" );
    }
-   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistRemoveItem middle-item test" ), 1 );
-   slistAddItem( ptrList, duplicateStringOrFail( "beta", "slistRemoveItem middle-item test" ), 1 );
-   slistAddItem( ptrList, duplicateStringOrFail( "charlie", "slistRemoveItem middle-item test" ), 1 );
+   ptrAlpha = NULL;
+   ptrBeta = NULL;
+   ptrCharlie = NULL;
+   if ( !tryDuplicateString( "alpha", &ptrAlpha ) ||
+        !tryDuplicateString( "beta", &ptrBeta ) ||
+        !tryDuplicateString( "charlie", &ptrCharlie ) )
+   {
+      free( ptrAlpha );
+      free( ptrBeta );
+      free( ptrCharlie );
+      slistDestroy( ptrList );
+      fail_msg( "Arrange failed: unable to duplicate strings for slistRemoveItem test" );
+      return;
+   }
+   slistAddItem( ptrList, ptrAlpha, 1 );
+   slistAddItem( ptrList, ptrBeta, 1 );
+   slistAddItem( ptrList, ptrCharlie, 1 );
    slistSort( ptrList );
 
    ptrRemovedItem = ptrList->items[1];
@@ -194,6 +251,8 @@ static void slistDestroyItems_WhenCalled_ClearsItemPointers( void **state )
 {
    // Arrange
    slist *ptrList;
+   char *ptrAlpha;
+   char *ptrBeta;
 
    (void)state;
 
@@ -202,8 +261,18 @@ static void slistDestroyItems_WhenCalled_ClearsItemPointers( void **state )
    {
       fail_msg( "slistCreate failed in Arrange for slistDestroyItems test" );
    }
-   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistDestroyItems test" ), 1 );
-   slistAddItem( ptrList, duplicateStringOrFail( "beta", "slistDestroyItems test" ), 1 );
+   ptrAlpha = NULL;
+   ptrBeta = NULL;
+   if ( !tryDuplicateString( "alpha", &ptrAlpha ) || !tryDuplicateString( "beta", &ptrBeta ) )
+   {
+      free( ptrAlpha );
+      free( ptrBeta );
+      slistDestroy( ptrList );
+      fail_msg( "Arrange failed: unable to duplicate strings for slistDestroyItems test" );
+      return;
+   }
+   slistAddItem( ptrList, ptrAlpha, 1 );
+   slistAddItem( ptrList, ptrBeta, 1 );
 
    // Act
    slistDestroyItems( ptrList );
