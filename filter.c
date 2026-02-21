@@ -688,13 +688,13 @@ void reprintLine( void )
    char aryLine[320];
    char *ptrCursor;
 
-   strncpy( aryLine, thisline, 320 );
+   snprintf( aryLine, sizeof( aryLine ), "%s", thisline );
    stdPutChar( '\r' );
    for ( ptrCursor = aryLine; *ptrCursor; ptrCursor++ )
    {
       filterData( *ptrCursor );
    }
-   strncpy( thisline, aryLine, 320 );
+   snprintf( thisline, sizeof( thisline ), "%s", aryLine );
 }
 
 void morePromptHelper( void )

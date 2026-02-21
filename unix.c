@@ -680,7 +680,9 @@ void mySleep( unsigned int sec )
  */
 void flushInput( unsigned int invalid )
 {
+#if defined( FIONREAD ) || defined( TCFLSH )
    int pendingInputBytes;
+#endif
 
    if ( invalid / 2 )
    {
@@ -688,9 +690,6 @@ void flushInput( unsigned int invalid )
    }
 #ifdef FIONREAD
    while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
-   {
-      (void)ptyget();
-   }
 #else
 #ifdef TCFLSH
    pendingInputBytes = 0;
@@ -1020,16 +1019,19 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
    ptrNewFile = fopen( newpath, "a" );
    if ( !ptrNewFile )
    {
+      fclose( ptrOldFile );
       return;
    }
 
    targetSize = ftell( ptrNewFile );
    if ( targetSize == 0 )
    {
-      /* Args 2 and 3 intentionally reversed */
-      while ( ( bytesRead = fread( aryCopyBuffer, 1, BUFSIZ, ptrOldFile ) ) > 0 )
+      while ( ( bytesRead = fread( aryCopyBuffer, 1, sizeof( aryCopyBuffer ), ptrOldFile ) ) > 0 )
       {
-         bytesRead = fwrite( aryCopyBuffer, 1, BUFSIZ, ptrNewFile );
+         if ( fwrite( aryCopyBuffer, 1, bytesRead, ptrNewFile ) != bytesRead )
+         {
+            break;
+         }
       }
    }
 

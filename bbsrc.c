@@ -300,7 +300,6 @@ void readBbsRc( void )
             aryAutoPassword[20] = 0;
             break;
 #endif
-
          case BBRC_CMD_BROWSER:
             if ( strlen( aryLine ) < 13 )
             {
@@ -309,7 +308,7 @@ void readBbsRc( void )
             else
             {
                flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '0' ) ? 0 : 1;
-               strncpy( aryBrowser, aryLine + 13, 80 );
+               snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryLine + 13 );
             }
             break;
 
