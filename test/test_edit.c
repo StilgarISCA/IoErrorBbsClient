@@ -40,6 +40,14 @@ void flushInput( unsigned int count )
    (void)count;
 }
 
+void handleInvalidInput( unsigned int *ptrInvalidCount )
+{
+   if ( ( *ptrInvalidCount )++ )
+   {
+      flushInput( *ptrInvalidCount );
+   }
+}
+
 void getString( int length, char *result, int line )
 {
    (void)length;
@@ -71,6 +79,12 @@ void mySleep( unsigned int seconds )
 int netPutChar( int inputChar )
 {
    return inputChar;
+}
+
+void sendTrackedChar( int inputChar )
+{
+   netPutChar( inputChar );
+   byte++;
 }
 
 void run( char *ptrCommand, char *ptrArg )

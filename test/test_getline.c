@@ -112,6 +112,14 @@ void flushInput( unsigned int count )
    lastFlushValue = count;
 }
 
+void handleInvalidInput( unsigned int *ptrInvalidCount )
+{
+   if ( ( *ptrInvalidCount )++ )
+   {
+      flushInput( *ptrInvalidCount );
+   }
+}
+
 int inKey( void )
 {
    if ( inputIndex < inputCount )
@@ -124,6 +132,23 @@ int inKey( void )
 int netPutChar( int inputChar )
 {
    return inputChar;
+}
+
+void sendTrackedBuffer( const char *ptrBuffer, size_t length )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < length; ++itemIndex )
+   {
+      netPutChar( ptrBuffer[itemIndex] );
+      byte++;
+   }
+}
+
+void sendTrackedNewline( void )
+{
+   netPutChar( '\n' );
+   byte++;
 }
 
 int popQueue( char *ptrObject, queue *ptrQueue )

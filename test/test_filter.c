@@ -134,6 +134,11 @@ char *extractName( const char *ptrHeader )
    return aryName;
 }
 
+char *extractNameNoHistory( const char *header )
+{
+   return extractName( header );
+}
+
 int extractNumber( const char *ptrHeader )
 {
    const char *ptrStart;

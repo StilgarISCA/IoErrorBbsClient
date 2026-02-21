@@ -183,6 +183,23 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void sendTrackedBuffer( const char *ptrBuffer, size_t length )
+{
+   size_t outputIndex;
+
+   for ( outputIndex = 0; outputIndex < length; ++outputIndex )
+   {
+      netPutChar( ptrBuffer[outputIndex] );
+      byte++;
+   }
+}
+
+void sendTrackedNewline( void )
+{
+   netPutChar( '\n' );
+   byte++;
+}
+
 int netPuts( const char *ptrText )
 {
    const char *ptrRead;

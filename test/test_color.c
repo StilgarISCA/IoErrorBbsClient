@@ -112,6 +112,14 @@ void flushInput( unsigned int count )
    lastFlushValue = count;
 }
 
+void handleInvalidInput( unsigned int *ptrInvalidCount )
+{
+   if ( ( *ptrInvalidCount )++ )
+   {
+      flushInput( *ptrInvalidCount );
+   }
+}
+
 int inKey( void )
 {
    if ( inputIndex < inputCount )
@@ -119,6 +127,27 @@ int inKey( void )
       return aryInputQueue[inputIndex++];
    }
    return '\n';
+}
+
+int readValidatedMenuKey( const char *allowedCharsLowercase )
+{
+   int inputChar;
+   unsigned int invalid;
+
+   invalid = 0;
+   for ( ;; )
+   {
+      inputChar = inKey();
+      if ( isalpha( inputChar ) )
+      {
+         inputChar = tolower( inputChar );
+      }
+      if ( findChar( allowedCharsLowercase, inputChar ) )
+      {
+         return inputChar;
+      }
+      handleInvalidInput( &invalid );
+   }
 }
 
 int stdPrintf( const char *format, ... )

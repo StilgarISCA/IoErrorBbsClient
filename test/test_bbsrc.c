@@ -188,6 +188,42 @@ int stdPrintf( const char *format, ... )
    return 0;
 }
 
+int readNormalizedLine(
+   FILE *ptrFileHandle, char *ptrLine, size_t lineSize, int *ptrLineNumber, int *ptrReadCount, const char *ptrLabel )
+{
+   char *ptrNewline;
+
+   (void)ptrLabel;
+   if ( ptrFileHandle == NULL || ptrLine == NULL || lineSize == 0 )
+   {
+      return 0;
+   }
+
+   if ( fgets( ptrLine, (int)lineSize, ptrFileHandle ) == NULL )
+   {
+      return 0;
+   }
+   ptrNewline = strchr( ptrLine, '\n' );
+   if ( ptrNewline != NULL )
+   {
+      *ptrNewline = '\0';
+   }
+   ptrNewline = strchr( ptrLine, '\r' );
+   if ( ptrNewline != NULL )
+   {
+      *ptrNewline = '\0';
+   }
+   if ( ptrLineNumber != NULL )
+   {
+      ( *ptrLineNumber )++;
+   }
+   if ( ptrReadCount != NULL )
+   {
+      ( *ptrReadCount )++;
+   }
+   return 1;
+}
+
 static void openBbsRc_WhenPathMissing_CreatesWritableConfigurationFile( void **state )
 {
    // Arrange

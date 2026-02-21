@@ -118,6 +118,14 @@ void flushInput( unsigned int count )
    (void)count;
 }
 
+void handleInvalidInput( unsigned int *ptrInvalidCount )
+{
+   if ( ( *ptrInvalidCount )++ )
+   {
+      flushInput( *ptrInvalidCount );
+   }
+}
+
 int getKey( void )
 {
    if ( getKeyIndex < getKeyCount )
@@ -125,6 +133,27 @@ int getKey( void )
       return aryGetKeyQueue[getKeyIndex++];
    }
    return '\n';
+}
+
+int readValidatedMenuKey( const char *allowedCharsLowercase )
+{
+   int inputChar;
+   unsigned int invalid;
+
+   invalid = 0;
+   for ( ;; )
+   {
+      inputChar = getKey();
+      if ( isalpha( inputChar ) )
+      {
+         inputChar = tolower( inputChar );
+      }
+      if ( findChar( allowedCharsLowercase, inputChar ) )
+      {
+         return inputChar;
+      }
+      handleInvalidInput( &invalid );
+   }
 }
 
 char *getName( int quitPriv )
