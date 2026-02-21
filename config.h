@@ -1,9 +1,3 @@
-/*
- * Copyright (C) 2024-2026 Stilgar
- * Copyright (C) 1995-2003 Michael Hampton
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
-
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
@@ -12,6 +6,9 @@
 
 /* Define this if you want to use xterm/NeXT titlebars */
 #define ENABLE_TITLEBAR 1
+
+/* Define if cmocka is available for unit tests */
+#define HAVE_CMOCKA 1
 
 /* Define to 1 if you don't have 'vprintf' but do have '_doprnt.' */
 /* #undef HAVE_DOPRNT */

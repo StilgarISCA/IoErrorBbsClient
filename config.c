@@ -221,7 +221,7 @@ void configBbsRc( void )
             getString( 80, aryMenuLine, -999 );
             if ( *aryMenuLine )
             {
-               strncpy( aryBrowser, aryMenuLine, 80 );
+               snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryMenuLine );
             }
             stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
                        flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
