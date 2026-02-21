@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
+#include "test_helpers.h"
 
 static int aryInputQueue[256];
 static size_t inputCount;
@@ -24,13 +25,7 @@ static size_t capturedDotCount;
 
 static void setInputSequence( const int *aryKeys, size_t count )
 {
-   size_t keyIndex;
-
-   for ( keyIndex = 0; keyIndex < count && keyIndex < sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ); ++keyIndex )
-   {
-      aryInputQueue[keyIndex] = aryKeys[keyIndex];
-   }
-   inputCount = count;
+   inputCount = copyIntArray( aryKeys, count, aryInputQueue, sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ) );
    inputIndex = 0;
 }
 
@@ -46,43 +41,17 @@ static void resetTracking( void )
    capturedDotCount = 0;
 }
 
-static int compareStringsVoid( const void *ptrLeft, const void *ptrRight )
-{
-   const char *const *ptrLeftString;
-   const char *const *ptrRightString;
-
-   ptrLeftString = ptrLeft;
-   ptrRightString = ptrRight;
-   return strcmp( *ptrLeftString, *ptrRightString );
-}
-
-static char *allocateString( const char *ptrSource )
-{
-   char *ptrCopy;
-   size_t sourceLength;
-
-   sourceLength = strlen( ptrSource );
-   ptrCopy = calloc( sourceLength + 1, sizeof( char ) );
-   if ( ptrCopy == NULL )
-   {
-      fail_msg( "calloc failed while allocating test string '%s'", ptrSource );
-      return NULL;
-   }
-   memcpy( ptrCopy, ptrSource, sourceLength );
-   return ptrCopy;
-}
-
 static void setupWhoList( const char *ptrFirst, const char *ptrSecond )
 {
-   whoList = slistCreate( 0, compareStringsVoid );
+   whoList = slistCreate( 0, compareStringPointer );
    if ( whoList == NULL )
    {
       fail_msg( "slistCreate failed for whoList setup" );
       return;
    }
 
-   if ( !slistAddItem( whoList, allocateString( ptrFirst ), 1 ) ||
-        !slistAddItem( whoList, allocateString( ptrSecond ), 1 ) )
+   if ( !slistAddItem( whoList, duplicateStringOrFail( ptrFirst, "getline whoList setup" ), 1 ) ||
+        !slistAddItem( whoList, duplicateStringOrFail( ptrSecond, "getline whoList setup" ), 1 ) )
    {
       fail_msg( "slistAddItem failed while preparing whoList for getline tests" );
       return;
@@ -145,9 +114,13 @@ int popQueue( char *ptrObject, queue *ptrQueue )
    return 0;
 }
 
-void replyMessage( void ) {}
+void replyMessage( void )
+{
+}
 
-void sendBlock( void ) {}
+void sendBlock( void )
+{
+}
 
 int stdPrintf( const char *format, ... )
 {
@@ -158,7 +131,9 @@ int stdPrintf( const char *format, ... )
    return 0;
 }
 
-void writeBbsRc( void ) {}
+void writeBbsRc( void )
+{
+}
 
 static void smartName_WhenUniquePrefix_ExpandsToFullName( void **state )
 {

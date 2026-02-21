@@ -14,6 +14,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
+#include "test_helpers.h"
 
 static int setupCallCount;
 static int setupVersionArg;
@@ -74,49 +75,10 @@ static void cleanupReadState( void )
    }
 }
 
-static void createTempPath( char *aryPath, size_t pathSize )
-{
-   char aryTemplate[] = "/tmp/iobbsrc_test_XXXXXX";
-   int fileDescriptor;
-
-   fileDescriptor = mkstemp( aryTemplate );
-   if ( fileDescriptor < 0 )
-   {
-      fail_msg( "mkstemp failed while creating temporary path template" );
-      return;
-   }
-   close( fileDescriptor );
-
-   if ( unlink( aryTemplate ) != 0 )
-   {
-      fail_msg( "unlink failed for temporary path '%s'", aryTemplate );
-      return;
-   }
-
-   snprintf( aryPath, pathSize, "%s", aryTemplate );
-}
-
-static void writeFileContents( const char *ptrPath, const char *ptrContents )
-{
-   FILE *ptrFile;
-
-   ptrFile = fopen( ptrPath, "w" );
-   if ( ptrFile == NULL )
-   {
-      fail_msg( "fopen failed while writing temporary file '%s'", ptrPath );
-      return;
-   }
-   if ( fputs( ptrContents, ptrFile ) < 0 )
-   {
-      fclose( ptrFile );
-      fail_msg( "fputs failed while writing temporary file '%s'", ptrPath );
-      return;
-   }
-   fclose( ptrFile );
-}
-
 /* bbsrc.c dependencies that are not under test here. */
-void configBbsRc( void ) {}
+void configBbsRc( void )
+{
+}
 
 void defaultColors( int setall )
 {
@@ -169,9 +131,13 @@ FILE *findBbsFriends( void )
    return NULL;
 }
 
-void resetTerm( void ) {}
+void resetTerm( void )
+{
+}
 
-void setTerm( void ) {}
+void setTerm( void )
+{
+}
 
 void setup( int oldversion )
 {
@@ -233,7 +199,7 @@ static void openBbsRc_WhenPathMissing_CreatesWritableConfigurationFile( void **s
 
    resetTracking();
    isBbsRcReadOnly = 0;
-   createTempPath( aryPath, sizeof( aryPath ) );
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
 
    // Act
@@ -271,8 +237,8 @@ static void openBbsRc_WhenPathIsReadOnly_SetsReadOnlyAndWarns( void **state )
 
    resetTracking();
    isBbsRcReadOnly = 0;
-   createTempPath( aryPath, sizeof( aryPath ) );
-   writeFileContents( aryPath, "version 2310\n" );
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   writeFileContentsOrFail( aryPath, "version 2310\n", "openBbsRc read-only test" );
    chmod( aryPath, S_IRUSR | S_IRGRP | S_IROTH );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
 
@@ -311,8 +277,8 @@ static void readBbsRc_WhenConfigIsEmpty_AppliesDefaults( void **state )
 
    cleanupReadState();
    resetTracking();
-   createTempPath( aryPath, sizeof( aryPath ) );
-   writeFileContents( aryPath, "" );
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   writeFileContentsOrFail( aryPath, "", "readBbsRc empty-config test" );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;
@@ -361,8 +327,8 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
 
    cleanupReadState();
    resetTracking();
-   createTempPath( aryPath, sizeof( aryPath ) );
-   writeFileContents(
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   writeFileContentsOrFail(
       aryPath,
       "site bbs.example.net 2323\n"
       "commandkey ^[\n"
@@ -378,7 +344,8 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
       "enemy Meatball\n"
       "friend Dr Strange           Time traveler\n"
       "version 2310\n"
-      "xland\n" );
+      "xland\n",
+      "readBbsRc parse-config test" );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "vi" );
    isLoginShell = 0;
@@ -444,13 +411,14 @@ static void readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError( void
 
    cleanupReadState();
    resetTracking();
-   createTempPath( aryPath, sizeof( aryPath ) );
-   writeFileContents(
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   writeFileContentsOrFail(
       aryPath,
       "site bbs.example.net 2323\n"
       "mysterysetting 42\n"
       "quit ^D\n"
-      "version 2310\n" );
+      "version 2310\n",
+      "readBbsRc invalid-directive test" );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;
@@ -482,11 +450,12 @@ static void readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning( void **state
 
    cleanupReadState();
    resetTracking();
-   createTempPath( aryPath, sizeof( aryPath ) );
-   writeFileContents(
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
+   writeFileContentsOrFail(
       aryPath,
       "color 12345\n"
-      "version 2310\n" );
+      "version 2310\n",
+      "readBbsRc invalid-color test" );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;
@@ -515,7 +484,7 @@ static void readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults( void **s
 
    cleanupReadState();
    resetTracking();
-   createTempPath( aryPath, sizeof( aryPath ) );
+   createTempPathOrFail( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" );
    snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
    snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
    isLoginShell = 0;

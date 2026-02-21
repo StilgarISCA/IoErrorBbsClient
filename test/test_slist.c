@@ -10,42 +10,7 @@
 
 #include "defs.h"
 #include "proto.h"
-
-static int compareStringItemsForSort( const void *left, const void *right )
-{
-   const char *const *ptrLeft;
-   const char *const *ptrRight;
-
-   ptrLeft = left;
-   ptrRight = right;
-   return strcmp( *ptrLeft, *ptrRight );
-}
-
-static int compareStringItemForFind( const void *toFind, const void *item )
-{
-   const char *ptrSearch;
-   const char *ptrItem;
-
-   ptrSearch = toFind;
-   ptrItem = item;
-   return strcmp( ptrSearch, ptrItem );
-}
-
-static char *duplicateTestString( const char *ptrSource )
-{
-   char *ptrCopy;
-   size_t sourceLength;
-
-   sourceLength = strlen( ptrSource );
-   ptrCopy = calloc( sourceLength + 1, sizeof( char ) );
-   if ( ptrCopy == NULL )
-   {
-      fail_msg( "calloc failed while duplicating '%s'", ptrSource );
-      return NULL;
-   }
-   memcpy( ptrCopy, ptrSource, sourceLength );
-   return ptrCopy;
-}
+#include "test_helpers.h"
 
 static void slistCreate_WhenCalledWithZeroItems_ReturnsEmptyList( void **state )
 {
@@ -55,7 +20,7 @@ static void slistCreate_WhenCalledWithZeroItems_ReturnsEmptyList( void **state )
    (void)state;
 
    // Act
-   ptrList = slistCreate( 0, compareStringItemsForSort );
+   ptrList = slistCreate( 0, compareStringPointer );
 
    // Assert
    if ( ptrList == NULL )
@@ -87,15 +52,15 @@ static void slistAddItem_WhenDeferSortIsOff_KeepsListSorted( void **state )
 
    (void)state;
 
-   ptrList = slistCreate( 0, compareStringItemsForSort );
+   ptrList = slistCreate( 0, compareStringPointer );
    if ( ptrList == NULL )
    {
       fail_msg( "slistCreate failed in Arrange for sorted add test" );
    }
 
-   ptrBeta = duplicateTestString( "beta" );
-   ptrAlpha = duplicateTestString( "alpha" );
-   ptrCharlie = duplicateTestString( "charlie" );
+   ptrBeta = duplicateStringOrFail( "beta", "slistAddItem sorted add test" );
+   ptrAlpha = duplicateStringOrFail( "alpha", "slistAddItem sorted add test" );
+   ptrCharlie = duplicateStringOrFail( "charlie", "slistAddItem sorted add test" );
 
    // Act
    addBetaResult = slistAddItem( ptrList, ptrBeta, 0 );
@@ -131,17 +96,17 @@ static void slistFind_WhenItemExists_ReturnsMatchingIndex( void **state )
 
    (void)state;
 
-   ptrList = slistCreate( 0, compareStringItemsForSort );
+   ptrList = slistCreate( 0, compareStringPointer );
    if ( ptrList == NULL )
    {
       fail_msg( "slistCreate failed in Arrange for slistFind existing-item test" );
    }
-   slistAddItem( ptrList, duplicateTestString( "beta" ), 0 );
-   slistAddItem( ptrList, duplicateTestString( "alpha" ), 0 );
-   slistAddItem( ptrList, duplicateTestString( "charlie" ), 0 );
+   slistAddItem( ptrList, duplicateStringOrFail( "beta", "slistFind existing-item test" ), 0 );
+   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistFind existing-item test" ), 0 );
+   slistAddItem( ptrList, duplicateStringOrFail( "charlie", "slistFind existing-item test" ), 0 );
 
    // Act
-   foundIndex = slistFind( ptrList, "beta", compareStringItemForFind );
+   foundIndex = slistFind( ptrList, "beta", compareStringItem );
 
    // Assert
    if ( foundIndex != 1 )
@@ -161,16 +126,16 @@ static void slistFind_WhenItemDoesNotExist_ReturnsMinusOne( void **state )
 
    (void)state;
 
-   ptrList = slistCreate( 0, compareStringItemsForSort );
+   ptrList = slistCreate( 0, compareStringPointer );
    if ( ptrList == NULL )
    {
       fail_msg( "slistCreate failed in Arrange for slistFind missing-item test" );
    }
-   slistAddItem( ptrList, duplicateTestString( "alpha" ), 0 );
-   slistAddItem( ptrList, duplicateTestString( "charlie" ), 0 );
+   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistFind missing-item test" ), 0 );
+   slistAddItem( ptrList, duplicateStringOrFail( "charlie", "slistFind missing-item test" ), 0 );
 
    // Act
-   foundIndex = slistFind( ptrList, "beta", compareStringItemForFind );
+   foundIndex = slistFind( ptrList, "beta", compareStringItem );
 
    // Assert
    if ( foundIndex != -1 )
@@ -191,14 +156,14 @@ static void slistRemoveItem_WhenMiddleItemRemoved_ShiftsRemainingItems( void **s
 
    (void)state;
 
-   ptrList = slistCreate( 0, compareStringItemsForSort );
+   ptrList = slistCreate( 0, compareStringPointer );
    if ( ptrList == NULL )
    {
       fail_msg( "slistCreate failed in Arrange for slistRemoveItem test" );
    }
-   slistAddItem( ptrList, duplicateTestString( "alpha" ), 1 );
-   slistAddItem( ptrList, duplicateTestString( "beta" ), 1 );
-   slistAddItem( ptrList, duplicateTestString( "charlie" ), 1 );
+   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistRemoveItem middle-item test" ), 1 );
+   slistAddItem( ptrList, duplicateStringOrFail( "beta", "slistRemoveItem middle-item test" ), 1 );
+   slistAddItem( ptrList, duplicateStringOrFail( "charlie", "slistRemoveItem middle-item test" ), 1 );
    slistSort( ptrList );
 
    ptrRemovedItem = ptrList->items[1];
@@ -232,13 +197,13 @@ static void slistDestroyItems_WhenCalled_ClearsItemPointers( void **state )
 
    (void)state;
 
-   ptrList = slistCreate( 0, compareStringItemsForSort );
+   ptrList = slistCreate( 0, compareStringPointer );
    if ( ptrList == NULL )
    {
       fail_msg( "slistCreate failed in Arrange for slistDestroyItems test" );
    }
-   slistAddItem( ptrList, duplicateTestString( "alpha" ), 1 );
-   slistAddItem( ptrList, duplicateTestString( "beta" ), 1 );
+   slistAddItem( ptrList, duplicateStringOrFail( "alpha", "slistDestroyItems test" ), 1 );
+   slistAddItem( ptrList, duplicateStringOrFail( "beta", "slistDestroyItems test" ), 1 );
 
    // Act
    slistDestroyItems( ptrList );

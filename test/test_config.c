@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
+#include "test_helpers.h"
 
 static int aryGetKeyQueue[128];
 static size_t getKeyCount;
@@ -41,37 +42,28 @@ static void resetState( void )
 
 static void setGetKeySequence( const int *aryValues, size_t valueCount )
 {
-   size_t valueIndex;
-
-   for ( valueIndex = 0; valueIndex < valueCount && valueIndex < sizeof( aryGetKeyQueue ) / sizeof( aryGetKeyQueue[0] ); ++valueIndex )
-   {
-      aryGetKeyQueue[valueIndex] = aryValues[valueIndex];
-   }
-   getKeyCount = valueCount;
+   getKeyCount = copyIntArray( aryValues,
+                               valueCount,
+                               aryGetKeyQueue,
+                               sizeof( aryGetKeyQueue ) / sizeof( aryGetKeyQueue[0] ) );
    getKeyIndex = 0;
 }
 
 static void setYesNoSequence( const int *aryValues, size_t valueCount )
 {
-   size_t valueIndex;
-
-   for ( valueIndex = 0; valueIndex < valueCount && valueIndex < sizeof( aryYesNoQueue ) / sizeof( aryYesNoQueue[0] ); ++valueIndex )
-   {
-      aryYesNoQueue[valueIndex] = aryValues[valueIndex];
-   }
-   yesNoCount = valueCount;
+   yesNoCount = copyIntArray( aryValues,
+                              valueCount,
+                              aryYesNoQueue,
+                              sizeof( aryYesNoQueue ) / sizeof( aryYesNoQueue[0] ) );
    yesNoIndex = 0;
 }
 
 static void setStringSequence( const char **aryValues, size_t valueCount )
 {
-   size_t valueIndex;
-
-   for ( valueIndex = 0; valueIndex < valueCount && valueIndex < sizeof( aryStringQueue ) / sizeof( aryStringQueue[0] ); ++valueIndex )
-   {
-      aryStringQueue[valueIndex] = aryValues[valueIndex];
-   }
-   stringCount = valueCount;
+   stringCount = copyStringPointerArray( aryValues,
+                                         valueCount,
+                                         aryStringQueue,
+                                         sizeof( aryStringQueue ) / sizeof( aryStringQueue[0] ) );
    stringIndex = 0;
 }
 
@@ -162,7 +154,9 @@ int inKey( void )
    return '\n';
 }
 
-void information( void ) {}
+void information( void )
+{
+}
 
 int more( int *line, int percent )
 {
@@ -176,9 +170,13 @@ void myExit( void )
    fail_msg( "myExit invoked unexpectedly during config unit tests" );
 }
 
-void resetTerm( void ) {}
+void resetTerm( void )
+{
+}
 
-void setTerm( void ) {}
+void setTerm( void )
+{
+}
 
 void sInfo( const char *message, const char *heading )
 {

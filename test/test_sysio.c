@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
+#include "test_helpers.h"
 
 static int fatalPerrorCallCount;
 static int tempFileErrorCallCount;
@@ -36,15 +37,6 @@ static void resetState( void )
       fclose( netOutputFile );
       netOutputFile = NULL;
    }
-}
-
-static void readFileIntoBuffer( FILE *ptrFile, char *aryBuffer, size_t bufferSize )
-{
-   size_t bytesRead;
-
-   rewind( ptrFile );
-   bytesRead = fread( aryBuffer, 1, bufferSize - 1, ptrFile );
-   aryBuffer[bytesRead] = '\0';
 }
 
 /* sysio.c dependency stubs. */
@@ -98,7 +90,7 @@ static void capPuts_WhenCaptureEnabled_WritesStrippedTextToTempFile( void **stat
 
    // Assert
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBuffer( tempFile, aryCaptured, sizeof( aryCaptured ) );
+   readFileIntoBufferOrFail( tempFile, aryCaptured, sizeof( aryCaptured ), "capPuts capture test" );
    if ( strcmp( aryCaptured, "Alert message" ) != 0 )
    {
       fail_msg( "capPuts should capture stripped text; got '%s'", aryCaptured );
@@ -135,7 +127,7 @@ static void capPutChar_WhenAnsiSequenceProvided_SkipsAnsiAndTracksLastColor( voi
 
    // Assert
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBuffer( tempFile, aryCaptured, sizeof( aryCaptured ) );
+   readFileIntoBufferOrFail( tempFile, aryCaptured, sizeof( aryCaptured ), "capPutChar ANSI test" );
    if ( strcmp( aryCaptured, "X" ) != 0 )
    {
       fail_msg( "capPutChar should not capture ANSI bytes; expected only payload 'X', got '%s'", aryCaptured );
@@ -169,7 +161,7 @@ static void capPutChar_WhenCarriageReturnReceived_DoesNotCaptureIt( void **state
 
    // Assert
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBuffer( tempFile, aryCaptured, sizeof( aryCaptured ) );
+   readFileIntoBufferOrFail( tempFile, aryCaptured, sizeof( aryCaptured ), "capPutChar carriage-return test" );
    if ( strcmp( aryCaptured, "AB" ) != 0 )
    {
       fail_msg( "capPutChar should skip carriage return while capturing; got '%s'", aryCaptured );
@@ -197,7 +189,7 @@ static void netPuts_WhenOutputFileSet_WritesAllCharacters( void **state )
    // Assert
    fflush( netOutputFile );
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBuffer( netOutputFile, aryCaptured, sizeof( aryCaptured ) );
+   readFileIntoBufferOrFail( netOutputFile, aryCaptured, sizeof( aryCaptured ), "netPuts output test" );
    if ( strcmp( aryCaptured, "Watson" ) != 0 )
    {
       fail_msg( "netPuts should write full string to netOutputFile; got '%s'", aryCaptured );
@@ -225,7 +217,7 @@ static void netPrintf_WhenFormattingText_WritesFormattedOutput( void **state )
    // Assert
    fflush( netOutputFile );
    memset( aryCaptured, 0, sizeof( aryCaptured ) );
-   readFileIntoBuffer( netOutputFile, aryCaptured, sizeof( aryCaptured ) );
+   readFileIntoBufferOrFail( netOutputFile, aryCaptured, sizeof( aryCaptured ), "netPrintf output test" );
    if ( strcmp( aryCaptured, "msg#42" ) != 0 )
    {
       fail_msg( "netPrintf should write formatted string; got '%s'", aryCaptured );

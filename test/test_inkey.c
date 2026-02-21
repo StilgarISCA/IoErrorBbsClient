@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
+#include "test_helpers.h"
 
 static int waitNextEventCallCount;
 static int myExitCallCount;
@@ -57,13 +58,19 @@ static void resetState( void )
 
 static void setPtyInput( const int *aryInput, size_t inputCount )
 {
+   int aryCopiedInput[sizeof( aryPtyInputBuffer )];
+   size_t copiedCount;
    size_t inputIndex;
 
-   for ( inputIndex = 0; inputIndex < inputCount && inputIndex < sizeof( aryPtyInputBuffer ); ++inputIndex )
+   copiedCount = copyIntArray( aryInput,
+                               inputCount,
+                               aryCopiedInput,
+                               sizeof( aryCopiedInput ) / sizeof( aryCopiedInput[0] ) );
+   for ( inputIndex = 0; inputIndex < copiedCount; ++inputIndex )
    {
-      aryPtyInputBuffer[inputIndex] = (unsigned char)aryInput[inputIndex];
+      aryPtyInputBuffer[inputIndex] = (unsigned char)aryCopiedInput[inputIndex];
    }
-   ptyInputLength = (ssize_t)inputCount;
+   ptyInputLength = (ssize_t)copiedCount;
    ptrPtyInput = aryPtyInputBuffer;
 }
 
@@ -80,7 +87,9 @@ void myExit( void )
    myExitCallCount++;
 }
 
-void openBrowser( void ) {}
+void openBrowser( void )
+{
+}
 
 void run( char *ptrCommand, char *ptrArg )
 {
@@ -97,7 +106,9 @@ int stdPrintf( const char *format, ... )
    return 0;
 }
 
-void suspend( void ) {}
+void suspend( void )
+{
+}
 
 int telReceive( int inputChar )
 {

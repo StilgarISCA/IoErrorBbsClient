@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
+#include "test_helpers.h"
 
 static int aryInputQueue[128];
 static size_t inputCount;
@@ -38,13 +39,7 @@ static void resetState( void )
 
 static void setInputSequence( const int *aryKeys, size_t count )
 {
-   size_t keyIndex;
-
-   for ( keyIndex = 0; keyIndex < count && keyIndex < sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ); ++keyIndex )
-   {
-      aryInputQueue[keyIndex] = aryKeys[keyIndex];
-   }
-   inputCount = count;
+   inputCount = copyIntArray( aryKeys, count, aryInputQueue, sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ) );
    inputIndex = 0;
 }
 

@@ -11,21 +11,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "proto.h"
-
-static void writeRepeatedChar( FILE *ptrFile, char value, int count )
-{
-   int charIndex;
-
-   if ( ptrFile == NULL )
-   {
-      return;
-   }
-
-   for ( charIndex = 0; charIndex < count; ++charIndex )
-   {
-      fputc( value, ptrFile );
-   }
-}
+#include "test_helpers.h"
 
 /* edit.c dependencies outside checkFile() scope for these tests. */
 int colorize( const char *ptrText )
@@ -34,7 +20,9 @@ int colorize( const char *ptrText )
    return 1;
 }
 
-void continuedPostHelper( void ) {}
+void continuedPostHelper( void )
+{
+}
 
 void fatalPerror( const char *error, const char *heading )
 {
@@ -64,7 +52,9 @@ int inKey( void )
    return '\n';
 }
 
-void looper( void ) {}
+void looper( void )
+{
+}
 
 int more( int *line, int percentComplete )
 {
@@ -89,9 +79,13 @@ void run( char *ptrCommand, char *ptrArg )
    (void)ptrArg;
 }
 
-void sendBlock( void ) {}
+void sendBlock( void )
+{
+}
 
-void tempFileError( void ) {}
+void tempFileError( void )
+{
+}
 
 int yesNo( void )
 {
@@ -141,7 +135,7 @@ static void checkFile_WhenLineExceeds79Chars_ReturnsOne( void **state )
       fail_msg( "tmpfile failed in line-length test setup" );
       return;
    }
-   writeRepeatedChar( ptrMessageFile, 'A', 80 );
+   writeRepeatedCharOrFail( ptrMessageFile, 'A', 80, "line-length test" );
    fputc( '\n', ptrMessageFile );
    fflush( ptrMessageFile );
 
@@ -203,7 +197,7 @@ static void checkFile_WhenTabExpansionPushesPast79_ReturnsOne( void **state )
       fail_msg( "tmpfile failed in tab-expansion test setup" );
       return;
    }
-   writeRepeatedChar( ptrMessageFile, 'A', 73 );
+   writeRepeatedCharOrFail( ptrMessageFile, 'A', 73, "tab-expansion test" );
    fputc( '\t', ptrMessageFile );
    fputc( '\n', ptrMessageFile );
    fflush( ptrMessageFile );
@@ -237,7 +231,7 @@ static void checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne( void **state 
    }
    for ( lineIndex = 0; lineIndex < 620; ++lineIndex )
    {
-      writeRepeatedChar( ptrMessageFile, 'A', 79 );
+      writeRepeatedCharOrFail( ptrMessageFile, 'A', 79, "message-size test" );
       fputc( '\n', ptrMessageFile );
    }
    fflush( ptrMessageFile );
