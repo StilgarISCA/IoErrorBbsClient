@@ -38,7 +38,7 @@ int telReceive( int inputByte )
    static unsigned char aryTelnetBuffer[80]; /* Generic buffer */
    static int telnetBufferPos = 0;           /* Pointer into generic buffer */
    register int outputIndex;
-   char *ptrInputString;
+   const char *ptrInputString;
 
    switch ( state )
    {

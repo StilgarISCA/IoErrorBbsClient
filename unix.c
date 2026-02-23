@@ -302,7 +302,7 @@ void noTitleBar( void )
  */
 void connectBbs( void )
 {
-   register struct hostent *host;
+   const struct hostent *host;
    register int connectResult;
    struct sockaddr_in socketAddress;
 

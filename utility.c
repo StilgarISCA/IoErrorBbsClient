@@ -487,7 +487,7 @@ char *extractName( const char *header )
 {
    int charIndex;
    int existingIndex = -1;
-   char *ptrExtractedName = extractNameNoHistory( header );
+   const char *ptrExtractedName = extractNameNoHistory( header );
 
    if ( !ptrExtractedName )
    {
