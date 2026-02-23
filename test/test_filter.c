@@ -202,6 +202,12 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void sPerror( const char *message, const char *heading )
+{
+   (void)message;
+   (void)heading;
+}
+
 void sendAnX( void )
 {
    sendAnXCallCount++;
