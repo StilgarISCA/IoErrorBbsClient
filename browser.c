@@ -63,6 +63,33 @@ static char *findUrlStart( char *ptrText )
    return ptrEarliest;
 }
 
+static const char *findUrlStartConst( const char *ptrText )
+{
+   const char *ptrHttps;
+   const char *ptrWww;
+   const char *ptrEarliest;
+
+   ptrHttps = strstr( ptrText, "https://" );
+   ptrWww = strstr( ptrText, "www." );
+
+   ptrEarliest = ptrHttps;
+   if ( ptrWww != NULL && ( ptrEarliest == NULL || ptrWww < ptrEarliest ) )
+   {
+      ptrEarliest = ptrWww;
+   }
+
+   if ( ptrWww != NULL && ptrEarliest == ptrWww )
+   {
+      if ( ptrWww != ptrText && !isspace( (unsigned char)ptrWww[-1] ) && ptrWww[-1] != '(' &&
+           ptrWww[-1] != '<' && ptrWww[-1] != '"' && ptrWww[-1] != '\'' )
+      {
+         ptrEarliest = NULL;
+      }
+   }
+
+   return ptrEarliest;
+}
+
 static void trimUrlTailPunctuation( char *ptrUrlStart )
 {
    size_t urlLength;
@@ -167,6 +194,104 @@ static bool parseBrowserCommand( const char *ptrBrowserCommand,
    }
 
    return true;
+}
+
+void printWithOsc8Links( const char *ptrText )
+{
+   const char *ptrCursor;
+
+   if ( ptrText == NULL )
+   {
+      return;
+   }
+
+   ptrCursor = ptrText;
+   while ( *ptrCursor != '\0' )
+   {
+      const char *ptrUrlStart;
+      const char *ptrUrlEnd;
+      const char *ptrTrimEnd;
+      const char *ptrEndPunctuation;
+      char aryUrlText[1024];
+      char aryUrlTarget[1152];
+      size_t urlLength;
+
+      ptrUrlStart = findUrlStartConst( ptrCursor );
+      if ( ptrUrlStart == NULL )
+      {
+         stdPrintf( "%s", ptrCursor );
+         return;
+      }
+
+      if ( ptrUrlStart > ptrCursor )
+      {
+         stdPrintf( "%.*s", (int)( ptrUrlStart - ptrCursor ), ptrCursor );
+      }
+
+      for ( ptrUrlEnd = ptrUrlStart; *ptrUrlEnd != '\0'; ptrUrlEnd++ )
+      {
+         if ( isUrlTerminator( (unsigned char)*ptrUrlEnd ) ||
+              !isUrlBodyChar( (unsigned char)*ptrUrlEnd ) )
+         {
+            break;
+         }
+      }
+
+      ptrTrimEnd = ptrUrlEnd;
+      while ( ptrTrimEnd > ptrUrlStart )
+      {
+         char tailCharacter;
+
+         tailCharacter = ptrTrimEnd[-1];
+         if ( tailCharacter == '.' || tailCharacter == ',' || tailCharacter == ';' ||
+              tailCharacter == ':' || tailCharacter == '!' || tailCharacter == '?' ||
+              tailCharacter == ')' || tailCharacter == ']' || tailCharacter == '}' ||
+              tailCharacter == '>' || tailCharacter == '"' || tailCharacter == '\'' )
+         {
+            ptrTrimEnd--;
+         }
+         else
+         {
+            break;
+         }
+      }
+
+      if ( ptrTrimEnd == ptrUrlStart )
+      {
+         stdPrintf( "%.*s", (int)( ptrUrlEnd - ptrUrlStart ), ptrUrlStart );
+         ptrCursor = ptrUrlEnd;
+         continue;
+      }
+
+      urlLength = (size_t)( ptrTrimEnd - ptrUrlStart );
+      if ( urlLength >= sizeof( aryUrlText ) )
+      {
+         urlLength = sizeof( aryUrlText ) - 1;
+      }
+      memcpy( aryUrlText, ptrUrlStart, urlLength );
+      aryUrlText[urlLength] = '\0';
+
+      if ( strncmp( aryUrlText, "www.", 4 ) == 0 )
+      {
+         snprintf( aryUrlTarget, sizeof( aryUrlTarget ), "https://%s", aryUrlText );
+      }
+      else
+      {
+         snprintf( aryUrlTarget, sizeof( aryUrlTarget ), "%s", aryUrlText );
+      }
+
+      stdPrintf( "\033]8;;%s\033\\", aryUrlTarget );
+      stdPrintf( "%s", aryUrlText );
+      stdPrintf( "\033]8;;\033\\" );
+
+      ptrEndPunctuation = ptrTrimEnd;
+      if ( ptrUrlEnd > ptrEndPunctuation )
+      {
+         stdPrintf( "%.*s", (int)( ptrUrlEnd - ptrEndPunctuation ), ptrEndPunctuation );
+      }
+
+      ptrCursor = ptrUrlEnd;
+   }
 }
 
 static bool launchBrowserUrl( const char *ptrBrowserCommand, const char *ptrUrl, bool shouldRunBackground )

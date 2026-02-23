@@ -9,5 +9,6 @@
 
 void filterUrl( const char *ptrLine );
 void openBrowser( void );
+void printWithOsc8Links( const char *ptrText );
 
 #endif

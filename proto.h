@@ -42,6 +42,7 @@ extern void
    filterData P( (int)),
    filterPost P( (int)),
    filterUrl P( (const char *)),
+   printWithOsc8Links P( (const char *)),
    filterWhoList P( (int)),
    findHome P( (void)),
    flushInput P( (unsigned int)),

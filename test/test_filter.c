@@ -533,6 +533,50 @@ static void filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl( void **st
    resetLists();
 }
 
+static void printWithOsc8Links_WhenTextContainsHttpsUrl_EmitsHyperlinkEscapes( void **state )
+{
+   // Arrange
+   const char *ptrMessage;
+
+   (void)state;
+
+   resetState();
+   ptrMessage = "Read this https://example.dev/path?q=1 now";
+
+   // Act
+   printWithOsc8Links( ptrMessage );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033]8;;https://example.dev/path?q=1\033\\" ) == NULL )
+   {
+      fail_msg( "OSC-8 opening sequence for HTTPS URL was not emitted; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;\033\\" ) == NULL )
+   {
+      fail_msg( "OSC-8 closing sequence was not emitted; log was: %s", aryPrintLog );
+   }
+}
+
+static void printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget( void **state )
+{
+   // Arrange
+   const char *ptrMessage;
+
+   (void)state;
+
+   resetState();
+   ptrMessage = "Mirror: www.example.photography/alpha";
+
+   // Act
+   printWithOsc8Links( ptrMessage );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033]8;;https://www.example.photography/alpha\033\\" ) == NULL )
+   {
+      fail_msg( "OSC-8 target for www URL should be normalized to https://...; log was: %s", aryPrintLog );
+   }
+}
+
 static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **state )
 {
    // Arrange
@@ -590,6 +634,8 @@ int main( void )
       cmocka_unit_test( filterUrl_WhenWwwUrlPresent_QueuesUrlWithoutTldList ),
       cmocka_unit_test( filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes ),
       cmocka_unit_test( filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl ),
+      cmocka_unit_test( printWithOsc8Links_WhenTextContainsHttpsUrl_EmitsHyperlinkEscapes ),
+      cmocka_unit_test( printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

@@ -250,7 +250,11 @@ void filterExpress( register int inputChar )
          }
          replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
          ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-         stdPrintf( "%s%s", ( needs.crlf ) ? "\r\n" : "", aryExpressMessageBuffer );
+         if ( needs.crlf )
+         {
+            stdPrintf( "\r\n" );
+         }
+         printWithOsc8Links( aryExpressMessageBuffer );
          if ( needs.truncated )
          {
             stdPrintf( "\r\n[X message truncated]\r\n" );
@@ -486,7 +490,12 @@ void filterPost( register int inputChar )
                        : 0;
          ansiTransformPostHeader( posthdr, isFriend );
          snprintf( arySavedHeader, sizeof( arySavedHeader ), "%s\r\n", posthdr );
-         stdPrintf( "%s%s\r", ( needs.crlf ) ? "\r\n" : "", posthdr );
+         if ( needs.crlf )
+         {
+            stdPrintf( "\r\n" );
+         }
+         printWithOsc8Links( posthdr );
+         stdPrintf( "\r" );
       }
    }
 }
