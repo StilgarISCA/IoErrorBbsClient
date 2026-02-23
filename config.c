@@ -28,7 +28,7 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 #define ENEMY_INFO \
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
 #define SELECT_URL \
-   "You can now go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  You can define a Web browser in the client configuration\r\nor otherwise I will try to start Netscape."
+   "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  You can define a Web browser command in the client\r\nconfiguration, or leave it blank to use the macOS default browser."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
 
@@ -222,15 +222,16 @@ void configBbsRc( void )
                   bbsPort = BBS_PORT_NUMBER;
                }
             }
-            stdPrintf( "Enter the Web aryBrowser to use (%s) -> ", aryBrowser );
+            stdPrintf( "Enter web browser command (leave blank for macOS default browser) (%s) -> ",
+                       *aryBrowser ? aryBrowser : "<macOS default>" );
             getString( 80, aryMenuLine, -999 );
-            if ( *aryMenuLine )
+            snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryMenuLine );
+            if ( *aryBrowser )
             {
-               snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryMenuLine );
+               stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
+                          flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
+               flagsConfiguration.shouldRunBrowserInBackground = (unsigned int)yesNoDefault( flagsConfiguration.shouldRunBrowserInBackground );
             }
-            stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
-                       flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
-            flagsConfiguration.shouldRunBrowserInBackground = (unsigned int)yesNoDefault( flagsConfiguration.shouldRunBrowserInBackground );
             stdPrintf( "Keep idle connections alive with occasional TCP probes? (%s) -> ",
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
             stdPrintf( "(Use this only if your ISP drops idle sessions.)\r\n" );

@@ -119,7 +119,16 @@ void openBrowser( void )
    int originalCaptureState;
    char aryLine[4];
    char aryCommand[4096];
+   const char *ptrBrowserCommand;
+   bool shouldBackgroundOverride;
    char *ptrUrlEntry;
+
+   ptrBrowserCommand = *aryBrowser ? aryBrowser : aryDefaultBrowser;
+   if ( ptrBrowserCommand == NULL || !*ptrBrowserCommand )
+   {
+      ptrBrowserCommand = "open";
+   }
+   shouldBackgroundOverride = ( *aryBrowser && flagsConfiguration.shouldRunBrowserInBackground );
 
    if ( urlQueue->nobjs < 1 )
    {
@@ -127,11 +136,11 @@ void openBrowser( void )
    }
    if ( urlQueue->nobjs == 1 )
    {
-      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", aryBrowser,
+      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", ptrBrowserCommand,
                 urlQueue->start + ( urlQueue->objsize * urlQueue->head ),
-                flagsConfiguration.shouldRunBrowserInBackground ? " &" : "" );
+                shouldBackgroundOverride ? " &" : "" );
       system( aryCommand );
-      if ( !flagsConfiguration.shouldRunBrowserInBackground )
+      if ( !shouldBackgroundOverride )
       {
          reprintLine();
       }
@@ -182,8 +191,8 @@ void openBrowser( void )
             ptrUrlEntry = urlQueue->start;
          }
       }
-      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", aryBrowser, ptrUrlEntry,
-                flagsConfiguration.shouldRunBrowserInBackground ? " &" : "" );
+      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", ptrBrowserCommand, ptrUrlEntry,
+                shouldBackgroundOverride ? " &" : "" );
       system( aryCommand );
    }
    shouldIgnoreNetwork = 0;

@@ -914,7 +914,8 @@ void initialize( const char *protocol )
    }
    if ( !isLoginShell )
    {
-      snprintf( aryBrowser, sizeof( aryBrowser ), "%s", "netscape -remote" );
+      snprintf( aryDefaultBrowser, sizeof( aryDefaultBrowser ), "%s", "open" );
+      aryBrowser[0] = '\0';
    }
    if ( isLoginShell )
    {
