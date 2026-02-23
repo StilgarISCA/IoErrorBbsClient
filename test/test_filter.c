@@ -241,6 +241,15 @@ int stdPutChar( int inputChar )
    return inputChar;
 }
 
+void getString( int length, char *result, int line )
+{
+   (void)line;
+   if ( length > 0 && result != NULL )
+   {
+      result[0] = '\0';
+   }
+}
+
 int strCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    return strcmp( (const char *)ptrLeft, (const char *)ptrRight );
