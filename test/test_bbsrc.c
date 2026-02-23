@@ -19,6 +19,7 @@
 static int setupCallCount;
 static int setupVersionArg;
 static int perrorCallCount;
+static int writeBbsRcCallCount;
 static char aryLastPerrorMessage[128];
 static char aryLastPerrorHeading[64];
 static char aryStdPrintfLog[16384];
@@ -28,6 +29,7 @@ static void resetTracking( void )
    setupCallCount = 0;
    setupVersionArg = 0;
    perrorCallCount = 0;
+   writeBbsRcCallCount = 0;
    aryLastPerrorMessage[0] = '\0';
    aryLastPerrorHeading[0] = '\0';
    aryStdPrintfLog[0] = '\0';
@@ -143,6 +145,11 @@ void setup( int oldversion )
 {
    setupCallCount++;
    setupVersionArg = oldversion;
+}
+
+void writeBbsRc( void )
+{
+   writeBbsRcCallCount++;
 }
 
 void sPerror( const char *message, const char *heading )
@@ -472,6 +479,173 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesLegacyNetscapeBrowser_ClearsOverrideAndWarns( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for legacy browser migration test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "aryBrowser 1 netscape -remote\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write legacy browser configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( aryBrowser[0] != '\0' )
+   {
+      fail_msg( "legacy Netscape browser command should be cleared; got '%s'", aryBrowser );
+   }
+   if ( flagsConfiguration.shouldRunBrowserInBackground != 0 )
+   {
+      fail_msg( "legacy Netscape browser command should disable background override; got %u",
+                flagsConfiguration.shouldRunBrowserInBackground );
+   }
+   if ( strstr( aryStdPrintfLog, "IMPORTANT: Your browser preference was removed due to client updates." ) == NULL )
+   {
+      fail_msg( "legacy Netscape browser command should emit migration warning; log was: %s", aryStdPrintfLog );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "legacy Netscape browser command should trigger one .bbsrc rewrite; got %d",
+                writeBbsRcCallCount );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigHasBlankBrowserOverride_UsesDefaultWithoutWarning( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for blank browser override test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "aryBrowser 0 \n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write blank browser override configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( aryBrowser[0] != '\0' )
+   {
+      fail_msg( "blank browser override should keep browser command empty; got '%s'", aryBrowser );
+   }
+   if ( flagsConfiguration.shouldRunBrowserInBackground != 0 )
+   {
+      fail_msg( "blank browser override should disable background override; got %u",
+                flagsConfiguration.shouldRunBrowserInBackground );
+   }
+   if ( strstr( aryStdPrintfLog, "Invalid browser command definition ignored." ) != NULL )
+   {
+      fail_msg( "blank browser override should not emit invalid-definition warning; log was: %s",
+                aryStdPrintfLog );
+   }
+   if ( strstr( aryStdPrintfLog, "IMPORTANT: Your browser preference was removed due to client updates." ) != NULL )
+   {
+      fail_msg( "blank browser override should not emit browser migration warning; log was: %s",
+                aryStdPrintfLog );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigHasInvalidBrowserSetting_ClearsOverrideAndWarns( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for invalid browser setting test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "aryBrowser x old-browser\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write invalid browser setting configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( aryBrowser[0] != '\0' )
+   {
+      fail_msg( "invalid browser setting should clear browser command; got '%s'", aryBrowser );
+   }
+   if ( flagsConfiguration.shouldRunBrowserInBackground != 0 )
+   {
+      fail_msg( "invalid browser setting should clear background flag; got %u",
+                flagsConfiguration.shouldRunBrowserInBackground );
+   }
+   if ( strstr( aryStdPrintfLog, "IMPORTANT: Your browser preference was removed due to client updates." ) == NULL )
+   {
+      fail_msg( "invalid browser setting should emit migration warning; log was: %s",
+                aryStdPrintfLog );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "invalid browser setting should trigger one .bbsrc rewrite; got %d",
+                writeBbsRcCallCount );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **state )
 {
    // Arrange
@@ -735,6 +909,9 @@ int main( void )
       cmocka_unit_test( openBbsRc_WhenPathIsReadOnly_SetsReadOnlyAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigIsEmpty_AppliesDefaults ),
       cmocka_unit_test( readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesLegacyNetscapeBrowser_ClearsOverrideAndWarns ),
+      cmocka_unit_test( readBbsRc_WhenConfigHasBlankBrowserOverride_UsesDefaultWithoutWarning ),
+      cmocka_unit_test( readBbsRc_WhenConfigHasInvalidBrowserSetting_ClearsOverrideAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveOne_EnablesTcpKeepalive ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsMalformedKeepalive_PrintsWarningAndKeepsDefault ),

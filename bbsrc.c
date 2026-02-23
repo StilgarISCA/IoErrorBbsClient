@@ -39,6 +39,37 @@ static int ctrl( const char *ptrToken )
    return ( parseIndex );
 }
 
+static bool startsWithIgnoreCase( const char *ptrText, const char *ptrPrefix )
+{
+   if ( ptrText == NULL || ptrPrefix == NULL )
+   {
+      return false;
+   }
+   while ( *ptrPrefix )
+   {
+      if ( tolower( (unsigned char)*ptrText ) != tolower( (unsigned char)*ptrPrefix ) )
+      {
+         return false;
+      }
+      ptrText++;
+      ptrPrefix++;
+   }
+   return true;
+}
+
+static bool isLegacyBrowserCommand( const char *ptrBrowserCommand )
+{
+   if ( ptrBrowserCommand == NULL )
+   {
+      return false;
+   }
+   while ( *ptrBrowserCommand != '\0' && isspace( (unsigned char)*ptrBrowserCommand ) )
+   {
+      ptrBrowserCommand++;
+   }
+   return startsWithIgnoreCase( ptrBrowserCommand, "netscape" );
+}
+
 /*
  * Parses the bbsrc file, setting necessary globals depending on the content of
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
@@ -159,6 +190,8 @@ void readBbsRc( void )
    int nameLength;
    size_t hold = 0;
    int tmpVersion = 0;
+   bool shouldShowBrowserMigrationNotice = false;
+   bool shouldRewriteBbsRc = false;
    friend *ptrFriend = NULL;
 
    version = INT_VERSION;
@@ -319,14 +352,42 @@ void readBbsRc( void )
             break;
 #endif
          case BBRC_CMD_BROWSER:
-            if ( strlen( aryLine ) < 13 )
+            if ( strlen( aryLine ) < 12 )
             {
-               stdPrintf( "Invalid browser command definition ignored.\n" );
+               aryBrowser[0] = '\0';
+               flagsConfiguration.shouldRunBrowserInBackground = 0;
+               shouldShowBrowserMigrationNotice = true;
+               shouldRewriteBbsRc = true;
             }
             else
             {
-               flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '0' ) ? 0 : 1;
-               snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryLine + 13 );
+               if ( aryLine[11] != '0' && aryLine[11] != '1' )
+               {
+                  aryBrowser[0] = '\0';
+                  flagsConfiguration.shouldRunBrowserInBackground = 0;
+                  shouldShowBrowserMigrationNotice = true;
+                  shouldRewriteBbsRc = true;
+                  break;
+               }
+
+               flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '1' );
+               if ( strlen( aryLine ) == 12 )
+               {
+                  /* Explicitly blank browser override means use macOS default. */
+                  aryBrowser[0] = '\0';
+                  flagsConfiguration.shouldRunBrowserInBackground = 0;
+               }
+               else
+               {
+                  snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryLine + 13 );
+               }
+               if ( isLegacyBrowserCommand( aryBrowser ) )
+               {
+                  aryBrowser[0] = '\0';
+                  flagsConfiguration.shouldRunBrowserInBackground = 0;
+                  shouldShowBrowserMigrationNotice = true;
+                  shouldRewriteBbsRc = true;
+               }
             }
             break;
 
@@ -869,6 +930,15 @@ void readBbsRc( void )
       {
          setup( -1 );
       }
+   }
+   if ( shouldShowBrowserMigrationNotice )
+   {
+      stdPrintf( "IMPORTANT: Your browser preference was removed due to client updates.\n" );
+      stdPrintf( "macOS default browser is now active. You can override this in client configuration.\n" );
+   }
+   if ( shouldRewriteBbsRc && !isBbsRcReadOnly )
+   {
+      writeBbsRc();
    }
    if ( isLoginShell )
    {
