@@ -67,9 +67,9 @@ extern int capture;                      /* Capture status */
 extern int shellKey;                     /* hotkey for shelling out (" shellKey) */
 extern char aryShell[PATH_MAX];          /* User's preferred aryShell */
 extern int awayKey;                      /* Hotkey for isAway from keyboard */
-extern int browserKey;                   /* Hotkey to spawn a Web aryBrowser */
-extern char aryBrowser[PATH_MAX];        /* User's preferred Web aryBrowser */
-extern char aryDefaultBrowser[PATH_MAX]; /* Detected system default aryBrowser */
+extern int browserKey;                   /* Hotkey to launch web browser */
+extern char aryBrowser[PATH_MAX];        /* User-configured browser command override */
+extern char aryDefaultBrowser[PATH_MAX]; /* System default browser command */
 
 #ifdef HAVE_OPENSSL
 extern SSL *ssl; /* SSL connection */

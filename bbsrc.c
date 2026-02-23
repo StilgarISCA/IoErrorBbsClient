@@ -321,7 +321,7 @@ void readBbsRc( void )
          case BBRC_CMD_BROWSER:
             if ( strlen( aryLine ) < 13 )
             {
-               stdPrintf( "Invalid definition of 'aryBrowser' ignored.\n" );
+               stdPrintf( "Invalid browser command definition ignored.\n" );
             }
             else
             {
