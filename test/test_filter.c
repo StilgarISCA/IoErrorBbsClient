@@ -497,6 +497,42 @@ static void filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes( void 
    resetLists();
 }
 
+static void filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl( void **state )
+{
+   // Arrange
+   char aryUrl[1024];
+   int popResult;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for wrapped URL test setup" );
+   }
+
+   // Act
+   filterUrl( "https://arstechnica.com/gadgets/2026/01/inside-nvidias-10-year-effort-to-make-t" );
+   filterUrl( "he-shield-tv-the-most-updated-android-device-ever/" );
+   filterUrl( "Also still gets software updates!" );
+
+   // Assert
+   memset( aryUrl, 0, sizeof( aryUrl ) );
+   popResult = popQueue( aryUrl, urlQueue );
+   if ( popResult != 1 )
+   {
+      fail_msg( "wrapped HTTPS URL should be queued once; pop returned %d", popResult );
+   }
+   if ( strcmp( aryUrl, "https://arstechnica.com/gadgets/2026/01/inside-nvidias-10-year-effort-to-make-the-shield-tv-the-most-updated-android-device-ever/" ) != 0 )
+   {
+      fail_msg( "wrapped URL should be reconstructed into one URL; got '%s'", aryUrl );
+   }
+
+   resetLists();
+}
+
 static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **state )
 {
    // Arrange
@@ -553,6 +589,7 @@ int main( void )
       cmocka_unit_test( filterUrl_WhenHttpsAndTrailingPunctuationPresent_ExtractsCleanUrl ),
       cmocka_unit_test( filterUrl_WhenWwwUrlPresent_QueuesUrlWithoutTldList ),
       cmocka_unit_test( filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes ),
+      cmocka_unit_test( filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

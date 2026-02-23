@@ -217,10 +217,42 @@ static bool launchBrowserUrl( const char *ptrBrowserCommand, const char *ptrUrl,
    return true;
 }
 
+static void queueUrlIfNew( const char *ptrUrl )
+{
+   char aryTempText[1024];
+
+   if ( ptrUrl == NULL || !*ptrUrl )
+   {
+      return;
+   }
+   if ( isQueued( ptrUrl, urlQueue ) )
+   {
+      return;
+   }
+   while ( !pushQueue( ptrUrl, urlQueue ) )
+   {
+      popQueue( aryTempText, urlQueue );
+   }
+}
+
+static void finalizePendingUrl( char *aryPendingUrl, size_t pendingUrlSize, bool *ptrHasPendingUrl )
+{
+   (void)pendingUrlSize;
+   trimUrlTailPunctuation( aryPendingUrl );
+   if ( *aryPendingUrl )
+   {
+      queueUrlIfNew( aryPendingUrl );
+   }
+   aryPendingUrl[0] = '\0';
+   *ptrHasPendingUrl = false;
+}
+
 void filterUrl( const char *ptrLine )
 {
-   static int multiline = 0;
-   static char aryUrlBuffer[1024];
+   static bool hasPendingUrl = false;
+   static char aryPendingUrl[2048];
+   static const size_t WRAP_GUESS_MIN_LENGTH = 70;
+   char aryLineBuffer[1024];
    char *ptrCursor;
    char *ptrNext;
 
@@ -228,98 +260,105 @@ void filterUrl( const char *ptrLine )
    {
       return;
    }
-
-   if ( !multiline )
+   if ( ptrLine == NULL )
    {
-      snprintf( aryUrlBuffer, sizeof( aryUrlBuffer ), "%s", ptrLine );
+      return;
    }
-   else
-   {
-      size_t existingLength;
 
-      existingLength = strlen( aryUrlBuffer );
-      if ( existingLength < sizeof( aryUrlBuffer ) - 1 )
+   snprintf( aryLineBuffer, sizeof( aryLineBuffer ), "%s", ptrLine );
+   {
+      size_t lineLength;
+
+      lineLength = strlen( aryLineBuffer );
+      while ( lineLength > 0 &&
+              ( aryLineBuffer[lineLength - 1] == ' ' || aryLineBuffer[lineLength - 1] == '\t' ||
+                aryLineBuffer[lineLength - 1] == '\r' ) )
       {
-         snprintf( aryUrlBuffer + existingLength, sizeof( aryUrlBuffer ) - existingLength, "%s", ptrLine );
+         aryLineBuffer[lineLength - 1] = '\0';
+         lineLength--;
       }
    }
 
+   ptrCursor = aryLineBuffer;
+   if ( hasPendingUrl )
    {
-      size_t urlLength;
+      size_t pendingLength;
+      size_t appendedCount;
 
-      urlLength = strlen( aryUrlBuffer );
-      while ( urlLength > 0 )
+      while ( *ptrCursor != '\0' && isspace( (unsigned char)*ptrCursor ) )
       {
-         size_t index;
-
-         index = urlLength - 1;
-         if ( aryUrlBuffer[index] == ' ' || aryUrlBuffer[index] == '\t' || aryUrlBuffer[index] == '\r' )
+         ptrCursor++;
+      }
+      pendingLength = strlen( aryPendingUrl );
+      appendedCount = 0;
+      while ( *ptrCursor != '\0' && isUrlBodyChar( (unsigned char)*ptrCursor ) )
+      {
+         if ( pendingLength + 1 < sizeof( aryPendingUrl ) )
          {
-            aryUrlBuffer[index] = 0;
+            aryPendingUrl[pendingLength++] = *ptrCursor;
+            aryPendingUrl[pendingLength] = '\0';
+         }
+         appendedCount++;
+         ptrCursor++;
+      }
+      if ( appendedCount > 0 )
+      {
+         if ( *ptrCursor == '\0' )
+         {
+            size_t continuationVisibleLength;
+
+            continuationVisibleLength = strlen( ptrCursor - appendedCount );
+            if ( continuationVisibleLength < WRAP_GUESS_MIN_LENGTH )
+            {
+               finalizePendingUrl( aryPendingUrl, sizeof( aryPendingUrl ), &hasPendingUrl );
+            }
          }
          else
          {
-            break;
+            finalizePendingUrl( aryPendingUrl, sizeof( aryPendingUrl ), &hasPendingUrl );
          }
-         urlLength = index;
+      }
+      else
+      {
+         finalizePendingUrl( aryPendingUrl, sizeof( aryPendingUrl ), &hasPendingUrl );
       }
    }
 
+   for ( ptrCursor = findUrlStart( aryLineBuffer ); ptrCursor != NULL; ptrCursor = findUrlStart( ptrNext ) )
    {
-      size_t existingLength;
-
-      existingLength = strlen( aryUrlBuffer );
-      if ( existingLength < sizeof( aryUrlBuffer ) - 1 )
+      for ( ptrNext = ptrCursor; *ptrNext; ptrNext++ )
       {
-         snprintf( aryUrlBuffer + existingLength, sizeof( aryUrlBuffer ) - existingLength, " " );
+         if ( !isUrlTerminator( *ptrNext ) && isUrlBodyChar( (unsigned char)*ptrNext ) )
+         {
+            continue;
+         }
+         break;
       }
-   }
 
-   ptrCursor = findUrlStart( aryUrlBuffer );
-   if ( ptrCursor == NULL )
-   {
-      aryUrlBuffer[0] = 0;
-      multiline = 0;
-      return;
-   }
+      if ( *ptrNext == '\0' )
+      {
+         size_t fragmentLength;
 
-   for ( ptrNext = ptrCursor; *ptrNext; ptrNext++ )
-   {
-      if ( !isUrlTerminator( *ptrNext ) && isUrlBodyChar( *ptrNext ) )
-      {
-         continue;
-      }
-      *ptrNext = 0;
-      trimUrlTailPunctuation( ptrCursor );
-      if ( *ptrCursor == '\0' )
-      {
-         multiline = 0;
+         fragmentLength = strlen( ptrCursor );
+         if ( fragmentLength >= WRAP_GUESS_MIN_LENGTH )
+         {
+            snprintf( aryPendingUrl, sizeof( aryPendingUrl ), "%s", ptrCursor );
+            hasPendingUrl = true;
+         }
+         else
+         {
+            trimUrlTailPunctuation( ptrCursor );
+            queueUrlIfNew( ptrCursor );
+         }
          return;
       }
 
-      if ( ( !multiline && ptrCursor == ptrLine && ptrNext > ptrCursor + 77 ) ||
-           ( multiline && strlen( ptrLine ) > 77 ) )
-      {
-         if ( strlen( ptrLine ) > 77 )
-         {
-            break;
-         }
-      }
+      *ptrNext = '\0';
+      trimUrlTailPunctuation( ptrCursor );
+      queueUrlIfNew( ptrCursor );
 
-      if ( !isQueued( ptrCursor, urlQueue ) )
-      {
-         char aryTempText[1024];
-
-         while ( !pushQueue( ptrCursor, urlQueue ) )
-         {
-            popQueue( aryTempText, urlQueue );
-         }
-      }
-      multiline = 0;
-      return;
+      ptrNext++;
    }
-
-   multiline = 1;
 }
 
 void openBrowser( void )
