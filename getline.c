@@ -109,10 +109,8 @@ void getFiveLines( int which )
  */
 int smartName( char *ptrBuffer, char *ptrEnd )
 {
-   unsigned int itemIndex;
    int found = -1;
    const char *ptrFriend = NULL;
-   const char *ptrNextFriend;
    char hold = *ptrEnd;
    slist *listToUse;
 
@@ -120,6 +118,8 @@ int smartName( char *ptrBuffer, char *ptrEnd )
    listToUse = whoList;
    {
       size_t bufferLength = strlen( ptrBuffer );
+      unsigned int itemIndex;
+
       for ( itemIndex = 0; itemIndex < listToUse->nitems; itemIndex++ )
       {
          ptrFriend = listToUse->items[itemIndex];
@@ -133,6 +133,8 @@ int smartName( char *ptrBuffer, char *ptrEnd )
             }
             else
             {
+               const char *ptrNextFriend;
+
                ptrNextFriend = listToUse->items[itemIndex + 1];
                if ( strncmp( ptrNextFriend, ptrBuffer, bufferLength ) )
                {

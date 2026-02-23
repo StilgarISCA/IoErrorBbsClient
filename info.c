@@ -13,13 +13,14 @@ static const char *INFO_MENU_KEYS = "clowtq \n";
 void feedPager( int startrow, ... )
 {
    int currentRow;
-   char *ptrText;
    va_list ap;
 
    currentRow = startrow;
    va_start( ap, startrow );
    while ( true )
    {
+      char *ptrText;
+
       ptrText = va_arg( ap, char * );
       if ( !ptrText )
       {
@@ -339,8 +340,6 @@ void warranty( void )
  */
 void information( void )
 {
-   int inputChar;
-
    stdPrintf( "Information\r\n" );
 
    while ( true )
@@ -353,7 +352,7 @@ void information( void )
       {
          stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
       }
-      inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
+      int inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
       switch ( inputChar )
       {
          case 'c':

@@ -206,7 +206,6 @@ void ansiTransformPostHeader( char *ptrText, int isFriend )
 void colorConfig( void )
 {
    char aryPromptText[110];
-   int inputChar;
 
    stdPrintf( "Color\r\n" );
    if ( !flagsConfiguration.useAnsi )
@@ -218,7 +217,7 @@ void colorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
       colorize( aryPromptText );
 
-      inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
+      int inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
 
       switch ( inputChar )
       {
@@ -287,7 +286,6 @@ void colorOptions( void )
 
 void generalColorConfig( void )
 {
-   int menuOption;
    char aryPromptText[100];
 
    while ( true )
@@ -300,7 +298,7 @@ void generalColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      menuOption = readValidatedMenuKey( COLOR_GENERAL_MENU_KEYS );
+      int menuOption = readValidatedMenuKey( COLOR_GENERAL_MENU_KEYS );
 
       switch ( menuOption )
       {
@@ -338,7 +336,6 @@ void generalColorConfig( void )
 
 void inputColorConfig( void )
 {
-   int menuOption;
    char aryPromptText[100];
 
    while ( true )
@@ -349,7 +346,7 @@ void inputColorConfig( void )
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
 
-      menuOption = readValidatedMenuKey( COLOR_INPUT_MENU_KEYS );
+      int menuOption = readValidatedMenuKey( COLOR_INPUT_MENU_KEYS );
 
       switch ( menuOption )
       {
@@ -393,10 +390,10 @@ void postColorConfig( void )
 
 void postUserColorConfig( void )
 {
-   int menuOption;
-
    while ( true )
    {
+      int menuOption;
+
       stdPrintf( POST_FMT_STR, color.postdate, color.posttext,
                  color.postname, A_USER, color.posttext, color.forum );
       menuOption = postColorMenu();
@@ -424,10 +421,10 @@ void postUserColorConfig( void )
 
 void postFriendColorConfig( void )
 {
-   int menuOption;
-
    while ( true )
    {
+      int menuOption;
+
       stdPrintf( POST_FMT_STR, color.postfrienddate, color.postfriendtext,
                  color.postfriendname, A_FRIEND, color.postfriendtext,
                  color.forum );
@@ -507,10 +504,10 @@ void expressColorConfig( void )
 
 void expressUserColorConfig( void )
 {
-   int menuOption;
-
    while ( true )
    {
+      int menuOption;
+
       stdPrintf( EXPRESS_FMT_STR, color.expresstext,
                  color.expressname, A_USER, color.expresstext );
       menuOption = expressColorMenu();
@@ -535,10 +532,10 @@ void expressUserColorConfig( void )
 
 void expressFriendColorConfig( void )
 {
-   int menuOption;
-
    while ( true )
    {
+      int menuOption;
+
       stdPrintf( EXPRESS_FMT_STR, color.expressfriendtext,
                  color.expressfriendname, A_FRIEND, color.expressfriendtext );
       menuOption = expressColorMenu();

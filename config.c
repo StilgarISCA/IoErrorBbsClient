@@ -350,8 +350,6 @@ void configBbsRc( void )
 
 void expressConfig( void )
 {
-   int inputChar;
-
    stdPrintf( "Express\r\n" );
 
    while ( true )
@@ -365,7 +363,7 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
+      int inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
 
       switch ( inputChar )
       {
@@ -517,10 +515,10 @@ void writeBbsRc( void )
  */
 int newKey( int oldkey )
 {
-   int inputChar;
-
    while ( true )
    {
+      int inputChar;
+
       inputChar = getKey();
       if ( ( ( inputChar == ' ' || inputChar == '\n' ||
                inputChar == '\r' ) &&
@@ -550,7 +548,6 @@ int newKey( int oldkey )
 void newMacro( int which )
 {
    register int itemIndex;
-   register int inputChar;
 
    if ( *aryMacro[which] )
    {
@@ -572,6 +569,8 @@ void newMacro( int which )
    stdPrintf( "\r\nEnter new aryMacro (use %s to end)\r\n -> ", strCtrl( commandKey ) );
    for ( itemIndex = 0;; itemIndex++ )
    {
+      register int inputChar;
+
       inputChar = inKey();
       if ( inputChar == '\b' )
       {

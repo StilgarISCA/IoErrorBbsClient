@@ -1009,8 +1009,6 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
 {
    FILE *ptrOldFile;
    FILE *ptrNewFile;
-   char aryCopyBuffer[BUFSIZ];
-   size_t bytesRead;
    long targetSize;
 
    ptrOldFile = fopen( oldpath, "r" );
@@ -1029,6 +1027,9 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
    targetSize = ftell( ptrNewFile );
    if ( targetSize == 0 )
    {
+      char aryCopyBuffer[BUFSIZ];
+      size_t bytesRead;
+
       while ( ( bytesRead = fread( aryCopyBuffer, 1, sizeof( aryCopyBuffer ), ptrOldFile ) ) > 0 )
       {
          if ( fwrite( aryCopyBuffer, 1, bytesRead, ptrNewFile ) != bytesRead )
