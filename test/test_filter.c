@@ -342,8 +342,8 @@ static void filterUrl_WhenDuplicateSeen_QueuesOnlyOnce( void **state )
    }
 
    // Act
-   filterUrl( "Did I leave it here? http://bbs.example.net/threads/42" );
-   filterUrl( "Again: http://bbs.example.net/threads/42" );
+   filterUrl( "Did I leave it here? https://bbs.example.net/threads/42" );
+   filterUrl( "Again: https://bbs.example.net/threads/42" );
 
    // Assert
    if ( urlQueue->nobjs != 1 )
@@ -357,7 +357,7 @@ static void filterUrl_WhenDuplicateSeen_QueuesOnlyOnce( void **state )
    {
       fail_msg( "URL queue should contain exactly one element; pop results were %d then %d", firstPopResult, secondPopResult );
    }
-   if ( strcmp( aryUrl, "http://bbs.example.net/threads/42" ) != 0 )
+   if ( strcmp( aryUrl, "https://bbs.example.net/threads/42" ) != 0 )
    {
       fail_msg( "queued URL mismatch; got '%s'", aryUrl );
    }
@@ -382,9 +382,9 @@ static void filterUrl_WhenQueueIsFull_EvictsOldestUrl( void **state )
    }
 
    // Act
-   filterUrl( "One http://example.net/one" );
-   filterUrl( "Two http://example.net/two" );
-   filterUrl( "Three http://example.net/three" );
+   filterUrl( "One https://example.net/one" );
+   filterUrl( "Two https://example.net/two" );
+   filterUrl( "Three https://example.net/three" );
 
    // Assert
    if ( urlQueue->nobjs != 2 )
@@ -395,9 +395,103 @@ static void filterUrl_WhenQueueIsFull_EvictsOldestUrl( void **state )
    memset( arySecond, 0, sizeof( arySecond ) );
    popQueue( aryFirst, urlQueue );
    popQueue( arySecond, urlQueue );
-   if ( strcmp( aryFirst, "http://example.net/two" ) != 0 || strcmp( arySecond, "http://example.net/three" ) != 0 )
+   if ( strcmp( aryFirst, "https://example.net/two" ) != 0 || strcmp( arySecond, "https://example.net/three" ) != 0 )
    {
       fail_msg( "URL queue eviction order mismatch; got '%s' then '%s'", aryFirst, arySecond );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenHttpsAndTrailingPunctuationPresent_ExtractsCleanUrl( void **state )
+{
+   // Arrange
+   char aryUrl[1024];
+   int popResult;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for HTTPS URL punctuation test setup" );
+   }
+
+   // Act
+   filterUrl( "Read this: https://example.dev/path?q=1#frag)." );
+
+   // Assert
+   memset( aryUrl, 0, sizeof( aryUrl ) );
+   popResult = popQueue( aryUrl, urlQueue );
+   if ( popResult != 1 )
+   {
+      fail_msg( "HTTPS URL should be queued exactly once; pop returned %d", popResult );
+   }
+   if ( strcmp( aryUrl, "https://example.dev/path?q=1#frag" ) != 0 )
+   {
+      fail_msg( "HTTPS URL should trim trailing punctuation; got '%s'", aryUrl );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenWwwUrlPresent_QueuesUrlWithoutTldList( void **state )
+{
+   // Arrange
+   char aryUrl[1024];
+   int popResult;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for www URL test setup" );
+   }
+
+   // Act
+   filterUrl( "Mirror is at www.example.photography/section/alpha, check it out." );
+
+   // Assert
+   memset( aryUrl, 0, sizeof( aryUrl ) );
+   popResult = popQueue( aryUrl, urlQueue );
+   if ( popResult != 1 )
+   {
+      fail_msg( "www URL should be queued exactly once; pop returned %d", popResult );
+   }
+   if ( strcmp( aryUrl, "www.example.photography/section/alpha" ) != 0 )
+   {
+      fail_msg( "www URL parsing should support modern TLDs and trim punctuation; got '%s'", aryUrl );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for unsupported scheme test setup" );
+   }
+
+   // Act
+   filterUrl( "Legacy link http://example.net/legacy should be ignored." );
+   filterUrl( "Another legacy link ftp://example.net/pub/file should be ignored." );
+
+   // Assert
+   if ( urlQueue->nobjs != 0 )
+   {
+      fail_msg( "unsupported schemes should not be queued; queue count is %d", urlQueue->nobjs );
    }
 
    resetLists();
@@ -456,6 +550,9 @@ int main( void )
       cmocka_unit_test( notReplyingTransformExpress_WhenHeaderContainsAt_InsertsNotReplyingLabel ),
       cmocka_unit_test( filterUrl_WhenDuplicateSeen_QueuesOnlyOnce ),
       cmocka_unit_test( filterUrl_WhenQueueIsFull_EvictsOldestUrl ),
+      cmocka_unit_test( filterUrl_WhenHttpsAndTrailingPunctuationPresent_ExtractsCleanUrl ),
+      cmocka_unit_test( filterUrl_WhenWwwUrlPresent_QueuesUrlWithoutTldList ),
+      cmocka_unit_test( filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

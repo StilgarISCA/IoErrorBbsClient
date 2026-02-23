@@ -16,6 +16,78 @@
 
 extern char **environ;
 
+static bool isUrlTerminator( int inputChar )
+{
+   if ( inputChar == 0 || isspace( inputChar ) )
+   {
+      return true;
+   }
+   return false;
+}
+
+static bool isUrlBodyChar( int inputChar )
+{
+   static const char *ptrAllowedPunctuation = "-._~:/?#[]@!$&'()*+,;=%";
+
+   if ( isalnum( inputChar ) )
+   {
+      return true;
+   }
+   return findChar( ptrAllowedPunctuation, inputChar ) != NULL;
+}
+
+static char *findUrlStart( char *ptrText )
+{
+   char *ptrHttps;
+   char *ptrWww;
+   char *ptrEarliest;
+
+   ptrHttps = strstr( ptrText, "https://" );
+   ptrWww = strstr( ptrText, "www." );
+
+   ptrEarliest = ptrHttps;
+   if ( ptrWww != NULL && ( ptrEarliest == NULL || ptrWww < ptrEarliest ) )
+   {
+      ptrEarliest = ptrWww;
+   }
+
+   if ( ptrWww != NULL && ptrEarliest == ptrWww )
+   {
+      if ( ptrWww != ptrText && !isspace( (unsigned char)ptrWww[-1] ) && ptrWww[-1] != '(' &&
+           ptrWww[-1] != '<' && ptrWww[-1] != '"' && ptrWww[-1] != '\'' )
+      {
+         ptrEarliest = NULL;
+      }
+   }
+
+   return ptrEarliest;
+}
+
+static void trimUrlTailPunctuation( char *ptrUrlStart )
+{
+   size_t urlLength;
+
+   urlLength = strlen( ptrUrlStart );
+   while ( urlLength > 0 )
+   {
+      char tailCharacter;
+
+      tailCharacter = ptrUrlStart[urlLength - 1];
+      if ( tailCharacter == '.' || tailCharacter == ',' || tailCharacter == ';' ||
+           tailCharacter == ':' || tailCharacter == '!' || tailCharacter == '?' ||
+           tailCharacter == ')' || tailCharacter == ']' || tailCharacter == '}' ||
+           tailCharacter == '>' || tailCharacter == '"' || tailCharacter == '\'' )
+      {
+         ptrUrlStart[urlLength - 1] = '\0';
+         urlLength--;
+      }
+      else
+      {
+         break;
+      }
+   }
+}
+
 static bool parseBrowserCommand( const char *ptrBrowserCommand,
                                  char *aryCommandBuffer,
                                  size_t commandBufferSize,
@@ -203,11 +275,7 @@ void filterUrl( const char *ptrLine )
       }
    }
 
-   ptrCursor = strstr( aryUrlBuffer, "http://" );
-   if ( ptrCursor == NULL )
-   {
-      ptrCursor = strstr( aryUrlBuffer, "ftp://" );
-   }
+   ptrCursor = findUrlStart( aryUrlBuffer );
    if ( ptrCursor == NULL )
    {
       aryUrlBuffer[0] = 0;
@@ -217,11 +285,17 @@ void filterUrl( const char *ptrLine )
 
    for ( ptrNext = ptrCursor; *ptrNext; ptrNext++ )
    {
-      if ( findChar( ":/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$-_@.&+,=;?%~{|}", *ptrNext ) )
+      if ( !isUrlTerminator( *ptrNext ) && isUrlBodyChar( *ptrNext ) )
       {
          continue;
       }
       *ptrNext = 0;
+      trimUrlTailPunctuation( ptrCursor );
+      if ( *ptrCursor == '\0' )
+      {
+         multiline = 0;
+         return;
+      }
 
       if ( ( !multiline && ptrCursor == ptrLine && ptrNext > ptrCursor + 77 ) ||
            ( multiline && strlen( ptrLine ) > 77 ) )
