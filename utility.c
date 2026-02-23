@@ -159,7 +159,9 @@ void myExit( void )
    resetTerm();
 #ifdef HAVE_OPENSSL
    if ( isSsl )
+   {
       killSsl();
+   }
 #endif
    if ( flagsConfiguration.isLastSave )
    {

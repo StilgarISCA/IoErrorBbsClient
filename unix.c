@@ -633,7 +633,9 @@ void setTerm( void )
    titleBar();
 #ifdef HAVE_TERMIO_H
    if ( !isTerminalStateSaved )
+   {
       ioctl( 0, TCGETA, &saveterm );
+   }
    tmpterm = saveterm;
    tmpterm.c_iflag &= ~( INLCR | IGNCR | ICRNL );
    tmpterm.c_iflag |= IXOFF | IXON | IXANY;

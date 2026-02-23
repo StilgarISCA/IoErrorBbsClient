@@ -185,11 +185,16 @@ void configBbsRc( void )
                snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", aryMenuLine );
             }
 #if 0
-       stdPrintf("Use secure (SSL) connection to this site? (%s) -> ",
-   		    shouldUseSsl ? "Yes" : "No");
-       if (yesNoDefault(shouldUseSsl))
-   	shouldUseSsl = 1;
-       else
+	      stdPrintf("Use secure (SSL) connection to this site? (%s) -> ",
+		    shouldUseSsl ? "Yes" : "No");
+	      if ( yesNoDefault( shouldUseSsl ) )
+	      {
+	         shouldUseSsl = 1;
+	      }
+	      else
+	      {
+	         shouldUseSsl = 0;
+	      }
 #endif
             shouldUseSsl = 0;
             if ( ( !bbsPort || bbsPort == BBS_PORT_NUMBER ) && shouldUseSsl )
@@ -454,7 +459,9 @@ void writeBbsRc( void )
    }
 #ifdef ENABLE_SAVE_PASSWORD
    if ( *aryAutoPassword )
+   {
       fprintf( ptrBbsRc, "autopass %s\n", aryAutoPassword );
+   }
 #endif
    bcopy( (void *)&color, aryColorBytes, sizeof color );
    aryColorBytes[sizeof color] = 0;
