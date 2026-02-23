@@ -77,6 +77,7 @@ typedef enum
    BBRC_CMD_SITE,
    BBRC_CMD_SQUELCH,
    BBRC_CMD_SUSP,
+   BBRC_CMD_TCP_KEEPALIVE,
    BBRC_CMD_URL,
    BBRC_CMD_VERSION,
    BBRC_CMD_XLAND,
@@ -106,6 +107,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "xland", 5, BBRC_CMD_XLAND },
          { "version ", 8, BBRC_CMD_VERSION },
          { "squelch ", 8, BBRC_CMD_SQUELCH },
+         { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
          { "autoansi", 9, BBRC_CMD_AUTOANSI },
@@ -210,6 +212,7 @@ void readBbsRc( void )
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
    flagsConfiguration.shouldRunBrowserInBackground = 0;
+   flagsConfiguration.shouldUseTcpKeepalive = 1;
 
    defaultColors( 1 );
 
@@ -265,6 +268,21 @@ void readBbsRc( void )
                   break;
                default:
                   break;
+            }
+            break;
+
+         case BBRC_CMD_TCP_KEEPALIVE:
+            if ( strlen( aryLine ) <= 9 )
+            {
+               flagsConfiguration.shouldUseTcpKeepalive = 1;
+            }
+            else if ( aryLine[9] == ' ' )
+            {
+               flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)( atoi( aryLine + 10 ) != 0 );
+            }
+            else
+            {
+               stdPrintf( "Invalid definition of 'keepalive' ignored.\n" );
             }
             break;
 

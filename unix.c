@@ -408,11 +408,8 @@ void connectBbs( void )
       fatalPerror( "socket", "Local error" );
    }
 
-   /*
-    * Keepalive is on by default for this fork. Later we can expose this as a
-    * user toggle/config option without touching connect logic.
-    */
-   configureTcpKeepalive( net, true );
+   /* Client configuration controls keepalive probes. */
+   configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
 
    connectResult = connect( net, (struct sockaddr *)&socketAddress, sizeof socketAddress );
    if ( connectResult < 0 )

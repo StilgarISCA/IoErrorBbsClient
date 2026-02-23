@@ -135,6 +135,7 @@ typedef struct
    unsigned int shouldSquelchExpress : 1;         /* true if we should squelch enemy express */
    unsigned int shouldAutoAnswerAnsiPrompt : 1;   /* true if we automatically answer ANSI ? */
    unsigned int shouldRunBrowserInBackground : 1; /* true if aryBrowser can be backgrounded */
+   unsigned int shouldUseTcpKeepalive : 1;        /* true if TCP keepalive probes are enabled */
 } Flags;
 
 typedef struct

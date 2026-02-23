@@ -226,6 +226,10 @@ void configBbsRc( void )
             stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
                        flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
             flagsConfiguration.shouldRunBrowserInBackground = (unsigned int)yesNoDefault( flagsConfiguration.shouldRunBrowserInBackground );
+            stdPrintf( "Keep idle connections alive with occasional TCP probes? (%s) -> ",
+                       flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
+            stdPrintf( "(Use this only if your ISP drops idle sessions.)\r\n" );
+            flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
             break;
 
          case 'h':
@@ -442,6 +446,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "capture %s\n", strCtrl( captureKey ) );
    fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
+   fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "aryBrowser %d %s\n", flagsConfiguration.shouldRunBrowserInBackground ? 1 : 0, aryBrowser );
    if ( *aryAutoName )
    {
