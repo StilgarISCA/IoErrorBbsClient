@@ -18,6 +18,70 @@
 
 static struct passwd *pw;
 
+static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
+{
+   int enabledValue;
+
+   if ( socketFileDescriptor < 0 )
+   {
+      return;
+   }
+
+   enabledValue = isEnabled ? 1 : 0;
+   if ( setsockopt( socketFileDescriptor, SOL_SOCKET, SO_KEEPALIVE, &enabledValue, sizeof( enabledValue ) ) < 0 )
+   {
+      return;
+   }
+   if ( !isEnabled )
+   {
+      return;
+   }
+
+   /*
+    * Keepalive defaults are conservative to avoid noticeable server load while
+    * still preventing common ISP/NAT idle disconnects on long-lived telnet sessions.
+    */
+#if defined( TCP_KEEPALIVE )
+   {
+      int keepaliveIdleSeconds = 120;
+      (void)setsockopt( socketFileDescriptor,
+                        IPPROTO_TCP,
+                        TCP_KEEPALIVE,
+                        &keepaliveIdleSeconds,
+                        sizeof( keepaliveIdleSeconds ) );
+   }
+#elif defined( TCP_KEEPIDLE )
+   {
+      int keepaliveIdleSeconds = 120;
+      (void)setsockopt( socketFileDescriptor,
+                        IPPROTO_TCP,
+                        TCP_KEEPIDLE,
+                        &keepaliveIdleSeconds,
+                        sizeof( keepaliveIdleSeconds ) );
+   }
+#endif
+#ifdef TCP_KEEPINTVL
+   {
+      int keepaliveIntervalSeconds = 30;
+      (void)setsockopt( socketFileDescriptor,
+                        IPPROTO_TCP,
+                        TCP_KEEPINTVL,
+                        &keepaliveIntervalSeconds,
+                        sizeof( keepaliveIntervalSeconds ) );
+   }
+#endif
+#ifdef TCP_KEEPCNT
+   {
+      int keepaliveProbeCount = 3;
+      (void)setsockopt( socketFileDescriptor,
+                        IPPROTO_TCP,
+                        TCP_KEEPCNT,
+                        &keepaliveProbeCount,
+                        sizeof( keepaliveProbeCount ) );
+   }
+#endif
+}
+
 #ifdef HAVE_OPENSSL
 SSL_CTX *ctx;
 
@@ -302,7 +366,7 @@ void noTitleBar( void )
  */
 void connectBbs( void )
 {
-   register struct hostent *host;
+   const struct hostent *host;
    register int connectResult;
    struct sockaddr_in socketAddress;
 
@@ -343,6 +407,10 @@ void connectBbs( void )
    {
       fatalPerror( "socket", "Local error" );
    }
+
+   /* Client configuration controls keepalive probes. */
+   configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
+
    connectResult = connect( net, (struct sockaddr *)&socketAddress, sizeof socketAddress );
    if ( connectResult < 0 )
    {
@@ -1009,8 +1077,6 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
 {
    FILE *ptrOldFile;
    FILE *ptrNewFile;
-   char aryCopyBuffer[BUFSIZ];
-   size_t bytesRead;
    long targetSize;
 
    ptrOldFile = fopen( oldpath, "r" );
@@ -1029,6 +1095,9 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
    targetSize = ftell( ptrNewFile );
    if ( targetSize == 0 )
    {
+      char aryCopyBuffer[BUFSIZ];
+      size_t bytesRead;
+
       while ( ( bytesRead = fread( aryCopyBuffer, 1, sizeof( aryCopyBuffer ), ptrOldFile ) ) > 0 )
       {
          if ( fwrite( aryCopyBuffer, 1, bytesRead, ptrNewFile ) != bytesRead )

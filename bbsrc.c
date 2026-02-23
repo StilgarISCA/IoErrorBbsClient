@@ -77,6 +77,7 @@ typedef enum
    BBRC_CMD_SITE,
    BBRC_CMD_SQUELCH,
    BBRC_CMD_SUSP,
+   BBRC_CMD_TCP_KEEPALIVE,
    BBRC_CMD_URL,
    BBRC_CMD_VERSION,
    BBRC_CMD_XLAND,
@@ -106,6 +107,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "xland", 5, BBRC_CMD_XLAND },
          { "version ", 8, BBRC_CMD_VERSION },
          { "squelch ", 8, BBRC_CMD_SQUELCH },
+         { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
          { "autoansi", 9, BBRC_CMD_AUTOANSI },
@@ -210,6 +212,7 @@ void readBbsRc( void )
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
    flagsConfiguration.shouldRunBrowserInBackground = 0;
+   flagsConfiguration.shouldUseTcpKeepalive = 1;
 
    defaultColors( 1 );
 
@@ -265,6 +268,21 @@ void readBbsRc( void )
                   break;
                default:
                   break;
+            }
+            break;
+
+         case BBRC_CMD_TCP_KEEPALIVE:
+            if ( strlen( aryLine ) <= 9 )
+            {
+               flagsConfiguration.shouldUseTcpKeepalive = 1;
+            }
+            else if ( aryLine[9] == ' ' )
+            {
+               flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)( atoi( aryLine + 10 ) != 0 );
+            }
+            else
+            {
+               stdPrintf( "Invalid definition of 'keepalive' ignored.\n" );
             }
             break;
 
@@ -389,6 +407,7 @@ void readBbsRc( void )
                if ( !ptrFriend )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  return;
                }
                strncpy( ptrFriend->info, aryLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
                for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
@@ -407,6 +426,7 @@ void readBbsRc( void )
                if ( !slistAddItem( friendList, ptrFriend, 1 ) )
                {
                   fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+                  return;
                }
             }
             else
@@ -415,6 +435,7 @@ void readBbsRc( void )
                if ( !ptrFriend )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  return;
                }
                strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
                hold = sizeof( ptrFriend->name );
@@ -423,6 +444,7 @@ void readBbsRc( void )
                if ( !slistAddItem( friendList, ptrFriend, 1 ) )
                {
                   fatalExit( "Can't add 'friend'!\n", "Fatal error" );
+                  return;
                }
             }
             break;
@@ -442,11 +464,13 @@ void readBbsRc( void )
                if ( !ptrNameCopy )
                {
                   fatalExit( "Out of memory adding 'enemy'!\n", "Fatal error" );
+                  return;
                }
                snprintf( ptrNameCopy, strlen( aryLine + 6 ) + 1, "%s", aryLine + 6 );
                if ( !slistAddItem( enemyList, (void *)ptrNameCopy, 1 ) )
                {
                   fatalExit( "Can't add 'enemy' to list!\n", "Fatal error" );
+                  return;
                }
             }
             break;
@@ -679,6 +703,7 @@ void readBbsRc( void )
                if ( !ptrFriend )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  return;
                }
                strncpy( ptrFriend->info, aryLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
                for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
@@ -700,6 +725,7 @@ void readBbsRc( void )
                if ( !ptrFriend )
                {
                   fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+                  return;
                }
                strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
                hold = sizeof( ptrFriend->name );
@@ -709,6 +735,7 @@ void readBbsRc( void )
             if ( !slistAddItem( friendList, ptrFriend, 1 ) )
             {
                fatalExit( "Can't add 'friend' to list!\n", "Fatal error" );
+               return;
             }
          }
       }
@@ -809,11 +836,13 @@ void readBbsRc( void )
       if ( !( ptrNameCopy = (char *)calloc( 1, strlen( ptrFriend->name ) + 1 ) ) )
       {
          fatalExit( "Out of memory for list copy!\r\n", "Fatal error" );
+         return;
       }
       snprintf( ptrNameCopy, strlen( ptrFriend->name ) + 1, "%s", ptrFriend->name );
       if ( !( slistAddItem( whoList, ptrNameCopy, 1 ) ) )
       {
          fatalExit( "Out of memory adding item in list copy!\r\n", "Fatal error" );
+         return;
       }
    }
 

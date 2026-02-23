@@ -370,6 +370,10 @@ static void readBbsRc_WhenConfigIsEmpty_AppliesDefaults( void **state )
    {
       fail_msg( "empty config should trigger setup(-1); got count=%d arg=%d", setupCallCount, setupVersionArg );
    }
+   if ( !flagsConfiguration.shouldUseTcpKeepalive )
+   {
+      fail_msg( "default config should enable TCP keepalive" );
+   }
 
    cleanupReadState();
    unlink( aryPath );
@@ -462,6 +466,133 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
    if ( setupCallCount != 0 )
    {
       fail_msg( "version-matched config should not call setup(); got %d calls", setupCallCount );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for keepalive=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keepalive 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for keepalive=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldUseTcpKeepalive )
+   {
+      fail_msg( "keepalive 0 should disable TCP keepalive" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsKeepaliveOne_EnablesTcpKeepalive( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for keepalive=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keepalive 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for keepalive=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.shouldUseTcpKeepalive )
+   {
+      fail_msg( "keepalive 1 should enable TCP keepalive" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigContainsMalformedKeepalive_PrintsWarningAndKeepsDefault( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for malformed keepalive test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keepaliveX\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write malformed keepalive configuration" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strstr( aryStdPrintfLog, "Invalid definition of 'keepalive' ignored." ) == NULL )
+   {
+      fail_msg( "malformed keepalive definition should emit warning; log was: %s", aryStdPrintfLog );
+   }
+   if ( !flagsConfiguration.shouldUseTcpKeepalive )
+   {
+      fail_msg( "malformed keepalive definition should leave default enabled state unchanged" );
    }
 
    cleanupReadState();
@@ -604,6 +735,9 @@ int main( void )
       cmocka_unit_test( openBbsRc_WhenPathIsReadOnly_SetsReadOnlyAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigIsEmpty_AppliesDefaults ),
       cmocka_unit_test( readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveOne_EnablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigContainsMalformedKeepalive_PrintsWarningAndKeepsDefault ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults ),

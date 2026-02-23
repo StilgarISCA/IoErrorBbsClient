@@ -38,7 +38,7 @@ int telReceive( int inputByte )
    static unsigned char aryTelnetBuffer[80]; /* Generic buffer */
    static int telnetBufferPos = 0;           /* Pointer into generic buffer */
    register int outputIndex;
-   char *ptrInputString;
+   const char *ptrInputString;
 
    switch ( state )
    {
@@ -338,11 +338,11 @@ void sendBlock( void )
  */
 void sendNaws( void )
 {
-   char aryString[10];
-   register int outputIndex;
-
    if ( oldRows != getWindowSize() )
    {
+      char aryString[10];
+      register int outputIndex;
+
       /* Old window max was 70 */
       if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
       {

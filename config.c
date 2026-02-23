@@ -226,6 +226,10 @@ void configBbsRc( void )
             stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
                        flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
             flagsConfiguration.shouldRunBrowserInBackground = (unsigned int)yesNoDefault( flagsConfiguration.shouldRunBrowserInBackground );
+            stdPrintf( "Keep idle connections alive with occasional TCP probes? (%s) -> ",
+                       flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
+            stdPrintf( "(Use this only if your ISP drops idle sessions.)\r\n" );
+            flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
             break;
 
          case 'h':
@@ -350,8 +354,6 @@ void configBbsRc( void )
 
 void expressConfig( void )
 {
-   int inputChar;
-
    stdPrintf( "Express\r\n" );
 
    while ( true )
@@ -365,7 +367,7 @@ void expressConfig( void )
          stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
       }
 
-      inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
+      int inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
 
       switch ( inputChar )
       {
@@ -444,6 +446,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "capture %s\n", strCtrl( captureKey ) );
    fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
+   fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "aryBrowser %d %s\n", flagsConfiguration.shouldRunBrowserInBackground ? 1 : 0, aryBrowser );
    if ( *aryAutoName )
    {
@@ -517,10 +520,10 @@ void writeBbsRc( void )
  */
 int newKey( int oldkey )
 {
-   int inputChar;
-
    while ( true )
    {
+      int inputChar;
+
       inputChar = getKey();
       if ( ( ( inputChar == ' ' || inputChar == '\n' ||
                inputChar == '\r' ) &&
@@ -550,7 +553,6 @@ int newKey( int oldkey )
 void newMacro( int which )
 {
    register int itemIndex;
-   register int inputChar;
 
    if ( *aryMacro[which] )
    {
@@ -572,6 +574,8 @@ void newMacro( int which )
    stdPrintf( "\r\nEnter new aryMacro (use %s to end)\r\n -> ", strCtrl( commandKey ) );
    for ( itemIndex = 0;; itemIndex++ )
    {
+      register int inputChar;
+
       inputChar = inKey();
       if ( inputChar == '\b' )
       {

@@ -28,6 +28,27 @@ static int getStringCallCount;
 
 static char aryStdPrintfLog[4096];
 
+static void cleanupWriteBbsRcFixture( void )
+{
+   if ( ptrBbsRc != NULL )
+   {
+      fclose( ptrBbsRc );
+      ptrBbsRc = NULL;
+   }
+   if ( friendList != NULL )
+   {
+      slistDestroyItems( friendList );
+      slistDestroy( friendList );
+      friendList = NULL;
+   }
+   if ( enemyList != NULL )
+   {
+      slistDestroyItems( enemyList );
+      slistDestroy( enemyList );
+      enemyList = NULL;
+   }
+}
+
 static void resetState( void )
 {
    getKeyCount = 0;
@@ -101,6 +122,16 @@ int fStrCompareVoid( const void *ptrName, const void *ptrFriend )
 
    ptrEntry = ptrFriend;
    return strcmp( (const char *)ptrName, ptrEntry->name );
+}
+
+int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
+{
+   const friend *const *ptrLeftFriend;
+   const friend *const *ptrRightFriend;
+
+   ptrLeftFriend = ptrLeft;
+   ptrRightFriend = ptrRight;
+   return strcmp( ( *ptrLeftFriend )->name, ( *ptrRightFriend )->name );
 }
 
 void fatalExit( const char *message, const char *heading )
@@ -242,6 +273,16 @@ int stdPrintf( const char *format, ... )
 int strCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    return strcmp( (const char *)ptrLeft, (const char *)ptrRight );
+}
+
+int sortCompareVoid( const void *ptrLeft, const void *ptrRight )
+{
+   const char *const *ptrLeftString;
+   const char *const *ptrRightString;
+
+   ptrLeftString = ptrLeft;
+   ptrRightString = ptrRight;
+   return strcmp( *ptrLeftString, *ptrRightString );
 }
 
 void truncateBbsRc( long userNameLength )
@@ -408,6 +449,106 @@ static void newAwayMessage_WhenUserAcceptsChange_ReplacesWithEnteredLines( void 
    }
 }
 
+static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state )
+{
+   // Arrange
+   char aryOutput[4096];
+
+   (void)state;
+   resetState();
+
+   cleanupWriteBbsRcFixture();
+   ptrBbsRc = tmpfile();
+   friendList = slistCreate( 0, fSortCompareVoid );
+   enemyList = slistCreate( 0, sortCompareVoid );
+   if ( ptrBbsRc == NULL || friendList == NULL || enemyList == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "Arrange failed: unable to initialize writeBbsRc fixture" );
+      return;
+   }
+
+   snprintf( aryEditor, sizeof( aryEditor ), "%s", "nano" );
+   snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", "bbs.example.net" );
+   bbsPort = 23;
+   commandKey = ESC;
+   quitKey = CTRL_D;
+   suspKey = CTRL_Z;
+   shellKey = '!';
+   captureKey = 'c';
+   awayKey = 'a';
+   flagsConfiguration.shouldUseTcpKeepalive = true;
+
+   // Act
+   writeBbsRc();
+
+   // Assert
+   if ( !tryReadFileIntoBuffer( ptrBbsRc, aryOutput, sizeof( aryOutput ) ) )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "Assert failed: unable to read generated .bbsrc output" );
+      return;
+   }
+   if ( strstr( aryOutput, "\nkeepalive 1\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'keepalive 1' when keepalive is enabled; output was:\n%s", aryOutput );
+      return;
+   }
+
+   cleanupWriteBbsRcFixture();
+}
+
+static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **state )
+{
+   // Arrange
+   char aryOutput[4096];
+
+   (void)state;
+   resetState();
+
+   cleanupWriteBbsRcFixture();
+   ptrBbsRc = tmpfile();
+   friendList = slistCreate( 0, fSortCompareVoid );
+   enemyList = slistCreate( 0, sortCompareVoid );
+   if ( ptrBbsRc == NULL || friendList == NULL || enemyList == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "Arrange failed: unable to initialize writeBbsRc fixture" );
+      return;
+   }
+
+   snprintf( aryEditor, sizeof( aryEditor ), "%s", "nano" );
+   snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", "bbs.example.net" );
+   bbsPort = 23;
+   commandKey = ESC;
+   quitKey = CTRL_D;
+   suspKey = CTRL_Z;
+   shellKey = '!';
+   captureKey = 'c';
+   awayKey = 'a';
+   flagsConfiguration.shouldUseTcpKeepalive = false;
+
+   // Act
+   writeBbsRc();
+
+   // Assert
+   if ( !tryReadFileIntoBuffer( ptrBbsRc, aryOutput, sizeof( aryOutput ) ) )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "Assert failed: unable to read generated .bbsrc output" );
+      return;
+   }
+   if ( strstr( aryOutput, "\nkeepalive 0\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'keepalive 0' when keepalive is disabled; output was:\n%s", aryOutput );
+      return;
+   }
+
+   cleanupWriteBbsRcFixture();
+}
+
 int main( void )
 {
    const struct CMUnitTest aryTests[] = {
@@ -417,6 +558,8 @@ int main( void )
       cmocka_unit_test( newKey_WhenUserEntersSpace_ReturnsOldKey ),
       cmocka_unit_test( newAwayMessage_WhenUserDeclinesChange_PreservesExistingMessage ),
       cmocka_unit_test( newAwayMessage_WhenUserAcceptsChange_ReplacesWithEnteredLines ),
+      cmocka_unit_test( writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne ),
+      cmocka_unit_test( writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero ),
    };
 
    return cmocka_run_group_tests( aryTests, NULL, NULL );

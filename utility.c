@@ -174,11 +174,12 @@ void myExit( void )
 
 void looper( void )
 {
-   register int inputChar;
    unsigned int invalid = 0;
 
    while ( true )
    {
+      register int inputChar;
+
       if ( ( inputChar = inKey() ) < 0 )
       {
          return;
@@ -214,12 +215,11 @@ void handleInvalidInput( unsigned int *ptrInvalidCount )
 
 int readValidatedKey( const char *allowedChars )
 {
-   int inputChar;
    unsigned int invalid = 0;
 
    while ( true )
    {
-      inputChar = inKey();
+      int inputChar = inKey();
       if ( findChar( allowedChars, inputChar ) )
       {
          return inputChar;
@@ -230,12 +230,11 @@ int readValidatedKey( const char *allowedChars )
 
 int readValidatedMenuKey( const char *allowedCharsLowercase )
 {
-   int inputChar;
    unsigned int invalid = 0;
 
    while ( true )
    {
-      inputChar = inKey();
+      int inputChar = inKey();
       if ( isalpha( inputChar ) )
       {
          inputChar = tolower( inputChar );
@@ -308,7 +307,6 @@ void tempFileError( void )
 
 int more( int *line, int percentComplete )
 {
-   register int inputChar;
    unsigned int invalid = 0;
 
    if ( percentComplete >= 0 )
@@ -321,6 +319,8 @@ int more( int *line, int percentComplete )
    }
    while ( true )
    {
+      register int inputChar;
+
       inputChar = inKey();
       if ( inputChar == ' ' || inputChar == 'y' || inputChar == 'Y' )
       {
@@ -487,7 +487,7 @@ char *extractName( const char *header )
 {
    int charIndex;
    int existingIndex = -1;
-   char *ptrExtractedName = extractNameNoHistory( header );
+   const char *ptrExtractedName = extractNameNoHistory( header );
 
    if ( !ptrExtractedName )
    {

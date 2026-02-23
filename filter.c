@@ -16,13 +16,9 @@ void filterWhoList( register int inputChar )
    static int friendColumn;
    static unsigned char aryWhoEntry[21]; /* Buffer for current name in aryWhoEntry list */
    static unsigned char *ptrWhoEntryWrite = NULL;
-   static long timestamp = 0;      /* Friend list timestamp */
-   static long timer = 0;          /* Friend list timestamp */
-   static long elapsedSeconds = 0; /* Current time */
-   static long extime = 0;         /* Extended time decoder */
+   static long timestamp = 0; /* Friend list timestamp */
+   static long extime = 0;    /* Extended time decoder */
    char aryTempText[80], aryDisplayLine[100];
-   char *ptrWhoCopy;
-   const friend *ptrFriend;
 
    if ( !ptrWhoEntryWrite )
    { /* First time through */
@@ -60,6 +56,9 @@ void filterWhoList( register int inputChar )
          }
          else if ( new == 0 )
          {
+            static long timer = 0;          /* Friend list timestamp */
+            static long elapsedSeconds = 0; /* Current time */
+
             elapsedSeconds = time( NULL ) - timestamp;
             if ( elapsedSeconds - 66 == timer )
             {
@@ -109,6 +108,9 @@ void filterWhoList( register int inputChar )
             }
             for ( unsigned int ui = 0; ui < friendList->nitems; ui++ )
             {
+               char *ptrWhoCopy;
+               const friend *ptrFriend;
+
                ptrFriend = friendList->items[ui];
                if ( !( ptrWhoCopy = (char *)calloc( 1, strlen( ptrFriend->name ) + 1 ) ) )
                {
@@ -138,16 +140,22 @@ void filterWhoList( register int inputChar )
             /* output name and info if aryUser is on our 'friend' list */
             snprintf( aryTempText, sizeof( aryTempText ), "%s", (char *)aryWhoEntry + 1 );
             *aryTempText &= 0x7f;
-            if ( !( ptrWhoCopy = (char *)calloc( 1, strlen( aryTempText ) + 1 ) ) )
             {
-               fatalExit( "Out of memory adding to saved aryWhoEntry list!\r\n", "Fatal error" );
-            }
-            snprintf( ptrWhoCopy, strlen( aryTempText ) + 1, "%s", aryTempText );
-            if ( slistFind( whoList, ptrWhoCopy, strCompareVoid ) == -1 )
-            {
-               if ( !( slistAddItem( whoList, ptrWhoCopy, 0 ) ) )
+               char *ptrWhoCopy;
+
+               ptrWhoCopy = (char *)calloc( 1, strlen( aryTempText ) + 1 );
+               if ( !ptrWhoCopy )
                {
-                  fatalExit( "Can't add item to saved aryWhoEntry list!\r\n", "Fatal error" );
+                  fatalExit( "Out of memory adding to saved aryWhoEntry list!\r\n", "Fatal error" );
+                  return;
+               }
+               snprintf( ptrWhoCopy, strlen( aryTempText ) + 1, "%s", aryTempText );
+               if ( slistFind( whoList, ptrWhoCopy, strCompareVoid ) == -1 )
+               {
+                  if ( !( slistAddItem( whoList, ptrWhoCopy, 0 ) ) )
+                  {
+                     fatalExit( "Can't add item to saved aryWhoEntry list!\r\n", "Fatal error" );
+                  }
                }
             }
             timestamp = time( NULL );
@@ -160,6 +168,8 @@ void filterWhoList( register int inputChar )
                --*aryWhoEntry;
                if ( friendColumn <= 60 )
                {
+                  const friend *ptrFriend;
+
                   ptrFriend = friendList->items[inputChar];
                   if ( extime == 0 )
                   {
@@ -194,7 +204,6 @@ void filterWhoList( register int inputChar )
 
 void filterExpress( register int inputChar )
 {
-   register int itemIndex;     /* generic counter */
    static char *ptrSenderName; /* comparison pointer */
    static struct
    {
@@ -218,6 +227,8 @@ void filterExpress( register int inputChar )
       }
       else if ( !needs.ignore )
       { /* Finished this X, dump it out */
+         register int itemIndex;
+
          /* Process for automatic reply */
          itemIndex = extractNumber( aryExpressMessageBuffer );
          /* Don't queue if it's an outgoing X */
@@ -311,7 +322,6 @@ void filterExpress( register int inputChar )
 
 void filterPost( register int inputChar )
 {
-   static int ansistate = 0; /* ANSI state count */
    static int numposts = 0;  /* count of the # of posts received so far */
    static char posthdr[140]; /* store the post header here */
    static char *posthdrp;    /* pointer into posthdr */
@@ -322,7 +332,6 @@ void filterPost( register int inputChar )
       unsigned int ignore : 1;  /* kill this post */
       unsigned int secondN : 1; /* send a second n */
    } needs;
-   static char *ptrSenderName; /* misc. pointer */
    static char aryTempText[160];
    static int isFriend; /* Current post is by a friend */
 
@@ -369,6 +378,8 @@ void filterPost( register int inputChar )
      */
    if ( !needs.prochdr )
    {
+      static int ansistate = 0; /* ANSI state count */
+
       /* Store this aryLine for processing */
       if ( inputChar == '\n' )
       {
@@ -441,6 +452,8 @@ void filterPost( register int inputChar )
          needs.prochdr = 0;
 
          /* Process for enemy list kill file */
+         char *ptrSenderName;
+
          snprintf( aryTempText, sizeof( aryTempText ), "%s", posthdr );
          ptrSenderNameForChecks = extractNameNoHistory( aryTempText );
          if ( ptrSenderNameForChecks &&

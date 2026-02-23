@@ -20,9 +20,7 @@
  */
 slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), ... )
 {
-   int itemIndex;
    slist *ptrList;
-   va_list argList;
 
    assert( nitems >= 0 );
    assert( sortfn );
@@ -35,6 +33,9 @@ slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), .
    ptrList->sortfn = sortfn;
    if ( nitems > 0 )
    {
+      int itemIndex;
+      va_list argList;
+
       if ( !( ptrList->items = (void *)calloc( 1, (size_t)nitems * sizeof( void * ) ) ) )
       {
          return NULL;
@@ -106,7 +107,6 @@ int slistAddItem( slist *list, void *item, int deferSort )
 int slistRemoveItem( slist *list, int item )
 {
    void **ptrItems;
-   unsigned int itemIndex;
 
    assert( list );
    assert( item >= 0 );
@@ -116,6 +116,8 @@ int slistRemoveItem( slist *list, int item )
    list->items[item] = NULL;
    if ( (unsigned int)item < --list->nitems )
    {
+      unsigned int itemIndex;
+
       for ( itemIndex = (unsigned int)item; itemIndex < list->nitems; itemIndex++ )
       {
          list->items[itemIndex] = list->items[itemIndex + 1];
@@ -139,10 +141,8 @@ int slistRemoveItem( slist *list, int item )
  */
 int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const void * ) )
 {
-   int midIndex;
    int upperBound;
    int lowerBound;
-   int compareResult;
 
    assert( list );
    assert( findfn );
@@ -159,6 +159,9 @@ int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const v
    lowerBound = 0;
    while ( upperBound >= lowerBound )
    {
+      int midIndex;
+      int compareResult;
+
       midIndex = ( upperBound + lowerBound ) / 2;
       compareResult = findfn( toFind, list->items[midIndex] );
       if ( compareResult == 0 )

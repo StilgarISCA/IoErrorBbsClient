@@ -587,7 +587,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
  */
 int checkFile( FILE *ptrMessageFile )
 {
-   int itemIndex;
    int count = 0;
    int line = 1;
    int total = 0;
@@ -595,18 +594,18 @@ int checkFile( FILE *ptrMessageFile )
    rewind( ptrMessageFile );
    while ( !feof( ptrMessageFile ) )
    {
-      if ( ( itemIndex = getc( ptrMessageFile ) ) != '\r' && itemIndex != '\n' )
+      int inputChar = getc( ptrMessageFile );
+
+      if ( inputChar != '\r' && inputChar != '\n' )
       {
-         if ( ( itemIndex >= 0 && itemIndex < 32 &&
-                itemIndex != TAB ) ||
-              itemIndex >= DEL )
+         if ( ( inputChar >= 0 && inputChar < 32 && inputChar != TAB ) || inputChar >= DEL )
          {
             printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n", line );
             return ( 1 );
          }
          else
          {
-            if ( itemIndex == TAB )
+            if ( inputChar == TAB )
             {
                count = ( count + 8 ) & 0xf8;
             }
