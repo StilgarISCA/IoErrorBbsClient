@@ -577,6 +577,43 @@ static void printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget( void **st
    }
 }
 
+static void emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for URL detection report test setup" );
+   }
+
+   beginUrlDetectionReport();
+   filterUrl( "Read this https://example.dev/alpha" );
+   filterUrl( "and this www.example.photography/beta" );
+
+   // Act
+   emitUrlDetectionReport();
+
+   // Assert
+   if ( strstr( aryPrintLog, "[Clickable URL(s) detected by BBS client]" ) == NULL )
+   {
+      fail_msg( "URL detection report header was not emitted; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;https://example.dev/alpha\033\\" ) == NULL )
+   {
+      fail_msg( "URL detection report should include clickable HTTPS URL; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;https://www.example.photography/beta\033\\" ) == NULL )
+   {
+      fail_msg( "URL detection report should include clickable normalized www URL; log was: %s", aryPrintLog );
+   }
+
+   resetLists();
+}
+
 static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **state )
 {
    // Arrange
@@ -636,6 +673,7 @@ int main( void )
       cmocka_unit_test( filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl ),
       cmocka_unit_test( printWithOsc8Links_WhenTextContainsHttpsUrl_EmitsHyperlinkEscapes ),
       cmocka_unit_test( printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget ),
+      cmocka_unit_test( emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

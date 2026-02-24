@@ -217,6 +217,7 @@ void filterExpress( register int inputChar )
    { /* signal from IAC to begin/end X */
       if ( isExpressMessageInProgress )
       { /* Need to re-init for new X */
+         beginUrlDetectionReport();
          ptrExpressMessageBuffer = aryExpressMessageBuffer;
          *aryExpressMessageBuffer = 0;
          needs.ignore = 0;
@@ -259,8 +260,10 @@ void filterExpress( register int inputChar )
          {
             stdPrintf( "\r\n[X message truncated]\r\n" );
          }
+         emitUrlDetectionReport();
          return;
       }
+      emitUrlDetectionReport();
    }
    /* If the message is killed, don't bother doing anything. */
    if ( needs.ignore )
@@ -343,6 +346,7 @@ void filterPost( register int inputChar )
    { /* control: begin/end of post */
       if ( postProgressState )
       { /* beginning of post */
+         beginUrlDetectionReport();
          posthdrp = posthdr;
          *posthdr = 0;
          needs.crlf = 0;
@@ -360,6 +364,7 @@ void filterPost( register int inputChar )
          }
          filterUrl( " " );
          numposts++;
+         emitUrlDetectionReport();
       }
       return;
    }
@@ -508,6 +513,10 @@ void filterData( register int inputChar )
    if ( inputChar == '\n' )
    {
       filterUrl( thisline );
+      if ( strstr( thisline, "Message received by " ) != NULL )
+      {
+         emitUrlDetectionReport();
+      }
       thisline[0] = 0;
    }
    else

@@ -342,6 +342,77 @@ static bool launchBrowserUrl( const char *ptrBrowserCommand, const char *ptrUrl,
    return true;
 }
 
+static queue *ptrDetectedUrlQueue;
+
+static bool ensureDetectedUrlQueue( void )
+{
+   if ( ptrDetectedUrlQueue != NULL )
+   {
+      return true;
+   }
+   ptrDetectedUrlQueue = newQueue( 1024, 64 );
+   return ptrDetectedUrlQueue != NULL;
+}
+
+static void clearDetectedUrlQueue( void )
+{
+   char aryTempText[1024];
+
+   if ( ptrDetectedUrlQueue == NULL )
+   {
+      return;
+   }
+   while ( ptrDetectedUrlQueue->nobjs > 0 )
+   {
+      popQueue( aryTempText, ptrDetectedUrlQueue );
+   }
+}
+
+void beginUrlDetectionReport( void )
+{
+   if ( !ensureDetectedUrlQueue() )
+   {
+      return;
+   }
+   clearDetectedUrlQueue();
+}
+
+void emitUrlDetectionReport( void )
+{
+   char aryUrl[1024];
+
+   if ( ptrDetectedUrlQueue == NULL || ptrDetectedUrlQueue->nobjs == 0 )
+   {
+      return;
+   }
+
+   stdPrintf( "\r\n[Clickable URL(s) detected by BBS client]\r\n" );
+   while ( popQueue( aryUrl, ptrDetectedUrlQueue ) )
+   {
+      stdPrintf( " " );
+      printWithOsc8Links( aryUrl );
+      stdPrintf( "\r\n" );
+   }
+}
+
+static void queueUrlForReport( const char *ptrUrl )
+{
+   char aryTempText[1024];
+
+   if ( ptrUrl == NULL || !*ptrUrl || !ensureDetectedUrlQueue() )
+   {
+      return;
+   }
+   if ( isQueued( ptrUrl, ptrDetectedUrlQueue ) )
+   {
+      return;
+   }
+   while ( !pushQueue( ptrUrl, ptrDetectedUrlQueue ) )
+   {
+      popQueue( aryTempText, ptrDetectedUrlQueue );
+   }
+}
+
 static void queueUrlIfNew( const char *ptrUrl )
 {
    char aryTempText[1024];
@@ -350,6 +421,7 @@ static void queueUrlIfNew( const char *ptrUrl )
    {
       return;
    }
+   queueUrlForReport( ptrUrl );
    if ( isQueued( ptrUrl, urlQueue ) )
    {
       return;
