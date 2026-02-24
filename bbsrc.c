@@ -93,6 +93,7 @@ typedef enum
    BBRC_CMD_BOLD,
    BBRC_CMD_BROWSER,
    BBRC_CMD_CAPTURE,
+   BBRC_CMD_CLICKABLE_URLS,
    BBRC_CMD_COLOR,
    BBRC_CMD_COMMANDKEY,
    BBRC_CMD_EDITOR,
@@ -139,6 +140,8 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "version ", 8, BBRC_CMD_VERSION },
          { "squelch ", 8, BBRC_CMD_SQUELCH },
          { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
+         { "clickableurls", 13, BBRC_CMD_CLICKABLE_URLS },
+         { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
          { "autoansi", 9, BBRC_CMD_AUTOANSI },
@@ -246,6 +249,7 @@ void readBbsRc( void )
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
    flagsConfiguration.shouldRunBrowserInBackground = 0;
    flagsConfiguration.shouldUseTcpKeepalive = 1;
+   flagsConfiguration.shouldEnableClickableUrls = 1;
 
    defaultColors( 1 );
 
@@ -318,6 +322,44 @@ void readBbsRc( void )
                stdPrintf( "Invalid definition of 'keepalive' ignored.\n" );
             }
             break;
+
+         case BBRC_CMD_CLICKABLE_URLS:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.shouldEnableClickableUrls = 1;
+               }
+               else
+               {
+                  const char *ptrClickableValue;
+
+                  ptrClickableValue = ptrSpace + 1;
+                  while ( *ptrClickableValue != '\0' && isspace( (unsigned char)*ptrClickableValue ) )
+                  {
+                     ptrClickableValue++;
+                  }
+                  if ( *ptrClickableValue == '\0' )
+                  {
+                     flagsConfiguration.shouldEnableClickableUrls = 1;
+                  }
+                  else if ( *ptrClickableValue == '0' )
+                  {
+                     flagsConfiguration.shouldEnableClickableUrls = 0;
+                  }
+                  else if ( *ptrClickableValue == '1' )
+                  {
+                     flagsConfiguration.shouldEnableClickableUrls = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of clickable URL option ignored.\n" );
+                  }
+               }
+               break;
+            }
 
          case BBRC_CMD_COLOR:
             if ( strlen( aryLine ) != 6 + sizeof color )

@@ -136,6 +136,7 @@ typedef struct
    unsigned int shouldAutoAnswerAnsiPrompt : 1;   /* true if we automatically answer ANSI ? */
    unsigned int shouldRunBrowserInBackground : 1; /* true if browser override can be backgrounded */
    unsigned int shouldUseTcpKeepalive : 1;        /* true if TCP keepalive probes are enabled */
+   unsigned int shouldEnableClickableUrls : 1;    /* true if OSC-8 clickable URL output is enabled */
 } Flags;
 
 typedef struct

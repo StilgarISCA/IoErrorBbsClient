@@ -236,6 +236,10 @@ void configBbsRc( void )
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
             stdPrintf( "(Use this only if your ISP drops idle sessions.)\r\n" );
             flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
+            stdPrintf( "Enable clickable URL detection summaries? (%s) -> ",
+                       flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
+            stdPrintf( "(Disable this to keep classic client output.)\r\n" );
+            flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
             break;
 
          case 'h':
@@ -453,6 +457,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
+   fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
    fprintf( ptrBbsRc, "aryBrowser %d %s\n", flagsConfiguration.shouldRunBrowserInBackground ? 1 : 0, aryBrowser );
    if ( *aryAutoName )
    {

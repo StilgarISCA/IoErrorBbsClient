@@ -381,6 +381,10 @@ static void readBbsRc_WhenConfigIsEmpty_AppliesDefaults( void **state )
    {
       fail_msg( "default config should enable TCP keepalive" );
    }
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "default config should enable clickable URL summaries" );
+   }
 
    cleanupReadState();
    unlink( aryPath );
@@ -687,6 +691,133 @@ static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **s
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for clickableurls=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "clickableurls 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for clickableurls=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "clickableurls 0 should disable clickable URL summaries" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for clickableurls=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "clickableurls 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for clickableurls=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "clickableurls 1 should enable clickable URL summaries" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for invalid clickableurls test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "clickableurls maybe\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write invalid clickableurls configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strstr( aryStdPrintfLog, "Invalid definition of clickable URL option ignored." ) == NULL )
+   {
+      fail_msg( "invalid clickable URL definition should emit warning; log was: %s", aryStdPrintfLog );
+   }
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "invalid clickable URL definition should keep default enabled state" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigSetsKeepaliveOne_EnablesTcpKeepalive( void **state )
 {
    // Arrange
@@ -913,6 +1044,9 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigHasBlankBrowserOverride_UsesDefaultWithoutWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigHasInvalidBrowserSetting_ClearsOverrideAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls ),
+      cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveOne_EnablesTcpKeepalive ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsMalformedKeepalive_PrintsWarningAndKeepsDefault ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError ),

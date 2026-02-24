@@ -478,6 +478,7 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    captureKey = 'c';
    awayKey = 'a';
    flagsConfiguration.shouldUseTcpKeepalive = true;
+   flagsConfiguration.shouldEnableClickableUrls = true;
 
    // Act
    writeBbsRc();
@@ -493,6 +494,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'keepalive 1' when keepalive is enabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\nclickableurls 1\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'clickableurls 1' when clickable URLs are enabled; output was:\n%s", aryOutput );
       return;
    }
 
@@ -528,6 +535,7 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    captureKey = 'c';
    awayKey = 'a';
    flagsConfiguration.shouldUseTcpKeepalive = false;
+   flagsConfiguration.shouldEnableClickableUrls = false;
 
    // Act
    writeBbsRc();
@@ -543,6 +551,12 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'keepalive 0' when keepalive is disabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\nclickableurls 0\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'clickableurls 0' when clickable URLs are disabled; output was:\n%s", aryOutput );
       return;
    }
 

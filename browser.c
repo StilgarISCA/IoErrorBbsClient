@@ -204,6 +204,11 @@ void printWithOsc8Links( const char *ptrText )
    {
       return;
    }
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      stdPrintf( "%s", ptrText );
+      return;
+   }
 
    ptrCursor = ptrText;
    while ( *ptrCursor != '\0' )
@@ -381,6 +386,11 @@ void emitUrlDetectionReport( void )
 {
    char aryUrl[1024];
 
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      clearDetectedUrlQueue();
+      return;
+   }
    if ( ptrDetectedUrlQueue == NULL || ptrDetectedUrlQueue->nobjs == 0 )
    {
       return;
