@@ -373,6 +373,36 @@ static void clearDetectedUrlQueue( void )
    }
 }
 
+static void beginVisibleUrlReportHeaderColor( void )
+{
+   if ( !flagsConfiguration.useAnsi )
+   {
+      return;
+   }
+   stdPrintf( "\033[1;3%cm", color.number );
+   lastColor = color.number;
+}
+
+static void beginVisibleUrlReportBodyColor( void )
+{
+   if ( !flagsConfiguration.useAnsi )
+   {
+      return;
+   }
+   stdPrintf( "\033[0;3%cm", color.text );
+   lastColor = color.text;
+}
+
+static void endVisibleUrlReportColor( void )
+{
+   if ( !flagsConfiguration.useAnsi )
+   {
+      return;
+   }
+   stdPrintf( "\033[0;3%cm", color.text );
+   lastColor = color.text;
+}
+
 void beginUrlDetectionReport( void )
 {
    if ( !ensureDetectedUrlQueue() )
@@ -396,13 +426,16 @@ void emitUrlDetectionReport( void )
       return;
    }
 
+   beginVisibleUrlReportHeaderColor();
    stdPrintf( "\r\n[Clickable URL(s) detected by BBS client]\r\n" );
+   beginVisibleUrlReportBodyColor();
    while ( popQueue( aryUrl, ptrDetectedUrlQueue ) )
    {
       stdPrintf( " " );
       printWithOsc8Links( aryUrl );
       stdPrintf( "\r\n" );
    }
+   endVisibleUrlReportColor();
 }
 
 static void queueUrlForReport( const char *ptrUrl )
