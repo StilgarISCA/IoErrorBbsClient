@@ -502,6 +502,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
       fail_msg( "writeBbsRc should emit 'clickableurls 1' when clickable URLs are enabled; output was:\n%s", aryOutput );
       return;
    }
+   if ( strstr( aryOutput, "\naryBrowser " ) != NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should not emit obsolete browser configuration; output was:\n%s", aryOutput );
+      return;
+   }
 
    cleanupWriteBbsRcFixture();
 }
@@ -557,6 +563,12 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 0' when clickable URLs are disabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\naryBrowser " ) != NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should not emit obsolete browser configuration; output was:\n%s", aryOutput );
       return;
    }
 

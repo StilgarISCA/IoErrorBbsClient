@@ -912,11 +912,6 @@ void initialize( const char *protocol )
          snprintf( aryShell, sizeof( aryShell ), "%s", "/bin/sh" );
       }
    }
-   if ( !isLoginShell )
-   {
-      snprintf( aryDefaultBrowser, sizeof( aryDefaultBrowser ), "%s", "open" );
-      aryBrowser[0] = '\0';
-   }
    if ( isLoginShell )
    {
       snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "" );

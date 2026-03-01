@@ -28,7 +28,7 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 #define ENEMY_INFO \
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
 #define SELECT_URL \
-   "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  You can define a Web browser command in the client\r\nconfiguration, or leave it blank to use the macOS default browser."
+   "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC-8 links."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
 
@@ -221,16 +221,6 @@ void configBbsRc( void )
                {
                   bbsPort = BBS_PORT_NUMBER;
                }
-            }
-            stdPrintf( "Enter web browser command (leave blank for macOS default browser) (%s) -> ",
-                       *aryBrowser ? aryBrowser : "<macOS default>" );
-            getString( 80, aryMenuLine, -999 );
-            snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryMenuLine );
-            if ( *aryBrowser )
-            {
-               stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
-                          flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
-               flagsConfiguration.shouldRunBrowserInBackground = (unsigned int)yesNoDefault( flagsConfiguration.shouldRunBrowserInBackground );
             }
             stdPrintf( "Keep idle connections alive with occasional TCP probes? (%s) -> ",
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
@@ -458,7 +448,6 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
-   fprintf( ptrBbsRc, "aryBrowser %d %s\n", flagsConfiguration.shouldRunBrowserInBackground ? 1 : 0, aryBrowser );
    if ( *aryAutoName )
    {
       fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );
