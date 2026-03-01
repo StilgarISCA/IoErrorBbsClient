@@ -28,7 +28,7 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 #define ENEMY_INFO \
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
 #define SELECT_URL \
-   "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC-8 links."
+   "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
 
@@ -222,13 +222,11 @@ void configBbsRc( void )
                   bbsPort = BBS_PORT_NUMBER;
                }
             }
-            stdPrintf( "Keep idle connections alive with occasional TCP probes? (%s) -> ",
+            stdPrintf( "Try to keep idle connections alive with TCP probes? (%s) -> ",
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
-            stdPrintf( "(Use this only if your ISP drops idle sessions.)\r\n" );
             flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
-            stdPrintf( "Enable clickable URL detection summaries? (%s) -> ",
+            stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
                        flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
-            stdPrintf( "(Disable this to keep classic client output.)\r\n" );
             flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
             break;
 
