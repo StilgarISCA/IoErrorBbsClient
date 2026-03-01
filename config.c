@@ -20,7 +20,7 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 #define UPGRADE \
    "Thank you for upgrading to the latest version of IO ERROR's ISCA BBS Client!\r\nPlease take a moment to familiarize yourself with our new features."
 #define DOWNGRADE \
-   "You appear to have downgraded your version of IO ERROR's ISCA BBS Client.\r\nIf you continue running this client, you may lose some of your preferences and\r\nfeatures you are accustomed to.  Please visit the above web site to upgrade\r\nto the latest version of IO ERROR's ISCA BBS Client."
+   "You appear to have downgraded your version of IO ERROR's ISCA BBS Client.\r\nIf you continue running this client, you may lose some of your preferences and\r\nfeatures you are accustomed to.  Please visit the above website to upgrade\r\nto the latest version of IO ERROR's ISCA BBS Client."
 #define BBSRC_INFO \
    "IO ERROR's ISCA BBS Client integrates the contents of the .bbsrc and\r\n.bbsfriends file into a single file.  This change is fully compatible with\r\nolder clients, however those clients might re-create the .bbsfriends file.\r\nThis should not be a problem for most people; however, we recommend making a\r\nbackup copy of your .bbsrc and .bbsfriends files.  If for some reason you NEED\r\nthe .bbsrc and .bbsfriends files separated, DO NOT RUN THIS CLIENT."
 #define COLOR_INFO \
@@ -109,10 +109,10 @@ void setup( int newVersion )
 
       snprintf( aryUrlInfo,
                 sizeof( aryUrlInfo ),
-                "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing <%s> then <%s>.  You can also change these keys in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links.",
+                "You can go directly to a website address you see in a post or express\r\nmessage by pressing <%s> then <%s>.  You can also change these keys in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links.",
                 describeKeyForHelp( commandKey ),
                 describeKeyForHelp( browserKey ) );
-      sInfo( aryUrlInfo, "Web sites" );
+      sInfo( aryUrlInfo, "Websites" );
    }
    if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
    {
@@ -282,7 +282,7 @@ void configBbsRc( void )
             stdPrintf( "%s\r\n", strCtrl( captureKey = newKey( captureKey ) ) );
             stdPrintf( "Enter key to enable away from keyboard (%s) -> ", strCtrl( awayKey ) );
             stdPrintf( "%s\r\n", strCtrl( awayKey = newKey( awayKey ) ) );
-            stdPrintf( "Enter key to browse a Web site (%s) -> ", strCtrl( browserKey ) );
+            stdPrintf( "Enter key to browse a website (%s) -> ", strCtrl( browserKey ) );
             stdPrintf( "%s\r\n", strCtrl( browserKey = newKey( browserKey ) ) );
             break;
 
