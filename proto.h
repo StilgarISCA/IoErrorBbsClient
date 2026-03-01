@@ -136,6 +136,7 @@ extern int
    popQueue P( (char *, queue *)),
    prompt P( (FILE *, int *, int)),
    pushQueue P( (const char *, queue *)),
+   readFoldedKey P( (void)),
    readValidatedKey P( (const char *)),
    readNormalizedLine P( (FILE *, char *, size_t, int *, int *, const char *)),
    readValidatedMenuKey P( (const char *)),

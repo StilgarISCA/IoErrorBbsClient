@@ -60,6 +60,18 @@ int inKey( void )
    return '\n';
 }
 
+int readFoldedKey( void )
+{
+   int inputChar;
+
+   inputChar = inKey();
+   if ( isalpha( inputChar ) )
+   {
+      inputChar = tolower( inputChar );
+   }
+   return inputChar;
+}
+
 void looper( void )
 {
 }

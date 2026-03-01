@@ -230,17 +230,25 @@ int readValidatedKey( const char *allowedChars )
    }
 }
 
+int readFoldedKey( void )
+{
+   int inputChar;
+
+   inputChar = inKey();
+   if ( isalpha( inputChar ) )
+   {
+      inputChar = tolower( inputChar );
+   }
+   return inputChar;
+}
+
 int readValidatedMenuKey( const char *allowedCharsLowercase )
 {
    unsigned int invalid = 0;
 
    while ( true )
    {
-      int inputChar = inKey();
-      if ( isalpha( inputChar ) )
-      {
-         inputChar = tolower( inputChar );
-      }
+      int inputChar = readFoldedKey();
       if ( findChar( allowedCharsLowercase, inputChar ) )
       {
          return inputChar;
@@ -323,8 +331,8 @@ int more( int *line, int percentComplete )
    {
       register int inputChar;
 
-      inputChar = inKey();
-      if ( inputChar == ' ' || inputChar == 'y' || inputChar == 'Y' )
+      inputChar = readFoldedKey();
+      if ( inputChar == ' ' || inputChar == 'y' )
       {
          *line = 1;
       }
@@ -332,7 +340,7 @@ int more( int *line, int percentComplete )
       {
          --*line;
       }
-      else if ( findChar( "nNqsS", inputChar ) )
+      else if ( findChar( "nqs", inputChar ) )
       {
          *line = -1;
       }
