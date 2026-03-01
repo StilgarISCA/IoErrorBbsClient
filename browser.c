@@ -266,34 +266,30 @@ static void clearDetectedUrlQueue( void )
    }
 }
 
-static void beginVisibleUrlReportHeaderColor( void )
+static void applyVisibleUrlReportColor( char foregroundColor )
 {
    if ( !flagsConfiguration.useAnsi )
    {
       return;
    }
-   stdPrintf( "\033[1;3%cm", color.number );
-   lastColor = color.number;
+   stdPrintf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0',
+              foregroundColor, color.background );
+   lastColor = foregroundColor;
+}
+
+static void beginVisibleUrlReportHeaderColor( void )
+{
+   applyVisibleUrlReportColor( color.number );
 }
 
 static void beginVisibleUrlReportBodyColor( void )
 {
-   if ( !flagsConfiguration.useAnsi )
-   {
-      return;
-   }
-   stdPrintf( "\033[0;3%cm", color.text );
-   lastColor = color.text;
+   applyVisibleUrlReportColor( color.text );
 }
 
 static void endVisibleUrlReportColor( void )
 {
-   if ( !flagsConfiguration.useAnsi )
-   {
-      return;
-   }
-   stdPrintf( "\033[0;3%cm", color.text );
-   lastColor = color.text;
+   applyVisibleUrlReportColor( color.text );
 }
 
 void beginUrlDetectionReport( void )

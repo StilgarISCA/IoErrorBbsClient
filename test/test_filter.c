@@ -640,6 +640,43 @@ static void emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary( voi
    resetLists();
 }
 
+static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   flagsConfiguration.useAnsi = 1;
+   flagsConfiguration.useBold = 0;
+   color.number = '6';
+   color.text = '2';
+   color.background = '4';
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for ANSI URL detection report test setup" );
+   }
+
+   beginUrlDetectionReport();
+   filterUrl( "Read this https://example.dev/alpha" );
+
+   // Act
+   emitUrlDetectionReport();
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033[0m\033[36;44m" ) == NULL )
+   {
+      fail_msg( "URL detection report header should use configured number/background colors; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033[0m\033[32;44m" ) == NULL )
+   {
+      fail_msg( "URL detection report body should use configured text/background colors; log was: %s", aryPrintLog );
+   }
+
+   resetLists();
+}
+
 static void emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary( void **state )
 {
    // Arrange
@@ -730,6 +767,7 @@ int main( void )
       cmocka_unit_test( printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget ),
       cmocka_unit_test( printWithOsc8Links_WhenClickableUrlsDisabled_PrintsPlainText ),
       cmocka_unit_test( emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary ),
+      cmocka_unit_test( emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState ),
       cmocka_unit_test( emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
