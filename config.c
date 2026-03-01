@@ -27,10 +27,30 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
    "IO ERROR's ISCA BBS Client allows you to choose what colors posts and express\r\nmessages are displayed with.  Use the <C>olor menu in the client configuration\r\nmenu to create your customized color scheme."
 #define ENEMY_INFO \
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
-#define SELECT_URL \
-   "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
+
+static const char *describeKeyForHelp( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case ESC:
+         return "Esc";
+
+      case ' ':
+         return "Space";
+
+      case '\n':
+      case '\r':
+         return "Return";
+
+      case '\t':
+         return "Tab";
+
+      default:
+         return strCtrl( inputChar );
+   }
+}
 
 /*
  * First time setup borrowed from Client 9 with permission.
@@ -85,7 +105,14 @@ void setup( int newVersion )
    }
    if ( newVersion < 237 )
    {
-      sInfo( SELECT_URL, "Web sites" );
+      char aryUrlInfo[512];
+
+      snprintf( aryUrlInfo,
+                sizeof( aryUrlInfo ),
+                "You can go directly to a Web site address you see in a post or express\r\nmessage by pressing <%s> then <%s>.  You can also change these keys in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links.",
+                describeKeyForHelp( commandKey ),
+                describeKeyForHelp( browserKey ) );
+      sInfo( aryUrlInfo, "Web sites" );
    }
    if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
    {
