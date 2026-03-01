@@ -368,10 +368,15 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          }
          itemIndex = 0;
          /* Make 'x' work at this prompt for isXland function */
-         if ( !( isXland && xlandQueue->nobjs ) )
+         if ( !( isXland && xlandQueue->itemCount ) )
          {
-            while ( !findChar( " \naAcCeEpPsSQtTx?/", inputChar = inKey() ) )
+            while ( true )
             {
+               inputChar = readFoldedKey();
+               if ( findChar( " \nacepqtx?/", inputChar ) )
+               {
+                  break;
+               }
                handleInvalidInput( &invalid );
             }
             invalid = 0;
@@ -395,7 +400,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             continue;
 
          case 'a':
-         case 'A':
             printf( "Abort: are you sure? " );
             if ( yesNo() )
             {
@@ -408,7 +412,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             continue;
 
          case 'c':
-         case 'C':
             printf( "Continue...\r\n" );
             if ( flagsConfiguration.useAnsi )
             {
@@ -417,7 +420,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             break;
 
          case 'p':
-         case 'P':
             if ( *previousChar == -1 )
             {
                *previousChar = '\n';
@@ -464,7 +466,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             break;
 
          case 's':
-         case 'S':
             printf( "Save message\r\n" );
             if ( checkFile( ptrMessageFile ) )
             {
@@ -482,9 +483,8 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             flagsConfiguration.isPosting = 0;
             return ( -1 );
 
-         case 'Q':
+         case 'q':
          case 't':
-         case 'T':
          case 'x':
          case '?':
          case '/':
@@ -496,7 +496,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             continue;
 
          case 'e':
-         case 'E':
             printf( "Edit\r\n" );
             if ( !*aryEditor )
             {
@@ -504,7 +503,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             }
             else
             {
-               if ( inputChar == 'E' )
+               if ( isupper( commandChar ) )
                {
                   fseek( ptrMessageFile, 0L, SEEK_END );
                   if ( ftell( ptrMessageFile ) )

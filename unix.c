@@ -633,7 +633,9 @@ void setTerm( void )
    titleBar();
 #ifdef HAVE_TERMIO_H
    if ( !isTerminalStateSaved )
+   {
       ioctl( 0, TCGETA, &saveterm );
+   }
    tmpterm = saveterm;
    tmpterm.c_iflag &= ~( INLCR | IGNCR | ICRNL );
    tmpterm.c_iflag |= IXOFF | IXON | IXANY;
@@ -910,10 +912,6 @@ void initialize( const char *protocol )
          snprintf( aryShell, sizeof( aryShell ), "%s", "/bin/sh" );
       }
    }
-   if ( !isLoginShell )
-   {
-      snprintf( aryBrowser, sizeof( aryBrowser ), "%s", "netscape -remote" );
-   }
    if ( isLoginShell )
    {
       snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "" );
@@ -986,87 +984,6 @@ void sError( const char *message, const char *heading )
    snprintf( aryErrorBuffer, sizeof( aryErrorBuffer ), "%s: %s", heading, message );
    fflush( stdout );
    fprintf( stderr, "%s\r\n", aryErrorBuffer );
-}
-
-/* TODO: system() is kind of cheating */
-/* TODO: Peeking into the queue object itself is REALLY cheating */
-void openBrowser( void )
-{
-   int inputIndex;
-   int originalCaptureState;
-   char aryLine[4];
-   char aryCommand[4096];
-   char *ptrUrlEntry;
-
-   if ( urlQueue->nobjs < 1 )
-   {
-      return;
-   }
-   if ( urlQueue->nobjs == 1 )
-   {
-      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", aryBrowser,
-                urlQueue->start + ( urlQueue->objsize * urlQueue->head ),
-                flagsConfiguration.shouldRunBrowserInBackground ? " &" : "" );
-      system( aryCommand );
-      if ( !flagsConfiguration.shouldRunBrowserInBackground )
-      {
-         reprintLine();
-      }
-      return;
-   }
-
-   originalCaptureState = capture;
-   capture = 0;
-   shouldIgnoreNetwork = 1;
-   printf( "\r\n\n" );
-   ptrUrlEntry = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
-   for ( inputIndex = 0; inputIndex < urlQueue->nobjs; inputIndex++ )
-   {
-      if ( strlen( ptrUrlEntry ) > 72 )
-      {
-         char junk[71];
-
-         strncpy( junk, ptrUrlEntry, 70 );
-         junk[70] = 0;
-         printf( "%d. %-70s...\r\n", inputIndex + 1, junk );
-      }
-      else
-      {
-         printf( "%d. %s\r\n", inputIndex + 1, ptrUrlEntry );
-      }
-      ptrUrlEntry += urlQueue->objsize;
-      if ( ptrUrlEntry >= (char *)( urlQueue->start + ( urlQueue->objsize * urlQueue->size ) ) )
-      {
-         ptrUrlEntry = urlQueue->start;
-      }
-   }
-
-   printf( "\r\nChoose the URL you want to view: " );
-   getString( 3, aryLine, 1 ); /* No more than 999 URLs in a post? */
-   printf( "\r\n" );
-   inputIndex = atoi( aryLine );
-   ptrUrlEntry = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
-   if ( inputIndex > 0 && inputIndex <= urlQueue->nobjs )
-   {
-      int urlIndex;
-
-      inputIndex -= 1;
-      for ( urlIndex = 0; urlIndex < inputIndex; urlIndex++ )
-      {
-         ptrUrlEntry += urlQueue->objsize;
-         if ( ptrUrlEntry >= (char *)( urlQueue->start + ( urlQueue->objsize * urlQueue->size ) ) )
-         {
-            ptrUrlEntry = urlQueue->start;
-         }
-      }
-      snprintf( aryCommand, sizeof( aryCommand ), "%s \"%s\"%s", aryBrowser, ptrUrlEntry,
-                flagsConfiguration.shouldRunBrowserInBackground ? " &" : "" );
-      system( aryCommand );
-   }
-   shouldIgnoreNetwork = 0;
-   reprintLine();
-   capture = originalCaptureState;
-   return;
 }
 
 /*

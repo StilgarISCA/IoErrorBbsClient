@@ -20,17 +20,37 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 #define UPGRADE \
    "Thank you for upgrading to the latest version of IO ERROR's ISCA BBS Client!\r\nPlease take a moment to familiarize yourself with our new features."
 #define DOWNGRADE \
-   "You appear to have downgraded your version of IO ERROR's ISCA BBS Client.\r\nIf you continue running this client, you may lose some of your preferences and\r\nfeatures you are accustomed to.  Please visit the above web site to upgrade\r\nto the latest version of IO ERROR's ISCA BBS Client."
+   "You appear to have downgraded your version of IO ERROR's ISCA BBS Client.\r\nIf you continue running this client, you may lose some of your preferences and\r\nfeatures you are accustomed to.  Please visit the above website to upgrade\r\nto the latest version of IO ERROR's ISCA BBS Client."
 #define BBSRC_INFO \
    "IO ERROR's ISCA BBS Client integrates the contents of the .bbsrc and\r\n.bbsfriends file into a single file.  This change is fully compatible with\r\nolder clients, however those clients might re-create the .bbsfriends file.\r\nThis should not be a problem for most people; however, we recommend making a\r\nbackup copy of your .bbsrc and .bbsfriends files.  If for some reason you NEED\r\nthe .bbsrc and .bbsfriends files separated, DO NOT RUN THIS CLIENT."
 #define COLOR_INFO \
    "IO ERROR's ISCA BBS Client allows you to choose what colors posts and express\r\nmessages are displayed with.  Use the <C>olor menu in the client configuration\r\nmenu to create your customized color scheme."
 #define ENEMY_INFO \
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
-#define SELECT_URL \
-   "You can now go directly to a Web site address you see in a post or express\r\nmessage by pressing the command key and <w>.  You can also change this key in\r\nthe client configuration.  You can define a Web browser in the client configuration\r\nor otherwise I will try to start Netscape."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
+
+static const char *describeKeyForHelp( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case ESC:
+         return "Esc";
+
+      case ' ':
+         return "Space";
+
+      case '\n':
+      case '\r':
+         return "Return";
+
+      case '\t':
+         return "Tab";
+
+      default:
+         return strCtrl( inputChar );
+   }
+}
 
 /*
  * First time setup borrowed from Client 9 with permission.
@@ -85,7 +105,14 @@ void setup( int newVersion )
    }
    if ( newVersion < 237 )
    {
-      sInfo( SELECT_URL, "Web sites" );
+      char aryUrlInfo[512];
+
+      snprintf( aryUrlInfo,
+                sizeof( aryUrlInfo ),
+                "You can go directly to a website address you see in a post or express\r\nmessage by pressing <%s> then <%s>.  You can also change these keys in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links.",
+                describeKeyForHelp( commandKey ),
+                describeKeyForHelp( browserKey ) );
+      sInfo( aryUrlInfo, "Websites" );
    }
    if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
    {
@@ -185,11 +212,16 @@ void configBbsRc( void )
                snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", aryMenuLine );
             }
 #if 0
-       stdPrintf("Use secure (SSL) connection to this site? (%s) -> ",
-   		    shouldUseSsl ? "Yes" : "No");
-       if (yesNoDefault(shouldUseSsl))
-   	shouldUseSsl = 1;
-       else
+	      stdPrintf("Use secure (SSL) connection to this site? (%s) -> ",
+		    shouldUseSsl ? "Yes" : "No");
+	      if ( yesNoDefault( shouldUseSsl ) )
+	      {
+	         shouldUseSsl = 1;
+	      }
+	      else
+	      {
+	         shouldUseSsl = 0;
+	      }
 #endif
             shouldUseSsl = 0;
             if ( ( !bbsPort || bbsPort == BBS_PORT_NUMBER ) && shouldUseSsl )
@@ -217,19 +249,12 @@ void configBbsRc( void )
                   bbsPort = BBS_PORT_NUMBER;
                }
             }
-            stdPrintf( "Enter the Web aryBrowser to use (%s) -> ", aryBrowser );
-            getString( 80, aryMenuLine, -999 );
-            if ( *aryMenuLine )
-            {
-               snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryMenuLine );
-            }
-            stdPrintf( "Does %s run in a separate window? (%s) -> ", aryBrowser,
-                       flagsConfiguration.shouldRunBrowserInBackground ? "Yes" : "No" );
-            flagsConfiguration.shouldRunBrowserInBackground = (unsigned int)yesNoDefault( flagsConfiguration.shouldRunBrowserInBackground );
-            stdPrintf( "Keep idle connections alive with occasional TCP probes? (%s) -> ",
+            stdPrintf( "Try to keep idle connections alive with TCP probes? (%s) -> ",
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
-            stdPrintf( "(Use this only if your ISP drops idle sessions.)\r\n" );
             flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
+            stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
+                       flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
+            flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
             break;
 
          case 'h':
@@ -257,7 +282,7 @@ void configBbsRc( void )
             stdPrintf( "%s\r\n", strCtrl( captureKey = newKey( captureKey ) ) );
             stdPrintf( "Enter key to enable away from keyboard (%s) -> ", strCtrl( awayKey ) );
             stdPrintf( "%s\r\n", strCtrl( awayKey = newKey( awayKey ) ) );
-            stdPrintf( "Enter key to browse a Web site (%s) -> ", strCtrl( browserKey ) );
+            stdPrintf( "Enter key to browse a website (%s) -> ", strCtrl( browserKey ) );
             stdPrintf( "%s\r\n", strCtrl( browserKey = newKey( browserKey ) ) );
             break;
 
@@ -447,14 +472,16 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
-   fprintf( ptrBbsRc, "aryBrowser %d %s\n", flagsConfiguration.shouldRunBrowserInBackground ? 1 : 0, aryBrowser );
+   fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
    if ( *aryAutoName )
    {
       fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );
    }
 #ifdef ENABLE_SAVE_PASSWORD
    if ( *aryAutoPassword )
+   {
       fprintf( ptrBbsRc, "autopass %s\n", aryAutoPassword );
+   }
 #endif
    bcopy( (void *)&color, aryColorBytes, sizeof color );
    aryColorBytes[sizeof color] = 0;

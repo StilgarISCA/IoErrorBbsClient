@@ -57,19 +57,17 @@ extern slist *enemyList;                        /* 'enemy' list */
 extern slist *whoList;                          /* saved who list */
 extern char arySavedHeader[160];                /* for saving our message header */
 
-extern char aryMacro[128][72];           /* array for macros */
-extern char aryAwayMessageLines[6][80];  /* Away from keyboard message */
-extern int commandKey;                   /* hotkey for signalling a aryMacro follows */
-extern int quitKey;                      /* hotkey to quit (commandKey quitKey) */
-extern int suspKey;                      /* hotkey for suspending (" suspKey) */
-extern int captureKey;                   /* Toggle text capture key (" captureKey) */
-extern int capture;                      /* Capture status */
-extern int shellKey;                     /* hotkey for shelling out (" shellKey) */
-extern char aryShell[PATH_MAX];          /* User's preferred aryShell */
-extern int awayKey;                      /* Hotkey for isAway from keyboard */
-extern int browserKey;                   /* Hotkey to spawn a Web aryBrowser */
-extern char aryBrowser[PATH_MAX];        /* User's preferred Web aryBrowser */
-extern char aryDefaultBrowser[PATH_MAX]; /* Detected system default aryBrowser */
+extern char aryMacro[128][72];          /* array for macros */
+extern char aryAwayMessageLines[6][80]; /* Away from keyboard message */
+extern int commandKey;                  /* hotkey for signalling a aryMacro follows */
+extern int quitKey;                     /* hotkey to quit (commandKey quitKey) */
+extern int suspKey;                     /* hotkey for suspending (" suspKey) */
+extern int captureKey;                  /* Toggle text capture key (" captureKey) */
+extern int capture;                     /* Capture status */
+extern int shellKey;                    /* hotkey for shelling out (" shellKey) */
+extern char aryShell[PATH_MAX];         /* User's preferred aryShell */
+extern int awayKey;                     /* Hotkey for isAway from keyboard */
+extern int browserKey;                  /* Hotkey to launch web browser */
 
 #ifdef HAVE_OPENSSL
 extern SSL *ssl; /* SSL connection */

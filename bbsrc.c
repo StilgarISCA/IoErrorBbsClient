@@ -62,6 +62,7 @@ typedef enum
    BBRC_CMD_BOLD,
    BBRC_CMD_BROWSER,
    BBRC_CMD_CAPTURE,
+   BBRC_CMD_CLICKABLE_URLS,
    BBRC_CMD_COLOR,
    BBRC_CMD_COMMANDKEY,
    BBRC_CMD_EDITOR,
@@ -108,6 +109,8 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "version ", 8, BBRC_CMD_VERSION },
          { "squelch ", 8, BBRC_CMD_SQUELCH },
          { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
+         { "clickableurls", 13, BBRC_CMD_CLICKABLE_URLS },
+         { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
          { "autoansi", 9, BBRC_CMD_AUTOANSI },
@@ -159,6 +162,8 @@ void readBbsRc( void )
    int nameLength;
    size_t hold = 0;
    int tmpVersion = 0;
+   bool shouldShowBrowserMigrationNotice = false;
+   bool shouldRewriteBbsRc = false;
    friend *ptrFriend = NULL;
 
    version = INT_VERSION;
@@ -211,8 +216,8 @@ void readBbsRc( void )
    flagsConfiguration.shouldDisableBold = 0;
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
-   flagsConfiguration.shouldRunBrowserInBackground = 0;
    flagsConfiguration.shouldUseTcpKeepalive = 1;
+   flagsConfiguration.shouldEnableClickableUrls = 1;
 
    defaultColors( 1 );
 
@@ -286,6 +291,44 @@ void readBbsRc( void )
             }
             break;
 
+         case BBRC_CMD_CLICKABLE_URLS:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.shouldEnableClickableUrls = 1;
+               }
+               else
+               {
+                  const char *ptrClickableValue;
+
+                  ptrClickableValue = ptrSpace + 1;
+                  while ( *ptrClickableValue != '\0' && isspace( (unsigned char)*ptrClickableValue ) )
+                  {
+                     ptrClickableValue++;
+                  }
+                  if ( *ptrClickableValue == '\0' )
+                  {
+                     flagsConfiguration.shouldEnableClickableUrls = 1;
+                  }
+                  else if ( *ptrClickableValue == '0' )
+                  {
+                     flagsConfiguration.shouldEnableClickableUrls = 0;
+                  }
+                  else if ( *ptrClickableValue == '1' )
+                  {
+                     flagsConfiguration.shouldEnableClickableUrls = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of clickable URL option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
          case BBRC_CMD_COLOR:
             if ( strlen( aryLine ) != 6 + sizeof color )
             {
@@ -319,15 +362,8 @@ void readBbsRc( void )
             break;
 #endif
          case BBRC_CMD_BROWSER:
-            if ( strlen( aryLine ) < 13 )
-            {
-               stdPrintf( "Invalid definition of 'aryBrowser' ignored.\n" );
-            }
-            else
-            {
-               flagsConfiguration.shouldRunBrowserInBackground = ( aryLine[11] == '0' ) ? 0 : 1;
-               snprintf( aryBrowser, sizeof( aryBrowser ), "%s", aryLine + 13 );
-            }
+            shouldShowBrowserMigrationNotice = true;
+            shouldRewriteBbsRc = true;
             break;
 
          case BBRC_CMD_EDITOR:
@@ -869,6 +905,15 @@ void readBbsRc( void )
       {
          setup( -1 );
       }
+   }
+   if ( shouldShowBrowserMigrationNotice )
+   {
+      stdPrintf( "IMPORTANT: Your browser preference was removed due to client updates.\n" );
+      stdPrintf( "The client now relies on terminal links and the macOS default browser.\n" );
+   }
+   if ( shouldRewriteBbsRc && !isBbsRcReadOnly )
+   {
+      writeBbsRc();
    }
    if ( isLoginShell )
    {

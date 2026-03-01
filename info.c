@@ -33,7 +33,10 @@ void feedPager( int startrow, ... )
          /* More prompt */
          printf( "--MORE-- " );
          fflush( stdout );
-         switch ( inKey() )
+         int inputChar;
+
+         inputChar = readFoldedKey();
+         switch ( inputChar )
          {
             case 'n':
             case 's':

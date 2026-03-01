@@ -12,8 +12,14 @@
 #include "ext.h"
 #include "proto.h"
 
+static int aryInputQueue[16];
+static size_t inputCount;
+static size_t inputIndex;
+
 /* Stubs for utility.c dependencies that are outside this test target's scope. */
-void deinitialize( void ) {}
+void deinitialize( void )
+{
+}
 
 void flushInput( unsigned int count )
 {
@@ -22,6 +28,10 @@ void flushInput( unsigned int count )
 
 int inKey( void )
 {
+   if ( inputIndex < inputCount )
+   {
+      return aryInputQueue[inputIndex++];
+   }
    return '\n';
 }
 
@@ -30,7 +40,9 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
-void resetTerm( void ) {}
+void resetTerm( void )
+{
+}
 
 void sError( const char *message, const char *heading )
 {
@@ -44,9 +56,13 @@ void sPerror( const char *message, const char *heading )
    (void)heading;
 }
 
-void sendBlock( void ) {}
+void sendBlock( void )
+{
+}
 
-void sigOff( void ) {}
+void sigOff( void )
+{
+}
 
 int stdPrintf( const char *format, ... )
 {
@@ -60,6 +76,22 @@ int stdPrintf( const char *format, ... )
 int stdPutChar( int inputChar )
 {
    return inputChar;
+}
+
+static void setInputSequence( const int *arySource, size_t sourceCount )
+{
+   size_t itemIndex;
+
+   inputCount = sourceCount;
+   if ( inputCount > sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ) )
+   {
+      inputCount = sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] );
+   }
+   inputIndex = 0;
+   for ( itemIndex = 0; itemIndex < inputCount; itemIndex++ )
+   {
+      aryInputQueue[itemIndex] = arySource[itemIndex];
+   }
 }
 
 static void findSubstring_WhenNeedleExists_ReturnsPointerToFirstMatch( void **state )
@@ -83,6 +115,44 @@ static void findSubstring_WhenNeedleExists_ReturnsPointerToFirstMatch( void **st
    if ( strcmp( ptrResult, "needle in this haystack?" ) != 0 )
    {
       fail_msg( "findSubstring should return pointer at first match; got '%s'", ptrResult );
+   }
+}
+
+static void readFoldedKey_WhenInputIsUppercaseLetter_ReturnsLowercaseLetter( void **state )
+{
+   // Arrange
+   const int arySequence[] = { 'Q' };
+   int result;
+
+   (void)state;
+   setInputSequence( arySequence, sizeof( arySequence ) / sizeof( arySequence[0] ) );
+
+   // Act
+   result = readFoldedKey();
+
+   // Assert
+   if ( result != 'q' )
+   {
+      fail_msg( "readFoldedKey should lowercase alphabetic input; got '%c'", result );
+   }
+}
+
+static void readValidatedMenuKey_WhenInputIsUppercaseLetter_ReturnsLowercaseMatch( void **state )
+{
+   // Arrange
+   const int arySequence[] = { 'X' };
+   int result;
+
+   (void)state;
+   setInputSequence( arySequence, sizeof( arySequence ) / sizeof( arySequence[0] ) );
+
+   // Act
+   result = readValidatedMenuKey( "axq \n" );
+
+   // Assert
+   if ( result != 'x' )
+   {
+      fail_msg( "readValidatedMenuKey should return lowercase validated menu input; got '%c'", result );
    }
 }
 
@@ -283,6 +353,8 @@ int main( void )
    const struct CMUnitTest aryTests[] = {
       cmocka_unit_test( findSubstring_WhenNeedleExists_ReturnsPointerToFirstMatch ),
       cmocka_unit_test( findSubstring_WhenNeedleMissing_ReturnsNull ),
+      cmocka_unit_test( readFoldedKey_WhenInputIsUppercaseLetter_ReturnsLowercaseLetter ),
+      cmocka_unit_test( readValidatedMenuKey_WhenInputIsUppercaseLetter_ReturnsLowercaseMatch ),
       cmocka_unit_test( findChar_WhenTargetExists_ReturnsPointerToCharacter ),
       cmocka_unit_test( findChar_WhenTargetMissing_ReturnsNull ),
       cmocka_unit_test( duplicateString_WhenSourceProvided_ReturnsIndependentCopy ),

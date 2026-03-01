@@ -19,6 +19,7 @@
 static int setupCallCount;
 static int setupVersionArg;
 static int perrorCallCount;
+static int writeBbsRcCallCount;
 static char aryLastPerrorMessage[128];
 static char aryLastPerrorHeading[64];
 static char aryStdPrintfLog[16384];
@@ -28,6 +29,7 @@ static void resetTracking( void )
    setupCallCount = 0;
    setupVersionArg = 0;
    perrorCallCount = 0;
+   writeBbsRcCallCount = 0;
    aryLastPerrorMessage[0] = '\0';
    aryLastPerrorHeading[0] = '\0';
    aryStdPrintfLog[0] = '\0';
@@ -143,6 +145,11 @@ void setup( int oldversion )
 {
    setupCallCount++;
    setupVersionArg = oldversion;
+}
+
+void writeBbsRc( void )
+{
+   writeBbsRcCallCount++;
 }
 
 void sPerror( const char *message, const char *heading )
@@ -374,6 +381,10 @@ static void readBbsRc_WhenConfigIsEmpty_AppliesDefaults( void **state )
    {
       fail_msg( "default config should enable TCP keepalive" );
    }
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "default config should enable clickable URL summaries" );
+   }
 
    cleanupReadState();
    unlink( aryPath );
@@ -403,7 +414,6 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
            "capture c\n"
            "awaykey a\n"
            "aryShell !\n"
-           "aryBrowser 0 lynx\n"
            "aryEditor nano\n"
            "a1 Back in five.\n"
            "enemy Meatball\n"
@@ -441,10 +451,6 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
    {
       fail_msg( "aryEditor parsing failed; expected 'nano', got '%s'", aryEditor );
    }
-   if ( strcmp( aryBrowser, "lynx" ) != 0 || flagsConfiguration.shouldRunBrowserInBackground != 0 )
-   {
-      fail_msg( "aryBrowser parsing failed; expected foreground browser 'lynx'" );
-   }
    if ( strcmp( aryAwayMessageLines[0], "Back in five." ) != 0 )
    {
       fail_msg( "away message parsing failed; got '%s'", aryAwayMessageLines[0] );
@@ -466,6 +472,56 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
    if ( setupCallCount != 0 )
    {
       fail_msg( "version-matched config should not call setup(); got %d calls", setupCallCount );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for legacy browser migration test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "aryBrowser 1 netscape -remote\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write obsolete browser configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strstr( aryStdPrintfLog, "IMPORTANT: Your browser preference was removed due to client updates." ) == NULL )
+   {
+      fail_msg( "obsolete browser setting should emit migration warning; log was: %s", aryStdPrintfLog );
+   }
+   if ( strstr( aryStdPrintfLog, "The client now relies on terminal links and the macOS default browser." ) == NULL )
+   {
+      fail_msg( "obsolete browser setting should emit updated migration guidance; log was: %s", aryStdPrintfLog );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "obsolete browser setting should trigger one .bbsrc rewrite; got %d",
+                writeBbsRcCallCount );
    }
 
    cleanupReadState();
@@ -507,6 +563,133 @@ static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **s
    if ( flagsConfiguration.shouldUseTcpKeepalive )
    {
       fail_msg( "keepalive 0 should disable TCP keepalive" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for clickableurls=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "clickableurls 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for clickableurls=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "clickableurls 0 should disable clickable URL summaries" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for clickableurls=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "clickableurls 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for clickableurls=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "clickableurls 1 should enable clickable URL summaries" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for invalid clickableurls test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "clickableurls maybe\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write invalid clickableurls configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strstr( aryStdPrintfLog, "Invalid definition of clickable URL option ignored." ) == NULL )
+   {
+      fail_msg( "invalid clickable URL definition should emit warning; log was: %s", aryStdPrintfLog );
+   }
+   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   {
+      fail_msg( "invalid clickable URL definition should keep default enabled state" );
    }
 
    cleanupReadState();
@@ -735,7 +918,11 @@ int main( void )
       cmocka_unit_test( openBbsRc_WhenPathIsReadOnly_SetsReadOnlyAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigIsEmpty_AppliesDefaults ),
       cmocka_unit_test( readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy ),
+      cmocka_unit_test( readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls ),
+      cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveOne_EnablesTcpKeepalive ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsMalformedKeepalive_PrintsWarningAndKeepsDefault ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError ),

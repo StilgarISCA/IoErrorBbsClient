@@ -11,24 +11,24 @@
 #include "defs.h"
 #include "ext.h"
 
-/* Make a queue containing nobjs objects of size size.  Return a pointer to
+/* Make a queue containing itemCount objects of size size.  Return a pointer to
  * the queue or NULL if it could not be created.
  */
-queue *newQueue( int size, int nobjs )
+queue *newQueue( int size, int itemCount )
 {
    queue *ptrQueue;
 
-   if ( !( ptrQueue = (queue *)calloc( 1, sizeof( queue ) + (size_t)size * (size_t)nobjs ) ) )
+   if ( !( ptrQueue = (queue *)calloc( 1, sizeof( queue ) + (size_t)size * (size_t)itemCount ) ) )
    {
       return (queue *)NULL;
    }
 
    ptrQueue->start = (char *)( ptrQueue + 1 );
-   ptrQueue->size = nobjs;
+   ptrQueue->size = itemCount;
    ptrQueue->objsize = size;
    ptrQueue->head = 0;
    ptrQueue->tail = 0;
-   ptrQueue->nobjs = 0;
+   ptrQueue->itemCount = 0;
 
    return ptrQueue;
 }
@@ -38,7 +38,7 @@ queue *newQueue( int size, int nobjs )
  */
 int safeDeleteQueue( queue *ptrQueue )
 {
-   if ( ptrQueue->nobjs )
+   if ( ptrQueue->itemCount )
    {
       return 0;
    }
@@ -64,18 +64,18 @@ int pushQueue( const char *ptrObject, queue *ptrQueue )
    int remainingBytes;
    char *ptrQueueWrite; /* Pointer into the queue */
 
-   if ( ptrQueue->nobjs >= ptrQueue->size )
+   if ( ptrQueue->itemCount >= ptrQueue->size )
    { /* Is the queue full? */
       return 0;
    }
 
-   ptrQueue->nobjs++;
+   ptrQueue->itemCount++;
 
    /* Find the target address within the queue to insert object. */
    ptrQueueWrite = ptrQueue->start + ptrQueue->objsize * ptrQueue->tail;
 
 #if DEBUG
-   stdPrintf( "{Queuing %s, %d objects} ", ptrObject, ptrQueue->nobjs );
+   stdPrintf( "{Queuing %s, %d objects} ", ptrObject, ptrQueue->itemCount );
 #endif
    /* Copy the object into its queue position */
    for ( remainingBytes = ptrQueue->objsize; --remainingBytes >= 0; *ptrQueueWrite++ = *ptrObject++ )
@@ -101,18 +101,18 @@ int popQueue( char *ptrObject, queue *ptrQueue )
    int remainingBytes;
    const char *ptrQueueRead; /* Pointer into the queue */
 
-   if ( ptrQueue->nobjs <= 0 )
+   if ( ptrQueue->itemCount <= 0 )
    {
-      return ptrQueue->nobjs = 0; /* Queue is empty */
+      return ptrQueue->itemCount = 0; /* Queue is empty */
    }
 
-   ptrQueue->nobjs--; /* Removing an object... */
+   ptrQueue->itemCount--; /* Removing an object... */
 
    /* Find the object within the queue. */
    ptrQueueRead = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head );
 
 #if DEBUG
-   stdPrintf( "{Dequeuing %s, %d objects}\r\n", ptrQueueRead, ptrQueue->nobjs );
+   stdPrintf( "{Dequeuing %s, %d objects}\r\n", ptrQueueRead, ptrQueue->itemCount );
 #endif
    /* Copy the object. */
    for ( remainingBytes = ptrQueue->objsize; --remainingBytes >= 0; *ptrObject++ = *ptrQueueRead++ )
@@ -137,7 +137,7 @@ int isQueued( const char *ptrObject, queue *ptrQueue )
    int objectIndex;     /* Object counter */
 
    /* Move to head of queue. */
-   for ( ptrQueueEntry = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head ), objectIndex = 0; objectIndex < ptrQueue->nobjs; objectIndex++ )
+   for ( ptrQueueEntry = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head ), objectIndex = 0; objectIndex < ptrQueue->itemCount; objectIndex++ )
    {
       /* Do the comparison. */
       if ( !strcmp( ptrQueueEntry, ptrObject ) )

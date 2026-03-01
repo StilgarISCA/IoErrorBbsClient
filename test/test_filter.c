@@ -37,6 +37,7 @@ static void resetState( void )
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldDisableBold = 0;
    flagsConfiguration.useBold = 0;
+   flagsConfiguration.shouldEnableClickableUrls = 1;
 
    aryExpressMessageBuffer[0] = '\0';
    ptrExpressMessageBuffer = aryExpressMessageBuffer;
@@ -202,6 +203,12 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void sPerror( const char *message, const char *heading )
+{
+   (void)message;
+   (void)heading;
+}
+
 void sendAnX( void )
 {
    sendAnXCallCount++;
@@ -239,6 +246,15 @@ int stdPrintf( const char *format, ... )
 int stdPutChar( int inputChar )
 {
    return inputChar;
+}
+
+void getString( int length, char *result, int line )
+{
+   (void)line;
+   if ( length > 0 && result != NULL )
+   {
+      result[0] = '\0';
+   }
 }
 
 int strCompareVoid( const void *ptrLeft, const void *ptrRight )
@@ -327,13 +343,13 @@ static void filterUrl_WhenDuplicateSeen_QueuesOnlyOnce( void **state )
    }
 
    // Act
-   filterUrl( "Did I leave it here? http://bbs.example.net/threads/42" );
-   filterUrl( "Again: http://bbs.example.net/threads/42" );
+   filterUrl( "Did I leave it here? https://bbs.example.net/threads/42" );
+   filterUrl( "Again: https://bbs.example.net/threads/42" );
 
    // Assert
-   if ( urlQueue->nobjs != 1 )
+   if ( urlQueue->itemCount != 1 )
    {
-      fail_msg( "duplicate URLs should be queued only once; queue count is %d", urlQueue->nobjs );
+      fail_msg( "duplicate URLs should be queued only once; queue count is %d", urlQueue->itemCount );
    }
    memset( aryUrl, 0, sizeof( aryUrl ) );
    firstPopResult = popQueue( aryUrl, urlQueue );
@@ -342,7 +358,7 @@ static void filterUrl_WhenDuplicateSeen_QueuesOnlyOnce( void **state )
    {
       fail_msg( "URL queue should contain exactly one element; pop results were %d then %d", firstPopResult, secondPopResult );
    }
-   if ( strcmp( aryUrl, "http://bbs.example.net/threads/42" ) != 0 )
+   if ( strcmp( aryUrl, "https://bbs.example.net/threads/42" ) != 0 )
    {
       fail_msg( "queued URL mismatch; got '%s'", aryUrl );
    }
@@ -367,22 +383,324 @@ static void filterUrl_WhenQueueIsFull_EvictsOldestUrl( void **state )
    }
 
    // Act
-   filterUrl( "One http://example.net/one" );
-   filterUrl( "Two http://example.net/two" );
-   filterUrl( "Three http://example.net/three" );
+   filterUrl( "One https://example.net/one" );
+   filterUrl( "Two https://example.net/two" );
+   filterUrl( "Three https://example.net/three" );
 
    // Assert
-   if ( urlQueue->nobjs != 2 )
+   if ( urlQueue->itemCount != 2 )
    {
-      fail_msg( "URL queue size should stay capped at 2; got %d", urlQueue->nobjs );
+      fail_msg( "URL queue size should stay capped at 2; got %d", urlQueue->itemCount );
    }
    memset( aryFirst, 0, sizeof( aryFirst ) );
    memset( arySecond, 0, sizeof( arySecond ) );
    popQueue( aryFirst, urlQueue );
    popQueue( arySecond, urlQueue );
-   if ( strcmp( aryFirst, "http://example.net/two" ) != 0 || strcmp( arySecond, "http://example.net/three" ) != 0 )
+   if ( strcmp( aryFirst, "https://example.net/two" ) != 0 || strcmp( arySecond, "https://example.net/three" ) != 0 )
    {
       fail_msg( "URL queue eviction order mismatch; got '%s' then '%s'", aryFirst, arySecond );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenHttpsAndTrailingPunctuationPresent_ExtractsCleanUrl( void **state )
+{
+   // Arrange
+   char aryUrl[1024];
+   int popResult;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for HTTPS URL punctuation test setup" );
+   }
+
+   // Act
+   filterUrl( "Read this: https://example.dev/path?q=1#frag)." );
+
+   // Assert
+   memset( aryUrl, 0, sizeof( aryUrl ) );
+   popResult = popQueue( aryUrl, urlQueue );
+   if ( popResult != 1 )
+   {
+      fail_msg( "HTTPS URL should be queued exactly once; pop returned %d", popResult );
+   }
+   if ( strcmp( aryUrl, "https://example.dev/path?q=1#frag" ) != 0 )
+   {
+      fail_msg( "HTTPS URL should trim trailing punctuation; got '%s'", aryUrl );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenWwwUrlPresent_QueuesUrlWithoutTldList( void **state )
+{
+   // Arrange
+   char aryUrl[1024];
+   int popResult;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for www URL test setup" );
+   }
+
+   // Act
+   filterUrl( "Mirror is at www.example.photography/section/alpha, check it out." );
+
+   // Assert
+   memset( aryUrl, 0, sizeof( aryUrl ) );
+   popResult = popQueue( aryUrl, urlQueue );
+   if ( popResult != 1 )
+   {
+      fail_msg( "www URL should be queued exactly once; pop returned %d", popResult );
+   }
+   if ( strcmp( aryUrl, "www.example.photography/section/alpha" ) != 0 )
+   {
+      fail_msg( "www URL parsing should support modern TLDs and trim punctuation; got '%s'", aryUrl );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for unsupported scheme test setup" );
+   }
+
+   // Act
+   filterUrl( "Legacy link http://example.net/legacy should be ignored." );
+   filterUrl( "Another legacy link ftp://example.net/pub/file should be ignored." );
+
+   // Assert
+   if ( urlQueue->itemCount != 0 )
+   {
+      fail_msg( "unsupported schemes should not be queued; queue count is %d", urlQueue->itemCount );
+   }
+
+   resetLists();
+}
+
+static void filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl( void **state )
+{
+   // Arrange
+   char aryUrl[1024];
+   int popResult;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for wrapped URL test setup" );
+   }
+
+   // Act
+   filterUrl( "https://arstechnica.com/gadgets/2026/01/inside-nvidias-10-year-effort-to-make-t" );
+   filterUrl( "he-shield-tv-the-most-updated-android-device-ever/" );
+   filterUrl( "Also still gets software updates!" );
+
+   // Assert
+   memset( aryUrl, 0, sizeof( aryUrl ) );
+   popResult = popQueue( aryUrl, urlQueue );
+   if ( popResult != 1 )
+   {
+      fail_msg( "wrapped HTTPS URL should be queued once; pop returned %d", popResult );
+   }
+   if ( strcmp( aryUrl, "https://arstechnica.com/gadgets/2026/01/inside-nvidias-10-year-effort-to-make-the-shield-tv-the-most-updated-android-device-ever/" ) != 0 )
+   {
+      fail_msg( "wrapped URL should be reconstructed into one URL; got '%s'", aryUrl );
+   }
+
+   resetLists();
+}
+
+static void printWithOsc8Links_WhenTextContainsHttpsUrl_EmitsHyperlinkEscapes( void **state )
+{
+   // Arrange
+   const char *ptrMessage;
+
+   (void)state;
+
+   resetState();
+   ptrMessage = "Read this https://example.dev/path?q=1 now";
+
+   // Act
+   printWithOsc8Links( ptrMessage );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033]8;;https://example.dev/path?q=1\033\\" ) == NULL )
+   {
+      fail_msg( "OSC-8 opening sequence for HTTPS URL was not emitted; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;\033\\" ) == NULL )
+   {
+      fail_msg( "OSC-8 closing sequence was not emitted; log was: %s", aryPrintLog );
+   }
+}
+
+static void printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget( void **state )
+{
+   // Arrange
+   const char *ptrMessage;
+
+   (void)state;
+
+   resetState();
+   ptrMessage = "Mirror: www.example.photography/alpha";
+
+   // Act
+   printWithOsc8Links( ptrMessage );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033]8;;https://www.example.photography/alpha\033\\" ) == NULL )
+   {
+      fail_msg( "OSC-8 target for www URL should be normalized to https://...; log was: %s", aryPrintLog );
+   }
+}
+
+static void printWithOsc8Links_WhenClickableUrlsDisabled_PrintsPlainText( void **state )
+{
+   // Arrange
+   const char *ptrMessage;
+
+   (void)state;
+
+   resetState();
+   flagsConfiguration.shouldEnableClickableUrls = 0;
+   ptrMessage = "Read this https://example.dev/path";
+
+   // Act
+   printWithOsc8Links( ptrMessage );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033]8;;" ) != NULL )
+   {
+      fail_msg( "OSC-8 escapes should not be emitted when clickable URLs are disabled; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, ptrMessage ) == NULL )
+   {
+      fail_msg( "plain message text should be printed when clickable URLs are disabled; log was: %s", aryPrintLog );
+   }
+}
+
+static void emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for URL detection report test setup" );
+   }
+
+   beginUrlDetectionReport();
+   filterUrl( "Read this https://example.dev/alpha" );
+   filterUrl( "and this www.example.photography/beta" );
+
+   // Act
+   emitUrlDetectionReport();
+
+   // Assert
+   if ( strstr( aryPrintLog, "[Clickable URL(s) detected by BBS client]" ) == NULL )
+   {
+      fail_msg( "URL detection report header was not emitted; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;https://example.dev/alpha\033\\" ) == NULL )
+   {
+      fail_msg( "URL detection report should include clickable HTTPS URL; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;https://www.example.photography/beta\033\\" ) == NULL )
+   {
+      fail_msg( "URL detection report should include clickable normalized www URL; log was: %s", aryPrintLog );
+   }
+
+   resetLists();
+}
+
+static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   flagsConfiguration.useAnsi = 1;
+   flagsConfiguration.useBold = 0;
+   color.number = '6';
+   color.text = '2';
+   color.background = '4';
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for ANSI URL detection report test setup" );
+   }
+
+   beginUrlDetectionReport();
+   filterUrl( "Read this https://example.dev/alpha" );
+
+   // Act
+   emitUrlDetectionReport();
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033[0m\033[36;44m" ) == NULL )
+   {
+      fail_msg( "URL detection report header should use configured number/background colors; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033[0m\033[32;44m" ) == NULL )
+   {
+      fail_msg( "URL detection report body should use configured text/background colors; log was: %s", aryPrintLog );
+   }
+
+   resetLists();
+}
+
+static void emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   flagsConfiguration.shouldEnableClickableUrls = 0;
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for disabled URL detection report test setup" );
+   }
+
+   beginUrlDetectionReport();
+   filterUrl( "Read this https://example.dev/alpha" );
+
+   // Act
+   emitUrlDetectionReport();
+
+   // Assert
+   if ( strstr( aryPrintLog, "[Clickable URL(s) detected by BBS client]" ) != NULL )
+   {
+      fail_msg( "URL detection report should be suppressed when clickable URLs are disabled; log was: %s", aryPrintLog );
    }
 
    resetLists();
@@ -425,7 +743,7 @@ static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **sta
    {
       fail_msg( "highestExpressMessageId should update to parsed ID 5; got %d", highestExpressMessageId );
    }
-   if ( xlandQueue->nobjs != 1 || !isQueued( "Dr Strange", xlandQueue ) )
+   if ( xlandQueue->itemCount != 1 || !isQueued( "Dr Strange", xlandQueue ) )
    {
       fail_msg( "sender should be queued exactly once for auto-reply flow" );
    }
@@ -441,6 +759,16 @@ int main( void )
       cmocka_unit_test( notReplyingTransformExpress_WhenHeaderContainsAt_InsertsNotReplyingLabel ),
       cmocka_unit_test( filterUrl_WhenDuplicateSeen_QueuesOnlyOnce ),
       cmocka_unit_test( filterUrl_WhenQueueIsFull_EvictsOldestUrl ),
+      cmocka_unit_test( filterUrl_WhenHttpsAndTrailingPunctuationPresent_ExtractsCleanUrl ),
+      cmocka_unit_test( filterUrl_WhenWwwUrlPresent_QueuesUrlWithoutTldList ),
+      cmocka_unit_test( filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes ),
+      cmocka_unit_test( filterUrl_WhenHttpsWrapsAcrossLines_CombinesIntoSingleUrl ),
+      cmocka_unit_test( printWithOsc8Links_WhenTextContainsHttpsUrl_EmitsHyperlinkEscapes ),
+      cmocka_unit_test( printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget ),
+      cmocka_unit_test( printWithOsc8Links_WhenClickableUrlsDisabled_PrintsPlainText ),
+      cmocka_unit_test( emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary ),
+      cmocka_unit_test( emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState ),
+      cmocka_unit_test( emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

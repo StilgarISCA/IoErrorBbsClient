@@ -217,6 +217,7 @@ void filterExpress( register int inputChar )
    { /* signal from IAC to begin/end X */
       if ( isExpressMessageInProgress )
       { /* Need to re-init for new X */
+         beginUrlDetectionReport();
          ptrExpressMessageBuffer = aryExpressMessageBuffer;
          *aryExpressMessageBuffer = 0;
          needs.ignore = 0;
@@ -250,13 +251,19 @@ void filterExpress( register int inputChar )
          }
          replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
          ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-         stdPrintf( "%s%s", ( needs.crlf ) ? "\r\n" : "", aryExpressMessageBuffer );
+         if ( needs.crlf )
+         {
+            stdPrintf( "\r\n" );
+         }
+         printWithOsc8Links( aryExpressMessageBuffer );
          if ( needs.truncated )
          {
             stdPrintf( "\r\n[X message truncated]\r\n" );
          }
+         emitUrlDetectionReport();
          return;
       }
+      emitUrlDetectionReport();
    }
    /* If the message is killed, don't bother doing anything. */
    if ( needs.ignore )
@@ -339,6 +346,7 @@ void filterPost( register int inputChar )
    { /* control: begin/end of post */
       if ( postProgressState )
       { /* beginning of post */
+         beginUrlDetectionReport();
          posthdrp = posthdr;
          *posthdr = 0;
          needs.crlf = 0;
@@ -356,6 +364,7 @@ void filterPost( register int inputChar )
          }
          filterUrl( " " );
          numposts++;
+         emitUrlDetectionReport();
       }
       return;
    }
@@ -486,106 +495,14 @@ void filterPost( register int inputChar )
                        : 0;
          ansiTransformPostHeader( posthdr, isFriend );
          snprintf( arySavedHeader, sizeof( arySavedHeader ), "%s\r\n", posthdr );
-         stdPrintf( "%s%s\r", ( needs.crlf ) ? "\r\n" : "", posthdr );
-      }
-   }
-}
-
-void filterUrl( const char *aryLine )
-{
-   static int multiline = 0;
-   static char aryUrlBuffer[1024];
-   char *ptrCursor, *ptrNext;
-
-   if ( !urlQueue )
-   { /* Can't store URLs for some reason */
-      return;
-   }
-
-   if ( !multiline )
-   {
-      snprintf( aryUrlBuffer, sizeof( aryUrlBuffer ), "%s", aryLine );
-   }
-   else
-   {
-      size_t ulen = strlen( aryUrlBuffer );
-      if ( ulen < sizeof( aryUrlBuffer ) - 1 )
-      {
-         snprintf( aryUrlBuffer + ulen, sizeof( aryUrlBuffer ) - ulen, "%s", aryLine );
-      }
-   }
-
-   {
-      size_t urlLength = strlen( aryUrlBuffer );
-      while ( urlLength > 0 )
-      {
-         size_t index = urlLength - 1;
-         if ( aryUrlBuffer[index] == ' ' || aryUrlBuffer[index] == '\t' || aryUrlBuffer[index] == '\r' )
+         if ( needs.crlf )
          {
-            aryUrlBuffer[index] = 0;
+            stdPrintf( "\r\n" );
          }
-         else
-         {
-            break;
-         }
-         urlLength = index;
+         printWithOsc8Links( posthdr );
+         stdPrintf( "\r" );
       }
    }
-   {
-      size_t ulen = strlen( aryUrlBuffer );
-      if ( ulen < sizeof( aryUrlBuffer ) - 1 )
-      {
-         snprintf( aryUrlBuffer + ulen, sizeof( aryUrlBuffer ) - ulen, " " );
-      }
-   }
-
-   if ( !( ptrCursor = strstr( aryUrlBuffer, "http://" ) ) )
-   {
-      if ( !( ptrCursor = strstr( aryUrlBuffer, "ftp://" ) ) )
-      {
-         aryUrlBuffer[0] = 0;
-         multiline = 0;
-         return;
-      }
-   }
-   /* offset unused */
-
-   for ( ptrNext = ptrCursor; *ptrNext; ptrNext++ )
-   {
-      if ( findChar( ":/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$-_@.&+,=;?%~{|}", *ptrNext ) )
-      {
-         continue;
-      }
-      *ptrNext = 0;
-      /* length unused */
-
-      /* Oops, looks like a multi-aryLine URL */
-      if ( ( !multiline && ptrCursor == aryLine &&
-             ptrNext > ptrCursor + 77 ) ||
-           ( multiline && strlen( aryLine ) > 77 ) )
-      {
-         if ( strlen( aryLine ) > 77 )
-         {
-            break;
-         }
-      }
-
-      if ( !isQueued( ptrCursor, urlQueue ) )
-      {
-         char aryTempText[1024];
-         while ( !pushQueue( ptrCursor, urlQueue ) )
-         {
-            popQueue( aryTempText, urlQueue );
-         }
-      }
-      /*	    printf("\r\nSnarfed URL: <%s>\r\n", urls[nurls - 1]); */
-      multiline = 0;
-      return;
-   }
-
-   multiline = 1;
-   /*	printf("Multiline URL, got <%s> so far.\r\n", aryUrlBuffer); */
-   return;
 }
 
 void filterData( register int inputChar )
@@ -596,6 +513,10 @@ void filterData( register int inputChar )
    if ( inputChar == '\n' )
    {
       filterUrl( thisline );
+      if ( strstr( thisline, "Message received by " ) != NULL )
+      {
+         emitUrlDetectionReport();
+      }
       thisline[0] = 0;
    }
    else
@@ -629,7 +550,7 @@ void filterData( register int inputChar )
 #endif
     }
     */
-   /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->nobjs && (isAway || isXland))
+   /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->itemCount && (isAway || isXland))
    sendAnX();
    */
    if ( sendingXState == SX_SEND_NEXT && !*thisline && inputChar == '\r' )
@@ -638,7 +559,7 @@ void filterData( register int inputChar )
 #if DEBUG
       stdPrintf( "filterData 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-      if ( xlandQueue->nobjs && ( isAway || isXland ) )
+      if ( xlandQueue->itemCount && ( isAway || isXland ) )
       {
          sendAnX();
       }

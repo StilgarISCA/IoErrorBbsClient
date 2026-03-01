@@ -2,6 +2,7 @@ bin_PROGRAMS = bbs
 man_MANS = bbs.1
 
 bbs_SOURCES = \
+	browser.c \
 	bbsrc.c \
 	color.c \
 	config.c \
@@ -40,7 +41,7 @@ test_getline_LDADD = $(CMOCKA_LIBS)
 test_inkey_SOURCES = test/test_inkey.c test/test_helpers.c inkey.c global.c
 test_inkey_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_inkey_LDADD = $(CMOCKA_LIBS)
-test_filter_SOURCES = test/test_filter.c test/test_helpers.c filter.c queue.c slist.c global.c
+test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter.c queue.c slist.c global.c
 test_filter_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_filter_LDADD = $(CMOCKA_LIBS)
 test_color_SOURCES = test/test_color.c test/test_helpers.c color.c slist.c global.c
