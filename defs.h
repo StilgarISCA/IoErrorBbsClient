@@ -74,12 +74,12 @@
 
 typedef struct
 {
-   char *start; /* Pointer to beginning of queue */
-   int head;    /* Index of current head */
-   int tail;    /* Index of current tail */
-   int size;    /* Number of objects queue can hold */
-   int nobjs;   /* Number of objects queued */
-   int objsize; /* Size of one object */
+   char *start;   /* Pointer to beginning of queue */
+   int head;      /* Index of current head */
+   int tail;      /* Index of current tail */
+   int size;      /* Number of objects queue can hold */
+   int itemCount; /* Number of objects queued */
+   int objsize;   /* Size of one object */
 } queue;
 
 #define CTRL_D 4

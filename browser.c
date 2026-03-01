@@ -260,7 +260,7 @@ static void clearDetectedUrlQueue( void )
    {
       return;
    }
-   while ( ptrDetectedUrlQueue->nobjs > 0 )
+   while ( ptrDetectedUrlQueue->itemCount > 0 )
    {
       popQueue( aryTempText, ptrDetectedUrlQueue );
    }
@@ -314,7 +314,7 @@ void emitUrlDetectionReport( void )
       clearDetectedUrlQueue();
       return;
    }
-   if ( ptrDetectedUrlQueue == NULL || ptrDetectedUrlQueue->nobjs == 0 )
+   if ( ptrDetectedUrlQueue == NULL || ptrDetectedUrlQueue->itemCount == 0 )
    {
       return;
    }
@@ -501,11 +501,11 @@ void openBrowser( void )
    char aryLine[4];
    char *ptrUrlEntry;
 
-   if ( urlQueue->nobjs < 1 )
+   if ( urlQueue->itemCount < 1 )
    {
       return;
    }
-   if ( urlQueue->nobjs == 1 )
+   if ( urlQueue->itemCount == 1 )
    {
       launchBrowserUrl( urlQueue->start + ( urlQueue->objsize * urlQueue->head ) );
       reprintLine();
@@ -517,7 +517,7 @@ void openBrowser( void )
    shouldIgnoreNetwork = 1;
    printf( "\r\n\n" );
    ptrUrlEntry = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
-   for ( inputIndex = 0; inputIndex < urlQueue->nobjs; inputIndex++ )
+   for ( inputIndex = 0; inputIndex < urlQueue->itemCount; inputIndex++ )
    {
       if ( strlen( ptrUrlEntry ) > 72 )
       {
@@ -543,7 +543,7 @@ void openBrowser( void )
    printf( "\r\n" );
    inputIndex = atoi( aryLine );
    ptrUrlEntry = urlQueue->start + ( urlQueue->objsize * urlQueue->head );
-   if ( inputIndex > 0 && inputIndex <= urlQueue->nobjs )
+   if ( inputIndex > 0 && inputIndex <= urlQueue->itemCount )
    {
       int urlIndex;
 

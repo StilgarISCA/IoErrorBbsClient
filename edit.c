@@ -368,7 +368,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          }
          itemIndex = 0;
          /* Make 'x' work at this prompt for isXland function */
-         if ( !( isXland && xlandQueue->nobjs ) )
+         if ( !( isXland && xlandQueue->itemCount ) )
          {
             while ( !findChar( " \naAcCeEpPsSQtTx?/", inputChar = inKey() ) )
             {

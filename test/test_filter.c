@@ -347,9 +347,9 @@ static void filterUrl_WhenDuplicateSeen_QueuesOnlyOnce( void **state )
    filterUrl( "Again: https://bbs.example.net/threads/42" );
 
    // Assert
-   if ( urlQueue->nobjs != 1 )
+   if ( urlQueue->itemCount != 1 )
    {
-      fail_msg( "duplicate URLs should be queued only once; queue count is %d", urlQueue->nobjs );
+      fail_msg( "duplicate URLs should be queued only once; queue count is %d", urlQueue->itemCount );
    }
    memset( aryUrl, 0, sizeof( aryUrl ) );
    firstPopResult = popQueue( aryUrl, urlQueue );
@@ -388,9 +388,9 @@ static void filterUrl_WhenQueueIsFull_EvictsOldestUrl( void **state )
    filterUrl( "Three https://example.net/three" );
 
    // Assert
-   if ( urlQueue->nobjs != 2 )
+   if ( urlQueue->itemCount != 2 )
    {
-      fail_msg( "URL queue size should stay capped at 2; got %d", urlQueue->nobjs );
+      fail_msg( "URL queue size should stay capped at 2; got %d", urlQueue->itemCount );
    }
    memset( aryFirst, 0, sizeof( aryFirst ) );
    memset( arySecond, 0, sizeof( arySecond ) );
@@ -490,9 +490,9 @@ static void filterUrl_WhenHttpOrFtpPresent_DoesNotQueueUnsupportedSchemes( void 
    filterUrl( "Another legacy link ftp://example.net/pub/file should be ignored." );
 
    // Assert
-   if ( urlQueue->nobjs != 0 )
+   if ( urlQueue->itemCount != 0 )
    {
-      fail_msg( "unsupported schemes should not be queued; queue count is %d", urlQueue->nobjs );
+      fail_msg( "unsupported schemes should not be queued; queue count is %d", urlQueue->itemCount );
    }
 
    resetLists();
@@ -706,7 +706,7 @@ static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **sta
    {
       fail_msg( "highestExpressMessageId should update to parsed ID 5; got %d", highestExpressMessageId );
    }
-   if ( xlandQueue->nobjs != 1 || !isQueued( "Dr Strange", xlandQueue ) )
+   if ( xlandQueue->itemCount != 1 || !isQueued( "Dr Strange", xlandQueue ) )
    {
       fail_msg( "sender should be queued exactly once for auto-reply flow" );
    }

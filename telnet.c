@@ -261,7 +261,7 @@ int telReceive( int inputByte )
 
                case G_FIVE: /* get five lines (X message, profile) */
                   getFiveLines( aryTelnetBuffer[1] );
-                  if ( aryTelnetBuffer[1] == 1 && xlandQueue->nobjs > 0 )
+                  if ( aryTelnetBuffer[1] == 1 && xlandQueue->itemCount > 0 )
                   {
                      sendAnX();
                   }

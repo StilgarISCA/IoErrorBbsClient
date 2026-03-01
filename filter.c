@@ -550,7 +550,7 @@ void filterData( register int inputChar )
 #endif
     }
     */
-   /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->nobjs && (isAway || isXland))
+   /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->itemCount && (isAway || isXland))
    sendAnX();
    */
    if ( sendingXState == SX_SEND_NEXT && !*thisline && inputChar == '\r' )
@@ -559,7 +559,7 @@ void filterData( register int inputChar )
 #if DEBUG
       stdPrintf( "filterData 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
 #endif
-      if ( xlandQueue->nobjs && ( isAway || isXland ) )
+      if ( xlandQueue->itemCount && ( isAway || isXland ) )
       {
          sendAnX();
       }
