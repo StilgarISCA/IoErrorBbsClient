@@ -24,6 +24,7 @@ extern void
    configBbsRc P( (void)),
    colorConfig P( (void)),
    colorblindColors P( (void)),
+   hotDogColors P( (void)),
    colorOptions P( (void)),
    connectBbs P( (void)),
    continuedDataHelper P( (void)),

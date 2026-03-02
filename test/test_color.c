@@ -465,6 +465,49 @@ static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
    }
 }
 
+static void hotDogColors_WhenApplied_SetsClassicHotDogPalette( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   memset( &color, 0, sizeof( color ) );
+
+   // Act
+   hotDogColors();
+
+   // Assert
+   if ( color.text != 220 || color.forum != 196 || color.number != 220 ||
+        color.errorTextColor != 231 )
+   {
+      fail_msg( "hotDogColors should set general hot dog colors; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.background != 16 )
+   {
+      fail_msg( "hotDogColors should keep a black background; got %d", color.background );
+   }
+   if ( color.posttext != 214 || color.postfriendtext != 214 ||
+        color.expresstext != 214 || color.expressfriendtext != 214 )
+   {
+      fail_msg( "hotDogColors should keep only post and eXpress bodies orange; got posttext=%d friendposttext=%d expresstext=%d friendexpresstext=%d",
+                color.posttext, color.postfriendtext, color.expresstext,
+                color.expressfriendtext );
+   }
+
+   if ( color.postdate != 226 || color.postfrienddate != 226 ||
+        color.postname != 226 || color.postfriendname != 226 ||
+        color.anonymous != 226 || color.moreprompt != 220 ||
+        color.input1 != 220 || color.expressname != 226 ||
+        color.expressfriendname != 226 )
+   {
+      fail_msg( "hotDogColors should keep date and name headers yellow while leaving only bodies orange; got postdate=%d frienddate=%d postname=%d friendname=%d anonymous=%d moreprompt=%d input1=%d expressname=%d expressfriendname=%d",
+                color.postdate, color.postfrienddate, color.postname,
+                color.postfriendname, color.anonymous, color.moreprompt,
+                color.input1, color.expressname, color.expressfriendname );
+   }
+}
+
 static void ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes( void **state )
 {
    // Arrange
@@ -664,6 +707,7 @@ int main( void )
       cmocka_unit_test( formatAnsiForegroundSequence_WhenExtendedColorRequested_Uses256ColorCode ),
       cmocka_unit_test( formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCombinedSelectors ),
       cmocka_unit_test( colorblindColors_WhenApplied_SetsAccessiblePalette ),
+      cmocka_unit_test( hotDogColors_WhenApplied_SetsClassicHotDogPalette ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),

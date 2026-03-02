@@ -12,7 +12,7 @@ static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
 static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
 static const char *COLOR_POST_MENU_KEYS = "dntq \n";
 static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
-static const char *COLOR_RESET_MENU_KEYS = "dcq \n";
+static const char *COLOR_RESET_MENU_KEYS = "dchq \n";
 static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
 static const char *COLOR_FOREGROUND_KEYS = "krgybmcw12345678";
 static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd12345678";
@@ -279,10 +279,38 @@ void colorblindColors( void )
    color.expressfriendtext = 231;
 }
 
+void hotDogColors( void )
+{
+   color.text = 220;
+   color.forum = 196;
+   color.number = 220;
+   color.errorTextColor = 231;
+   color.reserved1 = 16;
+   color.reserved2 = 16;
+   color.reserved3 = 16;
+   color.postdate = 226;
+   color.postname = 226;
+   color.posttext = 214;
+   color.postfrienddate = 226;
+   color.postfriendname = 226;
+   color.postfriendtext = 214;
+   color.anonymous = 226;
+   color.moreprompt = 220;
+   color.reserved4 = 16;
+   color.reserved5 = 16;
+   color.background = 16;
+   color.input1 = 220;
+   color.input2 = 231;
+   color.expresstext = 214;
+   color.expressname = 226;
+   color.expressfriendname = 226;
+   color.expressfriendtext = 214;
+}
+
 static void presetColorConfig( void )
 {
    stdPrintf( "Color presets\r\n\n" );
-   colorize( "@YD@Cefault  @YC@Colorblind  @YQ@Cuit@Y -> @G" );
+   colorize( "@YD@Cefault  @YC@Colorblind  @YH@Cotdog Stand  @YQ@Cuit@Y -> @G" );
 
    switch ( readValidatedMenuKey( COLOR_RESET_MENU_KEYS ) )
    {
@@ -294,6 +322,11 @@ static void presetColorConfig( void )
       case 'c':
          stdPrintf( "Colorblind\r\n" );
          colorblindColors();
+         break;
+
+      case 'h':
+         stdPrintf( "Hotdog Stand\r\n" );
+         hotDogColors();
          break;
 
       case 'q':
