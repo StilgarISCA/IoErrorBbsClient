@@ -58,7 +58,7 @@ static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
  * which might use those reserved fields - they will get their default values
  * instead of zero, which would render as black.
  */
-#define ifzero( x ) if ( ( x ) < 1 || ( x ) > 7 || clearall )
+#define ifzero( x ) if ( ( x ) < 0 || clearall )
 void defaultColors( int clearall )
 {
    ifzero( color.text ) color.text = 2;

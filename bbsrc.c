@@ -43,12 +43,86 @@ static int ctrl( const char *ptrToken )
  * Parses the bbsrc file, setting necessary globals depending on the content of
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
  */
-#define MAX_LINE_LENGTH 83
+#define MAX_LINE_LENGTH 255
 #define FRIEND_COMMAND_PREFIX_LEN 7
 #define FRIEND_NAME_PARSE_LENGTH 19
 #define FRIEND_INFO_OFFSET 30
 #define FRIEND_INFO_COPY_LENGTH 53
 #define FRIEND_RECORD_MAGIC 0x3231
+
+static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues )
+{
+   int colorIndex;
+
+   colorIndex = 0;
+   while ( *ptrColorSpec != '\0' )
+   {
+      char aryToken[16];
+      int colorValue;
+      size_t tokenLength;
+      const char *ptrTokenStart;
+
+      while ( isspace( (unsigned char)*ptrColorSpec ) )
+      {
+         ptrColorSpec++;
+      }
+      if ( *ptrColorSpec == '\0' )
+      {
+         break;
+      }
+      if ( colorIndex >= COLOR_FIELD_COUNT )
+      {
+         return false;
+      }
+
+      ptrTokenStart = ptrColorSpec;
+      while ( *ptrColorSpec != '\0' && !isspace( (unsigned char)*ptrColorSpec ) )
+      {
+         ptrColorSpec++;
+      }
+      tokenLength = (size_t)( ptrColorSpec - ptrTokenStart );
+      if ( tokenLength == 0 || tokenLength >= sizeof( aryToken ) )
+      {
+         return false;
+      }
+
+      memcpy( aryToken, ptrTokenStart, tokenLength );
+      aryToken[tokenLength] = '\0';
+
+      if ( tokenLength == 1 && aryToken[0] >= '0' && aryToken[0] <= '9' )
+      {
+         colorValue = colorValueFromLegacyDigit( aryToken[0] );
+      }
+      else
+      {
+         colorValue = colorValueFromName( aryToken );
+      }
+      if ( colorValue < 0 )
+      {
+         return false;
+      }
+
+      ptrColorValues[colorIndex++] = colorValue;
+   }
+
+   return colorIndex == COLOR_FIELD_COUNT;
+}
+
+static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
+{
+   if ( strlen( ptrLine ) == 6 + COLOR_FIELD_COUNT )
+   {
+      int colorIndex;
+
+      for ( colorIndex = 0; colorIndex < COLOR_FIELD_COUNT; colorIndex++ )
+      {
+         ptrColorValues[colorIndex] = colorValueFromLegacyDigit( ptrLine[6 + colorIndex] );
+      }
+      return true;
+   }
+
+   return parseNamedColorScheme( ptrLine + 6, ptrColorValues );
+}
 
 typedef enum
 {
@@ -330,19 +404,13 @@ void readBbsRc( void )
             }
 
          case BBRC_CMD_COLOR:
-            if ( strlen( aryLine ) != 6 + COLOR_FIELD_COUNT )
-            {
-               stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n", lineNumber );
-            }
-            else
             {
                int *ptrColorValues;
-               int colorIndex;
 
                ptrColorValues = (int *)&color;
-               for ( colorIndex = 0; colorIndex < COLOR_FIELD_COUNT; colorIndex++ )
+               if ( !parseColorScheme( aryLine, ptrColorValues ) )
                {
-                  ptrColorValues[colorIndex] = colorValueFromLegacyDigit( aryLine[6 + colorIndex] );
+                  stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n", lineNumber );
                }
             }
             break;

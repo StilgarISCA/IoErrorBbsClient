@@ -198,7 +198,7 @@ static void defaultColors_WhenClearAllDisabled_LeavesBackgroundUnchanged( void *
 
    resetState();
    memset( &color, 0, sizeof( color ) );
-   color.text = 9;
+   color.text = -1;
    color.background = 4;
 
    // Act
@@ -207,7 +207,7 @@ static void defaultColors_WhenClearAllDisabled_LeavesBackgroundUnchanged( void *
    // Assert
    if ( color.text != 2 )
    {
-      fail_msg( "defaultColors(0) should repair invalid text color to default 2; got %d", color.text );
+      fail_msg( "defaultColors(0) should repair negative text color to default 2; got %d", color.text );
    }
    if ( color.background != 4 )
    {
