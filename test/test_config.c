@@ -104,6 +104,11 @@ int colorize( const char *ptrText )
    return 1;
 }
 
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
+}
+
 int colorConfigCalled;
 void colorConfig( void )
 {

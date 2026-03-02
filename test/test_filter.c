@@ -76,7 +76,7 @@ static void resetLists( void )
 }
 
 /* filter.c dependencies not under direct test in this file. */
-char ansiTransform( char inputChar )
+int ansiTransform( int inputChar )
 {
    return inputChar;
 }
@@ -87,7 +87,7 @@ void ansiTransformExpress( char *ptrText, size_t size )
    (void)size;
 }
 
-char ansiTransformPost( char inputChar, int isFriend )
+int ansiTransformPost( int inputChar, int isFriend )
 {
    (void)isFriend;
    return inputChar;
@@ -103,6 +103,11 @@ int colorize( const char *ptrText )
 {
    (void)ptrText;
    return 1;
+}
+
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
 }
 
 char *extractName( const char *ptrHeader )
@@ -649,9 +654,9 @@ static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( voi
    resetLists();
    flagsConfiguration.useAnsi = 1;
    flagsConfiguration.useBold = 0;
-   color.number = '6';
-   color.text = '2';
-   color.background = '4';
+   color.number = 6;
+   color.text = 2;
+   color.background = 4;
    urlQueue = newQueue( 1024, 5 );
    if ( urlQueue == NULL )
    {

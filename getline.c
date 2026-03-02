@@ -58,7 +58,7 @@ void getFiveLines( int which )
 #endif
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%cm", color.input1 );
+      stdPrintf( "\033[3%dm", color.input1 );
    }
    for ( lineIndex = 0; lineIndex < ( 20 + override + local ) && ( !lineIndex || *arySendString[lineIndex - 1] ); lineIndex++ )
    {
@@ -100,7 +100,7 @@ void getFiveLines( int which )
    }
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%cm", lastColor = color.text ); /* assignment */
+      stdPrintf( "\033[3%dm", lastColor = color.text ); /* assignment */
    }
 }
 
@@ -171,13 +171,13 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    }
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%cm", color.input1 );
+      stdPrintf( "\033[3%dm", color.input1 );
    }
    for ( ; *ptrScan != 0; ptrScan++ )
    {
       if ( ptrScan == ptrEnd && flagsConfiguration.useAnsi )
       {
-         stdPrintf( "\033[3%cm", color.input2 );
+         stdPrintf( "\033[3%dm", color.input2 );
       }
       putchar( *ptrScan );
    }
@@ -187,7 +187,7 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    }
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%cm", color.input1 );
+      stdPrintf( "\033[3%dm", color.input1 );
    }
 }
 
@@ -228,7 +228,7 @@ char *getName( int quitPriv )
    lastPtr = 0;
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%cm", color.input1 );
+      stdPrintf( "\033[3%dm", color.input1 );
    }
    if ( quitPriv == 1 && *aryAutoName &&
         strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
@@ -250,7 +250,7 @@ char *getName( int quitPriv )
       }
       if ( flagsConfiguration.useAnsi )
       {
-         stdPrintf( "\033[3%cm", lastColor );
+         stdPrintf( "\033[3%dm", lastColor );
       }
       stdPrintf( "\rAutomatic reply to %s                     \r\n", junk );
       return ( junk );
@@ -438,7 +438,7 @@ char *getName( int quitPriv )
       {
          if ( flagsConfiguration.useAnsi )
          {
-            stdPrintf( "\033[3%cm", color.input1 );
+            stdPrintf( "\033[3%dm", color.input1 );
          }
          for ( ; *ptrCursor != 0; ptrCursor++ )
          {

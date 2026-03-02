@@ -153,33 +153,34 @@ typedef struct
    time_t time;   /* Time online */
 } friend;         /* User list entry */
 
-/* The ordering of this struct is important. Do not change it. */
+#define COLOR_FIELD_COUNT 24
+
 typedef struct
 {
-   char text;           /* Plain text color */
-   char forum;          /* Forum prompt color */
-   char number;         /* Numbers and Read cmd prompt color */
-   char errorTextColor; /* Warning/error messages color */
-   char reserved1;
-   char reserved2;
-   char reserved3;
-   char postdate;       /* Post date stamp color */
-   char postname;       /* Post author name color */
-   char posttext;       /* Post text color */
-   char postfrienddate; /* Post friend date stamp color */
-   char postfriendname; /* Post friend name color */
-   char postfriendtext; /* Post friend text color */
-   char anonymous;      /* Anonymous post header color */
-   char moreprompt;     /* More prompt color */
-   char reserved4;
-   char reserved5;
-   char background;        /* Background color */
-   char input1;            /* Text input fields */
-   char input2;            /* Text input fields (highlight) */
-   char expresstext;       /* X message text color */
-   char expressname;       /* X message name color */
-   char expressfriendtext; /* X message from friend text color */
-   char expressfriendname; /* X message from friend name color*/
+   int text;           /* Plain text color */
+   int forum;          /* Forum prompt color */
+   int number;         /* Numbers and Read cmd prompt color */
+   int errorTextColor; /* Warning/error messages color */
+   int reserved1;
+   int reserved2;
+   int reserved3;
+   int postdate;       /* Post date stamp color */
+   int postname;       /* Post author name color */
+   int posttext;       /* Post text color */
+   int postfrienddate; /* Post friend date stamp color */
+   int postfriendname; /* Post friend name color */
+   int postfriendtext; /* Post friend text color */
+   int anonymous;      /* Anonymous post header color */
+   int moreprompt;     /* More prompt color */
+   int reserved4;
+   int reserved5;
+   int background;        /* Background color */
+   int input1;            /* Text input fields */
+   int input2;            /* Text input fields (highlight) */
+   int expresstext;       /* X message text color */
+   int expressname;       /* X message name color */
+   int expressfriendtext; /* X message from friend text color */
+   int expressfriendname; /* X message from friend name color*/
 } Color;
 
 #include "proto.h"

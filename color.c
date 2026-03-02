@@ -24,59 +24,77 @@ static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd";
  * which might use those reserved fields - they will get their default values
  * instead of zero, which would render as black.
  */
-#define ifzero( x ) if ( ( x ) < '1' || ( x ) > '7' || clearall )
+#define ifzero( x ) if ( ( x ) < 1 || ( x ) > 7 || clearall )
 void defaultColors( int clearall )
 {
-   ifzero( color.text ) color.text = '2';
-   ifzero( color.forum ) color.forum = '3';
-   ifzero( color.number ) color.number = '6';
-   ifzero( color.errorTextColor ) color.errorTextColor = '1';
-   color.reserved1 = '0';
-   color.reserved2 = '0';
-   color.reserved3 = '0';
-   ifzero( color.postdate ) color.postdate = '5';
-   ifzero( color.postname ) color.postname = '6';
-   ifzero( color.posttext ) color.posttext = '2';
-   ifzero( color.postfrienddate ) color.postfrienddate = '5';
-   ifzero( color.postfriendname ) color.postfriendname = '1';
-   ifzero( color.postfriendtext ) color.postfriendtext = '2';
-   ifzero( color.anonymous ) color.anonymous = '3';
-   ifzero( color.moreprompt ) color.moreprompt = '3';
-   color.reserved4 = '0';
-   color.reserved5 = '0';
+   ifzero( color.text ) color.text = 2;
+   ifzero( color.forum ) color.forum = 3;
+   ifzero( color.number ) color.number = 6;
+   ifzero( color.errorTextColor ) color.errorTextColor = 1;
+   color.reserved1 = 0;
+   color.reserved2 = 0;
+   color.reserved3 = 0;
+   ifzero( color.postdate ) color.postdate = 5;
+   ifzero( color.postname ) color.postname = 6;
+   ifzero( color.posttext ) color.posttext = 2;
+   ifzero( color.postfrienddate ) color.postfrienddate = 5;
+   ifzero( color.postfriendname ) color.postfriendname = 1;
+   ifzero( color.postfriendtext ) color.postfriendtext = 2;
+   ifzero( color.anonymous ) color.anonymous = 3;
+   ifzero( color.moreprompt ) color.moreprompt = 3;
+   color.reserved4 = 0;
+   color.reserved5 = 0;
    if ( clearall )
    {
-      color.background = '0';
+      color.background = 0;
    }
-   ifzero( color.input1 ) color.input1 = '2';
-   ifzero( color.input2 ) color.input2 = '6';
-   ifzero( color.expresstext ) color.expresstext = '2';
-   ifzero( color.expressname ) color.expressname = '2';
-   ifzero( color.expressfriendname ) color.expressfriendname = '2';
-   ifzero( color.expressfriendtext ) color.expressfriendtext = '2';
+   ifzero( color.input1 ) color.input1 = 2;
+   ifzero( color.input2 ) color.input2 = 6;
+   ifzero( color.expresstext ) color.expresstext = 2;
+   ifzero( color.expressname ) color.expressname = 2;
+   ifzero( color.expressfriendname ) color.expressfriendname = 2;
+   ifzero( color.expressfriendtext ) color.expressfriendtext = 2;
 }
 
-char ansiTransform( char inputChar )
+int colorValueFromLegacyDigit( int inputChar )
 {
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
+}
+
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
+}
+
+int ansiTransform( int inputChar )
+{
+   int transformedColor;
+
+   transformedColor = colorValueFromLegacyDigit( inputChar );
    switch ( inputChar )
    {
       case '6':
-         inputChar = color.number;
+         transformedColor = color.number;
          break;
       case '3':
-         inputChar = color.forum;
+         transformedColor = color.forum;
          break;
       case '2':
-         inputChar = color.text;
+         transformedColor = color.text;
          break;
       case '1':
-         inputChar = color.errorTextColor;
+         transformedColor = color.errorTextColor;
          break;
       default:
          break;
    }
 
-   return (char)inputChar;
+   return transformedColor;
 }
 
 void ansiTransformExpress( char *ptrText, size_t size )
@@ -114,13 +132,13 @@ void ansiTransformExpress( char *ptrText, size_t size )
 
    if ( slistFind( friendList, ptrExpressSender, fStrCompareVoid ) != -1 )
    {
-      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%dm%s \033[3%dm%s\033[3%dm %s\033[3%dm",
                 color.expressfriendtext, ptrText, color.expressfriendname, ptrExpressSender,
                 color.expressfriendtext, ptrExpressMarker, color.text );
    }
    else
    {
-      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%cm%s \033[3%cm%s\033[3%cm %s\033[3%cm",
+      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%dm%s \033[3%dm%s\033[3%dm %s\033[3%dm",
                 color.expresstext, ptrText, color.expressname, ptrExpressSender,
                 color.expresstext, ptrExpressMarker, color.text );
    }
@@ -128,35 +146,39 @@ void ansiTransformExpress( char *ptrText, size_t size )
    snprintf( ptrText, size, "%s", aryTempText );
 }
 
-char ansiTransformPost( char inputChar, int isFriend )
+int ansiTransformPost( int inputChar, int isFriend )
 {
+   int transformedColor;
+
+   transformedColor = colorValueFromLegacyDigit( inputChar );
    switch ( inputChar )
    {
       case '3':
-         inputChar = color.moreprompt;
+         transformedColor = color.moreprompt;
          break;
       case '2':
          if ( isFriend )
          {
-            inputChar = color.postfriendtext;
+            transformedColor = color.postfriendtext;
          }
          else
          {
-            inputChar = color.posttext;
+            transformedColor = color.posttext;
          }
          break;
       case '1':
-         inputChar = color.errorTextColor;
+         transformedColor = color.errorTextColor;
          break;
       default:
          break;
    }
-   return (char)inputChar;
+   return transformedColor;
 }
 
 void ansiTransformPostHeader( char *ptrText, int isFriend )
 {
    char *ptrScan;
+   int transformedColor;
 
    /* Would have been easier with strtok() but can't guarantee it exists. */
    for ( ptrScan = ptrText; *ptrScan; ptrScan++ )
@@ -172,33 +194,42 @@ void ansiTransformPostHeader( char *ptrText, int isFriend )
             case '6':
                if ( isFriend )
                {
-                  *ptrScan = color.postfriendname;
+                  transformedColor = color.postfriendname;
                }
                else
                {
-                  *ptrScan = color.postname;
+                  transformedColor = color.postname;
                }
                break;
             case '5':
-               *ptrScan = color.postdate;
+               if ( isFriend )
+               {
+                  transformedColor = color.postfrienddate;
+               }
+               else
+               {
+                  transformedColor = color.postdate;
+               }
                break;
             case '3':
-               *ptrScan = color.anonymous;
+               transformedColor = color.anonymous;
                break;
             case '2':
                if ( isFriend )
                {
-                  *ptrScan = color.postfriendtext;
+                  transformedColor = color.postfriendtext;
                }
                else
                {
-                  *ptrScan = color.posttext;
+                  transformedColor = color.posttext;
                }
                break;
             default:
+               transformedColor = colorValueFromLegacyDigit( *ptrScan );
                break;
          }
-         lastColor = *ptrScan;
+         *ptrScan = (char)colorValueToLegacyDigit( transformedColor );
+         lastColor = transformedColor;
       }
    }
 }
@@ -272,17 +303,17 @@ void colorOptions( void )
    flagsConfiguration.useBold = (unsigned int)yesNoDefault( flagsConfiguration.useBold );
    if ( flagsConfiguration.useAnsi )
    {
-      printf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0', lastColor,
+      printf( "\033[%cm\033[3%d;4%dm", flagsConfiguration.useBold ? '1' : '0', lastColor,
               color.background );
    }
 }
 
 #define A_USER "Example User"
 #define A_FRIEND "Example Friend"
-#define GEN_FMT_STR "\033[4%c;3%cmLobby> \033[3%cmEnter message\r\n\n\033[3%cmOnly Sysops may post to the lobby\r\n\n\033[3%cmLobby> \033[3%cmGoto \033[3%cm[Babble]  \033[3%cm150\033[3%cm messages, \033[3%cm1\033[3%cm new\r\n"
-#define POST_FMT_STR "\033[3%cmJan  1, 2000 11:01\033[3%cm from \033[3%cm%s\033[3%cm\r\nHi there!\r\n\033[3%cm[Lobby> msg #1]\r\n"
-#define EXPRESS_FMT_STR "\033[3%cm*** Message (#1) from \033[3%cm%s\033[3%cm at 11:01 ***\r\n>Hi there!\r\n"
-#define INPUT_FMT_STR "\033[3%cmMessage eXpress\r\nRecipient: \033[3%cmExam\033[3%cmple User\r\n\033[3%cm>Hi there!\r\n\033[3%cmMessage received by Example User.\r\n"
+#define GEN_FMT_STR "\033[4%d;3%dmLobby> \033[3%dmEnter message\r\n\n\033[3%dmOnly Sysops may post to the lobby\r\n\n\033[3%dmLobby> \033[3%dmGoto \033[3%dm[Babble]  \033[3%dm150\033[3%dm messages, \033[3%dm1\033[3%dm new\r\n"
+#define POST_FMT_STR "\033[3%dmJan  1, 2000 11:01\033[3%dm from \033[3%dm%s\033[3%dm\r\nHi there!\r\n\033[3%dm[Lobby> msg #1]\r\n"
+#define EXPRESS_FMT_STR "\033[3%dm*** Message (#1) from \033[3%dm%s\033[3%dm at 11:01 ***\r\n>Hi there!\r\n"
+#define INPUT_FMT_STR "\033[3%dmMessage eXpress\r\nRecipient: \033[3%dmExam\033[3%dmple User\r\n\033[3%dm>Hi there!\r\n\033[3%dmMessage received by Example User.\r\n"
 
 void generalColorConfig( void )
 {
@@ -614,7 +645,7 @@ char userOrFriend( void )
    return (char)inputChar;
 }
 
-char colorPicker( void )
+int colorPicker( void )
 {
    int inputChar;
    char aryPromptText[100];
@@ -628,51 +659,51 @@ char colorPicker( void )
    {
       case 'r':
          stdPrintf( "Red\r\n\n" );
-         inputChar = '1';
+         inputChar = 1;
          break;
       case 'g':
          stdPrintf( "Green\r\n\n" );
-         inputChar = '2';
+         inputChar = 2;
          break;
       case 'y':
          stdPrintf( "Yellow\r\n\n" );
-         inputChar = '3';
+         inputChar = 3;
          break;
       case 'b':
          stdPrintf( "Blue\r\n\n" );
-         inputChar = '4';
+         inputChar = 4;
          break;
       case 'm':
       case 'p': /* Some people call it purple */
          stdPrintf( "Magenta\r\n\n" );
-         inputChar = '5';
+         inputChar = 5;
          break;
       case 'c':
          stdPrintf( "Cyan\r\n\n" );
-         inputChar = '6';
+         inputChar = 6;
          break;
       case 'w':
          stdPrintf( "White\r\n\n" );
-         inputChar = '7';
+         inputChar = 7;
          break;
       case 'k':
          stdPrintf( "Black\r\n\n" );
-         inputChar = '0';
+         inputChar = 0;
          break;
       default:
-         inputChar = '0'; /* If your text goes black it's a bug here */
+         inputChar = 0; /* If your text goes black it's a bug here */
          break;
    }
 
-   return (char)inputChar;
+   return inputChar;
 }
 
-char backgroundPicker( void )
+int backgroundPicker( void )
 {
    int inputChar;
    char aryPromptText[140];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%cm @Y-> @G",
+   snprintf( aryPromptText, sizeof( aryPromptText ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%dm @Y-> @G",
              color.background );
    colorize( aryPromptText );
 
@@ -682,46 +713,46 @@ char backgroundPicker( void )
    {
       case 'k':
          stdPrintf( "Black\r\n" );
-         inputChar = '0';
+         inputChar = 0;
          break;
       case 'r':
          stdPrintf( "Red\r\n" );
-         inputChar = '1';
+         inputChar = 1;
          break;
       case 'g':
          stdPrintf( "Green\r\n" );
-         inputChar = '2';
+         inputChar = 2;
          break;
       case 'y':
          stdPrintf( "Yellow\r\n" );
-         inputChar = '3';
+         inputChar = 3;
          break;
       case 'b':
          stdPrintf( "Blue\r\n" );
-         inputChar = '4';
+         inputChar = 4;
          break;
       case 'm':
       case 'p': /* Some people call it purple */
          stdPrintf( "Magenta\r\n" );
-         inputChar = '5';
+         inputChar = 5;
          break;
       case 'c':
          stdPrintf( "Cyan\r\n" );
-         inputChar = '6';
+         inputChar = 6;
          break;
       case 'w':
          stdPrintf( "White\r\n" );
-         inputChar = '7';
+         inputChar = 7;
          break;
       case 'd':
          stdPrintf( "Default\r\n" );
-         inputChar = '9';
+         inputChar = 9;
          break;
       default:
-         inputChar = '0'; /* If your text goes black it's a bug here */
+         inputChar = 0; /* If your text goes black it's a bug here */
          break;
    }
-   stdPrintf( "\033[4%cm\n", inputChar );
+   stdPrintf( "\033[4%dm\n", inputChar );
 
-   return (char)inputChar;
+   return inputChar;
 }

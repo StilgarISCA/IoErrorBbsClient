@@ -82,9 +82,9 @@ extern unsigned char aryPtyInputBuffer[1024]; /* buffer for input from pty */
 extern unsigned char *ptrPtyInput;            /* buffer pointer for input from pty */
 extern ssize_t ptyInputLength;                /* length of current input buffer from pty */
 
-extern int rows;       /* number of rows on aryUser's screen */
-extern int oldRows;    /* previous value of rows */
-extern char lastColor; /* last color code received from BBS */
+extern int rows;      /* number of rows on aryUser's screen */
+extern int oldRows;   /* previous value of rows */
+extern int lastColor; /* last color code received from BBS */
 
 extern long byte;                         /* current byte (remotely synched with bbs) */
 extern long targetByte;                   /* where the client wants to get */

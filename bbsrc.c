@@ -330,13 +330,20 @@ void readBbsRc( void )
             }
 
          case BBRC_CMD_COLOR:
-            if ( strlen( aryLine ) != 6 + sizeof color )
+            if ( strlen( aryLine ) != 6 + COLOR_FIELD_COUNT )
             {
                stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n", lineNumber );
             }
             else
             {
-               bcopy( aryLine + 6, (void *)&color, sizeof color );
+               int *ptrColorValues;
+               int colorIndex;
+
+               ptrColorValues = (int *)&color;
+               for ( colorIndex = 0; colorIndex < COLOR_FIELD_COUNT; colorIndex++ )
+               {
+                  ptrColorValues[colorIndex] = colorValueFromLegacyDigit( aryLine[6 + colorIndex] );
+               }
             }
             break;
 

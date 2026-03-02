@@ -109,13 +109,19 @@ extern void
    writeBbsRc P( (void));
 
 extern int
-   binarySearch P( (char *)),
+   ansiTransform P( (int)),
+   ansiTransformPost P( (int, int)),
+   backgroundPicker P( (void)),
    binarySort P( (void)),
+   binarySearch P( (char *)),
    capPrintf P( ( const char *, ... ) ),
    capPutChar P( (int)),
    capPuts P( (const char *)),
    checkFile P( (FILE *)),
    colorize P( (const char *)),
+   colorPicker P( (void)),
+   colorValueFromLegacyDigit P( (int)),
+   colorValueToLegacyDigit P( (int)),
    deleteQueue P( (queue *)),
    deleteFile P( (const char *)),
    extractNumber P( (const char *)),
@@ -158,10 +164,6 @@ extern int
    yesNoDefault P( (int));
 
 extern char
-   ansiTransform P( (char)),
-   ansiTransformPost P( (char, int)),
-   backgroundPicker P( (void)),
-   colorPicker P( (void)),
    expressColorMenu P( (void)),
    *extractName P( (const char *)),
    *extractNameNoHistory P( (const char *)),

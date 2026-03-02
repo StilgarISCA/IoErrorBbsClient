@@ -559,7 +559,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                }
                if ( flagsConfiguration.useAnsi )
                {
-                  printf( "\033[%cm\033[3%cm", flagsConfiguration.useBold ? '1' : '0', lastColor );
+                  printf( "\033[%cm\033[3%dm", flagsConfiguration.useBold ? '1' : '0', lastColor );
                }
                printf( "[Editing complete]\r\n" );
                if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )

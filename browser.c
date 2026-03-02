@@ -266,13 +266,13 @@ static void clearDetectedUrlQueue( void )
    }
 }
 
-static void applyVisibleUrlReportColor( char foregroundColor )
+static void applyVisibleUrlReportColor( int foregroundColor )
 {
    if ( !flagsConfiguration.useAnsi )
    {
       return;
    }
-   stdPrintf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0',
+   stdPrintf( "\033[%cm\033[3%d;4%dm", flagsConfiguration.useBold ? '1' : '0',
               foregroundColor, color.background );
    lastColor = foregroundColor;
 }

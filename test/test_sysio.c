@@ -25,7 +25,7 @@ static void resetState( void )
    flagsConfiguration.isPosting = 0;
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldDisableBold = 0;
-   lastColor = '0';
+   lastColor = 0;
 
    if ( tempFile != NULL )
    {
@@ -50,6 +50,16 @@ void fatalPerror( const char *message, const char *heading )
 void tempFileError( void )
 {
    tempFileErrorCallCount++;
+}
+
+int colorValueFromLegacyDigit( int inputChar )
+{
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
 }
 
 static void stripAnsi_WhenEscapeCodesPresent_RemovesAnsiSequences( void **state )
@@ -142,9 +152,9 @@ static void capPutChar_WhenAnsiSequenceProvided_SkipsAnsiAndTracksLastColor( voi
    {
       fail_msg( "capPutChar should not capture ANSI bytes; expected only payload 'X', got '%s'", aryCaptured );
    }
-   if ( lastColor != '6' )
+   if ( lastColor != 6 )
    {
-      fail_msg( "capPutChar should update lastColor from ANSI code; expected '6', got '%c'", lastColor );
+      fail_msg( "capPutChar should update lastColor from ANSI code; expected 6, got %d", lastColor );
    }
 
    resetState();

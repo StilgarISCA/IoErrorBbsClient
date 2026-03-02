@@ -422,8 +422,8 @@ void filterPost( register int inputChar )
             }
             else
             {
-               lastColor = ansiTransformPost( (char)inputChar, isFriend );
-               inputChar = lastColor;
+               lastColor = ansiTransformPost( inputChar, isFriend );
+               inputChar = colorValueToLegacyDigit( lastColor );
             }
          }
       }
@@ -442,7 +442,7 @@ void filterPost( register int inputChar )
       /* Change color for end of more prompt */
       if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
       {
-         stdPrintf( "\033[3%cm", lastColor = color.text ); /* assignment */
+         stdPrintf( "\033[3%dm", lastColor = color.text ); /* assignment */
       }
 
       /* Output character */
@@ -568,7 +568,7 @@ void filterData( register int inputChar )
    /* Change color for end of more prompt */
    if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
    {
-      stdPrintf( "\033[3%cm", lastColor = color.text ); /* assignment */
+      stdPrintf( "\033[3%dm", lastColor = color.text ); /* assignment */
    }
 
    /* Parse ANSI sequences */
@@ -584,14 +584,14 @@ void filterData( register int inputChar )
          }
          else
          {
-            lastColor = ansiTransform( (char)inputChar );
-            inputChar = lastColor;
+            lastColor = ansiTransform( inputChar );
+            inputChar = colorValueToLegacyDigit( lastColor );
          }
       }
    }
    else if ( inputChar == '\033' )
    { /* Escape character */
-      stdPrintf( "\033[4%cm", color.background );
+      stdPrintf( "\033[4%dm", color.background );
       ansistate = 4;
       if ( !flagsConfiguration.useAnsi )
       {

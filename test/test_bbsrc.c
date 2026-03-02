@@ -87,6 +87,16 @@ void defaultColors( int setall )
    (void)setall;
 }
 
+int colorValueFromLegacyDigit( int inputChar )
+{
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
+}
+
 int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    const friend *const *ptrLeftFriend;

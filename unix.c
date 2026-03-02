@@ -625,7 +625,7 @@ void setTerm( void )
 
    if ( flagsConfiguration.useAnsi )
    {
-      printf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0', lastColor,
+      printf( "\033[%cm\033[3%d;4%dm", flagsConfiguration.useBold ? '1' : '0', lastColor,
               color.background );
    }
    fflush( stdout );
