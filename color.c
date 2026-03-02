@@ -16,6 +16,40 @@ static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
 static const char *COLOR_FOREGROUND_KEYS = "krgybmcw";
 static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd";
 
+typedef struct
+{
+   const char *ptrName;
+   int colorValue;
+} NamedColorSpec;
+
+static const NamedColorSpec aryNamedColors[] =
+   {
+      { "black", 16 },
+      { "red", 160 },
+      { "green", 34 },
+      { "yellow", 220 },
+      { "blue", 26 },
+      { "magenta", 91 },
+      { "purple", 91 },
+      { "cyan", 44 },
+      { "white", 231 },
+      { "default", 9 } };
+
+static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
+{
+   while ( *ptrLeft && *ptrRight )
+   {
+      if ( tolower( (unsigned char)*ptrLeft ) != tolower( (unsigned char)*ptrRight ) )
+      {
+         return false;
+      }
+      ptrLeft++;
+      ptrRight++;
+   }
+
+   return *ptrLeft == '\0' && *ptrRight == '\0';
+}
+
 /*
  * defaultColors is called once with an arg of 1 before the bbsrc file is
  * read.  This initializes all the color variables.  It is then called again
@@ -69,6 +103,41 @@ int colorValueFromLegacyDigit( int inputChar )
 int colorValueToLegacyDigit( int colorValue )
 {
    return colorValue + '0';
+}
+
+int colorValueFromName( const char *ptrColorName )
+{
+   size_t itemIndex;
+
+   if ( ptrColorName == NULL || *ptrColorName == '\0' )
+   {
+      return -1;
+   }
+
+   for ( itemIndex = 0; itemIndex < sizeof( aryNamedColors ) / sizeof( aryNamedColors[0] ); itemIndex++ )
+   {
+      if ( isColorNameMatch( ptrColorName, aryNamedColors[itemIndex].ptrName ) )
+      {
+         return aryNamedColors[itemIndex].colorValue;
+      }
+   }
+
+   return -1;
+}
+
+const char *colorNameFromValue( int colorValue )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < sizeof( aryNamedColors ) / sizeof( aryNamedColors[0] ); itemIndex++ )
+   {
+      if ( aryNamedColors[itemIndex].colorValue == colorValue )
+      {
+         return aryNamedColors[itemIndex].ptrName;
+      }
+   }
+
+   return NULL;
 }
 
 int ansiTransform( int inputChar )

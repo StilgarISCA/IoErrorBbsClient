@@ -215,6 +215,102 @@ static void defaultColors_WhenClearAllDisabled_LeavesBackgroundUnchanged( void *
    }
 }
 
+static void colorValueFromName_WhenCanonicalNameProvided_ReturnsNamedPaletteValue( void **state )
+{
+   int colorValue;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   colorValue = colorValueFromName( "green" );
+
+   // Assert
+   if ( colorValue != 34 )
+   {
+      fail_msg( "colorValueFromName should map green to palette value 34; got %d", colorValue );
+   }
+}
+
+static void colorValueFromName_WhenAliasProvided_ReturnsCanonicalPaletteValue( void **state )
+{
+   int colorValue;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   colorValue = colorValueFromName( "Purple" );
+
+   // Assert
+   if ( colorValue != 91 )
+   {
+      fail_msg( "colorValueFromName should map Purple to palette value 91; got %d", colorValue );
+   }
+}
+
+static void colorValueFromName_WhenNameUnknown_ReturnsInvalidSentinel( void **state )
+{
+   int colorValue;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   colorValue = colorValueFromName( "chartreuse" );
+
+   // Assert
+   if ( colorValue != -1 )
+   {
+      fail_msg( "colorValueFromName should reject unknown names with -1; got %d", colorValue );
+   }
+}
+
+static void colorNameFromValue_WhenPaletteValueMatchesAlias_ReturnsCanonicalName( void **state )
+{
+   const char *ptrColorName;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   ptrColorName = colorNameFromValue( 91 );
+
+   // Assert
+   if ( ptrColorName == NULL || strcmp( ptrColorName, "magenta" ) != 0 )
+   {
+      fail_msg( "colorNameFromValue should return canonical name 'magenta' for value 91; got '%s'",
+                ptrColorName == NULL ? "(null)" : ptrColorName );
+   }
+}
+
+static void colorNameFromValue_WhenPaletteValueUnknown_ReturnsNull( void **state )
+{
+   const char *ptrColorName;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   ptrColorName = colorNameFromValue( 999 );
+
+   // Assert
+   if ( ptrColorName != NULL )
+   {
+      fail_msg( "colorNameFromValue should return NULL for unknown values; got '%s'", ptrColorName );
+   }
+}
+
 static void ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes( void **state )
 {
    // Arrange
@@ -359,6 +455,11 @@ int main( void )
    const struct CMUnitTest aryTests[] = {
       cmocka_unit_test( defaultColors_WhenClearAllApplied_SetsKnownDefaults ),
       cmocka_unit_test( defaultColors_WhenClearAllDisabled_LeavesBackgroundUnchanged ),
+      cmocka_unit_test( colorValueFromName_WhenCanonicalNameProvided_ReturnsNamedPaletteValue ),
+      cmocka_unit_test( colorValueFromName_WhenAliasProvided_ReturnsCanonicalPaletteValue ),
+      cmocka_unit_test( colorValueFromName_WhenNameUnknown_ReturnsInvalidSentinel ),
+      cmocka_unit_test( colorNameFromValue_WhenPaletteValueMatchesAlias_ReturnsCanonicalName ),
+      cmocka_unit_test( colorNameFromValue_WhenPaletteValueUnknown_ReturnsNull ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),

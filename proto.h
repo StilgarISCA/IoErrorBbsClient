@@ -120,6 +120,7 @@ extern int
    checkFile P( (FILE *)),
    colorize P( (const char *)),
    colorPicker P( (void)),
+   colorValueFromName P( (const char *)),
    colorValueFromLegacyDigit P( (int)),
    colorValueToLegacyDigit P( (int)),
    deleteQueue P( (queue *)),
@@ -162,6 +163,9 @@ extern int
    waitNextEvent P( (void)),
    yesNo P( (void)),
    yesNoDefault P( (int));
+
+extern const char
+   *colorNameFromValue P( (int));
 
 extern char
    expressColorMenu P( (void)),
