@@ -140,6 +140,98 @@ const char *colorNameFromValue( int colorValue )
    return NULL;
 }
 
+static void printAnsiForegroundColor( int colorValue )
+{
+   char aryAnsiSequence[32];
+
+   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                 colorValue );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
+static void printAnsiBackgroundColor( int colorValue )
+{
+   char aryAnsiSequence[32];
+
+   formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                 colorValue );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
+static void printAnsiDisplayState( int foregroundColor, int backgroundColor )
+{
+   char aryAnsiSequence[32];
+
+   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                   foregroundColor, backgroundColor,
+                                   flagsConfiguration.useBold );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
+static void printGeneralColorPreview( void )
+{
+   printAnsiDisplayState( color.forum, color.background );
+   stdPrintf( "Lobby> " );
+   printAnsiForegroundColor( color.text );
+   stdPrintf( "Enter message\r\n\n" );
+   printAnsiForegroundColor( color.errorTextColor );
+   stdPrintf( "Only Sysops may post to the lobby\r\n\n" );
+   printAnsiForegroundColor( color.forum );
+   stdPrintf( "Lobby> " );
+   printAnsiForegroundColor( color.text );
+   stdPrintf( "Goto " );
+   printAnsiForegroundColor( color.forum );
+   stdPrintf( "[Babble]  " );
+   printAnsiForegroundColor( color.number );
+   stdPrintf( "150" );
+   printAnsiForegroundColor( color.text );
+   stdPrintf( " messages, " );
+   printAnsiForegroundColor( color.number );
+   stdPrintf( "1" );
+   printAnsiForegroundColor( color.text );
+   stdPrintf( " new\r\n" );
+}
+
+static void printPostColorPreview( int dateColor, int textColor,
+                                   int nameColor, const char *ptrName )
+{
+   printAnsiForegroundColor( dateColor );
+   stdPrintf( "Jan  1, 2000 11:01" );
+   printAnsiForegroundColor( textColor );
+   stdPrintf( " from " );
+   printAnsiForegroundColor( nameColor );
+   stdPrintf( "%s", ptrName );
+   printAnsiForegroundColor( textColor );
+   stdPrintf( "\r\nHi there!\r\n" );
+   printAnsiForegroundColor( color.forum );
+   stdPrintf( "[Lobby> msg #1]\r\n" );
+}
+
+static void printExpressColorPreview( int textColor, int nameColor,
+                                      const char *ptrName )
+{
+   printAnsiForegroundColor( textColor );
+   stdPrintf( "*** Message (#1) from " );
+   printAnsiForegroundColor( nameColor );
+   stdPrintf( "%s", ptrName );
+   printAnsiForegroundColor( textColor );
+   stdPrintf( " at 11:01 ***\r\n>Hi there!\r\n" );
+}
+
+static void printInputColorPreview( void )
+{
+   printAnsiForegroundColor( color.text );
+   stdPrintf( "Message eXpress\r\nRecipient: " );
+   printAnsiForegroundColor( color.input1 );
+   stdPrintf( "Exam" );
+   printAnsiForegroundColor( color.input2 );
+   stdPrintf( "ple User\r\n" );
+   printAnsiForegroundColor( color.input1 );
+   stdPrintf( ">Hi there!\r\n" );
+   printAnsiForegroundColor( color.text );
+   stdPrintf( "Message received by Example User.\r\n" );
+}
+
 int ansiTransform( int inputChar )
 {
    int transformedColor;
@@ -169,6 +261,9 @@ int ansiTransform( int inputChar )
 void ansiTransformExpress( char *ptrText, size_t size )
 {
    char aryTempText[580];
+   char aryMessageColor[32];
+   char aryNameColor[32];
+   char aryResetColor[32];
    char *ptrExpressSender, *ptrExpressMarker;
 
    /* Insert color only when ANSI is being used */
@@ -201,16 +296,23 @@ void ansiTransformExpress( char *ptrText, size_t size )
 
    if ( slistFind( friendList, ptrExpressSender, fStrCompareVoid ) != -1 )
    {
-      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%dm%s \033[3%dm%s\033[3%dm %s\033[3%dm",
-                color.expressfriendtext, ptrText, color.expressfriendname, ptrExpressSender,
-                color.expressfriendtext, ptrExpressMarker, color.text );
+      formatAnsiForegroundSequence( aryMessageColor, sizeof( aryMessageColor ),
+                                    color.expressfriendtext );
+      formatAnsiForegroundSequence( aryNameColor, sizeof( aryNameColor ),
+                                    color.expressfriendname );
    }
    else
    {
-      snprintf( aryTempText, sizeof( aryTempText ), "\033[3%dm%s \033[3%dm%s\033[3%dm %s\033[3%dm",
-                color.expresstext, ptrText, color.expressname, ptrExpressSender,
-                color.expresstext, ptrExpressMarker, color.text );
+      formatAnsiForegroundSequence( aryMessageColor, sizeof( aryMessageColor ),
+                                    color.expresstext );
+      formatAnsiForegroundSequence( aryNameColor, sizeof( aryNameColor ),
+                                    color.expressname );
    }
+   formatAnsiForegroundSequence( aryResetColor, sizeof( aryResetColor ),
+                                 color.text );
+   snprintf( aryTempText, sizeof( aryTempText ), "%s%s %s%s%s %s%s",
+             aryMessageColor, ptrText, aryNameColor, ptrExpressSender,
+             aryMessageColor, ptrExpressMarker, aryResetColor );
    lastColor = color.text;
    snprintf( ptrText, size, "%s", aryTempText );
 }
@@ -372,17 +474,12 @@ void colorOptions( void )
    flagsConfiguration.useBold = (unsigned int)yesNoDefault( flagsConfiguration.useBold );
    if ( flagsConfiguration.useAnsi )
    {
-      printf( "\033[%cm\033[3%d;4%dm", flagsConfiguration.useBold ? '1' : '0', lastColor,
-              color.background );
+      printAnsiDisplayState( lastColor, color.background );
    }
 }
 
 #define A_USER "Example User"
 #define A_FRIEND "Example Friend"
-#define GEN_FMT_STR "\033[4%d;3%dmLobby> \033[3%dmEnter message\r\n\n\033[3%dmOnly Sysops may post to the lobby\r\n\n\033[3%dmLobby> \033[3%dmGoto \033[3%dm[Babble]  \033[3%dm150\033[3%dm messages, \033[3%dm1\033[3%dm new\r\n"
-#define POST_FMT_STR "\033[3%dmJan  1, 2000 11:01\033[3%dm from \033[3%dm%s\033[3%dm\r\nHi there!\r\n\033[3%dm[Lobby> msg #1]\r\n"
-#define EXPRESS_FMT_STR "\033[3%dm*** Message (#1) from \033[3%dm%s\033[3%dm at 11:01 ***\r\n>Hi there!\r\n"
-#define INPUT_FMT_STR "\033[3%dmMessage eXpress\r\nRecipient: \033[3%dmExam\033[3%dmple User\r\n\033[3%dm>Hi there!\r\n\033[3%dmMessage received by Example User.\r\n"
 
 void generalColorConfig( void )
 {
@@ -390,10 +487,7 @@ void generalColorConfig( void )
 
    while ( true )
    {
-      stdPrintf( GEN_FMT_STR, color.background, color.forum,
-                 color.text, color.errorTextColor, color.forum,
-                 color.text, color.forum, color.number,
-                 color.text, color.number, color.text );
+      printGeneralColorPreview();
 
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
@@ -440,8 +534,7 @@ void inputColorConfig( void )
 
    while ( true )
    {
-      stdPrintf( INPUT_FMT_STR, color.text, color.input1,
-                 color.input2, color.input1, color.text );
+      printInputColorPreview();
 
       snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
       colorize( aryPromptText );
@@ -494,8 +587,8 @@ void postUserColorConfig( void )
    {
       int menuOption;
 
-      stdPrintf( POST_FMT_STR, color.postdate, color.posttext,
-                 color.postname, A_USER, color.posttext, color.forum );
+      printPostColorPreview( color.postdate, color.posttext,
+                             color.postname, A_USER );
       menuOption = postColorMenu();
       switch ( menuOption )
       {
@@ -525,9 +618,8 @@ void postFriendColorConfig( void )
    {
       int menuOption;
 
-      stdPrintf( POST_FMT_STR, color.postfrienddate, color.postfriendtext,
-                 color.postfriendname, A_FRIEND, color.postfriendtext,
-                 color.forum );
+      printPostColorPreview( color.postfrienddate, color.postfriendtext,
+                             color.postfriendname, A_FRIEND );
       menuOption = postColorMenu();
       switch ( menuOption )
       {
@@ -608,8 +700,8 @@ void expressUserColorConfig( void )
    {
       int menuOption;
 
-      stdPrintf( EXPRESS_FMT_STR, color.expresstext,
-                 color.expressname, A_USER, color.expresstext );
+      printExpressColorPreview( color.expresstext, color.expressname,
+                                A_USER );
       menuOption = expressColorMenu();
       switch ( menuOption )
       {
@@ -636,8 +728,8 @@ void expressFriendColorConfig( void )
    {
       int menuOption;
 
-      stdPrintf( EXPRESS_FMT_STR, color.expressfriendtext,
-                 color.expressfriendname, A_FRIEND, color.expressfriendtext );
+      printExpressColorPreview( color.expressfriendtext,
+                                color.expressfriendname, A_FRIEND );
       menuOption = expressColorMenu();
       switch ( menuOption )
       {
@@ -772,9 +864,10 @@ int backgroundPicker( void )
    int inputChar;
    char aryPromptText[140];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault \033[4%dm @Y-> @G",
-             color.background );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault " );
    colorize( aryPromptText );
+   printAnsiBackgroundColor( color.background );
+   colorize( " @Y-> @G" );
 
    inputChar = readValidatedMenuKey( COLOR_BACKGROUND_KEYS );
 
@@ -821,7 +914,8 @@ int backgroundPicker( void )
          inputChar = 0; /* If your text goes black it's a bug here */
          break;
    }
-   stdPrintf( "\033[4%dm\n", inputChar );
+   printAnsiBackgroundColor( inputChar );
+   stdPrintf( "\n" );
 
    return inputChar;
 }

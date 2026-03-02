@@ -648,6 +648,9 @@ static void emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary( voi
 static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( void **state )
 {
    // Arrange
+   char aryExpectedBodyColor[32];
+   char aryExpectedHeaderColor[32];
+
    (void)state;
 
    resetState();
@@ -670,11 +673,15 @@ static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( voi
    emitUrlDetectionReport();
 
    // Assert
-   if ( strstr( aryPrintLog, "\033[0m\033[36;44m" ) == NULL )
+   formatAnsiDisplayStateSequence( aryExpectedHeaderColor, sizeof( aryExpectedHeaderColor ),
+                                   color.number, color.background, false );
+   formatAnsiDisplayStateSequence( aryExpectedBodyColor, sizeof( aryExpectedBodyColor ),
+                                   color.text, color.background, false );
+   if ( strstr( aryPrintLog, aryExpectedHeaderColor ) == NULL )
    {
       fail_msg( "URL detection report header should use configured number/background colors; log was: %s", aryPrintLog );
    }
-   if ( strstr( aryPrintLog, "\033[0m\033[32;44m" ) == NULL )
+   if ( strstr( aryPrintLog, aryExpectedBodyColor ) == NULL )
    {
       fail_msg( "URL detection report body should use configured text/background colors; log was: %s", aryPrintLog );
    }

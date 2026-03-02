@@ -442,7 +442,12 @@ void filterPost( register int inputChar )
       /* Change color for end of more prompt */
       if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
       {
-         stdPrintf( "\033[3%dm", lastColor = color.text ); /* assignment */
+         char aryAnsiSequence[32];
+
+         lastColor = color.text;
+         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                       lastColor );
+         stdPrintf( "%s", aryAnsiSequence );
       }
 
       /* Output character */
@@ -568,7 +573,12 @@ void filterData( register int inputChar )
    /* Change color for end of more prompt */
    if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
    {
-      stdPrintf( "\033[3%dm", lastColor = color.text ); /* assignment */
+      char aryAnsiSequence[32];
+
+      lastColor = color.text;
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    lastColor );
+      stdPrintf( "%s", aryAnsiSequence );
    }
 
    /* Parse ANSI sequences */
@@ -591,7 +601,11 @@ void filterData( register int inputChar )
    }
    else if ( inputChar == '\033' )
    { /* Escape character */
-      stdPrintf( "\033[4%dm", color.background );
+      char aryAnsiSequence[32];
+
+      formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.background );
+      stdPrintf( "%s", aryAnsiSequence );
       ansistate = 4;
       if ( !flagsConfiguration.useAnsi )
       {

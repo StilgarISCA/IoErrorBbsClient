@@ -311,6 +311,86 @@ static void colorNameFromValue_WhenPaletteValueUnknown_ReturnsNull( void **state
    }
 }
 
+static void formatAnsiForegroundSequence_WhenClassicColorRequested_UsesClassicAnsiCode( void **state )
+{
+   char arySequence[32];
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   formatAnsiForegroundSequence( arySequence, sizeof( arySequence ), 2 );
+
+   // Assert
+   if ( strcmp( arySequence, "\033[32m" ) != 0 )
+   {
+      fail_msg( "formatAnsiForegroundSequence should encode classic green as '\\033[32m'; got '%s'",
+                arySequence );
+   }
+}
+
+static void formatAnsiForegroundSequence_WhenBrightColorRequested_UsesBrightAnsiCode( void **state )
+{
+   char arySequence[32];
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   formatAnsiForegroundSequence( arySequence, sizeof( arySequence ), 10 );
+
+   // Assert
+   if ( strcmp( arySequence, "\033[92m" ) != 0 )
+   {
+      fail_msg( "formatAnsiForegroundSequence should encode bright green as '\\033[92m'; got '%s'",
+                arySequence );
+   }
+}
+
+static void formatAnsiForegroundSequence_WhenExtendedColorRequested_Uses256ColorCode( void **state )
+{
+   char arySequence[32];
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   formatAnsiForegroundSequence( arySequence, sizeof( arySequence ), 34 );
+
+   // Assert
+   if ( strcmp( arySequence, "\033[38;5;34m" ) != 0 )
+   {
+      fail_msg( "formatAnsiForegroundSequence should encode extended palette value 34 as '\\033[38;5;34m'; got '%s'",
+                arySequence );
+   }
+}
+
+static void formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCombinedSelectors( void **state )
+{
+   char arySequence[32];
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   formatAnsiDisplayStateSequence( arySequence, sizeof( arySequence ), 7, 9, false );
+
+   // Assert
+   if ( strcmp( arySequence, "\033[0;37;49m" ) != 0 )
+   {
+      fail_msg( "formatAnsiDisplayStateSequence should encode white-on-default without bold as '\\033[0;37;49m'; got '%s'",
+                arySequence );
+   }
+}
+
 static void ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes( void **state )
 {
    // Arrange
@@ -460,6 +540,10 @@ int main( void )
       cmocka_unit_test( colorValueFromName_WhenNameUnknown_ReturnsInvalidSentinel ),
       cmocka_unit_test( colorNameFromValue_WhenPaletteValueMatchesAlias_ReturnsCanonicalName ),
       cmocka_unit_test( colorNameFromValue_WhenPaletteValueUnknown_ReturnsNull ),
+      cmocka_unit_test( formatAnsiForegroundSequence_WhenClassicColorRequested_UsesClassicAnsiCode ),
+      cmocka_unit_test( formatAnsiForegroundSequence_WhenBrightColorRequested_UsesBrightAnsiCode ),
+      cmocka_unit_test( formatAnsiForegroundSequence_WhenExtendedColorRequested_Uses256ColorCode ),
+      cmocka_unit_test( formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCombinedSelectors ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),

@@ -58,7 +58,11 @@ void getFiveLines( int which )
 #endif
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%dm", color.input1 );
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.input1 );
+      stdPrintf( "%s", aryAnsiSequence );
    }
    for ( lineIndex = 0; lineIndex < ( 20 + override + local ) && ( !lineIndex || *arySendString[lineIndex - 1] ); lineIndex++ )
    {
@@ -100,7 +104,12 @@ void getFiveLines( int which )
    }
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%dm", lastColor = color.text ); /* assignment */
+      char aryAnsiSequence[32];
+
+      lastColor = color.text;
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    lastColor );
+      stdPrintf( "%s", aryAnsiSequence );
    }
 }
 
@@ -171,13 +180,21 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    }
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%dm", color.input1 );
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.input1 );
+      stdPrintf( "%s", aryAnsiSequence );
    }
    for ( ; *ptrScan != 0; ptrScan++ )
    {
       if ( ptrScan == ptrEnd && flagsConfiguration.useAnsi )
       {
-         stdPrintf( "\033[3%dm", color.input2 );
+         char aryAnsiSequence[32];
+
+         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                       color.input2 );
+         stdPrintf( "%s", aryAnsiSequence );
       }
       putchar( *ptrScan );
    }
@@ -187,7 +204,11 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    }
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%dm", color.input1 );
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.input1 );
+      stdPrintf( "%s", aryAnsiSequence );
    }
 }
 
@@ -228,7 +249,11 @@ char *getName( int quitPriv )
    lastPtr = 0;
    if ( flagsConfiguration.useAnsi )
    {
-      stdPrintf( "\033[3%dm", color.input1 );
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.input1 );
+      stdPrintf( "%s", aryAnsiSequence );
    }
    if ( quitPriv == 1 && *aryAutoName &&
         strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
@@ -250,7 +275,11 @@ char *getName( int quitPriv )
       }
       if ( flagsConfiguration.useAnsi )
       {
-         stdPrintf( "\033[3%dm", lastColor );
+         char aryAnsiSequence[32];
+
+         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                       lastColor );
+         stdPrintf( "%s", aryAnsiSequence );
       }
       stdPrintf( "\rAutomatic reply to %s                     \r\n", junk );
       return ( junk );
@@ -438,7 +467,11 @@ char *getName( int quitPriv )
       {
          if ( flagsConfiguration.useAnsi )
          {
-            stdPrintf( "\033[3%dm", color.input1 );
+            char aryAnsiSequence[32];
+
+            formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                          color.input1 );
+            stdPrintf( "%s", aryAnsiSequence );
          }
          for ( ; *ptrCursor != 0; ptrCursor++ )
          {

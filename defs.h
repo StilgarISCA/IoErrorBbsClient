@@ -72,6 +72,129 @@
 
 #include "sysio.h"
 
+static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize,
+                                              size_t writeOffset, int colorValue,
+                                              bool isBackground )
+{
+   if ( writeOffset >= bufferSize )
+   {
+      return writeOffset;
+   }
+   if ( colorValue == 9 )
+   {
+      return writeOffset + (size_t)snprintf( ptrBuffer + writeOffset,
+                                             bufferSize - writeOffset,
+                                             "%d",
+                                             isBackground ? 49 : 39 );
+   }
+   if ( colorValue >= 0 && colorValue <= 7 )
+   {
+      return writeOffset + (size_t)snprintf( ptrBuffer + writeOffset,
+                                             bufferSize - writeOffset,
+                                             "%d",
+                                             ( isBackground ? 40 : 30 ) + colorValue );
+   }
+   if ( colorValue >= 8 && colorValue <= 15 )
+   {
+      return writeOffset + (size_t)snprintf( ptrBuffer + writeOffset,
+                                             bufferSize - writeOffset,
+                                             "%d",
+                                             ( isBackground ? 100 : 90 ) + ( colorValue - 8 ) );
+   }
+
+   return writeOffset + (size_t)snprintf( ptrBuffer + writeOffset,
+                                          bufferSize - writeOffset,
+                                          "%d;5;%d",
+                                          isBackground ? 48 : 38,
+                                          colorValue );
+}
+
+static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                                int colorValue )
+{
+   size_t safeOffset;
+   size_t writeOffset;
+
+   if ( bufferSize == 0 )
+   {
+      return 0;
+   }
+
+   writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[" );
+   writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
+                                          colorValue, false );
+   safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
+   snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
+             "m" );
+   return 1;
+}
+
+static inline int formatAnsiBackgroundSequence( char *ptrBuffer, size_t bufferSize,
+                                                int colorValue )
+{
+   size_t safeOffset;
+   size_t writeOffset;
+
+   if ( bufferSize == 0 )
+   {
+      return 0;
+   }
+
+   writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[" );
+   writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
+                                          colorValue, true );
+   safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
+   snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
+             "m" );
+   return 1;
+}
+
+static inline int formatAnsiDisplayStateSequence( char *ptrBuffer, size_t bufferSize,
+                                                  int foregroundColor,
+                                                  int backgroundColor,
+                                                  bool shouldUseBold )
+{
+   size_t safeOffset;
+   size_t writeOffset;
+
+   if ( bufferSize == 0 )
+   {
+      return 0;
+   }
+
+   writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[%d;",
+                                   shouldUseBold ? 1 : 0 );
+   writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
+                                          foregroundColor, false );
+   if ( writeOffset < bufferSize )
+   {
+      writeOffset += (size_t)snprintf( ptrBuffer + writeOffset,
+                                       bufferSize - writeOffset,
+                                       ";" );
+   }
+   else
+   {
+      writeOffset++;
+   }
+   writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
+                                          backgroundColor, true );
+   safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
+   snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
+             "m" );
+   return 1;
+}
+
+static inline int formatAnsiResetSequence( char *ptrBuffer, size_t bufferSize )
+{
+   if ( bufferSize == 0 )
+   {
+      return 0;
+   }
+
+   snprintf( ptrBuffer, bufferSize, "\033[0;39;49m" );
+   return 1;
+}
+
 typedef struct
 {
    char *start;   /* Pointer to beginning of queue */
