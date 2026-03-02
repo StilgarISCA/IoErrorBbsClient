@@ -19,7 +19,7 @@
 
 extern void
    ansiTransformExpress P( (char *, size_t)),
-   ansiTransformPostHeader P( (char *, int)),
+   ansiTransformPostHeader P( (char *, size_t, int)),
    arguments P( (int, char **)),
    configBbsRc P( (void)),
    colorConfig P( (void)),
@@ -123,6 +123,7 @@ extern int
    colorValueFromName P( (const char *)),
    colorValueFromLegacyDigit P( (int)),
    colorValueToLegacyDigit P( (int)),
+   formatTransformedAnsiForegroundSequence P( (char *, size_t, int, int, int)),
    deleteQueue P( (queue *)),
    deleteFile P( (const char *)),
    extractNumber P( (const char *)),

@@ -10,6 +10,40 @@
 
 static char thisline[320]; /* Copy of the current aryLine */
 
+static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength )
+{
+   stdPrintf( "%.*s", (int)sequenceLength, ptrAnsiSequence );
+}
+
+static void emitTransformedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength,
+                                         int isPostContext, int isFriend )
+{
+   if ( sequenceLength == 4 &&
+        memcmp( ptrAnsiSequence, "\033[1m", sequenceLength ) == 0 )
+   {
+      if ( flagsConfiguration.shouldDisableBold )
+      {
+         printBufferedAnsiSequence( ptrAnsiSequence, sequenceLength );
+         stdPrintf( "\033[0m" );
+         return;
+      }
+   }
+   if ( sequenceLength == 5 && ptrAnsiSequence[0] == '\033' &&
+        ptrAnsiSequence[1] == '[' && ptrAnsiSequence[2] == '3' &&
+        ptrAnsiSequence[4] == 'm' )
+   {
+      char aryAnsiSequence[32];
+
+      formatTransformedAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                               ptrAnsiSequence[3], isPostContext,
+                                               isFriend );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   printBufferedAnsiSequence( ptrAnsiSequence, sequenceLength );
+}
+
 void filterWhoList( register int inputChar )
 {
    static char new;
@@ -387,7 +421,8 @@ void filterPost( register int inputChar )
      */
    if ( !needs.prochdr )
    {
-      static int ansistate = 0; /* ANSI state count */
+      static char aryAnsiSequence[8];
+      static size_t ansiSequenceLength = 0;
 
       /* Store this aryLine for processing */
       if ( inputChar == '\n' )
@@ -410,26 +445,23 @@ void filterPost( register int inputChar )
       }
 
       /* Process ANSI codes in the middle of a post */
-      if ( ansistate )
+      if ( ansiSequenceLength > 0 )
       {
-         ansistate--;
-         if ( ansistate == 1 )
+         if ( ansiSequenceLength < sizeof( aryAnsiSequence ) )
          {
-            if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
-            { /* Turn boldface off */
-               printf( "m\033[0" );
-               ansistate--;
-            }
-            else
-            {
-               lastColor = ansiTransformPost( inputChar, isFriend );
-               inputChar = colorValueToLegacyDigit( lastColor );
-            }
+            aryAnsiSequence[ansiSequenceLength++] = (char)inputChar;
          }
+         if ( inputChar == 'm' || ansiSequenceLength >= sizeof( aryAnsiSequence ) )
+         {
+            emitTransformedAnsiSequence( aryAnsiSequence, ansiSequenceLength, 1, isFriend );
+            ansiSequenceLength = 0;
+         }
+         return;
       }
-      else if ( inputChar == '\033' )
+      if ( inputChar == '\033' )
       { /* Escape character */
-         ansistate = 4;
+         ansiSequenceLength = 0;
+         aryAnsiSequence[ansiSequenceLength++] = (char)inputChar;
          if ( !flagsConfiguration.useAnsi )
          {
             flagsConfiguration.useAnsi = 1;
@@ -438,16 +470,17 @@ void filterPost( register int inputChar )
                flagsConfiguration.shouldDisableBold = 1;
             }
          }
+         return;
       }
       /* Change color for end of more prompt */
       if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
       {
-         char aryAnsiSequence[32];
+         char aryMorePromptSequence[32];
 
          lastColor = color.text;
-         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+         formatAnsiForegroundSequence( aryMorePromptSequence, sizeof( aryMorePromptSequence ),
                                        lastColor );
-         stdPrintf( "%s", aryAnsiSequence );
+         stdPrintf( "%s", aryMorePromptSequence );
       }
 
       /* Output character */
@@ -498,7 +531,7 @@ void filterPost( register int inputChar )
                       slistFind( friendList, ptrSenderName, fStrCompareVoid ) != -1 )
                        ? 1
                        : 0;
-         ansiTransformPostHeader( posthdr, isFriend );
+         ansiTransformPostHeader( posthdr, sizeof( posthdr ), isFriend );
          snprintf( arySavedHeader, sizeof( arySavedHeader ), "%s\r\n", posthdr );
          if ( needs.crlf )
          {
@@ -512,7 +545,8 @@ void filterPost( register int inputChar )
 
 void filterData( register int inputChar )
 {
-   static int ansistate = 0; /* Counter for ANSI transformations */
+   static char aryBufferedAnsiSequence[8];
+   static size_t bufferedAnsiSequenceLength = 0;
 
    /* Copy the current aryLine (or what we have so far) */
    if ( inputChar == '\n' )
@@ -582,31 +616,30 @@ void filterData( register int inputChar )
    }
 
    /* Parse ANSI sequences */
-   if ( ansistate )
+   if ( bufferedAnsiSequenceLength > 0 )
    {
-      ansistate--;
-      if ( ansistate == 1 )
+      if ( bufferedAnsiSequenceLength < sizeof( aryBufferedAnsiSequence ) )
       {
-         if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
-         { /* Turn boldface off */
-            stdPrintf( "m\033[0" );
-            ansistate--;
-         }
-         else
-         {
-            lastColor = ansiTransform( inputChar );
-            inputChar = colorValueToLegacyDigit( lastColor );
-         }
+         aryBufferedAnsiSequence[bufferedAnsiSequenceLength++] = (char)inputChar;
       }
+      if ( inputChar == 'm' || bufferedAnsiSequenceLength >= sizeof( aryBufferedAnsiSequence ) )
+      {
+         emitTransformedAnsiSequence( aryBufferedAnsiSequence,
+                                      bufferedAnsiSequenceLength,
+                                      0, 0 );
+         bufferedAnsiSequenceLength = 0;
+      }
+      return;
    }
-   else if ( inputChar == '\033' )
+   if ( inputChar == '\033' )
    { /* Escape character */
       char aryAnsiSequence[32];
 
       formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                     color.background );
       stdPrintf( "%s", aryAnsiSequence );
-      ansistate = 4;
+      bufferedAnsiSequenceLength = 0;
+      aryBufferedAnsiSequence[bufferedAnsiSequenceLength++] = (char)inputChar;
       if ( !flagsConfiguration.useAnsi )
       {
          flagsConfiguration.useAnsi = 1;
@@ -615,6 +648,7 @@ void filterData( register int inputChar )
             flagsConfiguration.shouldDisableBold = 1;
          }
       }
+      return;
    }
    if ( pendingLinesToEat > 0 )
    {

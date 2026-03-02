@@ -494,20 +494,20 @@ static void ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracks
 
    resetState();
    color.postfrienddate = 4;
-   color.postfriendname = 5;
+   color.postfriendname = 13;
    color.postfriendtext = 2;
    snprintf( aryHeader, sizeof( aryHeader ), "%s",
              "\033[35mMar 1, 2026 3:34 PM\033[32m from \033[36mSkankhunt Four Two\033[32m" );
 
    // Act
-   ansiTransformPostHeader( aryHeader, 1 );
+   ansiTransformPostHeader( aryHeader, sizeof( aryHeader ), 1 );
 
    // Assert
    if ( strstr( aryHeader, "\033[34mMar 1, 2026 3:34 PM" ) == NULL )
    {
       fail_msg( "ansiTransformPostHeader should remap friend post date color; got '%s'", aryHeader );
    }
-   if ( strstr( aryHeader, "\033[35mSkankhunt Four Two" ) == NULL )
+   if ( strstr( aryHeader, "\033[95mSkankhunt Four Two" ) == NULL )
    {
       fail_msg( "ansiTransformPostHeader should remap friend post name color; got '%s'", aryHeader );
    }
@@ -543,6 +543,27 @@ static void colorPicker_WhenInvalidThenValidInput_ReturnsMappedColorAndFlushes( 
    }
 }
 
+static void colorPicker_WhenBrightAnsiDigitSelected_ReturnsBrightAnsiValue( void **state )
+{
+   // Arrange
+   const int aryKeys[] = { '6' };
+   int result;
+
+   (void)state;
+
+   resetState();
+   setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
+
+   // Act
+   result = colorPicker();
+
+   // Assert
+   if ( result != 13 )
+   {
+      fail_msg( "colorPicker should map '6' to bright magenta value 13; got %d", result );
+   }
+}
+
 static void backgroundPicker_WhenDefaultSelected_ReturnsDefaultCode( void **state )
 {
    // Arrange
@@ -570,6 +591,28 @@ static void backgroundPicker_WhenDefaultSelected_ReturnsDefaultCode( void **stat
    }
 }
 
+static void backgroundPicker_WhenBrightAnsiDigitSelected_ReturnsBrightAnsiValue( void **state )
+{
+   // Arrange
+   const int aryKeys[] = { '8' };
+   int result;
+
+   (void)state;
+
+   resetState();
+   color.background = 2;
+   setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
+
+   // Act
+   result = backgroundPicker();
+
+   // Assert
+   if ( result != 15 )
+   {
+      fail_msg( "backgroundPicker should map '8' to bright white value 15; got %d", result );
+   }
+}
+
 int main( void )
 {
    const struct CMUnitTest aryTests[] = {
@@ -590,7 +633,9 @@ int main( void )
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),
       cmocka_unit_test( colorPicker_WhenInvalidThenValidInput_ReturnsMappedColorAndFlushes ),
+      cmocka_unit_test( colorPicker_WhenBrightAnsiDigitSelected_ReturnsBrightAnsiValue ),
       cmocka_unit_test( backgroundPicker_WhenDefaultSelected_ReturnsDefaultCode ),
+      cmocka_unit_test( backgroundPicker_WhenBrightAnsiDigitSelected_ReturnsBrightAnsiValue ),
    };
 
    return cmocka_run_group_tests( aryTests, NULL, NULL );

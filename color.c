@@ -13,14 +13,21 @@ static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
 static const char *COLOR_POST_MENU_KEYS = "dntq \n";
 static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
 static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
-static const char *COLOR_FOREGROUND_KEYS = "krgybmcw";
-static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd";
+static const char *COLOR_FOREGROUND_KEYS = "krgybmcw12345678";
+static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd12345678";
 
 typedef struct
 {
    const char *ptrName;
    int colorValue;
 } NamedColorSpec;
+
+typedef struct
+{
+   int keyChar;
+   int colorValue;
+   const char *ptrDisplayName;
+} PickerColorOption;
 
 static const NamedColorSpec aryNamedColors[] =
    {
@@ -43,6 +50,45 @@ static const NamedColorSpec aryNamedColors[] =
       { "cyan", 44 },
       { "white", 231 },
       { "default", COLOR_VALUE_DEFAULT } };
+
+static const PickerColorOption aryForegroundPickerOptions[] =
+   {
+      { 'k', 0, "Black" },
+      { 'r', 1, "Red" },
+      { 'g', 2, "Green" },
+      { 'y', 3, "Yellow" },
+      { 'b', 4, "Blue" },
+      { 'm', 5, "Magenta" },
+      { 'c', 6, "Cyan" },
+      { 'w', 7, "White" },
+      { '1', 8, "Bright black" },
+      { '2', 9, "Bright red" },
+      { '3', 10, "Bright green" },
+      { '4', 11, "Bright yellow" },
+      { '5', 12, "Bright blue" },
+      { '6', 13, "Bright magenta" },
+      { '7', 14, "Bright cyan" },
+      { '8', 15, "Bright white" } };
+
+static const PickerColorOption aryBackgroundPickerOptions[] =
+   {
+      { 'k', 0, "Black" },
+      { 'r', 1, "Red" },
+      { 'g', 2, "Green" },
+      { 'y', 3, "Yellow" },
+      { 'b', 4, "Blue" },
+      { 'm', 5, "Magenta" },
+      { 'c', 6, "Cyan" },
+      { 'w', 7, "White" },
+      { '1', 8, "Bright black" },
+      { '2', 9, "Bright red" },
+      { '3', 10, "Bright green" },
+      { '4', 11, "Bright yellow" },
+      { '5', 12, "Bright blue" },
+      { '6', 13, "Bright magenta" },
+      { '7', 14, "Bright cyan" },
+      { '8', 15, "Bright white" },
+      { 'd', COLOR_VALUE_DEFAULT, "Default" } };
 
 static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
 {
@@ -114,6 +160,25 @@ int colorValueToLegacyDigit( int colorValue )
    return colorValue + '0';
 }
 
+int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                             int inputChar, int isPostContext,
+                                             int isFriend )
+{
+   int transformedColor;
+
+   if ( isPostContext )
+   {
+      transformedColor = ansiTransformPost( inputChar, isFriend );
+   }
+   else
+   {
+      transformedColor = ansiTransform( inputChar );
+   }
+
+   lastColor = transformedColor;
+   return formatAnsiForegroundSequence( ptrBuffer, bufferSize, transformedColor );
+}
+
 int colorValueFromName( const char *ptrColorName )
 {
    size_t itemIndex;
@@ -149,6 +214,42 @@ const char *colorNameFromValue( int colorValue )
    return NULL;
 }
 
+static const PickerColorOption *findPickerColorOption( const PickerColorOption *ptrOptions,
+                                                       size_t itemCount,
+                                                       int keyChar )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < itemCount; itemIndex++ )
+   {
+      if ( ptrOptions[itemIndex].keyChar == keyChar )
+      {
+         return &ptrOptions[itemIndex];
+      }
+   }
+
+   return NULL;
+}
+
+static void printForegroundPickerMenu( void )
+{
+   colorize( "\r\n@Y[K]@C Black           @Y[R]@C Red             @Y[G]@C Green           @Y[Y]@C Yellow\r\n" );
+   colorize( "@Y[B]@C Blue            @Y[M]@C Magenta         @Y[C]@C Cyan            @Y[W]@C White\r\n" );
+   colorize( "@Y[1]@C Bright black   @Y[2]@C Bright red      @Y[3]@C Bright green    @Y[4]@C Bright yellow\r\n" );
+   colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
+   colorize( "@YSelect color -> @G" );
+}
+
+static void printBackgroundPickerMenu( void )
+{
+   colorize( "\r\n@Y[K]@C Black           @Y[R]@C Red             @Y[G]@C Green           @Y[Y]@C Yellow\r\n" );
+   colorize( "@Y[B]@C Blue            @Y[M]@C Magenta         @Y[C]@C Cyan            @Y[W]@C White\r\n" );
+   colorize( "@Y[1]@C Bright black   @Y[2]@C Bright red      @Y[3]@C Bright green    @Y[4]@C Bright yellow\r\n" );
+   colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
+   colorize( "@Y[D]@C Default\r\n" );
+   colorize( "@YSelect background -> @G" );
+}
+
 static void printAnsiForegroundColor( int colorValue )
 {
    char aryAnsiSequence[32];
@@ -175,6 +276,35 @@ static void printAnsiDisplayState( int foregroundColor, int backgroundColor )
                                    foregroundColor, backgroundColor,
                                    flagsConfiguration.useBold );
    stdPrintf( "%s", aryAnsiSequence );
+}
+
+static int transformPostHeaderColor( int inputChar, int isFriend )
+{
+   switch ( inputChar )
+   {
+      case '6':
+         if ( isFriend )
+         {
+            return color.postfriendname;
+         }
+         return color.postname;
+      case '5':
+         if ( isFriend )
+         {
+            return color.postfrienddate;
+         }
+         return color.postdate;
+      case '3':
+         return color.anonymous;
+      case '2':
+         if ( isFriend )
+         {
+            return color.postfriendtext;
+         }
+         return color.posttext;
+      default:
+         return colorValueFromLegacyDigit( inputChar );
+   }
 }
 
 static void printGeneralColorPreview( void )
@@ -355,63 +485,36 @@ int ansiTransformPost( int inputChar, int isFriend )
    return transformedColor;
 }
 
-void ansiTransformPostHeader( char *ptrText, int isFriend )
+void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 {
+   char aryTransformedHeader[320];
+   char aryAnsiSequence[32];
    char *ptrScan;
-   int transformedColor;
+   size_t writeOffset;
 
-   /* Would have been easier with strtok() but can't guarantee it exists. */
-   for ( ptrScan = ptrText; *ptrScan; ptrScan++ )
+   writeOffset = 0;
+
+   /* Rewrite simple ESC[3xm foreground sequences into full palette-aware ANSI. */
+   for ( ptrScan = ptrText; *ptrScan != '\0' && writeOffset < sizeof( aryTransformedHeader ) - 1; )
    {
-      /* Find an ANSI code */
-      if ( *ptrScan == 27 )
+      if ( ptrScan[0] == '\033' && ptrScan[1] == '[' && ptrScan[2] == '3' &&
+           ptrScan[3] != '\0' && ptrScan[4] == 'm' )
       {
-         /* transform ANSI code */
-         ptrScan += 3;
-
-         switch ( *ptrScan )
-         {
-            case '6':
-               if ( isFriend )
-               {
-                  transformedColor = color.postfriendname;
-               }
-               else
-               {
-                  transformedColor = color.postname;
-               }
-               break;
-            case '5':
-               if ( isFriend )
-               {
-                  transformedColor = color.postfrienddate;
-               }
-               else
-               {
-                  transformedColor = color.postdate;
-               }
-               break;
-            case '3':
-               transformedColor = color.anonymous;
-               break;
-            case '2':
-               if ( isFriend )
-               {
-                  transformedColor = color.postfriendtext;
-               }
-               else
-               {
-                  transformedColor = color.posttext;
-               }
-               break;
-            default:
-               transformedColor = colorValueFromLegacyDigit( *ptrScan );
-               break;
-         }
-         *ptrScan = (char)colorValueToLegacyDigit( transformedColor );
-         lastColor = transformedColor;
+         lastColor = transformPostHeaderColor( ptrScan[3], isFriend );
+         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                       lastColor );
+         writeOffset += (size_t)snprintf( aryTransformedHeader + writeOffset,
+                                          sizeof( aryTransformedHeader ) - writeOffset,
+                                          "%s", aryAnsiSequence );
+         ptrScan += 5;
+         continue;
       }
+
+      aryTransformedHeader[writeOffset++] = *ptrScan++;
    }
+
+   aryTransformedHeader[writeOffset] = '\0';
+   snprintf( ptrText, bufferSize, "%s", aryTransformedHeader );
 }
 
 void colorConfig( void )
@@ -817,114 +920,43 @@ char userOrFriend( void )
 
 int colorPicker( void )
 {
+   const PickerColorOption *ptrOption;
    int inputChar;
-   char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "@CBlac@Yk  @YR@Red  @YG@Green  @WY@Yellow  @YB@Blue  @YM@Magenta  @YC@Cyan  @YW@White @Y-> @G" );
-   colorize( aryPromptText );
+   printForegroundPickerMenu();
 
    inputChar = readValidatedMenuKey( COLOR_FOREGROUND_KEYS );
-
-   switch ( inputChar )
+   ptrOption = findPickerColorOption( aryForegroundPickerOptions,
+                                      sizeof( aryForegroundPickerOptions ) / sizeof( aryForegroundPickerOptions[0] ),
+                                      inputChar );
+   if ( ptrOption == NULL )
    {
-      case 'r':
-         stdPrintf( "Red\r\n\n" );
-         inputChar = 1;
-         break;
-      case 'g':
-         stdPrintf( "Green\r\n\n" );
-         inputChar = 2;
-         break;
-      case 'y':
-         stdPrintf( "Yellow\r\n\n" );
-         inputChar = 3;
-         break;
-      case 'b':
-         stdPrintf( "Blue\r\n\n" );
-         inputChar = 4;
-         break;
-      case 'm':
-      case 'p': /* Some people call it purple */
-         stdPrintf( "Magenta\r\n\n" );
-         inputChar = 5;
-         break;
-      case 'c':
-         stdPrintf( "Cyan\r\n\n" );
-         inputChar = 6;
-         break;
-      case 'w':
-         stdPrintf( "White\r\n\n" );
-         inputChar = 7;
-         break;
-      case 'k':
-         stdPrintf( "Black\r\n\n" );
-         inputChar = 0;
-         break;
-      default:
-         inputChar = 0; /* If your text goes black it's a bug here */
-         break;
+      return 0;
    }
 
-   return inputChar;
+   stdPrintf( "%s\r\n\n", ptrOption->ptrDisplayName );
+   return ptrOption->colorValue;
 }
 
 int backgroundPicker( void )
 {
+   const PickerColorOption *ptrOption;
    int inputChar;
-   char aryPromptText[140];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "@C@kBlac@Yk @r @WR@Ced @g @WG@Yreen @y @WY@Cellow @b @YB@Ylue @m @WM@Yagenta @c @WC@Yyan @w @YW@Bhite @d @YD@Cefault " );
-   colorize( aryPromptText );
-   printAnsiBackgroundColor( color.background );
-   colorize( " @Y-> @G" );
+   printBackgroundPickerMenu();
 
    inputChar = readValidatedMenuKey( COLOR_BACKGROUND_KEYS );
-
-   switch ( inputChar )
+   ptrOption = findPickerColorOption( aryBackgroundPickerOptions,
+                                      sizeof( aryBackgroundPickerOptions ) / sizeof( aryBackgroundPickerOptions[0] ),
+                                      inputChar );
+   if ( ptrOption == NULL )
    {
-      case 'k':
-         stdPrintf( "Black\r\n" );
-         inputChar = 0;
-         break;
-      case 'r':
-         stdPrintf( "Red\r\n" );
-         inputChar = 1;
-         break;
-      case 'g':
-         stdPrintf( "Green\r\n" );
-         inputChar = 2;
-         break;
-      case 'y':
-         stdPrintf( "Yellow\r\n" );
-         inputChar = 3;
-         break;
-      case 'b':
-         stdPrintf( "Blue\r\n" );
-         inputChar = 4;
-         break;
-      case 'm':
-      case 'p': /* Some people call it purple */
-         stdPrintf( "Magenta\r\n" );
-         inputChar = 5;
-         break;
-      case 'c':
-         stdPrintf( "Cyan\r\n" );
-         inputChar = 6;
-         break;
-      case 'w':
-         stdPrintf( "White\r\n" );
-         inputChar = 7;
-         break;
-      case 'd':
-         stdPrintf( "Default\r\n" );
-         inputChar = COLOR_VALUE_DEFAULT;
-         break;
-      default:
-         inputChar = 0; /* If your text goes black it's a bug here */
-         break;
+      return 0;
    }
-   printAnsiBackgroundColor( inputChar );
+
+   stdPrintf( "%s\r\n", ptrOption->ptrDisplayName );
+   printAnsiBackgroundColor( ptrOption->colorValue );
    stdPrintf( "\n" );
 
-   return inputChar;
+   return ptrOption->colorValue;
 }

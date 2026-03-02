@@ -87,15 +87,29 @@ void ansiTransformExpress( char *ptrText, size_t size )
    (void)size;
 }
 
+int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                             int inputChar, int isPostContext,
+                                             int isFriend )
+{
+   int colorValue;
+
+   (void)isPostContext;
+   (void)isFriend;
+
+   colorValue = inputChar == '6' ? 13 : colorValueFromLegacyDigit( inputChar );
+   return formatAnsiForegroundSequence( ptrBuffer, bufferSize, colorValue );
+}
+
 int ansiTransformPost( int inputChar, int isFriend )
 {
    (void)isFriend;
    return inputChar;
 }
 
-void ansiTransformPostHeader( char *ptrText, int isFriend )
+void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 {
    (void)ptrText;
+   (void)bufferSize;
    (void)isFriend;
 }
 
@@ -103,6 +117,16 @@ int colorize( const char *ptrText )
 {
    (void)ptrText;
    return 1;
+}
+
+int colorValueFromLegacyDigit( int inputChar )
+{
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
 }
 
 int colorValueToLegacyDigit( int colorValue )
@@ -718,6 +742,28 @@ static void emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary( voi
    resetLists();
 }
 
+static void filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   color.background = 0;
+
+   // Act
+   filterData( '\033' );
+   filterData( '[' );
+   filterData( '3' );
+   filterData( '6' );
+   filterData( 'm' );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033[95m" ) == NULL )
+   {
+      fail_msg( "filterData should emit a full bright ANSI sequence for remapped colors; log was: %s", aryPrintLog );
+   }
+}
+
 static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **state )
 {
    // Arrange
@@ -781,6 +827,7 @@ int main( void )
       cmocka_unit_test( emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary ),
       cmocka_unit_test( emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState ),
       cmocka_unit_test( emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary ),
+      cmocka_unit_test( filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 
