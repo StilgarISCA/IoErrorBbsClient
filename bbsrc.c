@@ -89,9 +89,19 @@ static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues
       memcpy( aryToken, ptrTokenStart, tokenLength );
       aryToken[tokenLength] = '\0';
 
-      if ( tokenLength == 1 && aryToken[0] >= '0' && aryToken[0] <= '9' )
+      if ( isdigit( (unsigned char)aryToken[0] ) )
       {
-         colorValue = colorValueFromLegacyDigit( aryToken[0] );
+         size_t digitIndex;
+
+         colorValue = 0;
+         for ( digitIndex = 0; digitIndex < tokenLength; digitIndex++ )
+         {
+            if ( !isdigit( (unsigned char)aryToken[digitIndex] ) )
+            {
+               return false;
+            }
+            colorValue = colorValue * 10 + ( aryToken[digitIndex] - '0' );
+         }
       }
       else
       {

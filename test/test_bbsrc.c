@@ -986,6 +986,48 @@ static void readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues( voi
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for mixed-color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color green 123 cyan red black black black magenta blue white red green yellow blue cyan black black default white green yellow magenta cyan purple\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write mixed color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( color.text != 34 || color.forum != 123 || color.number != 44 )
+   {
+      fail_msg( "mixed named/numeric parsing should preserve both forms; got text=%d forum=%d number=%d",
+                color.text, color.forum, color.number );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults( void **state )
 {
    // Arrange
@@ -1044,6 +1086,7 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms ),
       cmocka_unit_test( readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults ),
    };
 

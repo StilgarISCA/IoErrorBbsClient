@@ -454,8 +454,8 @@ void newAwayMessage( void )
 
 void writeBbsRc( void )
 {
-   char aryColorBytes[COLOR_FIELD_COUNT + 1];
    int itemIndex, innerIndex;
+   const char *ptrColorName;
    const friend *ptrFriend;
    const int *ptrColorValues;
 
@@ -485,12 +485,20 @@ void writeBbsRc( void )
    }
 #endif
    ptrColorValues = (const int *)&color;
+   fprintf( ptrBbsRc, "color" );
    for ( itemIndex = 0; itemIndex < COLOR_FIELD_COUNT; itemIndex++ )
    {
-      aryColorBytes[itemIndex] = (char)colorValueToLegacyDigit( ptrColorValues[itemIndex] );
+      ptrColorName = colorNameFromValue( ptrColorValues[itemIndex] );
+      if ( ptrColorName != NULL )
+      {
+         fprintf( ptrBbsRc, " %s", ptrColorName );
+      }
+      else
+      {
+         fprintf( ptrBbsRc, " %d", ptrColorValues[itemIndex] );
+      }
    }
-   aryColorBytes[COLOR_FIELD_COUNT] = '\0';
-   fprintf( ptrBbsRc, "color %s\n", aryColorBytes );
+   fprintf( ptrBbsRc, "\n" );
    if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt )
    {
       fprintf( ptrBbsRc, "autoansi\n" );
