@@ -42,7 +42,7 @@ int capPutChar( int inputChar )
          }
          else
          {
-            lastColor = (char)inputChar;
+            lastColor = colorValueFromLegacyDigit( inputChar );
          }
       }
    }

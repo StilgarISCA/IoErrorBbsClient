@@ -625,8 +625,12 @@ void setTerm( void )
 
    if ( flagsConfiguration.useAnsi )
    {
-      printf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0', lastColor,
-              color.background );
+      char aryAnsiSequence[32];
+
+      formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                      lastColor, color.background,
+                                      flagsConfiguration.useBold );
+      printf( "%s", aryAnsiSequence );
    }
    fflush( stdout );
 
@@ -691,8 +695,10 @@ void resetTerm( void )
 {
    if ( flagsConfiguration.useAnsi )
    {
-      /*	printf("\033[0m\033[1;37;49m"); */
-      printf( "\033[0;39;49m" );
+      char aryAnsiSequence[32];
+
+      formatAnsiResetSequence( aryAnsiSequence, sizeof( aryAnsiSequence ) );
+      printf( "%s", aryAnsiSequence );
    }
    fflush( stdout );
    if ( !isTerminalStateSaved )

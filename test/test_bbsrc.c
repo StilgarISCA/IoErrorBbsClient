@@ -87,6 +87,90 @@ void defaultColors( int setall )
    (void)setall;
 }
 
+int colorValueFromLegacyDigit( int inputChar )
+{
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
+}
+
+int colorValueFromName( const char *ptrColorName )
+{
+   if ( strcmp( ptrColorName, "brightblack" ) == 0 )
+   {
+      return 8;
+   }
+   if ( strcmp( ptrColorName, "brightred" ) == 0 )
+   {
+      return 9;
+   }
+   if ( strcmp( ptrColorName, "brightgreen" ) == 0 )
+   {
+      return 10;
+   }
+   if ( strcmp( ptrColorName, "brightyellow" ) == 0 )
+   {
+      return 11;
+   }
+   if ( strcmp( ptrColorName, "brightblue" ) == 0 )
+   {
+      return 12;
+   }
+   if ( strcmp( ptrColorName, "brightmagenta" ) == 0 || strcmp( ptrColorName, "brightpurple" ) == 0 )
+   {
+      return 13;
+   }
+   if ( strcmp( ptrColorName, "brightcyan" ) == 0 )
+   {
+      return 14;
+   }
+   if ( strcmp( ptrColorName, "brightwhite" ) == 0 )
+   {
+      return 15;
+   }
+   if ( strcmp( ptrColorName, "black" ) == 0 )
+   {
+      return 16;
+   }
+   if ( strcmp( ptrColorName, "red" ) == 0 )
+   {
+      return 160;
+   }
+   if ( strcmp( ptrColorName, "green" ) == 0 )
+   {
+      return 34;
+   }
+   if ( strcmp( ptrColorName, "yellow" ) == 0 )
+   {
+      return 220;
+   }
+   if ( strcmp( ptrColorName, "blue" ) == 0 )
+   {
+      return 26;
+   }
+   if ( strcmp( ptrColorName, "magenta" ) == 0 || strcmp( ptrColorName, "purple" ) == 0 )
+   {
+      return 91;
+   }
+   if ( strcmp( ptrColorName, "cyan" ) == 0 )
+   {
+      return 44;
+   }
+   if ( strcmp( ptrColorName, "white" ) == 0 )
+   {
+      return 231;
+   }
+   if ( strcmp( ptrColorName, "default" ) == 0 )
+   {
+      return COLOR_VALUE_DEFAULT;
+   }
+
+   return -1;
+}
+
 int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    const friend *const *ptrLeftFriend;
@@ -870,6 +954,160 @@ static void readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning( void **state
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for named-color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color green yellow cyan red black black black magenta blue white red green yellow blue cyan black black default white green yellow magenta cyan purple\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write named-color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( color.text != 34 || color.forum != 220 || color.number != 44 || color.errorTextColor != 160 )
+   {
+      fail_msg( "named color parsing should set general colors to extended palette values; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.postdate != 91 || color.postname != 26 || color.posttext != 231 )
+   {
+      fail_msg( "named color parsing should set post colors; got date=%d name=%d text=%d",
+                color.postdate, color.postname, color.posttext );
+   }
+   if ( color.postfrienddate != 160 || color.postfriendname != 34 || color.postfriendtext != 220 )
+   {
+      fail_msg( "named color parsing should set friend post colors; got date=%d name=%d text=%d",
+                color.postfrienddate, color.postfriendname, color.postfriendtext );
+   }
+   if ( color.anonymous != 26 || color.moreprompt != 44 ||
+        color.background != COLOR_VALUE_DEFAULT )
+   {
+      fail_msg( "named color parsing should set anonymous/more/background colors; got anonymous=%d more=%d background=%d",
+                color.anonymous, color.moreprompt, color.background );
+   }
+   if ( color.input1 != 231 || color.input2 != 34 || color.expresstext != 220 ||
+        color.expressname != 91 || color.expressfriendtext != 44 || color.expressfriendname != 91 )
+   {
+      fail_msg( "named color parsing should set input/express colors; got input1=%d input2=%d expresstext=%d expressname=%d expressfriendtext=%d expressfriendname=%d",
+                color.input1, color.input2, color.expresstext, color.expressname,
+                color.expressfriendtext, color.expressfriendname );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for bright ANSI color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color brightgreen brightyellow brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightpurple\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write bright ANSI color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( color.text != 10 || color.forum != 11 || color.number != 14 || color.errorTextColor != 9 )
+   {
+      fail_msg( "bright ANSI color parsing should set general colors to ANSI 16 values; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.postdate != 13 || color.postname != 12 || color.posttext != 15 )
+   {
+      fail_msg( "bright ANSI color parsing should set post colors; got date=%d name=%d text=%d",
+                color.postdate, color.postname, color.posttext );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for mixed-color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color green 123 cyan red black black black magenta blue white red green yellow blue cyan black black default white green yellow magenta cyan purple\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write mixed color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( color.text != 34 || color.forum != 123 || color.number != 44 )
+   {
+      fail_msg( "mixed named/numeric parsing should preserve both forms; got text=%d forum=%d number=%d",
+                color.text, color.forum, color.number );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults( void **state )
 {
    // Arrange
@@ -927,6 +1165,9 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsMalformedKeepalive_PrintsWarningAndKeepsDefault ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms ),
       cmocka_unit_test( readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults ),
    };
 

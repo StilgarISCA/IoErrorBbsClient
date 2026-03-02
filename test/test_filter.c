@@ -76,7 +76,7 @@ static void resetLists( void )
 }
 
 /* filter.c dependencies not under direct test in this file. */
-char ansiTransform( char inputChar )
+int ansiTransform( int inputChar )
 {
    return inputChar;
 }
@@ -87,15 +87,29 @@ void ansiTransformExpress( char *ptrText, size_t size )
    (void)size;
 }
 
-char ansiTransformPost( char inputChar, int isFriend )
+int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                             int inputChar, int isPostContext,
+                                             int isFriend )
+{
+   int colorValue;
+
+   (void)isPostContext;
+   (void)isFriend;
+
+   colorValue = inputChar == '6' ? 13 : colorValueFromLegacyDigit( inputChar );
+   return formatAnsiForegroundSequence( ptrBuffer, bufferSize, colorValue );
+}
+
+int ansiTransformPost( int inputChar, int isFriend )
 {
    (void)isFriend;
    return inputChar;
 }
 
-void ansiTransformPostHeader( char *ptrText, int isFriend )
+void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 {
    (void)ptrText;
+   (void)bufferSize;
    (void)isFriend;
 }
 
@@ -103,6 +117,21 @@ int colorize( const char *ptrText )
 {
    (void)ptrText;
    return 1;
+}
+
+int colorValueFromLegacyDigit( int inputChar )
+{
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
+}
+
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
 }
 
 char *extractName( const char *ptrHeader )
@@ -643,15 +672,18 @@ static void emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary( voi
 static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( void **state )
 {
    // Arrange
+   char aryExpectedBodyColor[32];
+   char aryExpectedHeaderColor[32];
+
    (void)state;
 
    resetState();
    resetLists();
    flagsConfiguration.useAnsi = 1;
    flagsConfiguration.useBold = 0;
-   color.number = '6';
-   color.text = '2';
-   color.background = '4';
+   color.number = 6;
+   color.text = 2;
+   color.background = 4;
    urlQueue = newQueue( 1024, 5 );
    if ( urlQueue == NULL )
    {
@@ -665,11 +697,15 @@ static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( voi
    emitUrlDetectionReport();
 
    // Assert
-   if ( strstr( aryPrintLog, "\033[0m\033[36;44m" ) == NULL )
+   formatAnsiDisplayStateSequence( aryExpectedHeaderColor, sizeof( aryExpectedHeaderColor ),
+                                   color.number, color.background, false );
+   formatAnsiDisplayStateSequence( aryExpectedBodyColor, sizeof( aryExpectedBodyColor ),
+                                   color.text, color.background, false );
+   if ( strstr( aryPrintLog, aryExpectedHeaderColor ) == NULL )
    {
       fail_msg( "URL detection report header should use configured number/background colors; log was: %s", aryPrintLog );
    }
-   if ( strstr( aryPrintLog, "\033[0m\033[32;44m" ) == NULL )
+   if ( strstr( aryPrintLog, aryExpectedBodyColor ) == NULL )
    {
       fail_msg( "URL detection report body should use configured text/background colors; log was: %s", aryPrintLog );
    }
@@ -704,6 +740,28 @@ static void emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary( voi
    }
 
    resetLists();
+}
+
+static void filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   color.background = 0;
+
+   // Act
+   filterData( '\033' );
+   filterData( '[' );
+   filterData( '3' );
+   filterData( '6' );
+   filterData( 'm' );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033[95m" ) == NULL )
+   {
+      fail_msg( "filterData should emit a full bright ANSI sequence for remapped colors; log was: %s", aryPrintLog );
+   }
 }
 
 static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **state )
@@ -769,6 +827,7 @@ int main( void )
       cmocka_unit_test( emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary ),
       cmocka_unit_test( emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState ),
       cmocka_unit_test( emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary ),
+      cmocka_unit_test( filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

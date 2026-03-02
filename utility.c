@@ -563,6 +563,7 @@ char *duplicateString( const char *ptrSource )
 
 int colorize( const char *str )
 {
+   char aryAnsiSequence[32];
    const char *ptrText;
 
    for ( ptrText = str; *ptrText; ptrText++ )
@@ -581,60 +582,132 @@ int colorize( const char *str )
                   putchar( (int)'@' );
                   break;
                case 'k':
-                  ifansi printf( "\033[40m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 0 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'K':
-                  ifansi printf( "\033[30m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 0 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'r':
-                  ifansi printf( "\033[41m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 1 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'R':
-                  ifansi printf( "\033[31m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 1 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'g':
-                  ifansi printf( "\033[42m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 2 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'G':
-                  ifansi printf( "\033[32m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 2 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'y':
-                  ifansi printf( "\033[43m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 3 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'Y':
-                  ifansi printf( "\033[33m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 3 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'b':
-                  ifansi printf( "\033[44m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 4 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'B':
-                  ifansi printf( "\033[34m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 4 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'm':
                case 'p':
-                  ifansi printf( "\033[45m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 5 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'M':
                case 'P':
-                  ifansi printf( "\033[35m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 5 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'c':
-                  ifansi printf( "\033[46m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 6 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'C':
-                  ifansi printf( "\033[36m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 6 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'w':
-                  ifansi printf( "\033[47m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 7 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'W':
-                  ifansi printf( "\033[37m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 7 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'd':
-                  ifansi printf( "\033[49m" );
+                  ifansi
+                  {
+                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 9 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                case 'D':
-                  ifansi printf( "\033[39m" );
+                  ifansi
+                  {
+                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 9 );
+                     printf( "%s", aryAnsiSequence );
+                  }
                   break;
                default:
                   break;

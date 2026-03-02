@@ -19,10 +19,12 @@
 
 extern void
    ansiTransformExpress P( (char *, size_t)),
-   ansiTransformPostHeader P( (char *, int)),
+   ansiTransformPostHeader P( (char *, size_t, int)),
    arguments P( (int, char **)),
    configBbsRc P( (void)),
    colorConfig P( (void)),
+   colorblindColors P( (void)),
+   hotDogColors P( (void)),
    colorOptions P( (void)),
    connectBbs P( (void)),
    continuedDataHelper P( (void)),
@@ -109,13 +111,21 @@ extern void
    writeBbsRc P( (void));
 
 extern int
-   binarySearch P( (char *)),
+   ansiTransform P( (int)),
+   ansiTransformPost P( (int, int)),
+   backgroundPicker P( (void)),
    binarySort P( (void)),
+   binarySearch P( (char *)),
    capPrintf P( ( const char *, ... ) ),
    capPutChar P( (int)),
    capPuts P( (const char *)),
    checkFile P( (FILE *)),
    colorize P( (const char *)),
+   colorPicker P( (void)),
+   colorValueFromName P( (const char *)),
+   colorValueFromLegacyDigit P( (int)),
+   colorValueToLegacyDigit P( (int)),
+   formatTransformedAnsiForegroundSequence P( (char *, size_t, int, int, int)),
    deleteQueue P( (queue *)),
    deleteFile P( (const char *)),
    extractNumber P( (const char *)),
@@ -157,11 +167,10 @@ extern int
    yesNo P( (void)),
    yesNoDefault P( (int));
 
+extern const char
+   *colorNameFromValue P( (int));
+
 extern char
-   ansiTransform P( (char)),
-   ansiTransformPost P( (char, int)),
-   backgroundPicker P( (void)),
-   colorPicker P( (void)),
    expressColorMenu P( (void)),
    *extractName P( (const char *)),
    *extractNameNoHistory P( (const char *)),

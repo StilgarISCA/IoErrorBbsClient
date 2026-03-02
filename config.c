@@ -454,9 +454,10 @@ void newAwayMessage( void )
 
 void writeBbsRc( void )
 {
-   char aryColorBytes[40];
    int itemIndex, innerIndex;
+   const char *ptrColorName;
    const friend *ptrFriend;
+   const int *ptrColorValues;
 
    deleteFile( aryBbsFriendsName );
    rewind( ptrBbsRc );
@@ -483,9 +484,21 @@ void writeBbsRc( void )
       fprintf( ptrBbsRc, "autopass %s\n", aryAutoPassword );
    }
 #endif
-   bcopy( (void *)&color, aryColorBytes, sizeof color );
-   aryColorBytes[sizeof color] = 0;
-   fprintf( ptrBbsRc, "color %s\n", aryColorBytes );
+   ptrColorValues = (const int *)&color;
+   fprintf( ptrBbsRc, "color" );
+   for ( itemIndex = 0; itemIndex < COLOR_FIELD_COUNT; itemIndex++ )
+   {
+      ptrColorName = colorNameFromValue( ptrColorValues[itemIndex] );
+      if ( ptrColorName != NULL )
+      {
+         fprintf( ptrBbsRc, " %s", ptrColorName );
+      }
+      else
+      {
+         fprintf( ptrBbsRc, " %d", ptrColorValues[itemIndex] );
+      }
+   }
+   fprintf( ptrBbsRc, "\n" );
    if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt )
    {
       fprintf( ptrBbsRc, "autoansi\n" );

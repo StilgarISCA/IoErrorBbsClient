@@ -266,14 +266,18 @@ static void clearDetectedUrlQueue( void )
    }
 }
 
-static void applyVisibleUrlReportColor( char foregroundColor )
+static void applyVisibleUrlReportColor( int foregroundColor )
 {
+   char aryAnsiSequence[32];
+
    if ( !flagsConfiguration.useAnsi )
    {
       return;
    }
-   stdPrintf( "\033[%cm\033[3%c;4%cm", flagsConfiguration.useBold ? '1' : '0',
-              foregroundColor, color.background );
+   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                   foregroundColor, color.background,
+                                   flagsConfiguration.useBold );
+   stdPrintf( "%s", aryAnsiSequence );
    lastColor = foregroundColor;
 }
 

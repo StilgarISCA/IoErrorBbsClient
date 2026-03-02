@@ -104,6 +104,54 @@ int colorize( const char *ptrText )
    return 1;
 }
 
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
+}
+
+const char *colorNameFromValue( int colorValue )
+{
+   switch ( colorValue )
+   {
+      case 8:
+         return "brightblack";
+      case 9:
+         return "brightred";
+      case 10:
+         return "brightgreen";
+      case 11:
+         return "brightyellow";
+      case 12:
+         return "brightblue";
+      case 13:
+         return "brightmagenta";
+      case 14:
+         return "brightcyan";
+      case 15:
+         return "brightwhite";
+      case 16:
+         return "black";
+      case 160:
+         return "red";
+      case 34:
+         return "green";
+      case 220:
+         return "yellow";
+      case 26:
+         return "blue";
+      case 91:
+         return "magenta";
+      case 44:
+         return "cyan";
+      case 231:
+         return "white";
+      case COLOR_VALUE_DEFAULT:
+         return "default";
+      default:
+         return NULL;
+   }
+}
+
 int colorConfigCalled;
 void colorConfig( void )
 {
@@ -477,6 +525,30 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    shellKey = '!';
    captureKey = 'c';
    awayKey = 'a';
+   color.text = 10;
+   color.forum = 11;
+   color.number = 14;
+   color.errorTextColor = 9;
+   color.reserved1 = 8;
+   color.reserved2 = 8;
+   color.reserved3 = 8;
+   color.postdate = 13;
+   color.postname = 12;
+   color.posttext = 15;
+   color.postfrienddate = 9;
+   color.postfriendname = 10;
+   color.postfriendtext = 11;
+   color.anonymous = 12;
+   color.moreprompt = 14;
+   color.reserved4 = 8;
+   color.reserved5 = 8;
+   color.background = COLOR_VALUE_DEFAULT;
+   color.input1 = 15;
+   color.input2 = 10;
+   color.expresstext = 11;
+   color.expressname = 13;
+   color.expressfriendtext = 14;
+   color.expressfriendname = 13;
    flagsConfiguration.shouldUseTcpKeepalive = true;
    flagsConfiguration.shouldEnableClickableUrls = true;
 
@@ -500,6 +572,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 1' when clickable URLs are enabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\ncolor brightgreen brightyellow brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit bright ANSI color names when palette values have ANSI 16 names; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\naryBrowser " ) != NULL )
@@ -540,6 +618,30 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    shellKey = '!';
    captureKey = 'c';
    awayKey = 'a';
+   color.text = 10;
+   color.forum = 123;
+   color.number = 14;
+   color.errorTextColor = 9;
+   color.reserved1 = 8;
+   color.reserved2 = 8;
+   color.reserved3 = 8;
+   color.postdate = 13;
+   color.postname = 12;
+   color.posttext = 15;
+   color.postfrienddate = 9;
+   color.postfriendname = 10;
+   color.postfriendtext = 11;
+   color.anonymous = 12;
+   color.moreprompt = 14;
+   color.reserved4 = 8;
+   color.reserved5 = 8;
+   color.background = COLOR_VALUE_DEFAULT;
+   color.input1 = 15;
+   color.input2 = 10;
+   color.expresstext = 11;
+   color.expressname = 13;
+   color.expressfriendtext = 14;
+   color.expressfriendname = 13;
    flagsConfiguration.shouldUseTcpKeepalive = false;
    flagsConfiguration.shouldEnableClickableUrls = false;
 
@@ -563,6 +665,12 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 0' when clickable URLs are disabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\ncolor brightgreen 123 brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should fall back to numeric palette values when no named color exists; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\naryBrowser " ) != NULL )
