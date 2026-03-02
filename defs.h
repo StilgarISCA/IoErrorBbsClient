@@ -72,6 +72,8 @@
 
 #include "sysio.h"
 
+#define COLOR_VALUE_DEFAULT 256
+
 static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize,
                                               size_t writeOffset, int colorValue,
                                               bool isBackground )
@@ -80,7 +82,7 @@ static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize
    {
       return writeOffset;
    }
-   if ( colorValue == 9 )
+   if ( colorValue == COLOR_VALUE_DEFAULT )
    {
       return writeOffset + (size_t)snprintf( ptrBuffer + writeOffset,
                                              bufferSize - writeOffset,
@@ -277,6 +279,7 @@ typedef struct
 } friend;         /* User list entry */
 
 #define COLOR_FIELD_COUNT 24
+#define COLOR_BACKGROUND_INDEX 17
 
 typedef struct
 {

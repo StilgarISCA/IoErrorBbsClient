@@ -128,6 +128,10 @@ static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
       {
          ptrColorValues[colorIndex] = colorValueFromLegacyDigit( ptrLine[6 + colorIndex] );
       }
+      if ( ptrLine[6 + COLOR_BACKGROUND_INDEX] == '9' )
+      {
+         ptrColorValues[COLOR_BACKGROUND_INDEX] = COLOR_VALUE_DEFAULT;
+      }
       return true;
    }
 

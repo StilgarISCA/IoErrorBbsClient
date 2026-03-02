@@ -253,6 +253,25 @@ static void colorValueFromName_WhenAliasProvided_ReturnsCanonicalPaletteValue( v
    }
 }
 
+static void colorValueFromName_WhenBrightAnsiNameProvided_ReturnsBrightAnsiValue( void **state )
+{
+   int colorValue;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   colorValue = colorValueFromName( "BrightBlue" );
+
+   // Assert
+   if ( colorValue != 12 )
+   {
+      fail_msg( "colorValueFromName should map BrightBlue to ANSI 16 value 12; got %d", colorValue );
+   }
+}
+
 static void colorValueFromName_WhenNameUnknown_ReturnsInvalidSentinel( void **state )
 {
    int colorValue;
@@ -288,6 +307,26 @@ static void colorNameFromValue_WhenPaletteValueMatchesAlias_ReturnsCanonicalName
    if ( ptrColorName == NULL || strcmp( ptrColorName, "magenta" ) != 0 )
    {
       fail_msg( "colorNameFromValue should return canonical name 'magenta' for value 91; got '%s'",
+                ptrColorName == NULL ? "(null)" : ptrColorName );
+   }
+}
+
+static void colorNameFromValue_WhenBrightAnsiValueProvided_ReturnsBrightCanonicalName( void **state )
+{
+   const char *ptrColorName;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+
+   // Act
+   ptrColorName = colorNameFromValue( 13 );
+
+   // Assert
+   if ( ptrColorName == NULL || strcmp( ptrColorName, "brightmagenta" ) != 0 )
+   {
+      fail_msg( "colorNameFromValue should return canonical name 'brightmagenta' for value 13; got '%s'",
                 ptrColorName == NULL ? "(null)" : ptrColorName );
    }
 }
@@ -381,7 +420,8 @@ static void formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCo
    resetState();
 
    // Act
-   formatAnsiDisplayStateSequence( arySequence, sizeof( arySequence ), 7, 9, false );
+   formatAnsiDisplayStateSequence( arySequence, sizeof( arySequence ), 7,
+                                   COLOR_VALUE_DEFAULT, false );
 
    // Assert
    if ( strcmp( arySequence, "\033[0;37;49m" ) != 0 )
@@ -519,9 +559,9 @@ static void backgroundPicker_WhenDefaultSelected_ReturnsDefaultCode( void **stat
    result = backgroundPicker();
 
    // Assert
-   if ( result != 9 )
+   if ( result != COLOR_VALUE_DEFAULT )
    {
-      fail_msg( "backgroundPicker should map 'D' to default code 9; got %d", result );
+      fail_msg( "backgroundPicker should map 'D' to the default color sentinel; got %d", result );
    }
    if ( flushCount != 1 || lastFlushValue != 2 )
    {
@@ -537,8 +577,10 @@ int main( void )
       cmocka_unit_test( defaultColors_WhenClearAllDisabled_LeavesBackgroundUnchanged ),
       cmocka_unit_test( colorValueFromName_WhenCanonicalNameProvided_ReturnsNamedPaletteValue ),
       cmocka_unit_test( colorValueFromName_WhenAliasProvided_ReturnsCanonicalPaletteValue ),
+      cmocka_unit_test( colorValueFromName_WhenBrightAnsiNameProvided_ReturnsBrightAnsiValue ),
       cmocka_unit_test( colorValueFromName_WhenNameUnknown_ReturnsInvalidSentinel ),
       cmocka_unit_test( colorNameFromValue_WhenPaletteValueMatchesAlias_ReturnsCanonicalName ),
+      cmocka_unit_test( colorNameFromValue_WhenBrightAnsiValueProvided_ReturnsBrightCanonicalName ),
       cmocka_unit_test( colorNameFromValue_WhenPaletteValueUnknown_ReturnsNull ),
       cmocka_unit_test( formatAnsiForegroundSequence_WhenClassicColorRequested_UsesClassicAnsiCode ),
       cmocka_unit_test( formatAnsiForegroundSequence_WhenBrightColorRequested_UsesBrightAnsiCode ),

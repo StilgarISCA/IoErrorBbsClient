@@ -99,6 +99,38 @@ int colorValueFromLegacyDigit( int inputChar )
 
 int colorValueFromName( const char *ptrColorName )
 {
+   if ( strcmp( ptrColorName, "brightblack" ) == 0 )
+   {
+      return 8;
+   }
+   if ( strcmp( ptrColorName, "brightred" ) == 0 )
+   {
+      return 9;
+   }
+   if ( strcmp( ptrColorName, "brightgreen" ) == 0 )
+   {
+      return 10;
+   }
+   if ( strcmp( ptrColorName, "brightyellow" ) == 0 )
+   {
+      return 11;
+   }
+   if ( strcmp( ptrColorName, "brightblue" ) == 0 )
+   {
+      return 12;
+   }
+   if ( strcmp( ptrColorName, "brightmagenta" ) == 0 || strcmp( ptrColorName, "brightpurple" ) == 0 )
+   {
+      return 13;
+   }
+   if ( strcmp( ptrColorName, "brightcyan" ) == 0 )
+   {
+      return 14;
+   }
+   if ( strcmp( ptrColorName, "brightwhite" ) == 0 )
+   {
+      return 15;
+   }
    if ( strcmp( ptrColorName, "black" ) == 0 )
    {
       return 16;
@@ -133,7 +165,7 @@ int colorValueFromName( const char *ptrColorName )
    }
    if ( strcmp( ptrColorName, "default" ) == 0 )
    {
-      return 9;
+      return COLOR_VALUE_DEFAULT;
    }
 
    return -1;
@@ -969,7 +1001,8 @@ static void readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues( voi
       fail_msg( "named color parsing should set friend post colors; got date=%d name=%d text=%d",
                 color.postfrienddate, color.postfriendname, color.postfriendtext );
    }
-   if ( color.anonymous != 26 || color.moreprompt != 44 || color.background != 9 )
+   if ( color.anonymous != 26 || color.moreprompt != 44 ||
+        color.background != COLOR_VALUE_DEFAULT )
    {
       fail_msg( "named color parsing should set anonymous/more/background colors; got anonymous=%d more=%d background=%d",
                 color.anonymous, color.moreprompt, color.background );
@@ -980,6 +1013,53 @@ static void readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues( voi
       fail_msg( "named color parsing should set input/express colors; got input1=%d input2=%d expresstext=%d expressname=%d expressfriendtext=%d expressfriendname=%d",
                 color.input1, color.input2, color.expresstext, color.expressname,
                 color.expressfriendtext, color.expressfriendname );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for bright ANSI color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color brightgreen brightyellow brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightpurple\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write bright ANSI color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( color.text != 10 || color.forum != 11 || color.number != 14 || color.errorTextColor != 9 )
+   {
+      fail_msg( "bright ANSI color parsing should set general colors to ANSI 16 values; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.postdate != 13 || color.postname != 12 || color.posttext != 15 )
+   {
+      fail_msg( "bright ANSI color parsing should set post colors; got date=%d name=%d text=%d",
+                color.postdate, color.postname, color.posttext );
    }
 
    cleanupReadState();
@@ -1086,6 +1166,7 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidDirective_PrintsSyntaxError ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms ),
       cmocka_unit_test( readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults ),
    };

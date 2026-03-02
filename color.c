@@ -24,6 +24,15 @@ typedef struct
 
 static const NamedColorSpec aryNamedColors[] =
    {
+      { "brightblack", 8 },
+      { "brightred", 9 },
+      { "brightgreen", 10 },
+      { "brightyellow", 11 },
+      { "brightblue", 12 },
+      { "brightmagenta", 13 },
+      { "brightpurple", 13 },
+      { "brightcyan", 14 },
+      { "brightwhite", 15 },
       { "black", 16 },
       { "red", 160 },
       { "green", 34 },
@@ -33,7 +42,7 @@ static const NamedColorSpec aryNamedColors[] =
       { "purple", 91 },
       { "cyan", 44 },
       { "white", 231 },
-      { "default", 9 } };
+      { "default", COLOR_VALUE_DEFAULT } };
 
 static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
 {
@@ -908,7 +917,7 @@ int backgroundPicker( void )
          break;
       case 'd':
          stdPrintf( "Default\r\n" );
-         inputChar = 9;
+         inputChar = COLOR_VALUE_DEFAULT;
          break;
       default:
          inputChar = 0; /* If your text goes black it's a bug here */
