@@ -23,6 +23,7 @@ extern void
    arguments P( (int, char **)),
    configBbsRc P( (void)),
    colorConfig P( (void)),
+   colorblindColors P( (void)),
    colorOptions P( (void)),
    connectBbs P( (void)),
    continuedDataHelper P( (void)),

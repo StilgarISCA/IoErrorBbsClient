@@ -7,11 +7,12 @@
 #include "defs.h"
 #include "ext.h"
 
-static const char *COLOR_MAIN_MENU_KEYS = "gipxorq \n";
+static const char *COLOR_MAIN_MENU_KEYS = "gipsoxq \n";
 static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
 static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
 static const char *COLOR_POST_MENU_KEYS = "dntq \n";
 static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
+static const char *COLOR_RESET_MENU_KEYS = "dcq \n";
 static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
 static const char *COLOR_FOREGROUND_KEYS = "krgybmcw12345678";
 static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd12345678";
@@ -248,6 +249,62 @@ static void printBackgroundPickerMenu( void )
    colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
    colorize( "@Y[D]@C Default\r\n" );
    colorize( "@YSelect background -> @G" );
+}
+
+void colorblindColors( void )
+{
+   color.text = 231;
+   color.forum = 75;
+   color.number = 214;
+   color.errorTextColor = 166;
+   color.reserved1 = 16;
+   color.reserved2 = 16;
+   color.reserved3 = 16;
+   color.postdate = 75;
+   color.postname = 214;
+   color.posttext = 231;
+   color.postfrienddate = 25;
+   color.postfriendname = 175;
+   color.postfriendtext = 231;
+   color.anonymous = 221;
+   color.moreprompt = 221;
+   color.reserved4 = 16;
+   color.reserved5 = 16;
+   color.background = 16;
+   color.input1 = 231;
+   color.input2 = 36;
+   color.expresstext = 231;
+   color.expressname = 214;
+   color.expressfriendname = 175;
+   color.expressfriendtext = 231;
+}
+
+static void presetColorConfig( void )
+{
+   stdPrintf( "Color presets\r\n\n" );
+   colorize( "@YD@Cefault  @YC@Colorblind  @YQ@Cuit@Y -> @G" );
+
+   switch ( readValidatedMenuKey( COLOR_RESET_MENU_KEYS ) )
+   {
+      case 'd':
+         stdPrintf( "Default\r\n" );
+         defaultColors( 1 );
+         break;
+
+      case 'c':
+         stdPrintf( "Colorblind\r\n" );
+         colorblindColors();
+         break;
+
+      case 'q':
+      case ' ':
+      case '\n':
+         stdPrintf( "Quit\r\n" );
+         break;
+
+      default:
+         break;
+   }
 }
 
 static void printAnsiForegroundColor( int colorValue )
@@ -528,7 +585,7 @@ void colorConfig( void )
    }
    while ( true )
    {
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  @YX@Cpress  @YO@Cptions  @YR@Ceset  @YQ@Cuit\r\n@YColor config -> @G" );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  pre@YS@Cets  @YO@Cptions  @YX@Cpress  @YQ@Cuit\r\n@YColor config -> @G" );
       colorize( aryPromptText );
 
       int inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
@@ -553,9 +610,8 @@ void colorConfig( void )
             postColorConfig();
             break;
 
-         case 'r':
-            stdPrintf( "Reset colors\r\n" );
-            defaultColors( 1 );
+         case 's':
+            presetColorConfig();
             break;
 
          case 'x':

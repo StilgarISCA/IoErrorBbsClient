@@ -431,6 +431,40 @@ static void formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCo
    }
 }
 
+static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   memset( &color, 0, sizeof( color ) );
+
+   // Act
+   colorblindColors();
+
+   // Assert
+   if ( color.text != 231 || color.forum != 75 || color.number != 214 ||
+        color.errorTextColor != 166 )
+   {
+      fail_msg( "colorblindColors should set general accessible colors; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.background != 16 )
+   {
+      fail_msg( "colorblindColors should keep a dark background; got %d", color.background );
+   }
+   if ( color.postdate != 75 || color.postfrienddate != 25 ||
+        color.postname != 214 || color.postfriendname != 175 ||
+        color.input2 != 36 || color.moreprompt != 221 ||
+        color.expressname != 214 || color.expressfriendname != 175 )
+   {
+      fail_msg( "colorblindColors should map post, input, and express roles onto the preset palette; got postdate=%d frienddate=%d postname=%d friendname=%d input2=%d moreprompt=%d expressname=%d expressfriendname=%d",
+                color.postdate, color.postfrienddate, color.postname,
+                color.postfriendname, color.input2, color.moreprompt,
+                color.expressname, color.expressfriendname );
+   }
+}
+
 static void ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes( void **state )
 {
    // Arrange
@@ -629,6 +663,7 @@ int main( void )
       cmocka_unit_test( formatAnsiForegroundSequence_WhenBrightColorRequested_UsesBrightAnsiCode ),
       cmocka_unit_test( formatAnsiForegroundSequence_WhenExtendedColorRequested_Uses256ColorCode ),
       cmocka_unit_test( formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCombinedSelectors ),
+      cmocka_unit_test( colorblindColors_WhenApplied_SetsAccessiblePalette ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),
