@@ -373,7 +373,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             while ( true )
             {
                inputChar = readFoldedKey();
-               if ( findChar( " \nacepqtx?/", inputChar ) )
+               if ( findChar( " \nacepsqtx?/", inputChar ) )
                {
                   break;
                }
@@ -419,6 +419,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             }
             break;
 
+         case 'P':
          case 'p':
             if ( *previousChar == -1 )
             {

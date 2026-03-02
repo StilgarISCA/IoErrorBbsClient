@@ -13,6 +13,28 @@
 #include "proto.h"
 #include "test_helpers.h"
 
+static int aryInputQueue[16];
+static size_t inputCount;
+static size_t inputIndex;
+static int arySentChars[512];
+static size_t sentCharCount;
+
+static void resetState( void )
+{
+   inputCount = 0;
+   inputIndex = 0;
+   sentCharCount = 0;
+   flagsConfiguration.isLastSave = 0;
+   flagsConfiguration.isPosting = 0;
+}
+
+static void setInputSequence( const int *aryKeys, size_t count )
+{
+   inputCount = copyIntArray( aryKeys, count, aryInputQueue,
+                              sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ) );
+   inputIndex = 0;
+}
+
 /* edit.c dependencies outside checkFile() scope for these tests. */
 int colorize( const char *ptrText )
 {
@@ -57,6 +79,10 @@ void getString( int length, char *result, int line )
 
 int inKey( void )
 {
+   if ( inputIndex < inputCount )
+   {
+      return aryInputQueue[inputIndex++];
+   }
    return '\n';
 }
 
@@ -95,6 +121,10 @@ int netPutChar( int inputChar )
 
 void sendTrackedChar( int inputChar )
 {
+   if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
+   {
+      arySentChars[sentCharCount++] = inputChar;
+   }
    netPutChar( inputChar );
    byte++;
 }
@@ -126,6 +156,8 @@ static void checkFile_WhenMessageIsValid_ReturnsZero( void **state )
 
    (void)state;
 
+   resetState();
+
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
    {
@@ -154,6 +186,8 @@ static void checkFile_WhenLineExceeds79Chars_ReturnsOne( void **state )
    int result;
 
    (void)state;
+
+   resetState();
 
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
@@ -190,6 +224,8 @@ static void checkFile_WhenIllegalControlCharacterPresent_ReturnsOne( void **stat
 
    (void)state;
 
+   resetState();
+
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
    {
@@ -221,6 +257,8 @@ static void checkFile_WhenTabExpansionPushesPast79_ReturnsOne( void **state )
    int result;
 
    (void)state;
+
+   resetState();
 
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
@@ -259,6 +297,8 @@ static void checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne( void **state 
 
    (void)state;
 
+   resetState();
+
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
    {
@@ -289,6 +329,113 @@ static void checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne( void **state 
    fclose( ptrMessageFile );
 }
 
+static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state )
+{
+   // Arrange
+   FILE *ptrMessageFile;
+   int result;
+   int previousChar;
+   int aryKeys[] = { '\n', 's' };
+
+   (void)state;
+
+   resetState();
+   setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
+   flagsConfiguration.isPosting = 1;
+   previousChar = 0;
+   ptrMessageFile = tmpfile();
+   if ( ptrMessageFile == NULL )
+   {
+      fail_msg( "tmpfile failed in prompt save test setup" );
+      return;
+   }
+   fprintf( ptrMessageFile, "Breaking News\n" );
+   fflush( ptrMessageFile );
+
+   // Act
+   result = prompt( ptrMessageFile, &previousChar, '\n' );
+
+   // Assert
+   if ( result != -1 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt should return -1 after saving a valid message; got %d", result );
+      return;
+   }
+   if ( !flagsConfiguration.isLastSave || flagsConfiguration.isPosting )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt should mark the post saved and clear posting state; got isLastSave=%u isPosting=%u",
+                flagsConfiguration.isLastSave, flagsConfiguration.isPosting );
+      return;
+   }
+   if ( sentCharCount < 3 ||
+        arySentChars[sentCharCount - 2] != CTRL_D ||
+        arySentChars[sentCharCount - 1] != 's' )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should send CTRL_D followed by 's'; sent count=%zu last=%d second_last=%d",
+                sentCharCount,
+                sentCharCount > 0 ? arySentChars[sentCharCount - 1] : -1,
+                sentCharCount > 1 ? arySentChars[sentCharCount - 2] : -1 );
+      return;
+   }
+
+   fclose( ptrMessageFile );
+}
+
+static void prompt_WhenInvokedWithUppercasePrint_LoadsExistingMessage( void **state )
+{
+   // Arrange
+   FILE *ptrMessageFile;
+   int result;
+   int previousChar;
+
+   (void)state;
+
+   resetState();
+   previousChar = -1;
+   ptrMessageFile = tmpfile();
+   if ( ptrMessageFile == NULL )
+   {
+      fail_msg( "tmpfile failed in prompt uppercase print test setup" );
+      return;
+   }
+   fprintf( ptrMessageFile, "Existing draft line\n" );
+   fflush( ptrMessageFile );
+
+   // Act
+   result = prompt( ptrMessageFile, &previousChar, 'P' );
+
+   // Assert
+   if ( result != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt should return 0 when reloading an existing draft; got %d", result );
+      return;
+   }
+   if ( previousChar != '\n' )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt should change previousChar from -1 to newline after reloading an existing draft; got %d", previousChar );
+      return;
+   }
+   if ( fseek( ptrMessageFile, 0L, SEEK_END ) != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Arrange failed: unable to seek to end of message file after uppercase print path" );
+      return;
+   }
+   if ( ftell( ptrMessageFile ) <= 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt uppercase print path should preserve existing draft contents" );
+      return;
+   }
+
+   fclose( ptrMessageFile );
+}
+
 int main( void )
 {
    const struct CMUnitTest aryTests[] = {
@@ -297,6 +444,8 @@ int main( void )
       cmocka_unit_test( checkFile_WhenIllegalControlCharacterPresent_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTabExpansionPushesPast79_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne ),
+      cmocka_unit_test( prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne ),
+      cmocka_unit_test( prompt_WhenInvokedWithUppercasePrint_LoadsExistingMessage ),
    };
 
    return cmocka_run_group_tests( aryTests, NULL, NULL );
