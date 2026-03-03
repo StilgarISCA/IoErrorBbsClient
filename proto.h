@@ -75,6 +75,7 @@ extern void
    postColorConfig P( (void)),
    postFriendColorConfig P( (void)),
    postUserColorConfig P( (void)),
+   promptForScreenReaderModeIfUnset P( (void)),
    readBbsRc P( (void)),
    replyCodeTransformExpress P( (char *, size_t)),
    replyMessage P( (void)),

@@ -168,6 +168,7 @@ typedef enum
    BBRC_CMD_SUSP,
    BBRC_CMD_TCP_KEEPALIVE,
    BBRC_CMD_URL,
+   BBRC_CMD_SCREENREADER,
    BBRC_CMD_VERSION,
    BBRC_CMD_XLAND,
    BBRC_CMD_XWRAP
@@ -198,6 +199,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "squelch ", 8, BBRC_CMD_SQUELCH },
          { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
          { "clickableurls", 13, BBRC_CMD_CLICKABLE_URLS },
+         { "screenreader", 12, BBRC_CMD_SCREENREADER },
          { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
@@ -306,6 +308,8 @@ void readBbsRc( void )
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
    flagsConfiguration.shouldUseTcpKeepalive = 1;
    flagsConfiguration.shouldEnableClickableUrls = 1;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
+   flagsConfiguration.hasScreenReaderModeSetting = 0;
 
    defaultColors( 1 );
 
@@ -412,6 +416,48 @@ void readBbsRc( void )
                   else
                   {
                      stdPrintf( "Invalid definition of clickable URL option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
+         case BBRC_CMD_SCREENREADER:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.isScreenReaderModeEnabled = 1;
+                  flagsConfiguration.hasScreenReaderModeSetting = 1;
+               }
+               else
+               {
+                  const char *ptrScreenReaderValue;
+
+                  ptrScreenReaderValue = ptrSpace + 1;
+                  while ( *ptrScreenReaderValue != '\0' && isspace( (unsigned char)*ptrScreenReaderValue ) )
+                  {
+                     ptrScreenReaderValue++;
+                  }
+                  if ( *ptrScreenReaderValue == '\0' )
+                  {
+                     flagsConfiguration.isScreenReaderModeEnabled = 1;
+                     flagsConfiguration.hasScreenReaderModeSetting = 1;
+                  }
+                  else if ( *ptrScreenReaderValue == '0' )
+                  {
+                     flagsConfiguration.isScreenReaderModeEnabled = 0;
+                     flagsConfiguration.hasScreenReaderModeSetting = 1;
+                  }
+                  else if ( *ptrScreenReaderValue == '1' )
+                  {
+                     flagsConfiguration.isScreenReaderModeEnabled = 1;
+                     flagsConfiguration.hasScreenReaderModeSetting = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of screen reader option ignored.\n" );
                   }
                }
                break;
@@ -994,6 +1040,11 @@ void readBbsRc( void )
       {
          setup( -1 );
       }
+   }
+   else if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      promptForScreenReaderModeIfUnset();
+      shouldRewriteBbsRc = true;
    }
    if ( shouldShowBrowserMigrationNotice )
    {

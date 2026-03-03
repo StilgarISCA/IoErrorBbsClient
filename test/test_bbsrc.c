@@ -20,6 +20,7 @@ static int setupCallCount;
 static int setupVersionArg;
 static int perrorCallCount;
 static int writeBbsRcCallCount;
+static int promptForScreenReaderModeCallCount;
 static char aryLastPerrorMessage[128];
 static char aryLastPerrorHeading[64];
 static char aryStdPrintfLog[16384];
@@ -30,6 +31,7 @@ static void resetTracking( void )
    setupVersionArg = 0;
    perrorCallCount = 0;
    writeBbsRcCallCount = 0;
+   promptForScreenReaderModeCallCount = 0;
    aryLastPerrorMessage[0] = '\0';
    aryLastPerrorHeading[0] = '\0';
    aryStdPrintfLog[0] = '\0';
@@ -234,6 +236,13 @@ void setup( int oldversion )
 void writeBbsRc( void )
 {
    writeBbsRcCallCount++;
+}
+
+void promptForScreenReaderModeIfUnset( void )
+{
+   promptForScreenReaderModeCallCount++;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
+   flagsConfiguration.hasScreenReaderModeSetting = 1;
 }
 
 void sPerror( const char *message, const char *heading )
@@ -647,6 +656,107 @@ static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **s
    if ( flagsConfiguration.shouldUseTcpKeepalive )
    {
       fail_msg( "keepalive 0 should disable TCP keepalive" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for screenreader=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "screenreader 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for screenreader=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      fail_msg( "screenreader 1 should enable screen reader mode" );
+   }
+   if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      fail_msg( "screenreader 1 should mark the setting as present" );
+   }
+   if ( promptForScreenReaderModeCallCount != 0 )
+   {
+      fail_msg( "screenreader 1 should not trigger the missing-setting prompt helper; got %d calls",
+                promptForScreenReaderModeCallCount );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for missing screenreader test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keepalive 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for missing screenreader test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( promptForScreenReaderModeCallCount != 1 )
+   {
+      fail_msg( "missing screenreader setting should trigger one prompt helper call; got %d",
+                promptForScreenReaderModeCallCount );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "missing screenreader setting should rewrite .bbsrc once; got %d",
+                writeBbsRcCallCount );
+   }
+   if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      fail_msg( "prompt helper should mark the screen reader setting as present" );
    }
 
    cleanupReadState();
@@ -1158,6 +1268,8 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode ),
+      cmocka_unit_test( readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault ),

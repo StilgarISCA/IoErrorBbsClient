@@ -261,6 +261,8 @@ typedef struct
    unsigned int shouldAutoAnswerAnsiPrompt : 1; /* true if we automatically answer ANSI ? */
    unsigned int shouldUseTcpKeepalive : 1;      /* true if TCP keepalive probes are enabled */
    unsigned int shouldEnableClickableUrls : 1;  /* true if OSC-8 clickable URL output is enabled */
+   unsigned int isScreenReaderModeEnabled : 1;  /* true if screen reader friendly mode is enabled */
+   unsigned int hasScreenReaderModeSetting : 1; /* true if screen reader mode was set in .bbsrc */
 } Flags;
 
 typedef struct

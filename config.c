@@ -29,6 +29,8 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
+#define SCREEN_READER_INFO \
+   "Screen reader friendly mode keeps this client easier for VoiceOver and other\r\nscreen readers to follow.  You can change this later from the Options menu."
 
 static const char *describeKeyForHelp( int inputChar )
 {
@@ -50,6 +52,20 @@ static const char *describeKeyForHelp( int inputChar )
       default:
          return strCtrl( inputChar );
    }
+}
+
+void promptForScreenReaderModeIfUnset( void )
+{
+   if ( flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      return;
+   }
+
+   flagsConfiguration.isScreenReaderModeEnabled =
+      (unsigned int)sPrompt( SCREEN_READER_INFO,
+                             "Use screen reader friendly mode?",
+                             0 );
+   flagsConfiguration.hasScreenReaderModeSetting = 1;
 }
 
 /*
@@ -114,6 +130,7 @@ void setup( int newVersion )
                 describeKeyForHelp( browserKey ) );
       sInfo( aryUrlInfo, "Websites" );
    }
+   promptForScreenReaderModeIfUnset();
    if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
    {
       configBbsRc();
@@ -255,6 +272,10 @@ void configBbsRc( void )
             stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
                        flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
             flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
+            stdPrintf( "Use screen reader friendly mode? (%s) -> ",
+                       flagsConfiguration.isScreenReaderModeEnabled ? "Yes" : "No" );
+            flagsConfiguration.isScreenReaderModeEnabled = (unsigned int)yesNoDefault( flagsConfiguration.isScreenReaderModeEnabled );
+            flagsConfiguration.hasScreenReaderModeSetting = 1;
             break;
 
          case 'h':
@@ -474,6 +495,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
+   fprintf( ptrBbsRc, "screenreader %d\n", flagsConfiguration.isScreenReaderModeEnabled ? 1 : 0 );
    if ( *aryAutoName )
    {
       fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );

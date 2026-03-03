@@ -21,10 +21,15 @@ static int aryYesNoQueue[32];
 static size_t yesNoCount;
 static size_t yesNoIndex;
 
+static int aryPromptQueue[32];
+static size_t promptCount;
+static size_t promptIndex;
+
 static const char *aryStringQueue[32];
 static size_t stringCount;
 static size_t stringIndex;
 static int getStringCallCount;
+static int sPromptCallCount;
 
 static char aryStdPrintfLog[4096];
 
@@ -55,9 +60,12 @@ static void resetState( void )
    getKeyIndex = 0;
    yesNoCount = 0;
    yesNoIndex = 0;
+   promptCount = 0;
+   promptIndex = 0;
    stringCount = 0;
    stringIndex = 0;
    getStringCallCount = 0;
+   sPromptCallCount = 0;
    aryStdPrintfLog[0] = '\0';
 }
 
@@ -77,6 +85,15 @@ static void setYesNoSequence( const int *aryValues, size_t valueCount )
                               aryYesNoQueue,
                               sizeof( aryYesNoQueue ) / sizeof( aryYesNoQueue[0] ) );
    yesNoIndex = 0;
+}
+
+static void setPromptSequence( const int *aryValues, size_t valueCount )
+{
+   promptCount = copyIntArray( aryValues,
+                               valueCount,
+                               aryPromptQueue,
+                               sizeof( aryPromptQueue ) / sizeof( aryPromptQueue[0] ) );
+   promptIndex = 0;
 }
 
 static void setStringSequence( const char **aryValues, size_t valueCount )
@@ -296,8 +313,12 @@ int sPrompt( const char *message, const char *heading, int defaultAnswer )
 {
    (void)message;
    (void)heading;
-   (void)defaultAnswer;
-   return 0;
+   sPromptCallCount++;
+   if ( promptIndex < promptCount )
+   {
+      return aryPromptQueue[promptIndex++];
+   }
+   return defaultAnswer;
 }
 
 int stdPrintf( const char *format, ... )
@@ -349,6 +370,10 @@ int yesNo( void )
 
 int yesNoDefault( int defaultAnswer )
 {
+   if ( yesNoIndex < yesNoCount )
+   {
+      return aryYesNoQueue[yesNoIndex++];
+   }
    return defaultAnswer;
 }
 
@@ -497,6 +522,134 @@ static void newAwayMessage_WhenUserAcceptsChange_ReplacesWithEnteredLines( void 
    }
 }
 
+static void setup_WhenScreenReaderModeIsUnset_PromptsAndStoresAnswer( void **state )
+{
+   // Arrange
+   const int aryPromptAnswers[] = { 1, 0 };
+
+   (void)state;
+   resetState();
+
+   flagsConfiguration.hasScreenReaderModeSetting = 0;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
+   setPromptSequence( aryPromptAnswers, sizeof( aryPromptAnswers ) / sizeof( aryPromptAnswers[0] ) );
+
+   cleanupWriteBbsRcFixture();
+   ptrBbsRc = tmpfile();
+   friendList = slistCreate( 0, fSortCompareVoid );
+   enemyList = slistCreate( 0, sortCompareVoid );
+   if ( ptrBbsRc == NULL || friendList == NULL || enemyList == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "Arrange failed: unable to initialize setup fixture" );
+      return;
+   }
+
+   snprintf( aryEditor, sizeof( aryEditor ), "%s", "nano" );
+   snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", "bbs.example.net" );
+   bbsPort = 23;
+   commandKey = ESC;
+   quitKey = CTRL_D;
+   suspKey = CTRL_Z;
+   shellKey = '!';
+   captureKey = 'c';
+   awayKey = 'a';
+
+   // Act
+   setup( INT_VERSION );
+
+   // Assert
+   if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "setup should mark the screen reader mode setting as present after prompting" );
+      return;
+   }
+   if ( !flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "setup should store the user's screen reader mode choice when they answer yes" );
+      return;
+   }
+   if ( sPromptCallCount < 2 )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "setup should prompt for screen reader mode before asking about advanced options; got %d prompts",
+                sPromptCallCount );
+      return;
+   }
+
+   cleanupWriteBbsRcFixture();
+}
+
+static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **state )
+{
+   // Arrange
+   const int aryMenuKeys[] = { 'o', 'q' };
+   const int aryYesNoAnswers[] = { 0, 0, 1, 1, 1 };
+
+   (void)state;
+   resetState();
+
+   cleanupWriteBbsRcFixture();
+   ptrBbsRc = tmpfile();
+   friendList = slistCreate( 0, fSortCompareVoid );
+   enemyList = slistCreate( 0, sortCompareVoid );
+   if ( ptrBbsRc == NULL || friendList == NULL || enemyList == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "Arrange failed: unable to initialize configBbsRc fixture" );
+      return;
+   }
+
+   snprintf( aryEditor, sizeof( aryEditor ), "%s", "nano" );
+   snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", "bbs.example.net" );
+   bbsPort = 23;
+   commandKey = ESC;
+   quitKey = CTRL_D;
+   suspKey = CTRL_Z;
+   shellKey = '!';
+   captureKey = 'c';
+   awayKey = 'a';
+   browserKey = 'w';
+   rows = 24;
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.shouldUseTcpKeepalive = 1;
+   flagsConfiguration.shouldEnableClickableUrls = 1;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
+   flagsConfiguration.hasScreenReaderModeSetting = 0;
+
+   setGetKeySequence( aryMenuKeys, sizeof( aryMenuKeys ) / sizeof( aryMenuKeys[0] ) );
+   setYesNoSequence( aryYesNoAnswers, sizeof( aryYesNoAnswers ) / sizeof( aryYesNoAnswers[0] ) );
+
+   // Act
+   configBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should enable screen reader mode when the option is answered yes" );
+      return;
+   }
+   if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should mark screen reader mode as configured after toggling it" );
+      return;
+   }
+   if ( strstr( aryStdPrintfLog, "Use screen reader friendly mode?" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should display the screen reader mode option in the Options menu" );
+      return;
+   }
+
+   cleanupWriteBbsRcFixture();
+}
+
 static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state )
 {
    // Arrange
@@ -551,6 +704,7 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    color.expressfriendname = 13;
    flagsConfiguration.shouldUseTcpKeepalive = true;
    flagsConfiguration.shouldEnableClickableUrls = true;
+   flagsConfiguration.isScreenReaderModeEnabled = true;
 
    // Act
    writeBbsRc();
@@ -572,6 +726,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 1' when clickable URLs are enabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\nscreenreader 1\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'screenreader 1' when screen reader mode is enabled; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\ncolor brightgreen brightyellow brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
@@ -644,6 +804,7 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    color.expressfriendname = 13;
    flagsConfiguration.shouldUseTcpKeepalive = false;
    flagsConfiguration.shouldEnableClickableUrls = false;
+   flagsConfiguration.isScreenReaderModeEnabled = false;
 
    // Act
    writeBbsRc();
@@ -665,6 +826,12 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 0' when clickable URLs are disabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\nscreenreader 0\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'screenreader 0' when screen reader mode is disabled; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\ncolor brightgreen 123 brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
@@ -692,6 +859,8 @@ int main( void )
       cmocka_unit_test( newKey_WhenUserEntersSpace_ReturnsOldKey ),
       cmocka_unit_test( newAwayMessage_WhenUserDeclinesChange_PreservesExistingMessage ),
       cmocka_unit_test( newAwayMessage_WhenUserAcceptsChange_ReplacesWithEnteredLines ),
+      cmocka_unit_test( setup_WhenScreenReaderModeIsUnset_PromptsAndStoresAnswer ),
+      cmocka_unit_test( configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags ),
       cmocka_unit_test( writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne ),
       cmocka_unit_test( writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero ),
    };
