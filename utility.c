@@ -317,16 +317,22 @@ void tempFileError( void )
 
 int more( int *line, int percentComplete )
 {
+   char aryPrompt[96];
    unsigned int invalid = 0;
 
    if ( percentComplete >= 0 )
    {
-      printf( "--MORE--(%d%%)", percentComplete );
+      snprintf( aryPrompt, sizeof( aryPrompt ),
+                "Page break (%d%%): Space next page, Enter next line, Q quit",
+                percentComplete );
    }
    else
    {
-      printf( "--MORE--" );
+      snprintf( aryPrompt, sizeof( aryPrompt ),
+                "%s",
+                "Page break: Space next page, Enter next line, Q quit" );
    }
+   printf( "%s", aryPrompt );
    while ( true )
    {
       register int inputChar;
@@ -349,7 +355,7 @@ int more( int *line, int percentComplete )
          handleInvalidInput( &invalid );
          continue;
       }
-      printf( "\r              \r" );
+      printf( "\r%*s\r", (int)strlen( aryPrompt ), "" );
       break;
    }
    return ( *line < 0 ? -1 : 0 );
