@@ -38,6 +38,7 @@ static void resetState( void )
    flagsConfiguration.shouldDisableBold = 0;
    flagsConfiguration.useBold = 0;
    flagsConfiguration.shouldEnableClickableUrls = 1;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
 
    aryExpressMessageBuffer[0] = '\0';
    ptrExpressMessageBuffer = aryExpressMessageBuffer;
@@ -632,6 +633,31 @@ static void printWithOsc8Links_WhenClickableUrlsDisabled_PrintsPlainText( void *
    }
 }
 
+static void printWithOsc8Links_WhenScreenReaderModeEnabled_PrintsPlainText( void **state )
+{
+   // Arrange
+   const char *ptrMessage;
+
+   (void)state;
+
+   resetState();
+   flagsConfiguration.isScreenReaderModeEnabled = 1;
+   ptrMessage = "Read this https://example.dev/path";
+
+   // Act
+   printWithOsc8Links( ptrMessage );
+
+   // Assert
+   if ( strstr( aryPrintLog, "\033]8;;" ) != NULL )
+   {
+      fail_msg( "OSC-8 escapes should not be emitted when screen reader mode is enabled; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, ptrMessage ) == NULL )
+   {
+      fail_msg( "plain message text should be printed when screen reader mode is enabled; log was: %s", aryPrintLog );
+   }
+}
+
 static void emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary( void **state )
 {
    // Arrange
@@ -742,6 +768,39 @@ static void emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary( voi
    resetLists();
 }
 
+static void emitUrlDetectionReport_WhenScreenReaderModeEnabled_EmitsNoSummary( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   resetLists();
+   flagsConfiguration.isScreenReaderModeEnabled = 1;
+   urlQueue = newQueue( 1024, 5 );
+   if ( urlQueue == NULL )
+   {
+      fail_msg( "newQueue failed for screen reader URL detection report test setup" );
+   }
+
+   beginUrlDetectionReport();
+   filterUrl( "Read this https://example.dev/alpha" );
+
+   // Act
+   emitUrlDetectionReport();
+
+   // Assert
+   if ( strstr( aryPrintLog, "[Clickable URL(s) detected by BBS client]" ) != NULL )
+   {
+      fail_msg( "URL detection report should be suppressed when screen reader mode is enabled; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "\033]8;;" ) != NULL )
+   {
+      fail_msg( "OSC-8 escapes should not be emitted in screen reader mode; log was: %s", aryPrintLog );
+   }
+
+   resetLists();
+}
+
 static void filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence( void **state )
 {
    // Arrange
@@ -824,9 +883,11 @@ int main( void )
       cmocka_unit_test( printWithOsc8Links_WhenTextContainsHttpsUrl_EmitsHyperlinkEscapes ),
       cmocka_unit_test( printWithOsc8Links_WhenTextContainsWwwUrl_UsesHttpsTarget ),
       cmocka_unit_test( printWithOsc8Links_WhenClickableUrlsDisabled_PrintsPlainText ),
+      cmocka_unit_test( printWithOsc8Links_WhenScreenReaderModeEnabled_PrintsPlainText ),
       cmocka_unit_test( emitUrlDetectionReport_WhenUrlsCollected_PrintsClickableSummary ),
       cmocka_unit_test( emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState ),
       cmocka_unit_test( emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary ),
+      cmocka_unit_test( emitUrlDetectionReport_WhenScreenReaderModeEnabled_EmitsNoSummary ),
       cmocka_unit_test( filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };

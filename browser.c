@@ -113,6 +113,16 @@ static void trimUrlTailPunctuation( char *ptrUrlStart )
    }
 }
 
+static bool shouldEmitClickableUrls( void )
+{
+   if ( flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      return false;
+   }
+
+   return flagsConfiguration.shouldEnableClickableUrls != 0;
+}
+
 void printWithOsc8Links( const char *ptrText )
 {
    const char *ptrCursor;
@@ -121,7 +131,7 @@ void printWithOsc8Links( const char *ptrText )
    {
       return;
    }
-   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   if ( !shouldEmitClickableUrls() )
    {
       stdPrintf( "%s", ptrText );
       return;
@@ -309,7 +319,7 @@ void emitUrlDetectionReport( void )
 {
    char aryUrl[1024];
 
-   if ( !flagsConfiguration.shouldEnableClickableUrls )
+   if ( !shouldEmitClickableUrls() )
    {
       clearDetectedUrlQueue();
       return;
