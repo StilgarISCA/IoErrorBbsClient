@@ -30,29 +30,10 @@ void feedPager( int startrow, ... )
       currentRow++;
       if ( currentRow == rows )
       {
-         /* More prompt */
-         printf( "--MORE-- " );
-         fflush( stdout );
-         int inputChar;
-
-         inputChar = readFoldedKey();
-         switch ( inputChar )
+         if ( more( &currentRow, -1 ) < 0 )
          {
-            case 'n':
-            case 's':
-            case 'q':
-               printf( "\r        \r" );
-               va_end( ap );
-               return;
-               /* NOTREACHED */
-            case '\n':
-               currentRow--;
-               printf( "\r        \r" );
-               break;
-            default:
-               currentRow = 1;
-               printf( "\r        \r" );
-               break;
+            va_end( ap );
+            return;
          }
       }
    }
