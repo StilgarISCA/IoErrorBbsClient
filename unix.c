@@ -318,6 +318,11 @@ void titleBar( void )
 #ifdef ENABLE_TITLEBAR
    char aryTitle[80];
 
+   if ( flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      return;
+   }
+
    snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
              aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
              VERSION, "Unix" );
@@ -339,6 +344,11 @@ void titleBar( void )
 void noTitleBar( void )
 {
 #ifdef ENABLE_TITLEBAR
+   if ( flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      return;
+   }
+
    /* xterm */
    if ( !strcmp( getenv( "TERM" ), "xterm" ) )
    {
