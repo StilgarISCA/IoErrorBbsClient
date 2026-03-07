@@ -121,6 +121,17 @@ int colorize( const char *ptrText )
    return 1;
 }
 
+void printAnsiForegroundColorValue( int colorValue )
+{
+   (void)colorValue;
+}
+
+void printThemedMnemonicText( const char *ptrText, int defaultColor )
+{
+   (void)ptrText;
+   (void)defaultColor;
+}
+
 int colorValueToLegacyDigit( int colorValue )
 {
    return colorValue + '0';

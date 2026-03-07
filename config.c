@@ -178,15 +178,9 @@ void configBbsRc( void )
    }
    while ( true )
    {
-      if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YC@Color  @YE@Cnemy list  @YF@Criend list  @YH@Cotkeys\r\n@YI@Cnfo  @YM@Cacros  @YO@Cptions  @YX@Cpress  @YQ@Cuit@Y" );
-      }
-      else
-      {
-         stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>nfo  <M>acros <O>ptions <X>press <Q>uit" );
-      }
-      colorize( "\r\nClient config -> @G" );
+      printThemedMnemonicText( "\r\n<C>olor  <E>nemy list  <F>riend list  <H>otkeys\r\n<I>nfo  <M>acros  <O>ptions  <X>press  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nClient config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
       inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
       switch ( inputChar )
       {
@@ -347,7 +341,9 @@ void configBbsRc( void )
             {
                if ( flagsConfiguration.useAnsi )
                {
-                  colorize( "\r\n@YE@Cdit  @YL@Cist  @YQ@Cuit\r\n@YMacro config -> @G" );
+                  printThemedMnemonicText( "\r\n<E>dit  <L>ist  <Q>uit", color.number );
+                  printThemedMnemonicText( "\r\nMacro config -> ", color.forum );
+                  printAnsiForegroundColorValue( color.text );
                }
                else
                {
@@ -428,14 +424,9 @@ void expressConfig( void )
 
    while ( true )
    {
-      if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YA@Cway  @YX@CLand  @YQ@Cuit\r\n@YExpress config -> @G" );
-      }
-      else
-      {
-         stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
-      }
+      printThemedMnemonicText( "\r\n<A>way  <X>Land  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nExpress config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
 
       int inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
 
@@ -740,25 +731,15 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       /* Build menu */
       if ( !strncmp( name, "enemy", 5 ) )
       {
-         if ( flagsConfiguration.useAnsi )
-         {
-            colorize( "\r\n@YA@Cdd  @YD@Celete  @YL@Cist  @YO@Cptions  @YQ@Cuit@Y" );
-         }
-         else
-         {
-            stdPrintf( "\r\n<A>dd <D>elete <L>ist <O>ptions <Q>uit" );
-         }
-      }
-      else if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YA@Cdd  @YD@Celete  @YE@Cdit  @YL@Cist  @YQ@Cuit@Y" );
+         printThemedMnemonicText( "\r\n<A>dd  <D>elete  <L>ist  <O>ptions  <Q>uit", color.number );
       }
       else
       {
-         stdPrintf( "\r\n<A>dd <D>elete <E>dit <L>ist <Q>uit" );
+         printThemedMnemonicText( "\r\n<A>dd  <D>elete  <E>dit  <L>ist  <Q>uit", color.number );
       }
-      snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> @G", toupper( name[0] ), name + 1 );
-      colorize( aryDisplayLine );
+      snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
+      printThemedMnemonicText( aryDisplayLine, color.forum );
+      printAnsiForegroundColorValue( color.text );
 
       inputChar = inKey();
       switch ( inputChar )

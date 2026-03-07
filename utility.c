@@ -257,6 +257,53 @@ int readValidatedMenuKey( const char *allowedCharsLowercase )
    }
 }
 
+void printAnsiForegroundColorValue( int colorValue )
+{
+   char aryAnsiSequence[32];
+
+   if ( !flagsConfiguration.useAnsi )
+   {
+      return;
+   }
+
+   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                 colorValue );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
+void printThemedMnemonicText( const char *ptrText, int defaultColor )
+{
+   const char *ptrScan;
+
+   if ( ptrText == NULL )
+   {
+      return;
+   }
+
+   if ( !flagsConfiguration.useAnsi )
+   {
+      stdPrintf( "%s", ptrText );
+      return;
+   }
+
+   printAnsiForegroundColorValue( defaultColor );
+
+   for ( ptrScan = ptrText; *ptrScan; )
+   {
+      if ( ptrScan[0] == '<' && ptrScan[1] != '\0' && ptrScan[2] == '>' )
+      {
+         printAnsiForegroundColorValue( color.forum );
+         stdPutChar( ptrScan[1] );
+         printAnsiForegroundColorValue( defaultColor );
+         ptrScan += 3;
+         continue;
+      }
+
+      stdPutChar( *ptrScan );
+      ptrScan++;
+   }
+}
+
 int yesNo( void )
 {
    register int inputChar;

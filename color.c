@@ -194,27 +194,30 @@ static const PickerColorOption *findPickerColorOption( const PickerColorOption *
 
 static void printForegroundPickerMenu( void )
 {
-   colorize( "\r\n@Y[K]@C Black           @Y[R]@C Red             @Y[G]@C Green           @Y[Y]@C Yellow\r\n" );
-   colorize( "@Y[B]@C Blue            @Y[M]@C Magenta         @Y[C]@C Cyan            @Y[W]@C White\r\n" );
-   colorize( "@Y[1]@C Bright black   @Y[2]@C Bright red      @Y[3]@C Bright green    @Y[4]@C Bright yellow\r\n" );
-   colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
-   colorize( "@YSelect color -> @G" );
+   printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
+   printThemedMnemonicText( "[<B>] Blue            [<M>] Magenta         [<C>] Cyan            [<W>] White\r\n", color.number );
+   printThemedMnemonicText( "[<1>] Bright black   [<2>] Bright red      [<3>] Bright green    [<4>] Bright yellow\r\n", color.number );
+   printThemedMnemonicText( "[<5>] Bright blue    [<6>] Bright magenta  [<7>] Bright cyan     [<8>] Bright white\r\n", color.number );
+   printThemedMnemonicText( "Select color -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 }
 
 static void printBackgroundPickerMenu( void )
 {
-   colorize( "\r\n@Y[K]@C Black           @Y[R]@C Red             @Y[G]@C Green           @Y[Y]@C Yellow\r\n" );
-   colorize( "@Y[B]@C Blue            @Y[M]@C Magenta         @Y[C]@C Cyan            @Y[W]@C White\r\n" );
-   colorize( "@Y[1]@C Bright black   @Y[2]@C Bright red      @Y[3]@C Bright green    @Y[4]@C Bright yellow\r\n" );
-   colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
-   colorize( "@Y[D]@C Default\r\n" );
-   colorize( "@YSelect background -> @G" );
+   printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
+   printThemedMnemonicText( "[<B>] Blue            [<M>] Magenta         [<C>] Cyan            [<W>] White\r\n", color.number );
+   printThemedMnemonicText( "[<1>] Bright black   [<2>] Bright red      [<3>] Bright green    [<4>] Bright yellow\r\n", color.number );
+   printThemedMnemonicText( "[<5>] Bright blue    [<6>] Bright magenta  [<7>] Bright cyan     [<8>] Bright white\r\n", color.number );
+   printThemedMnemonicText( "[<D>] Default\r\n", color.number );
+   printThemedMnemonicText( "Select background -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 }
 
 static void presetColorConfig( void )
 {
    stdPrintf( "Color presets\r\n\n" );
-   colorize( "@YD@Cefault  @YC@Colorblind  @YH@Cotdog Stand  @YQ@Cuit@Y -> @G" );
+   printThemedMnemonicText( "<D>efault  <C>olorblind  <H>otdog Stand  <Q>uit -> ", color.number );
+   printAnsiForegroundColorValue( color.text );
 
    switch ( readValidatedMenuKey( COLOR_RESET_MENU_KEYS ) )
    {
@@ -522,8 +525,10 @@ void colorConfig( void )
    }
    while ( true )
    {
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  pre@YS@Cets  @YO@Cptions  @YX@Cpress  @YQ@Cuit\r\n@YColor config -> @G" );
-      colorize( aryPromptText );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<G>eneral  <I>nput  <P>osts  pre<S>ets  <O>ptions  <X>press  <Q>uit" );
+      printThemedMnemonicText( aryPromptText, color.number );
+      printThemedMnemonicText( "\r\nColor config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
 
       int inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
 
@@ -594,8 +599,9 @@ void generalColorConfig( void )
    {
       printGeneralColorPreview();
 
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
-      colorize( aryPromptText );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<B>ackground  <E>rror  <F>orum  <N>umber  <T>ext  <Q>uit -> " );
+      printThemedMnemonicText( aryPromptText, color.number );
+      printAnsiForegroundColorValue( color.text );
 
       int menuOption = readValidatedMenuKey( COLOR_GENERAL_MENU_KEYS );
 
@@ -641,8 +647,9 @@ void inputColorConfig( void )
    {
       printInputColorPreview();
 
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
-      colorize( aryPromptText );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<T>ext  <C>ompletion  <Q>uit -> " );
+      printThemedMnemonicText( aryPromptText, color.number );
+      printAnsiForegroundColorValue( color.text );
 
       int menuOption = readValidatedMenuKey( COLOR_INPUT_MENU_KEYS );
 
@@ -753,8 +760,9 @@ char postColorMenu( void )
    int inputChar;
    char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
-   colorize( aryPromptText );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<D>ate  <N>ame  <T>ext  <Q>uit -> " );
+   printThemedMnemonicText( aryPromptText, color.number );
+   printAnsiForegroundColorValue( color.text );
 
    inputChar = readValidatedMenuKey( COLOR_POST_MENU_KEYS );
 
@@ -860,8 +868,9 @@ char expressColorMenu( void )
    int inputChar;
    char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
-   colorize( aryPromptText );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<N>ame  <T>ext  <Q>uit -> " );
+   printThemedMnemonicText( aryPromptText, color.number );
+   printAnsiForegroundColorValue( color.text );
 
    inputChar = readValidatedMenuKey( COLOR_EXPRESS_MENU_KEYS );
 
@@ -888,10 +897,13 @@ char expressColorMenu( void )
 char userOrFriend( void )
 {
    int inputChar;
-   char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
-   colorize( aryPromptText );
+   printThemedMnemonicText( "Configure for ", color.text );
+   printThemedMnemonicText( "<U>ser", color.number );
+   printThemedMnemonicText( " or ", color.text );
+   printThemedMnemonicText( "<F>riend", color.number );
+   printThemedMnemonicText( " -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 
    inputChar = readValidatedMenuKey( COLOR_USER_OR_FRIEND_KEYS );
 

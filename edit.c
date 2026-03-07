@@ -12,6 +12,49 @@
 #include "defs.h"
 #include "ext.h"
 
+static void printEditorCommandPrompt( void )
+{
+   char aryAnsiSequence[32];
+   static const char *aryCommandLabels[] =
+      {
+         "Abort",
+         "Continue",
+         "Edit",
+         "Print",
+         "Save",
+         "Xpress" };
+   size_t itemIndex;
+
+   if ( !flagsConfiguration.useAnsi )
+   {
+      printf( "<A>bort <C>ontinue <E>dit <P>rint <S>ave <X>press -> " );
+      return;
+   }
+
+   for ( itemIndex = 0; itemIndex < sizeof( aryCommandLabels ) / sizeof( aryCommandLabels[0] ); itemIndex++ )
+   {
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.forum );
+      printf( "%s", aryAnsiSequence );
+      printf( "%c", aryCommandLabels[itemIndex][0] );
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.number );
+      printf( "%s", aryAnsiSequence );
+      printf( "%s", aryCommandLabels[itemIndex] + 1 );
+
+      if ( itemIndex + 1 < sizeof( aryCommandLabels ) / sizeof( aryCommandLabels[0] ) )
+      {
+         printf( "  " );
+      }
+   }
+
+   printf( " -> " );
+   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                 color.text );
+   printf( "%s", aryAnsiSequence );
+}
+
 void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
 {
    int inputChar;
@@ -358,7 +401,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             (void)inKey();
             if ( flagsConfiguration.useAnsi )
             {
-               colorize( "@YA@Cbort  @YC@Continue  @YE@Cdit  @YP@Crint  @YS@Cave  @YX@Cpress -> @G " );
+               printEditorCommandPrompt();
             }
             else
             {

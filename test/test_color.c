@@ -81,6 +81,17 @@ int colorize( const char *ptrText )
    return 1;
 }
 
+void printAnsiForegroundColorValue( int colorValue )
+{
+   (void)colorValue;
+}
+
+void printThemedMnemonicText( const char *ptrText, int defaultColor )
+{
+   (void)ptrText;
+   (void)defaultColor;
+}
+
 int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    const friend *const *ptrLeftFriend;

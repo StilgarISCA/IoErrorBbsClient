@@ -106,6 +106,8 @@ extern void
    techInfo P( (void)),
    telInit P( (void)),
    tempFileError P( (void)),
+   printAnsiForegroundColorValue P( (int)),
+   printThemedMnemonicText P( (const char *, int)),
    titleBar P( (void)),
    trimTrailingWhitespace P( (char *)),
    truncateBbsRc P( (long)),

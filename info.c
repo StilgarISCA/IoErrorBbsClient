@@ -328,14 +328,9 @@ void information( void )
 
    while ( true )
    {
-      if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YC@Copyright  @YL@Cicense  @YW@Carranty  @YT@Cechnical  @YQ@Cuit\r\n@YClient information -> @G" );
-      }
-      else
-      {
-         stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
-      }
+      printThemedMnemonicText( "\r\n<C>opyright  <L>icense  <W>arranty  <T>echnical  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nClient information -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
       int inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
       switch ( inputChar )
       {
