@@ -200,6 +200,13 @@ static void defaultColors_WhenClearAllApplied_SetsKnownDefaults( void **state )
    {
       fail_msg( "defaultColors(1) did not set post/express defaults as expected" );
    }
+   if ( color.ansiBlackTextColor != 2 || color.ansiBlueTextColor != 4 ||
+        color.ansiMagentaTextColor != 5 || color.ansiWhiteTextColor != 7 )
+   {
+      fail_msg( "defaultColors(1) did not set full ANSI fallback colors as expected; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
+   }
 }
 
 static void defaultColors_WhenClearAllDisabled_LeavesBackgroundUnchanged( void **state )
@@ -474,6 +481,13 @@ static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
                 color.postfriendname, color.input2, color.moreprompt,
                 color.expressname, color.expressfriendname );
    }
+   if ( color.ansiBlackTextColor != 146 || color.ansiBlueTextColor != 75 ||
+        color.ansiMagentaTextColor != 175 || color.ansiWhiteTextColor != 221 )
+   {
+      fail_msg( "colorblindColors should theme the full incoming ANSI palette; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
+   }
 }
 
 static void brilliantColors_WhenApplied_SetsBrightDefaultPalette( void **state )
@@ -512,6 +526,13 @@ static void brilliantColors_WhenApplied_SetsBrightDefaultPalette( void **state )
                 color.anonymous, color.moreprompt, color.input1, color.input2,
                 color.expresstext, color.expressname,
                 color.expressfriendname, color.expressfriendtext );
+   }
+   if ( color.ansiBlackTextColor != 10 || color.ansiBlueTextColor != 12 ||
+        color.ansiMagentaTextColor != 13 || color.ansiWhiteTextColor != 15 )
+   {
+      fail_msg( "brilliantColors should theme the full incoming ANSI palette; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
    }
 }
 
@@ -555,6 +576,42 @@ static void hotDogColors_WhenApplied_SetsClassicHotDogPalette( void **state )
                 color.postdate, color.postfrienddate, color.postname,
                 color.postfriendname, color.anonymous, color.moreprompt,
                 color.input1, color.expressname, color.expressfriendname );
+   }
+   if ( color.ansiBlackTextColor != 130 || color.ansiBlueTextColor != 214 ||
+        color.ansiMagentaTextColor != 130 || color.ansiWhiteTextColor != 220 )
+   {
+      fail_msg( "hotDogColors should eliminate stray gray and purple by theming the full incoming ANSI palette; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
+   }
+}
+
+static void ansiTransform_WhenHotDogPaletteApplied_UsesThemeColorsForAllAnsiDigits( void **state )
+{
+   int transformedBlack;
+   int transformedBlue;
+   int transformedMagenta;
+   int transformedWhite;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+   hotDogColors();
+
+   // Act
+   transformedBlack = ansiTransform( '0' );
+   transformedBlue = ansiTransform( '4' );
+   transformedMagenta = ansiTransform( '5' );
+   transformedWhite = ansiTransform( '7' );
+
+   // Assert
+   if ( transformedBlack != 130 || transformedBlue != 214 ||
+        transformedMagenta != 130 || transformedWhite != 220 )
+   {
+      fail_msg( "ansiTransform should map all incoming ANSI digits through the active Hotdog stand palette; got black=%d blue=%d magenta=%d white=%d",
+                transformedBlack, transformedBlue, transformedMagenta,
+                transformedWhite );
    }
 }
 
@@ -759,6 +816,7 @@ int main( void )
       cmocka_unit_test( brilliantColors_WhenApplied_SetsBrightDefaultPalette ),
       cmocka_unit_test( colorblindColors_WhenApplied_SetsAccessiblePalette ),
       cmocka_unit_test( hotDogColors_WhenApplied_SetsClassicHotDogPalette ),
+      cmocka_unit_test( ansiTransform_WhenHotDogPaletteApplied_UsesThemeColorsForAllAnsiDigits ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),

@@ -745,9 +745,9 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    color.forum = 11;
    color.number = 14;
    color.errorTextColor = 9;
-   color.reserved1 = 8;
-   color.reserved2 = 8;
-   color.reserved3 = 8;
+   color.ansiBlackTextColor = 8;
+   color.ansiBlueTextColor = 8;
+   color.ansiMagentaTextColor = 8;
    color.postdate = 13;
    color.postname = 12;
    color.posttext = 15;
@@ -756,7 +756,7 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    color.postfriendtext = 11;
    color.anonymous = 12;
    color.moreprompt = 14;
-   color.reserved4 = 8;
+   color.ansiWhiteTextColor = 8;
    color.reserved5 = 8;
    color.background = COLOR_VALUE_DEFAULT;
    color.input1 = 15;
@@ -852,9 +852,9 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    color.forum = 123;
    color.number = 14;
    color.errorTextColor = 9;
-   color.reserved1 = 8;
-   color.reserved2 = 8;
-   color.reserved3 = 8;
+   color.ansiBlackTextColor = 8;
+   color.ansiBlueTextColor = 8;
+   color.ansiMagentaTextColor = 8;
    color.postdate = 13;
    color.postname = 12;
    color.posttext = 15;
@@ -863,7 +863,7 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    color.postfriendtext = 11;
    color.anonymous = 12;
    color.moreprompt = 14;
-   color.reserved4 = 8;
+   color.ansiWhiteTextColor = 8;
    color.reserved5 = 8;
    color.background = COLOR_VALUE_DEFAULT;
    color.input1 = 15;

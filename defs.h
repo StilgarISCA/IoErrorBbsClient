@@ -287,22 +287,22 @@ typedef struct
 
 typedef struct
 {
-   int text;           /* Plain text color */
-   int forum;          /* Forum prompt color */
-   int number;         /* Numbers and Read cmd prompt color */
-   int errorTextColor; /* Warning/error messages color */
-   int reserved1;
-   int reserved2;
-   int reserved3;
-   int postdate;       /* Post date stamp color */
-   int postname;       /* Post author name color */
-   int posttext;       /* Post text color */
-   int postfrienddate; /* Post friend date stamp color */
-   int postfriendname; /* Post friend name color */
-   int postfriendtext; /* Post friend text color */
-   int anonymous;      /* Anonymous post header color */
-   int moreprompt;     /* More prompt color */
-   int reserved4;
+   int text;                 /* Plain text color */
+   int forum;                /* Forum prompt color */
+   int number;               /* Numbers and Read cmd prompt color */
+   int errorTextColor;       /* Warning/error messages color */
+   int ansiBlackTextColor;   /* Incoming ANSI black fallback color */
+   int ansiBlueTextColor;    /* Incoming ANSI blue fallback color */
+   int ansiMagentaTextColor; /* Incoming ANSI magenta fallback color */
+   int postdate;             /* Post date stamp color */
+   int postname;             /* Post author name color */
+   int posttext;             /* Post text color */
+   int postfrienddate;       /* Post friend date stamp color */
+   int postfriendname;       /* Post friend name color */
+   int postfriendtext;       /* Post friend text color */
+   int anonymous;            /* Anonymous post header color */
+   int moreprompt;           /* More prompt color */
+   int ansiWhiteTextColor;   /* Incoming ANSI white fallback color */
    int reserved5;
    int background;        /* Background color */
    int input1;            /* Text input fields */

@@ -40,6 +40,7 @@ typedef struct
 } PresetMenuOption;
 
 static void printAnsiDisplayState( int foregroundColor, int backgroundColor );
+static int transformIncomingAnsiColor( int inputChar );
 
 static const NamedColorSpec aryNamedColors[] =
    {
@@ -334,7 +335,7 @@ static int transformPostHeaderColor( int inputChar, int isFriend )
          }
          return color.posttext;
       default:
-         return colorValueFromLegacyDigit( inputChar );
+         return transformIncomingAnsiColor( inputChar );
    }
 }
 
@@ -406,24 +407,7 @@ int ansiTransform( int inputChar )
 {
    int transformedColor;
 
-   transformedColor = colorValueFromLegacyDigit( inputChar );
-   switch ( inputChar )
-   {
-      case '6':
-         transformedColor = color.number;
-         break;
-      case '3':
-         transformedColor = color.forum;
-         break;
-      case '2':
-         transformedColor = color.text;
-         break;
-      case '1':
-         transformedColor = color.errorTextColor;
-         break;
-      default:
-         break;
-   }
+   transformedColor = transformIncomingAnsiColor( inputChar );
 
    return transformedColor;
 }
@@ -491,7 +475,7 @@ int ansiTransformPost( int inputChar, int isFriend )
 {
    int transformedColor;
 
-   transformedColor = colorValueFromLegacyDigit( inputChar );
+   transformedColor = transformIncomingAnsiColor( inputChar );
    switch ( inputChar )
    {
       case '3':
@@ -514,6 +498,31 @@ int ansiTransformPost( int inputChar, int isFriend )
          break;
    }
    return transformedColor;
+}
+
+static int transformIncomingAnsiColor( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case '0':
+         return color.ansiBlackTextColor;
+      case '1':
+         return color.errorTextColor;
+      case '2':
+         return color.text;
+      case '3':
+         return color.forum;
+      case '4':
+         return color.ansiBlueTextColor;
+      case '5':
+         return color.ansiMagentaTextColor;
+      case '6':
+         return color.number;
+      case '7':
+         return color.ansiWhiteTextColor;
+      default:
+         return colorValueFromLegacyDigit( inputChar );
+   }
 }
 
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
