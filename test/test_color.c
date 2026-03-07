@@ -476,6 +476,45 @@ static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
    }
 }
 
+static void brilliantColors_WhenApplied_SetsBrightDefaultPalette( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   memset( &color, 0, sizeof( color ) );
+
+   // Act
+   brilliantColors();
+
+   // Assert
+   if ( color.text != 10 || color.forum != 11 || color.number != 14 ||
+        color.errorTextColor != 9 )
+   {
+      fail_msg( "brilliantColors should set bright general colors; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.background != 0 )
+   {
+      fail_msg( "brilliantColors should keep a black background; got %d", color.background );
+   }
+   if ( color.postdate != 13 || color.postfrienddate != 13 ||
+        color.postname != 14 || color.postfriendname != 9 ||
+        color.posttext != 10 || color.postfriendtext != 10 ||
+        color.anonymous != 11 || color.moreprompt != 11 ||
+        color.input1 != 10 || color.input2 != 14 ||
+        color.expresstext != 10 || color.expressname != 10 ||
+        color.expressfriendname != 10 || color.expressfriendtext != 10 )
+   {
+      fail_msg( "brilliantColors should map the default roles onto bright ANSI values; got postdate=%d frienddate=%d postname=%d friendname=%d posttext=%d friendposttext=%d anonymous=%d moreprompt=%d input1=%d input2=%d expresstext=%d expressname=%d expressfriendname=%d expressfriendtext=%d",
+                color.postdate, color.postfrienddate, color.postname,
+                color.postfriendname, color.posttext, color.postfriendtext,
+                color.anonymous, color.moreprompt, color.input1, color.input2,
+                color.expresstext, color.expressname,
+                color.expressfriendname, color.expressfriendtext );
+   }
+}
+
 static void hotDogColors_WhenApplied_SetsClassicHotDogPalette( void **state )
 {
    // Arrange
@@ -717,6 +756,7 @@ int main( void )
       cmocka_unit_test( formatAnsiForegroundSequence_WhenBrightColorRequested_UsesBrightAnsiCode ),
       cmocka_unit_test( formatAnsiForegroundSequence_WhenExtendedColorRequested_Uses256ColorCode ),
       cmocka_unit_test( formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCombinedSelectors ),
+      cmocka_unit_test( brilliantColors_WhenApplied_SetsBrightDefaultPalette ),
       cmocka_unit_test( colorblindColors_WhenApplied_SetsAccessiblePalette ),
       cmocka_unit_test( hotDogColors_WhenApplied_SetsClassicHotDogPalette ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),

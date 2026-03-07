@@ -12,7 +12,7 @@ static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
 static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
 static const char *COLOR_POST_MENU_KEYS = "dntq \n";
 static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
-static const char *COLOR_RESET_MENU_KEYS = "dchq \n";
+static const char *COLOR_RESET_MENU_KEYS = "dbchq \n";
 static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
 static const char *COLOR_FOREGROUND_KEYS = "krgybmcw12345678";
 static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd12345678";
@@ -216,7 +216,8 @@ static void printBackgroundPickerMenu( void )
 static void presetColorConfig( void )
 {
    stdPrintf( "Color presets\r\n\n" );
-   printThemedMnemonicText( "<D>efault  <C>olorblind  <H>otdog Stand  <Q>uit -> ", color.number );
+   printThemedMnemonicText( "<D>efault  <B>rilliant  <C>olorblind\r\n", color.number );
+   printThemedMnemonicText( "<H>otdog Stand  <Q>uit -> ", color.number );
    printAnsiForegroundColorValue( color.text );
 
    switch ( readValidatedMenuKey( COLOR_RESET_MENU_KEYS ) )
@@ -224,6 +225,11 @@ static void presetColorConfig( void )
       case 'd':
          stdPrintf( "Default\r\n" );
          defaultColors( 1 );
+         break;
+
+      case 'b':
+         stdPrintf( "Brilliant\r\n" );
+         brilliantColors();
          break;
 
       case 'c':

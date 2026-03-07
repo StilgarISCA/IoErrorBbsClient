@@ -46,6 +46,34 @@ void defaultColors( int clearall )
    ifzero( color.expressfriendtext ) color.expressfriendtext = 2;
 }
 
+void brilliantColors( void )
+{
+   color.text = 10;
+   color.forum = 11;
+   color.number = 14;
+   color.errorTextColor = 9;
+   color.reserved1 = 0;
+   color.reserved2 = 0;
+   color.reserved3 = 0;
+   color.postdate = 13;
+   color.postname = 14;
+   color.posttext = 10;
+   color.postfrienddate = 13;
+   color.postfriendname = 9;
+   color.postfriendtext = 10;
+   color.anonymous = 11;
+   color.moreprompt = 11;
+   color.reserved4 = 0;
+   color.reserved5 = 0;
+   color.background = 0;
+   color.input1 = 10;
+   color.input2 = 14;
+   color.expresstext = 10;
+   color.expressname = 10;
+   color.expressfriendname = 10;
+   color.expressfriendtext = 10;
+}
+
 void colorblindColors( void )
 {
    color.text = 231;

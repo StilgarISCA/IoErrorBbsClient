@@ -21,6 +21,7 @@ extern void
    ansiTransformExpress P( (char *, size_t)),
    ansiTransformPostHeader P( (char *, size_t, int)),
    arguments P( (int, char **)),
+   brilliantColors P( (void)),
    configBbsRc P( (void)),
    colorConfig P( (void)),
    colorblindColors P( (void)),
