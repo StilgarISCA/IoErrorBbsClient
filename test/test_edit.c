@@ -384,7 +384,7 @@ static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state
    fclose( ptrMessageFile );
 }
 
-static void prompt_WhenInvokedWithUppercasePrint_LoadsExistingMessage( void **state )
+static void prompt_WhenInvokedWithPrintCommand_LoadsExistingMessage( void **state )
 {
    // Arrange
    FILE *ptrMessageFile;
@@ -398,14 +398,14 @@ static void prompt_WhenInvokedWithUppercasePrint_LoadsExistingMessage( void **st
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
    {
-      fail_msg( "tmpfile failed in prompt uppercase print test setup" );
+      fail_msg( "tmpfile failed in prompt print test setup" );
       return;
    }
    fprintf( ptrMessageFile, "Existing draft line\n" );
    fflush( ptrMessageFile );
 
    // Act
-   result = prompt( ptrMessageFile, &previousChar, 'P' );
+   result = prompt( ptrMessageFile, &previousChar, 'p' );
 
    // Assert
    if ( result != 0 )
@@ -423,13 +423,13 @@ static void prompt_WhenInvokedWithUppercasePrint_LoadsExistingMessage( void **st
    if ( fseek( ptrMessageFile, 0L, SEEK_END ) != 0 )
    {
       fclose( ptrMessageFile );
-      fail_msg( "Arrange failed: unable to seek to end of message file after uppercase print path" );
+      fail_msg( "Arrange failed: unable to seek to end of message file after print path" );
       return;
    }
    if ( ftell( ptrMessageFile ) <= 0 )
    {
       fclose( ptrMessageFile );
-      fail_msg( "prompt uppercase print path should preserve existing draft contents" );
+      fail_msg( "prompt print path should preserve existing draft contents" );
       return;
    }
 
@@ -445,7 +445,7 @@ int main( void )
       cmocka_unit_test( checkFile_WhenTabExpansionPushesPast79_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne ),
       cmocka_unit_test( prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne ),
-      cmocka_unit_test( prompt_WhenInvokedWithUppercasePrint_LoadsExistingMessage ),
+      cmocka_unit_test( prompt_WhenInvokedWithPrintCommand_LoadsExistingMessage ),
    };
 
    return cmocka_run_group_tests( aryTests, NULL, NULL );

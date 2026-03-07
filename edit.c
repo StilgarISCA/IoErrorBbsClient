@@ -129,7 +129,7 @@ void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
       }
       else if ( previousChar < 0 )
       {
-         inputChar = 'P';
+         inputChar = 'p';
       }
       else if ( tabcount )
       {
@@ -462,7 +462,6 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             }
             break;
 
-         case 'P':
          case 'p':
             if ( *previousChar == -1 )
             {

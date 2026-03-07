@@ -381,8 +381,8 @@ char *getName( int quitPriv )
             continue;
          }
          if ( inputChar == '\b' || inputChar == CTRL_X ||
-              inputChar == CTRL_W ||
-              inputChar == ' ' || isalpha( inputChar ) ||
+              inputChar == CTRL_W || inputChar == ' ' ||
+              isalpha( inputChar ) ||
               ( isdigit( inputChar ) && quitPriv == 3 ) )
          {
             invalid = 0;
