@@ -1346,6 +1346,58 @@ static void readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values( voi
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesLongNamedColorLine_ParsesWithoutLineTooLongWarning( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for long named-color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color brightgreen brightyellow brightcyan brightred brightgreen brightblue brightmagenta brightmagenta brightcyan brightgreen brightmagenta brightred brightgreen brightyellow brightyellow brightwhite brightwhite 0 brightgreen brightcyan brightgreen brightgreen brightgreen brightgreen\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write long named-color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strstr( aryStdPrintfLog, "too long" ) != NULL )
+   {
+      fail_msg( "long named color lines should not trigger a line-too-long warning; log was: %s",
+                aryStdPrintfLog );
+   }
+   if ( color.text != 10 || color.forum != 11 || color.number != 14 || color.errorTextColor != 9 )
+   {
+      fail_msg( "long named color parsing should still set general colors correctly; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.postdate != 13 || color.postname != 14 || color.posttext != 10 )
+   {
+      fail_msg( "long named color parsing should still set post colors; got date=%d name=%d text=%d",
+                color.postdate, color.postname, color.posttext );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms( void **state )
 {
    // Arrange
@@ -1452,6 +1504,7 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesLongNamedColorLine_ParsesWithoutLineTooLongWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms ),
       cmocka_unit_test( readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults ),
    };

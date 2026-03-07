@@ -43,7 +43,7 @@ static int ctrl( const char *ptrToken )
  * Parses the bbsrc file, setting necessary globals depending on the content of
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
  */
-#define MAX_LINE_LENGTH 255
+#define MAX_LINE_LENGTH 512
 #define FRIEND_COMMAND_PREFIX_LEN 7
 #define FRIEND_NAME_PARSE_LENGTH 19
 #define FRIEND_INFO_OFFSET 30
