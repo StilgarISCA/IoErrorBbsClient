@@ -247,15 +247,6 @@ static void presetColorConfig( void )
    }
 }
 
-static void printAnsiForegroundColor( int colorValue )
-{
-   char aryAnsiSequence[32];
-
-   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                 colorValue );
-   stdPrintf( "%s", aryAnsiSequence );
-}
-
 static void printAnsiBackgroundColor( int colorValue )
 {
    char aryAnsiSequence[32];
@@ -308,63 +299,63 @@ static void printGeneralColorPreview( void )
 {
    printAnsiDisplayState( color.forum, color.background );
    stdPrintf( "Lobby> " );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Enter message\r\n\n" );
-   printAnsiForegroundColor( color.errorTextColor );
+   printAnsiForegroundColorValue( color.errorTextColor );
    stdPrintf( "Only Sysops may post to the lobby\r\n\n" );
-   printAnsiForegroundColor( color.forum );
+   printAnsiForegroundColorValue( color.forum );
    stdPrintf( "Lobby> " );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Goto " );
-   printAnsiForegroundColor( color.forum );
+   printAnsiForegroundColorValue( color.forum );
    stdPrintf( "[Babble]  " );
-   printAnsiForegroundColor( color.number );
+   printAnsiForegroundColorValue( color.number );
    stdPrintf( "150" );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( " messages, " );
-   printAnsiForegroundColor( color.number );
+   printAnsiForegroundColorValue( color.number );
    stdPrintf( "1" );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( " new\r\n" );
 }
 
 static void printPostColorPreview( int dateColor, int textColor,
                                    int nameColor, const char *ptrName )
 {
-   printAnsiForegroundColor( dateColor );
+   printAnsiForegroundColorValue( dateColor );
    stdPrintf( "Jan  1, 2000 11:01" );
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( " from " );
-   printAnsiForegroundColor( nameColor );
+   printAnsiForegroundColorValue( nameColor );
    stdPrintf( "%s", ptrName );
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( "\r\nHi there!\r\n" );
-   printAnsiForegroundColor( color.forum );
+   printAnsiForegroundColorValue( color.forum );
    stdPrintf( "[Lobby> msg #1]\r\n" );
 }
 
 static void printExpressColorPreview( int textColor, int nameColor,
                                       const char *ptrName )
 {
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( "*** Message (#1) from " );
-   printAnsiForegroundColor( nameColor );
+   printAnsiForegroundColorValue( nameColor );
    stdPrintf( "%s", ptrName );
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( " at 11:01 ***\r\n>Hi there!\r\n" );
 }
 
 static void printInputColorPreview( void )
 {
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Message eXpress\r\nRecipient: " );
-   printAnsiForegroundColor( color.input1 );
+   printAnsiForegroundColorValue( color.input1 );
    stdPrintf( "Exam" );
-   printAnsiForegroundColor( color.input2 );
+   printAnsiForegroundColorValue( color.input2 );
    stdPrintf( "ple User\r\n" );
-   printAnsiForegroundColor( color.input1 );
+   printAnsiForegroundColorValue( color.input1 );
    stdPrintf( ">Hi there!\r\n" );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Message received by Example User.\r\n" );
 }
 

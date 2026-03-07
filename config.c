@@ -339,16 +339,9 @@ void configBbsRc( void )
             stdPrintf( "Macros\r\n" );
             for ( ; inputChar != 'q'; )
             {
-               if ( flagsConfiguration.useAnsi )
-               {
-                  printThemedMnemonicText( "\r\n<E>dit  <L>ist  <Q>uit", color.number );
-                  printThemedMnemonicText( "\r\nMacro config -> ", color.forum );
-                  printAnsiForegroundColorValue( color.text );
-               }
-               else
-               {
-                  stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
-               }
+               printThemedMnemonicText( "\r\n<E>dit  <L>ist  <Q>uit", color.number );
+               printThemedMnemonicText( "\r\nMacro config -> ", color.forum );
+               printAnsiForegroundColorValue( color.text );
                inputChar = readValidatedMenuKey( CONFIG_MACRO_MENU_KEYS );
                switch ( inputChar )
                {
