@@ -631,6 +631,53 @@ static void readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns(
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesLegacyIscaIp_RewritesToCanonicalHostname( void **state )
+{
+   char aryPath[PATH_MAX];
+   FILE *ptrConfig;
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for legacy ISCA IP migration test" );
+      return;
+   }
+
+   ptrConfig = fopen( aryPath, "w" );
+   if ( ptrConfig == NULL )
+   {
+      fail_msg( "Arrange failed: unable to open temporary config file" );
+      unlink( aryPath );
+      return;
+   }
+   fputs( "site 206.217.131.27 23\n", ptrConfig );
+   fclose( ptrConfig );
+
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strcmp( aryBbsHost, BBS_HOSTNAME ) != 0 )
+   {
+      fail_msg( "legacy ISCA IP should migrate to %s; got %s", BBS_HOSTNAME, aryBbsHost );
+   }
+   if ( bbsPort != BBS_PORT_NUMBER )
+   {
+      fail_msg( "legacy ISCA IP should keep the default port; got %u", bbsPort );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **state )
 {
    // Arrange
@@ -1390,6 +1437,7 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigIsEmpty_AppliesDefaults ),
       cmocka_unit_test( readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesLegacyIscaIp_RewritesToCanonicalHostname ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete ),

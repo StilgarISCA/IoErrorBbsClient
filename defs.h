@@ -222,7 +222,7 @@ typedef struct
 #define ALLOWED_INPUT_CONTROL_CHARS "\3\4\5\b\n\r\27\30\32"
 
 #define BBS_HOSTNAME "bbs.iscabbs.com"
-#define BBS_IP_ADDRESS "64.198.88.46"
+#define BBS_IP_ADDRESS "206.217.131.27"
 #define BBS_PORT_NUMBER 23
 #define SSL_PORT_NUMBER 992
 

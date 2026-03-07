@@ -370,7 +370,7 @@ void noTitleBar( void )
 
 /*
  * Open a socket connection to the bbs.  Defaults to BBS_HOSTNAME with port BBS_PORT_NUMBER
- * (by default a standard telnet to bbs.isca.uiowa.edu) but can be overridden
+ * (by default a standard telnet to bbs.iscabbs.com) but can be overridden
  * in the bbsrc file if/when the source to the ISCA BBS is released and others
  * start their own on different machines and/or ports.
  */
@@ -485,7 +485,7 @@ void connectBbs( void )
       isSsl = 1;
    }
 #endif
-   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "Ins" );
+   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "In" );
    titleBar();
    fflush( stdout );
 

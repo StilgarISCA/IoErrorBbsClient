@@ -594,11 +594,7 @@ void readBbsRc( void )
                      shouldUseSsl = 1;
                   }
                }
-               if ( !strcmp( aryBbsHost, "128.255.200.69" ) ||
-                    !strcmp( aryBbsHost, "128.255.85.69" ) ||
-                    !strcmp( aryBbsHost, "128.255.95.69" ) ||
-                    !strcmp( aryBbsHost, "128.255.3.160" ) ||
-                    !strcmp( aryBbsHost, "bbs.iscabbs.info" ) )
+               if ( !strcmp( aryBbsHost, "206.217.131.27" ) )
                {
                   snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
                }
