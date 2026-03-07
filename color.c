@@ -30,6 +30,17 @@ typedef struct
    const char *ptrDisplayName;
 } PickerColorOption;
 
+typedef struct
+{
+   int keyChar;
+   const char *ptrLabel;
+   int textColor;
+   int accentColor;
+   int backgroundColor;
+} PresetMenuOption;
+
+static void printAnsiDisplayState( int foregroundColor, int backgroundColor );
+
 static const NamedColorSpec aryNamedColors[] =
    {
       { "brightblack", 8 },
@@ -91,6 +102,13 @@ static const PickerColorOption aryBackgroundPickerOptions[] =
       { '8', 15, "Bright white" },
       { 'd', COLOR_VALUE_DEFAULT, "Default" } };
 
+static const PresetMenuOption aryPresetMenuOptions[] =
+   {
+      { 'd', "Default", 2, 3, 0 },
+      { 'b', "Brilliant", 10, 11, 0 },
+      { 'c', "Colorblind", 231, 75, 16 },
+      { 'h', "Hotdog stand", 220, 196, 16 } };
+
 static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
 {
    while ( *ptrLeft && *ptrRight )
@@ -104,6 +122,16 @@ static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
    }
 
    return *ptrLeft == '\0' && *ptrRight == '\0';
+}
+
+static void printPresetMenuItem( const PresetMenuOption *ptrOption )
+{
+   stdPrintf( " " );
+   printAnsiDisplayState( ptrOption->textColor, ptrOption->backgroundColor );
+   printAnsiForegroundColorValue( ptrOption->accentColor );
+   stdPrintf( "%c", toupper( ptrOption->keyChar ) );
+   printAnsiForegroundColorValue( ptrOption->textColor );
+   stdPrintf( "%s\r\n", ptrOption->ptrLabel + 1 );
 }
 
 int colorValueFromLegacyDigit( int inputChar )
@@ -215,12 +243,17 @@ static void printBackgroundPickerMenu( void )
 
 static void presetColorConfig( void )
 {
+   size_t optionIndex;
+
    stdPrintf( "Color presets\r\n\n" );
-   printThemedMnemonicText( "<D>efault\r\n", color.number );
-   printThemedMnemonicText( "<B>rilliant\r\n", color.number );
-   printThemedMnemonicText( "<C>olorblind\r\n", color.number );
-   printThemedMnemonicText( "<H>otdog Stand\r\n", color.number );
-   printThemedMnemonicText( "<Q>uit\r\n", color.number );
+   for ( optionIndex = 0;
+         optionIndex < sizeof( aryPresetMenuOptions ) / sizeof( aryPresetMenuOptions[0] );
+         optionIndex++ )
+   {
+      printPresetMenuItem( &aryPresetMenuOptions[optionIndex] );
+   }
+   printAnsiDisplayState( color.text, color.background );
+   printThemedMnemonicText( " Quit\r\n", color.number );
    printThemedMnemonicText( "Select preset -> ", color.forum );
    printAnsiForegroundColorValue( color.text );
 
