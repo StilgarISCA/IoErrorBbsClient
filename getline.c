@@ -381,7 +381,7 @@ char *getName( int quitPriv )
             continue;
          }
          if ( inputChar == '\b' || inputChar == CTRL_X ||
-              inputChar == CTRL_W || inputChar == CTRL_R ||
+              inputChar == CTRL_W ||
               inputChar == ' ' || isalpha( inputChar ) ||
               ( isdigit( inputChar ) && quitPriv == 3 ) )
          {
@@ -390,12 +390,6 @@ char *getName( int quitPriv )
          else
          {
             handleInvalidInput( &invalid );
-            continue;
-         }
-         if ( inputChar == CTRL_R )
-         {
-            *ptrCursor = 0;
-            printf( "\r\n%s", aryNameBuffer );
             continue;
          }
          do
@@ -581,8 +575,7 @@ void getString( int length, char *result, int line )
          break;
       }
       if ( inputChar < ' ' && inputChar != '\b' &&
-           inputChar != CTRL_X && inputChar != CTRL_W &&
-           inputChar != CTRL_R )
+           inputChar != CTRL_X && inputChar != CTRL_W )
       {
          handleInvalidInput( &invalid );
          continue;
@@ -590,15 +583,6 @@ void getString( int length, char *result, int line )
       else
       {
          invalid = 0;
-      }
-      if ( inputChar == CTRL_R )
-      {
-         *ptrCursor = 0;
-         if ( !hidden )
-         {
-            printf( "\r\n%s", result );
-         }
-         continue;
       }
       if ( inputChar == '\b' || inputChar == CTRL_X )
       {

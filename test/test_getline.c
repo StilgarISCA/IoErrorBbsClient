@@ -339,6 +339,27 @@ static void getString_WhenRepeatedInvalidControlInputReceived_FlushesInput( void
    }
 }
 
+static void getString_WhenCtrlRReceived_IgnoresItAsInvalidInput( void **state )
+{
+   // Arrange
+   char aryResult[64];
+   const int aryKeys[] = { 'A', CTRL_R, 'B', '\n' };
+
+   (void)state;
+
+   resetTracking();
+   setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
+
+   // Act
+   getString( 20, aryResult, 0 );
+
+   // Assert
+   if ( strcmp( aryResult, "AB" ) != 0 )
+   {
+      fail_msg( "getString should ignore CTRL_R and keep surrounding text; got '%s'", aryResult );
+   }
+}
+
 static void getName_WhenAutocompleteEnabled_ExpandsUniqueName( void **state )
 {
    // Arrange
@@ -402,6 +423,7 @@ int main( void )
       cmocka_unit_test( getString_WhenCtrlWUsed_RemovesPreviousWord ),
       cmocka_unit_test( getString_WhenHiddenInputUsed_CapturesDotsInsteadOfPlainText ),
       cmocka_unit_test( getString_WhenRepeatedInvalidControlInputReceived_FlushesInput ),
+      cmocka_unit_test( getString_WhenCtrlRReceived_IgnoresItAsInvalidInput ),
       cmocka_unit_test( getName_WhenAutocompleteEnabled_ExpandsUniqueName ),
       cmocka_unit_test( getName_WhenAutocompleteDisabled_LeavesTypedPrefixUnchanged ),
    };
