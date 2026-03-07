@@ -216,8 +216,12 @@ static void printBackgroundPickerMenu( void )
 static void presetColorConfig( void )
 {
    stdPrintf( "Color presets\r\n\n" );
-   printThemedMnemonicText( "<D>efault  <B>rilliant  <C>olorblind\r\n", color.number );
-   printThemedMnemonicText( "<H>otdog Stand  <Q>uit -> ", color.number );
+   printThemedMnemonicText( "<D>efault\r\n", color.number );
+   printThemedMnemonicText( "<B>rilliant\r\n", color.number );
+   printThemedMnemonicText( "<C>olorblind\r\n", color.number );
+   printThemedMnemonicText( "<H>otdog Stand\r\n", color.number );
+   printThemedMnemonicText( "<Q>uit\r\n", color.number );
+   printThemedMnemonicText( "Select preset -> ", color.forum );
    printAnsiForegroundColorValue( color.text );
 
    switch ( readValidatedMenuKey( COLOR_RESET_MENU_KEYS ) )
