@@ -204,9 +204,19 @@ void configBbsRc( void )
 
          case 'o':
             stdPrintf( "Options\r\n" );
+            stdPrintf( "Use screen reader friendly mode? (%s) -> ",
+                       flagsConfiguration.isScreenReaderModeEnabled ? "Yes" : "No" );
+            flagsConfiguration.isScreenReaderModeEnabled =
+               (unsigned int)yesNoDefault( flagsConfiguration.isScreenReaderModeEnabled );
+            flagsConfiguration.hasScreenReaderModeSetting = 1;
+            if ( flagsConfiguration.isScreenReaderModeEnabled )
+            {
+               flagsConfiguration.shouldEnableClickableUrls = 0;
+               flagsConfiguration.shouldEnableNameAutocomplete = 0;
+            }
             if ( !isLoginShell )
             {
-               stdPrintf( "\r\nEnter name of local editor to use (%s) -> ", aryEditor );
+               stdPrintf( "Enter name of local editor to use (%s) -> ", aryEditor );
                getString( 72, aryMenuLine, -999 );
                if ( *aryMenuLine )
                {
@@ -285,10 +295,6 @@ void configBbsRc( void )
             stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
                        flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
             flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
-            stdPrintf( "Use screen reader friendly mode? (%s) -> ",
-                       flagsConfiguration.isScreenReaderModeEnabled ? "Yes" : "No" );
-            flagsConfiguration.isScreenReaderModeEnabled = (unsigned int)yesNoDefault( flagsConfiguration.isScreenReaderModeEnabled );
-            flagsConfiguration.hasScreenReaderModeSetting = 1;
             stdPrintf( "Autocomplete username in recipient prompts? (%s) -> ",
                        flagsConfiguration.shouldEnableNameAutocomplete ? "Yes" : "No" );
             flagsConfiguration.shouldEnableNameAutocomplete =

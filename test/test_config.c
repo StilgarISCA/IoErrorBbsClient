@@ -598,7 +598,7 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
 {
    // Arrange
    const int aryMenuKeys[] = { 'o', 'q' };
-   const int aryYesNoAnswers[] = { 0, 0, 1, 1, 1, 0 };
+   const int aryYesNoAnswers[] = { 1, 0, 1, 0 };
 
    (void)state;
    resetState();
@@ -654,10 +654,16 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
       fail_msg( "configBbsRc should mark screen reader mode as configured after toggling it" );
       return;
    }
+   if ( flagsConfiguration.shouldEnableClickableUrls )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should seed clickable URL summaries to no when screen reader mode is enabled and the user accepts the default" );
+      return;
+   }
    if ( flagsConfiguration.shouldEnableNameAutocomplete )
    {
       cleanupWriteBbsRcFixture();
-      fail_msg( "configBbsRc should update the autocomplete option when the user answers no" );
+      fail_msg( "configBbsRc should seed autocomplete to no when screen reader mode is enabled and the user accepts the default" );
       return;
    }
    if ( !flagsConfiguration.hasNameAutocompleteSetting )
@@ -672,10 +678,24 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
       fail_msg( "configBbsRc should display the screen reader mode option in the Options menu" );
       return;
    }
+   if ( strstr( aryStdPrintfLog,
+                "Append OSC 8 URL summaries to posts & mail? (No) -> " ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should show the screen reader default of No for clickable URL summaries after enabling screen reader mode" );
+      return;
+   }
    if ( strstr( aryStdPrintfLog, "Autocomplete username in recipient prompts?" ) == NULL )
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "configBbsRc should display the autocomplete option in the Options menu" );
+      return;
+   }
+   if ( strstr( aryStdPrintfLog,
+                "Autocomplete username in recipient prompts? (No) -> " ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should show the screen reader default of No for autocomplete after enabling screen reader mode" );
       return;
    }
 
