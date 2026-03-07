@@ -7,7 +7,7 @@
 #include "defs.h"
 #include "ext.h"
 
-static const char *COLOR_MAIN_MENU_KEYS = "gipsoxq \n";
+static const char *COLOR_MAIN_MENU_KEYS = "pgisoxq \n";
 static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
 static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
 static const char *COLOR_POST_MENU_KEYS = "dntq \n";
@@ -559,7 +559,7 @@ void colorConfig( void )
    }
    while ( true )
    {
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<G>eneral  <I>nput  <P>osts  pre<S>ets  <O>ptions  <X>press  <Q>uit" );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<P>resets  <G>eneral  <I>nput  po<S>ts  <O>ptions  <X>press  <Q>uit" );
       printThemedMnemonicText( aryPromptText, color.number );
       printThemedMnemonicText( "\r\nColor config -> ", color.forum );
       printAnsiForegroundColorValue( color.text );
@@ -582,12 +582,12 @@ void colorConfig( void )
             break;
 
          case 'p':
-            stdPrintf( "Post colors\r\n\n" );
-            postColorConfig();
+            presetColorConfig();
             break;
 
          case 's':
-            presetColorConfig();
+            stdPrintf( "Post colors\r\n\n" );
+            postColorConfig();
             break;
 
          case 'x':
