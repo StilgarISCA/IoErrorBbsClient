@@ -455,7 +455,7 @@ static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
    }
    if ( color.postdate != 75 || color.postfrienddate != 25 ||
         color.postname != 214 || color.postfriendname != 175 ||
-        color.input2 != 36 || color.moreprompt != 221 ||
+        color.input2 != 214 || color.moreprompt != 221 ||
         color.expressname != 214 || color.expressfriendname != 175 )
    {
       fail_msg( "colorblindColors should map post, input, and express roles onto the preset palette; got postdate=%d frienddate=%d postname=%d friendname=%d input2=%d moreprompt=%d expressname=%d expressfriendname=%d",

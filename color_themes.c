@@ -67,7 +67,7 @@ void colorblindColors( void )
    color.reserved5 = 16;
    color.background = 16;
    color.input1 = 231;
-   color.input2 = 36;
+   color.input2 = 214;
    color.expresstext = 231;
    color.expressname = 214;
    color.expressfriendname = 175;
