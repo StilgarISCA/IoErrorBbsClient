@@ -68,6 +68,18 @@ void promptForScreenReaderModeIfUnset( void )
    flagsConfiguration.hasScreenReaderModeSetting = 1;
 }
 
+void defaultNameAutocompleteIfUnset( void )
+{
+   if ( flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      return;
+   }
+
+   flagsConfiguration.shouldEnableNameAutocomplete =
+      (unsigned int)!flagsConfiguration.isScreenReaderModeEnabled;
+   flagsConfiguration.hasNameAutocompleteSetting = 1;
+}
+
 /*
  * First time setup borrowed from Client 9 with permission.
  */
@@ -131,6 +143,7 @@ void setup( int newVersion )
       sInfo( aryUrlInfo, "Websites" );
    }
    promptForScreenReaderModeIfUnset();
+   defaultNameAutocompleteIfUnset();
    if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
    {
       configBbsRc();
@@ -276,6 +289,11 @@ void configBbsRc( void )
                        flagsConfiguration.isScreenReaderModeEnabled ? "Yes" : "No" );
             flagsConfiguration.isScreenReaderModeEnabled = (unsigned int)yesNoDefault( flagsConfiguration.isScreenReaderModeEnabled );
             flagsConfiguration.hasScreenReaderModeSetting = 1;
+            stdPrintf( "Autocomplete username in recipient prompts? (%s) -> ",
+                       flagsConfiguration.shouldEnableNameAutocomplete ? "Yes" : "No" );
+            flagsConfiguration.shouldEnableNameAutocomplete =
+               (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableNameAutocomplete );
+            flagsConfiguration.hasNameAutocompleteSetting = 1;
             break;
 
          case 'h':
@@ -496,6 +514,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
    fprintf( ptrBbsRc, "screenreader %d\n", flagsConfiguration.isScreenReaderModeEnabled ? 1 : 0 );
+   fprintf( ptrBbsRc, "autocomplete %d\n", flagsConfiguration.shouldEnableNameAutocomplete ? 1 : 0 );
    if ( *aryAutoName )
    {
       fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );

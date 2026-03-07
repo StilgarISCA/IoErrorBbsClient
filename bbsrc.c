@@ -153,6 +153,7 @@ typedef enum
    BBRC_CMD_CLICKABLE_URLS,
    BBRC_CMD_COLOR,
    BBRC_CMD_COMMANDKEY,
+   BBRC_CMD_AUTOCOMPLETE,
    BBRC_CMD_EDITOR,
    BBRC_CMD_ENEMY,
    BBRC_CMD_FRIEND,
@@ -200,6 +201,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
          { "clickableurls", 13, BBRC_CMD_CLICKABLE_URLS },
          { "screenreader", 12, BBRC_CMD_SCREENREADER },
+         { "autocomplete", 12, BBRC_CMD_AUTOCOMPLETE },
          { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
@@ -310,6 +312,8 @@ void readBbsRc( void )
    flagsConfiguration.shouldEnableClickableUrls = 1;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
    flagsConfiguration.hasScreenReaderModeSetting = 0;
+   flagsConfiguration.shouldEnableNameAutocomplete = 1;
+   flagsConfiguration.hasNameAutocompleteSetting = 0;
 
    defaultColors( 1 );
 
@@ -458,6 +462,48 @@ void readBbsRc( void )
                   else
                   {
                      stdPrintf( "Invalid definition of screen reader option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
+         case BBRC_CMD_AUTOCOMPLETE:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.shouldEnableNameAutocomplete = 1;
+                  flagsConfiguration.hasNameAutocompleteSetting = 1;
+               }
+               else
+               {
+                  const char *ptrAutocompleteValue;
+
+                  ptrAutocompleteValue = ptrSpace + 1;
+                  while ( *ptrAutocompleteValue != '\0' && isspace( (unsigned char)*ptrAutocompleteValue ) )
+                  {
+                     ptrAutocompleteValue++;
+                  }
+                  if ( *ptrAutocompleteValue == '\0' )
+                  {
+                     flagsConfiguration.shouldEnableNameAutocomplete = 1;
+                     flagsConfiguration.hasNameAutocompleteSetting = 1;
+                  }
+                  else if ( *ptrAutocompleteValue == '0' )
+                  {
+                     flagsConfiguration.shouldEnableNameAutocomplete = 0;
+                     flagsConfiguration.hasNameAutocompleteSetting = 1;
+                  }
+                  else if ( *ptrAutocompleteValue == '1' )
+                  {
+                     flagsConfiguration.shouldEnableNameAutocomplete = 1;
+                     flagsConfiguration.hasNameAutocompleteSetting = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of autocomplete option ignored.\n" );
                   }
                }
                break;
@@ -1044,6 +1090,11 @@ void readBbsRc( void )
    else if ( !flagsConfiguration.hasScreenReaderModeSetting )
    {
       promptForScreenReaderModeIfUnset();
+      shouldRewriteBbsRc = true;
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      defaultNameAutocompleteIfUnset();
       shouldRewriteBbsRc = true;
    }
    if ( shouldShowBrowserMigrationNotice )

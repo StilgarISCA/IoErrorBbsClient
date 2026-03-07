@@ -248,21 +248,23 @@ typedef struct
 #define NAWS_ROWS_MAX 110
 typedef struct
 {
-   unsigned int isPosting : 1;                  /* true if aryUser is currently posting */
-   unsigned int isLastSave : 1;                 /* true if last time aryUser edited they saved */
-   unsigned int shouldCheckExpress : 1;         /* true if waiting to check BBS for X's */
-   unsigned int isConfigMode : 1;               /* true if we are in bbsrc config funcs */
-   unsigned int useAnsi : 1;                    /* true if BBS is in ANSI color mode */
-   unsigned int useBold : 1;                    /* true if using bold in ANSI color mode */
-   unsigned int shouldDisableBold : 1;          /* true if we need to force bold ANSI off */
-   unsigned int isMorePromptActive : 1;         /* true if we are inside a MORE prompt */
-   unsigned int shouldSquelchPost : 1;          /* true if we should squelch enemy posts */
-   unsigned int shouldSquelchExpress : 1;       /* true if we should squelch enemy express */
-   unsigned int shouldAutoAnswerAnsiPrompt : 1; /* true if we automatically answer ANSI ? */
-   unsigned int shouldUseTcpKeepalive : 1;      /* true if TCP keepalive probes are enabled */
-   unsigned int shouldEnableClickableUrls : 1;  /* true if OSC-8 clickable URL output is enabled */
-   unsigned int isScreenReaderModeEnabled : 1;  /* true if screen reader friendly mode is enabled */
-   unsigned int hasScreenReaderModeSetting : 1; /* true if screen reader mode was set in .bbsrc */
+   unsigned int isPosting : 1;                    /* true if aryUser is currently posting */
+   unsigned int isLastSave : 1;                   /* true if last time aryUser edited they saved */
+   unsigned int shouldCheckExpress : 1;           /* true if waiting to check BBS for X's */
+   unsigned int isConfigMode : 1;                 /* true if we are in bbsrc config funcs */
+   unsigned int useAnsi : 1;                      /* true if BBS is in ANSI color mode */
+   unsigned int useBold : 1;                      /* true if using bold in ANSI color mode */
+   unsigned int shouldDisableBold : 1;            /* true if we need to force bold ANSI off */
+   unsigned int isMorePromptActive : 1;           /* true if we are inside a MORE prompt */
+   unsigned int shouldSquelchPost : 1;            /* true if we should squelch enemy posts */
+   unsigned int shouldSquelchExpress : 1;         /* true if we should squelch enemy express */
+   unsigned int shouldAutoAnswerAnsiPrompt : 1;   /* true if we automatically answer ANSI ? */
+   unsigned int shouldUseTcpKeepalive : 1;        /* true if TCP keepalive probes are enabled */
+   unsigned int shouldEnableClickableUrls : 1;    /* true if OSC-8 clickable URL output is enabled */
+   unsigned int isScreenReaderModeEnabled : 1;    /* true if screen reader friendly mode is enabled */
+   unsigned int hasScreenReaderModeSetting : 1;   /* true if screen reader mode was set in .bbsrc */
+   unsigned int shouldEnableNameAutocomplete : 1; /* true if name-entry autocomplete is enabled */
+   unsigned int hasNameAutocompleteSetting : 1;   /* true if name autocomplete was set in .bbsrc */
 } Flags;
 
 typedef struct

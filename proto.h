@@ -31,6 +31,7 @@ extern void
    continuedPostHelper P( (void)),
    copyright P( (void)),
    deinitialize P( (void)),
+   defaultNameAutocompleteIfUnset P( (void)),
    defaultColors P( (int)),
    editUsers P( (slist *, int ( *findfn )( const void *, const void * ), const char *)),
    expressColorConfig P( (void)),

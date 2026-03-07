@@ -571,6 +571,18 @@ static void setup_WhenScreenReaderModeIsUnset_PromptsAndStoresAnswer( void **sta
       fail_msg( "setup should store the user's screen reader mode choice when they answer yes" );
       return;
    }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "setup should mark the autocomplete setting as present after choosing a screen reader mode" );
+      return;
+   }
+   if ( flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "setup should default autocomplete off when screen reader mode is enabled" );
+      return;
+   }
    if ( sPromptCallCount < 2 )
    {
       cleanupWriteBbsRcFixture();
@@ -586,7 +598,7 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
 {
    // Arrange
    const int aryMenuKeys[] = { 'o', 'q' };
-   const int aryYesNoAnswers[] = { 0, 0, 1, 1, 1 };
+   const int aryYesNoAnswers[] = { 0, 0, 1, 1, 1, 0 };
 
    (void)state;
    resetState();
@@ -620,6 +632,8 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
    flagsConfiguration.shouldEnableClickableUrls = 1;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
    flagsConfiguration.hasScreenReaderModeSetting = 0;
+   flagsConfiguration.shouldEnableNameAutocomplete = 1;
+   flagsConfiguration.hasNameAutocompleteSetting = 0;
 
    setGetKeySequence( aryMenuKeys, sizeof( aryMenuKeys ) / sizeof( aryMenuKeys[0] ) );
    setYesNoSequence( aryYesNoAnswers, sizeof( aryYesNoAnswers ) / sizeof( aryYesNoAnswers[0] ) );
@@ -640,10 +654,28 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
       fail_msg( "configBbsRc should mark screen reader mode as configured after toggling it" );
       return;
    }
+   if ( flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should update the autocomplete option when the user answers no" );
+      return;
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should mark autocomplete as configured after toggling it" );
+      return;
+   }
    if ( strstr( aryStdPrintfLog, "Use screen reader friendly mode?" ) == NULL )
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "configBbsRc should display the screen reader mode option in the Options menu" );
+      return;
+   }
+   if ( strstr( aryStdPrintfLog, "Autocomplete username in recipient prompts?" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should display the autocomplete option in the Options menu" );
       return;
    }
 
@@ -705,6 +737,7 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    flagsConfiguration.shouldUseTcpKeepalive = true;
    flagsConfiguration.shouldEnableClickableUrls = true;
    flagsConfiguration.isScreenReaderModeEnabled = true;
+   flagsConfiguration.shouldEnableNameAutocomplete = false;
 
    // Act
    writeBbsRc();
@@ -732,6 +765,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'screenreader 1' when screen reader mode is enabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\nautocomplete 0\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'autocomplete 0' when autocomplete is disabled; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\ncolor brightgreen brightyellow brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
@@ -805,6 +844,7 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    flagsConfiguration.shouldUseTcpKeepalive = false;
    flagsConfiguration.shouldEnableClickableUrls = false;
    flagsConfiguration.isScreenReaderModeEnabled = false;
+   flagsConfiguration.shouldEnableNameAutocomplete = true;
 
    // Act
    writeBbsRc();
@@ -832,6 +872,12 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'screenreader 0' when screen reader mode is disabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\nautocomplete 1\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'autocomplete 1' when autocomplete is enabled; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\ncolor brightgreen 123 brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )

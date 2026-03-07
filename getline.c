@@ -443,7 +443,8 @@ char *getName( int quitPriv )
                }
                *ptrCursor++ = (char)inputChar;
                putchar( inputChar );
-               if ( quitPriv == 2 || quitPriv == -999 )
+               if ( flagsConfiguration.shouldEnableNameAutocomplete &&
+                    ( quitPriv == 2 || quitPriv == -999 ) )
                {
                   if ( smartName( aryNameBuffer, ptrCursor ) )
                   {

@@ -21,6 +21,7 @@ static int setupVersionArg;
 static int perrorCallCount;
 static int writeBbsRcCallCount;
 static int promptForScreenReaderModeCallCount;
+static int defaultNameAutocompleteIfUnsetCallCount;
 static char aryLastPerrorMessage[128];
 static char aryLastPerrorHeading[64];
 static char aryStdPrintfLog[16384];
@@ -32,6 +33,7 @@ static void resetTracking( void )
    perrorCallCount = 0;
    writeBbsRcCallCount = 0;
    promptForScreenReaderModeCallCount = 0;
+   defaultNameAutocompleteIfUnsetCallCount = 0;
    aryLastPerrorMessage[0] = '\0';
    aryLastPerrorHeading[0] = '\0';
    aryStdPrintfLog[0] = '\0';
@@ -243,6 +245,14 @@ void promptForScreenReaderModeIfUnset( void )
    promptForScreenReaderModeCallCount++;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
    flagsConfiguration.hasScreenReaderModeSetting = 1;
+}
+
+void defaultNameAutocompleteIfUnset( void )
+{
+   defaultNameAutocompleteIfUnsetCallCount++;
+   flagsConfiguration.shouldEnableNameAutocomplete =
+      (unsigned int)!flagsConfiguration.isScreenReaderModeEnabled;
+   flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
 void sPerror( const char *message, const char *heading )
@@ -712,6 +722,51 @@ static void readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode( voi
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for autocomplete=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "autocomplete 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for autocomplete=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      fail_msg( "autocomplete 0 should disable name autocomplete" );
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      fail_msg( "autocomplete 0 should mark the setting as present" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites( void **state )
 {
    // Arrange
@@ -757,6 +812,74 @@ static void readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites( v
    if ( !flagsConfiguration.hasScreenReaderModeSetting )
    {
       fail_msg( "prompt helper should mark the screen reader setting as present" );
+   }
+   if ( defaultNameAutocompleteIfUnsetCallCount != 1 )
+   {
+      fail_msg( "missing autocomplete setting should trigger one default helper call; got %d",
+                defaultNameAutocompleteIfUnsetCallCount );
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      fail_msg( "autocomplete default helper should mark the setting as present" );
+   }
+   if ( !flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      fail_msg( "autocomplete should default on when screen reader mode is disabled" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenAutocompleteMissingAndScreenReaderEnabled_DefaultsAutocompleteOff( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for missing autocomplete test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "screenreader 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for missing autocomplete test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( defaultNameAutocompleteIfUnsetCallCount != 1 )
+   {
+      fail_msg( "missing autocomplete setting should trigger one default helper call; got %d",
+                defaultNameAutocompleteIfUnsetCallCount );
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      fail_msg( "missing autocomplete setting should be marked present after defaulting" );
+   }
+   if ( flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      fail_msg( "autocomplete should default off when screen reader mode is enabled" );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "missing autocomplete setting should rewrite .bbsrc once; got %d",
+                writeBbsRcCallCount );
    }
 
    cleanupReadState();
@@ -1269,7 +1392,9 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete ),
       cmocka_unit_test( readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites ),
+      cmocka_unit_test( readBbsRc_WhenAutocompleteMissingAndScreenReaderEnabled_DefaultsAutocompleteOff ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault ),
