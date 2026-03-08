@@ -313,6 +313,34 @@ void openTmpFile( void )
    }
 }
 
+static bool terminalSupportsTitleBarUpdates( void )
+{
+   const char *ptrTerm;
+   const char *ptrTermProgram;
+
+   ptrTerm = getenv( "TERM" );
+   ptrTermProgram = getenv( "TERM_PROGRAM" );
+
+   if ( ptrTermProgram != NULL &&
+        ( strcmp( ptrTermProgram, "Apple_Terminal" ) == 0 ||
+          strcmp( ptrTermProgram, "iTerm.app" ) == 0 ) )
+   {
+      return true;
+   }
+   if ( ptrTerm == NULL )
+   {
+      return false;
+   }
+   if ( strncmp( ptrTerm, "xterm", 5 ) == 0 ||
+        strncmp( ptrTerm, "screen", 6 ) == 0 ||
+        strncmp( ptrTerm, "tmux", 4 ) == 0 )
+   {
+      return true;
+   }
+
+   return false;
+}
+
 void titleBar( void )
 {
    char aryTitle[80];
@@ -326,16 +354,10 @@ void titleBar( void )
    snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
              aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
              VERSION, "Unix" );
-   /* xterm */
-   if ( !strcmp( getenv( "TERM" ), "xterm" ) )
+   if ( terminalSupportsTitleBarUpdates() )
    {
       printf( "\033]0;%s\007", aryTitle );
-   }
-   /* NeXT */
-   if ( getenv( "STUART" ) )
-   {
-      printf( "\033]1;%s\\", aryTitle );
-      printf( "\033]2;%s\\", aryTitle );
+      fflush( stdout );
    }
    return;
 }
@@ -348,21 +370,11 @@ void noTitleBar( void )
       return;
    }
 
-   /* xterm */
-   if ( !strcmp( getenv( "TERM" ), "xterm" ) )
+   if ( terminalSupportsTitleBarUpdates() )
    {
-      printf( "\033]0;xterm\007" );
+      printf( "\033]0;\007" );
+      fflush( stdout );
    }
-   /* NeXT */
-   if ( getenv( "STUART" ) )
-   {
-      struct winsize ws;
-
-      ioctl( 0, TIOCGWINSZ, (char *)&ws );
-      printf( "\033]1; csh (%s)\033\\", rindex( (char *)ttyname( 0 ), '/' ) + 1 );
-      printf( "\033]2; (%s) %dx%d\033\\", rindex( (char *)ttyname( 0 ), '/' ) + 1, ws.ws_col, ws.ws_row );
-   }
-   fflush( stdout );
    return;
 }
 
