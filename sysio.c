@@ -107,7 +107,10 @@ char *stripAnsi( char *ptrText, size_t bufferSize )
  */
 int stdPuts( const char *ptrText )
 {
-   printf( "%s", ptrText );
+   if ( fputs( ptrText, stdout ) == EOF )
+   {
+      fatalPerror( "stdPuts", "Local error" );
+   }
    fflush( stdout );
    capPuts( ptrText );
    return 1;
@@ -118,9 +121,14 @@ int capPuts( const char *ptrText )
    if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive )
    {
       char aryBuffer[BUFSIZ];
+
       snprintf( aryBuffer, sizeof( aryBuffer ), "%s", ptrText );
       stripAnsi( aryBuffer, sizeof( aryBuffer ) );
-      fprintf( tempFile, "%s", aryBuffer );
+      if ( fputs( aryBuffer, tempFile ) == EOF )
+      {
+         tempFileError();
+         return 1;
+      }
       fflush( tempFile );
    }
    return 1;
@@ -128,12 +136,18 @@ int capPuts( const char *ptrText )
 
 int netPuts( const char *ptrText )
 {
-   const char *ptrRead;
+   size_t textLength;
 
-   for ( ptrRead = ptrText; *ptrRead; ptrRead++ )
+   textLength = strlen( ptrText );
+   if ( textLength == 0 )
    {
-      netput( *ptrRead );
+      return 1;
    }
+   if ( fwrite( ptrText, sizeof( char ), textLength, netOutputFile ) != textLength )
+   {
+      fatalPerror( "netPuts", "Network error" );
+   }
+
    return 1;
 }
 
