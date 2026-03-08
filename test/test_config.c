@@ -609,7 +609,7 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
 {
    // Arrange
    const int aryMenuKeys[] = { 'o', 'q' };
-   const int aryYesNoAnswers[] = { 1, 0, 1, 0 };
+   const int aryYesNoAnswers[] = { 1, 0, 1, 1, 0 };
 
    (void)state;
    resetState();
@@ -641,6 +641,8 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
    flagsConfiguration.useAnsi = 0;
    flagsConfiguration.shouldUseTcpKeepalive = 1;
    flagsConfiguration.shouldEnableClickableUrls = 1;
+   flagsConfiguration.shouldEnableTitleBar = 1;
+   flagsConfiguration.hasTitleBarSetting = 0;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
    flagsConfiguration.hasScreenReaderModeSetting = 0;
    flagsConfiguration.shouldEnableNameAutocomplete = 1;
@@ -687,6 +689,13 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "configBbsRc should display the screen reader mode option in the Options menu" );
+      return;
+   }
+   if ( strstr( aryStdPrintfLog,
+                "Update terminal title bar? (Yes) -> " ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should display the title bar option in the Options menu" );
       return;
    }
    if ( strstr( aryStdPrintfLog,
@@ -767,6 +776,7 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    color.expressfriendname = 13;
    flagsConfiguration.shouldUseTcpKeepalive = true;
    flagsConfiguration.shouldEnableClickableUrls = true;
+   flagsConfiguration.shouldEnableTitleBar = true;
    flagsConfiguration.isScreenReaderModeEnabled = true;
    flagsConfiguration.shouldEnableNameAutocomplete = false;
 
@@ -790,6 +800,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 1' when clickable URLs are enabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\ntitlebar 1\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'titlebar 1' when title bar updates are enabled; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\nscreenreader 1\n" ) == NULL )
@@ -874,6 +890,7 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    color.expressfriendname = 13;
    flagsConfiguration.shouldUseTcpKeepalive = false;
    flagsConfiguration.shouldEnableClickableUrls = false;
+   flagsConfiguration.shouldEnableTitleBar = false;
    flagsConfiguration.isScreenReaderModeEnabled = false;
    flagsConfiguration.shouldEnableNameAutocomplete = true;
 
@@ -897,6 +914,12 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    {
       cleanupWriteBbsRcFixture();
       fail_msg( "writeBbsRc should emit 'clickableurls 0' when clickable URLs are disabled; output was:\n%s", aryOutput );
+      return;
+   }
+   if ( strstr( aryOutput, "\ntitlebar 0\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'titlebar 0' when title bar updates are disabled; output was:\n%s", aryOutput );
       return;
    }
    if ( strstr( aryOutput, "\nscreenreader 0\n" ) == NULL )

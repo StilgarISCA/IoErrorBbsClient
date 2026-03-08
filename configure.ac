@@ -11,7 +11,6 @@ AC_ARG_WITH(ssl,
    	fi
    ]
 )
-AC_ARG_ENABLE(titlebar, [  --disable-titlebar      disable xterm/NeXT titlebar (default is enabled)])
 AC_ARG_ENABLE(save-password, [  --enable-save-password  allow passwords to be saved])
 
 dnl Checks for programs.
@@ -37,7 +36,7 @@ AC_CHECK_LIB(util, main)
 
 PLATFORM_OBJS="unix.o"
 
-# Some target-specific stuff
+#Some target - specific stuff
 case "$host_os" in
 netbsd*)
    need_dash_r=1;
@@ -48,7 +47,7 @@ solaris*)
 esac
 
 if test x$with_ssl = xyes; then
-   # The big search for OpenSSL
+#The big search for OpenSSL
    saved_LIBS="$LIBS"
    saved_LDFLAGS="$LDFLAGS"
    saved_CFLAGS="$CFLAGS"
@@ -61,13 +60,13 @@ if test x$with_ssl = xyes; then
    		LDFLAGS="$saved_LDFLAGS"
    		LIBS="$saved_LIBS -lssl -lcrypto"
 
-   		# Skip directories if they don't exist
+#Skip directories if they don't exist
    		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
    			continue;
    		fi
    		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
-   			# Try to use $ssldir/lib if it exists, otherwise
-   			# $ssldir
+#Try to use $ssldir / lib if it exists, otherwise
+#$ssldir
    			if test -d "$ssldir/lib" ; then
    				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
    				if test ! -z "$need_dash_r" ; then
@@ -79,8 +78,8 @@ if test x$with_ssl = xyes; then
    					LDFLAGS="-R$ssldir $LDFLAGS"
    				fi
    			fi
-   			# Try to use $ssldir/include if it exists,
-   			# otherwise $ssldir
+#Try to use $ssldir / include if it exists,
+#otherwise $ssldir
    			if test -d "$ssldir/include" ; then
    				CFLAGS="-I$ssldir/include $saved_CFLAGS"
    			else
@@ -88,9 +87,9 @@ if test x$with_ssl = xyes; then
    			fi
    		fi
 
-   		# Basic test to check for compatible version and
-   		# correct linking *does not* test for RSA - that
-   		# comes later.
+#Basic test to check for compatible version and
+#correct linking *does not *test for RSA - that
+#comes later.
    		AC_RUN_IFELSE(
    			[AC_LANG_SOURCE([[
 #include <string.h>
@@ -137,8 +136,8 @@ if test "x$ac_cv_openssldir" != "xno" ; then
    dnl Need to recover ssldir - test above runs in subshell
    ssldir=$ac_cv_openssldir
    if test ! -z "$ssldir" -a "x$ssldir" != "x/usr" -a "x$ssldir" != "x(system)"; then
-   	# Try to use $ssldir/lib if it exists, otherwise
-   	# $ssldir
+#Try to use $ssldir / lib if it exists, otherwise
+#$ssldir
    	if test -d "$ssldir/lib" ; then
    		LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
    		if test ! -z "$need_dash_r" ; then
@@ -150,8 +149,8 @@ if test "x$ac_cv_openssldir" != "xno" ; then
    			LDFLAGS="-R$ssldir $LDFLAGS"
    		fi
    	fi
-   	# Try to use $ssldir/include if it exists, otherwise
-   	# $ssldir
+#Try to use $ssldir / include if it exists, otherwise
+#$ssldir
    	if test -d "$ssldir/include" ; then
    		CFLAGS="-I$ssldir/include $saved_CFLAGS"
    	else
@@ -163,10 +162,6 @@ fi
 
 if test x$enable_save_password = xyes; then
    AC_DEFINE(ENABLE_SAVE_PASSWORD,[1],[Define this if you want to enable saving passwords])
-fi
-
-if test x$enable_titlebar != xno; then
-   AC_DEFINE(ENABLE_TITLEBAR,[1],[Define this if you want to use xterm/NeXT titlebars])
 fi
 
 dnl Checks for header files.

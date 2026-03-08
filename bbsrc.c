@@ -168,6 +168,7 @@ typedef enum
    BBRC_CMD_SQUELCH,
    BBRC_CMD_SUSP,
    BBRC_CMD_TCP_KEEPALIVE,
+   BBRC_CMD_TITLEBAR,
    BBRC_CMD_URL,
    BBRC_CMD_SCREENREADER,
    BBRC_CMD_VERSION,
@@ -200,6 +201,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "squelch ", 8, BBRC_CMD_SQUELCH },
          { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
          { "clickableurls", 13, BBRC_CMD_CLICKABLE_URLS },
+         { "titlebar", 8, BBRC_CMD_TITLEBAR },
          { "screenreader", 12, BBRC_CMD_SCREENREADER },
          { "autocomplete", 12, BBRC_CMD_AUTOCOMPLETE },
          { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
@@ -310,6 +312,8 @@ void readBbsRc( void )
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
    flagsConfiguration.shouldUseTcpKeepalive = 1;
    flagsConfiguration.shouldEnableClickableUrls = 1;
+   flagsConfiguration.shouldEnableTitleBar = 1;
+   flagsConfiguration.hasTitleBarSetting = 0;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
    flagsConfiguration.hasScreenReaderModeSetting = 0;
    flagsConfiguration.shouldEnableNameAutocomplete = 1;
@@ -420,6 +424,48 @@ void readBbsRc( void )
                   else
                   {
                      stdPrintf( "Invalid definition of clickable URL option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
+         case BBRC_CMD_TITLEBAR:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.shouldEnableTitleBar = 1;
+                  flagsConfiguration.hasTitleBarSetting = 1;
+               }
+               else
+               {
+                  const char *ptrTitleBarValue;
+
+                  ptrTitleBarValue = ptrSpace + 1;
+                  while ( *ptrTitleBarValue != '\0' && isspace( (unsigned char)*ptrTitleBarValue ) )
+                  {
+                     ptrTitleBarValue++;
+                  }
+                  if ( *ptrTitleBarValue == '\0' )
+                  {
+                     flagsConfiguration.shouldEnableTitleBar = 1;
+                     flagsConfiguration.hasTitleBarSetting = 1;
+                  }
+                  else if ( *ptrTitleBarValue == '0' )
+                  {
+                     flagsConfiguration.shouldEnableTitleBar = 0;
+                     flagsConfiguration.hasTitleBarSetting = 1;
+                  }
+                  else if ( *ptrTitleBarValue == '1' )
+                  {
+                     flagsConfiguration.shouldEnableTitleBar = 1;
+                     flagsConfiguration.hasTitleBarSetting = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of title bar option ignored.\n" );
                   }
                }
                break;
@@ -1086,6 +1132,11 @@ void readBbsRc( void )
    else if ( !flagsConfiguration.hasScreenReaderModeSetting )
    {
       promptForScreenReaderModeIfUnset();
+      shouldRewriteBbsRc = true;
+   }
+   if ( !flagsConfiguration.hasTitleBarSetting )
+   {
+      flagsConfiguration.hasTitleBarSetting = 1;
       shouldRewriteBbsRc = true;
    }
    if ( !flagsConfiguration.hasNameAutocompleteSetting )

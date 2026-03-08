@@ -769,6 +769,51 @@ static void readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode( voi
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigSetsTitleBarZero_DisablesTitleBarUpdates( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for titlebar=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "titlebar 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for titlebar=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldEnableTitleBar )
+   {
+      fail_msg( "titlebar 0 should disable terminal title updates" );
+   }
+   if ( !flagsConfiguration.hasTitleBarSetting )
+   {
+      fail_msg( "titlebar 0 should mark the title bar setting as present" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete( void **state )
 {
    // Arrange
@@ -1491,6 +1536,7 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesLegacyIscaIp_RewritesToCanonicalHostname ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsTitleBarZero_DisablesTitleBarUpdates ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete ),
       cmocka_unit_test( readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites ),

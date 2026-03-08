@@ -315,10 +315,10 @@ void openTmpFile( void )
 
 void titleBar( void )
 {
-#ifdef ENABLE_TITLEBAR
    char aryTitle[80];
 
-   if ( flagsConfiguration.isScreenReaderModeEnabled )
+   if ( !flagsConfiguration.shouldEnableTitleBar ||
+        flagsConfiguration.isScreenReaderModeEnabled )
    {
       return;
    }
@@ -337,14 +337,13 @@ void titleBar( void )
       printf( "\033]1;%s\\", aryTitle );
       printf( "\033]2;%s\\", aryTitle );
    }
-#endif
    return;
 }
 
 void noTitleBar( void )
 {
-#ifdef ENABLE_TITLEBAR
-   if ( flagsConfiguration.isScreenReaderModeEnabled )
+   if ( !flagsConfiguration.shouldEnableTitleBar ||
+        flagsConfiguration.isScreenReaderModeEnabled )
    {
       return;
    }
@@ -364,7 +363,6 @@ void noTitleBar( void )
       printf( "\033]2; (%s) %dx%d\033\\", rindex( (char *)ttyname( 0 ), '/' ) + 1, ws.ws_col, ws.ws_row );
    }
    fflush( stdout );
-#endif
    return;
 }
 

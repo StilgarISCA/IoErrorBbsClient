@@ -261,7 +261,9 @@ typedef struct
    unsigned int shouldAutoAnswerAnsiPrompt : 1;   /* true if we automatically answer ANSI ? */
    unsigned int shouldUseTcpKeepalive : 1;        /* true if TCP keepalive probes are enabled */
    unsigned int shouldEnableClickableUrls : 1;    /* true if OSC-8 clickable URL output is enabled */
+   unsigned int shouldEnableTitleBar : 1;         /* true if terminal title updates are enabled */
    unsigned int isScreenReaderModeEnabled : 1;    /* true if screen reader friendly mode is enabled */
+   unsigned int hasTitleBarSetting : 1;           /* true if title bar setting was set in .bbsrc */
    unsigned int hasScreenReaderModeSetting : 1;   /* true if screen reader mode was set in .bbsrc */
    unsigned int shouldEnableNameAutocomplete : 1; /* true if name-entry autocomplete is enabled */
    unsigned int hasNameAutocompleteSetting : 1;   /* true if name autocomplete was set in .bbsrc */

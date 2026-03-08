@@ -286,6 +286,11 @@ void configBbsRc( void )
             stdPrintf( "Try to keep idle connections alive with TCP probes? (%s) -> ",
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
             flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
+            flagsConfiguration.hasTitleBarSetting = 1;
+            stdPrintf( "Update terminal title bar? (%s) -> ",
+                       flagsConfiguration.shouldEnableTitleBar ? "Yes" : "No" );
+            flagsConfiguration.shouldEnableTitleBar =
+               (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableTitleBar );
             stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
                        flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
             flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
@@ -503,6 +508,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
+   fprintf( ptrBbsRc, "titlebar %d\n", flagsConfiguration.shouldEnableTitleBar ? 1 : 0 );
    fprintf( ptrBbsRc, "screenreader %d\n", flagsConfiguration.isScreenReaderModeEnabled ? 1 : 0 );
    fprintf( ptrBbsRc, "autocomplete %d\n", flagsConfiguration.shouldEnableNameAutocomplete ? 1 : 0 );
    if ( *aryAutoName )
