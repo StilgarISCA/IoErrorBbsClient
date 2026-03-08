@@ -29,6 +29,8 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
+#define SCREEN_READER_INFO \
+   "Screen reader friendly mode keeps this client easier for VoiceOver and other\r\nscreen readers to follow.  You can change this later from the Options menu."
 
 static const char *describeKeyForHelp( int inputChar )
 {
@@ -50,6 +52,32 @@ static const char *describeKeyForHelp( int inputChar )
       default:
          return strCtrl( inputChar );
    }
+}
+
+void promptForScreenReaderModeIfUnset( void )
+{
+   if ( flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      return;
+   }
+
+   flagsConfiguration.isScreenReaderModeEnabled =
+      (unsigned int)sPrompt( SCREEN_READER_INFO,
+                             "Use screen reader friendly mode?",
+                             0 );
+   flagsConfiguration.hasScreenReaderModeSetting = 1;
+}
+
+void defaultNameAutocompleteIfUnset( void )
+{
+   if ( flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      return;
+   }
+
+   flagsConfiguration.shouldEnableNameAutocomplete =
+      (unsigned int)!flagsConfiguration.isScreenReaderModeEnabled;
+   flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
 /*
@@ -114,6 +142,8 @@ void setup( int newVersion )
                 describeKeyForHelp( browserKey ) );
       sInfo( aryUrlInfo, "Websites" );
    }
+   promptForScreenReaderModeIfUnset();
+   defaultNameAutocompleteIfUnset();
    if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
    {
       configBbsRc();
@@ -148,15 +178,9 @@ void configBbsRc( void )
    }
    while ( true )
    {
-      if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YC@Color  @YE@Cnemy list  @YF@Criend list  @YH@Cotkeys\r\n@YI@Cnfo  @YM@Cacros  @YO@Cptions  @YX@Cpress  @YQ@Cuit@Y" );
-      }
-      else
-      {
-         stdPrintf( "\r\n<C>olor <E>nemy list <F>riend list <H>otkeys\r\n<I>nfo  <M>acros <O>ptions <X>press <Q>uit" );
-      }
-      colorize( "\r\nClient config -> @G" );
+      printThemedMnemonicText( "\r\n<C>olor  <E>nemy list  <F>riend list  <H>otkeys\r\n<I>nfo  <M>acros  <O>ptions  <X>press  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nClient config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
       inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
       switch ( inputChar )
       {
@@ -174,9 +198,19 @@ void configBbsRc( void )
 
          case 'o':
             stdPrintf( "Options\r\n" );
+            stdPrintf( "Use screen reader friendly mode? (%s) -> ",
+                       flagsConfiguration.isScreenReaderModeEnabled ? "Yes" : "No" );
+            flagsConfiguration.isScreenReaderModeEnabled =
+               (unsigned int)yesNoDefault( flagsConfiguration.isScreenReaderModeEnabled );
+            flagsConfiguration.hasScreenReaderModeSetting = 1;
+            if ( flagsConfiguration.isScreenReaderModeEnabled )
+            {
+               flagsConfiguration.shouldEnableClickableUrls = 0;
+               flagsConfiguration.shouldEnableNameAutocomplete = 0;
+            }
             if ( !isLoginShell )
             {
-               stdPrintf( "\r\nEnter name of local editor to use (%s) -> ", aryEditor );
+               stdPrintf( "Enter name of local editor to use (%s) -> ", aryEditor );
                getString( 72, aryMenuLine, -999 );
                if ( *aryMenuLine )
                {
@@ -252,9 +286,19 @@ void configBbsRc( void )
             stdPrintf( "Try to keep idle connections alive with TCP probes? (%s) -> ",
                        flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
             flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
+            flagsConfiguration.hasTitleBarSetting = 1;
+            stdPrintf( "Update terminal title bar? (%s) -> ",
+                       flagsConfiguration.shouldEnableTitleBar ? "Yes" : "No" );
+            flagsConfiguration.shouldEnableTitleBar =
+               (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableTitleBar );
             stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
                        flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
             flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
+            stdPrintf( "Autocomplete username in recipient prompts? (%s) -> ",
+                       flagsConfiguration.shouldEnableNameAutocomplete ? "Yes" : "No" );
+            flagsConfiguration.shouldEnableNameAutocomplete =
+               (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableNameAutocomplete );
+            flagsConfiguration.hasNameAutocompleteSetting = 1;
             break;
 
          case 'h':
@@ -300,14 +344,9 @@ void configBbsRc( void )
             stdPrintf( "Macros\r\n" );
             for ( ; inputChar != 'q'; )
             {
-               if ( flagsConfiguration.useAnsi )
-               {
-                  colorize( "\r\n@YE@Cdit  @YL@Cist  @YQ@Cuit\r\n@YMacro config -> @G" );
-               }
-               else
-               {
-                  stdPrintf( "\r\n<E>dit <L>ist <Q>uit\r\nMacro config -> " );
-               }
+               printThemedMnemonicText( "\r\n<E>dit  <L>ist  <Q>uit", color.number );
+               printThemedMnemonicText( "\r\nMacro config -> ", color.forum );
+               printAnsiForegroundColorValue( color.text );
                inputChar = readValidatedMenuKey( CONFIG_MACRO_MENU_KEYS );
                switch ( inputChar )
                {
@@ -383,14 +422,9 @@ void expressConfig( void )
 
    while ( true )
    {
-      if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YA@Cway  @YX@CLand  @YQ@Cuit\r\n@YExpress config -> @G" );
-      }
-      else
-      {
-         stdPrintf( "\r\n<A>way <X>Land <Q>uit\r\nExpress config -> " );
-      }
+      printThemedMnemonicText( "\r\n<A>way  <X>Land  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nExpress config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
 
       int inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
 
@@ -474,6 +508,9 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
    fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
    fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
+   fprintf( ptrBbsRc, "titlebar %d\n", flagsConfiguration.shouldEnableTitleBar ? 1 : 0 );
+   fprintf( ptrBbsRc, "screenreader %d\n", flagsConfiguration.isScreenReaderModeEnabled ? 1 : 0 );
+   fprintf( ptrBbsRc, "autocomplete %d\n", flagsConfiguration.shouldEnableNameAutocomplete ? 1 : 0 );
    if ( *aryAutoName )
    {
       fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );
@@ -693,25 +730,15 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       /* Build menu */
       if ( !strncmp( name, "enemy", 5 ) )
       {
-         if ( flagsConfiguration.useAnsi )
-         {
-            colorize( "\r\n@YA@Cdd  @YD@Celete  @YL@Cist  @YO@Cptions  @YQ@Cuit@Y" );
-         }
-         else
-         {
-            stdPrintf( "\r\n<A>dd <D>elete <L>ist <O>ptions <Q>uit" );
-         }
-      }
-      else if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YA@Cdd  @YD@Celete  @YE@Cdit  @YL@Cist  @YQ@Cuit@Y" );
+         printThemedMnemonicText( "\r\n<A>dd  <D>elete  <L>ist  <O>ptions  <Q>uit", color.number );
       }
       else
       {
-         stdPrintf( "\r\n<A>dd <D>elete <E>dit <L>ist <Q>uit" );
+         printThemedMnemonicText( "\r\n<A>dd  <D>elete  <E>dit  <L>ist  <Q>uit", color.number );
       }
-      snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> @G", toupper( name[0] ), name + 1 );
-      colorize( aryDisplayLine );
+      snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
+      printThemedMnemonicText( aryDisplayLine, color.forum );
+      printAnsiForegroundColorValue( color.text );
 
       inputChar = inKey();
       switch ( inputChar )

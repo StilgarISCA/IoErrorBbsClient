@@ -257,6 +257,53 @@ int readValidatedMenuKey( const char *allowedCharsLowercase )
    }
 }
 
+void printAnsiForegroundColorValue( int colorValue )
+{
+   char aryAnsiSequence[32];
+
+   if ( !flagsConfiguration.useAnsi )
+   {
+      return;
+   }
+
+   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                 colorValue );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
+void printThemedMnemonicText( const char *ptrText, int defaultColor )
+{
+   const char *ptrScan;
+
+   if ( ptrText == NULL )
+   {
+      return;
+   }
+
+   if ( !flagsConfiguration.useAnsi )
+   {
+      stdPrintf( "%s", ptrText );
+      return;
+   }
+
+   printAnsiForegroundColorValue( defaultColor );
+
+   for ( ptrScan = ptrText; *ptrScan; )
+   {
+      if ( ptrScan[0] == '<' && ptrScan[1] != '\0' && ptrScan[2] == '>' )
+      {
+         printAnsiForegroundColorValue( color.forum );
+         stdPutChar( ptrScan[1] );
+         printAnsiForegroundColorValue( defaultColor );
+         ptrScan += 3;
+         continue;
+      }
+
+      stdPutChar( *ptrScan );
+      ptrScan++;
+   }
+}
+
 int yesNo( void )
 {
    register int inputChar;
@@ -317,16 +364,22 @@ void tempFileError( void )
 
 int more( int *line, int percentComplete )
 {
+   char aryPrompt[96];
    unsigned int invalid = 0;
 
    if ( percentComplete >= 0 )
    {
-      printf( "--MORE--(%d%%)", percentComplete );
+      snprintf( aryPrompt, sizeof( aryPrompt ),
+                "Page break (%d%%): Space next page, Enter next line, Q quit",
+                percentComplete );
    }
    else
    {
-      printf( "--MORE--" );
+      snprintf( aryPrompt, sizeof( aryPrompt ),
+                "%s",
+                "Page break: Space next page, Enter next line, Q quit" );
    }
+   printf( "%s", aryPrompt );
    while ( true )
    {
       register int inputChar;
@@ -349,7 +402,7 @@ int more( int *line, int percentComplete )
          handleInvalidInput( &invalid );
          continue;
       }
-      printf( "\r              \r" );
+      printf( "\r%*s\r", (int)strlen( aryPrompt ), "" );
       break;
    }
    return ( *line < 0 ? -1 : 0 );

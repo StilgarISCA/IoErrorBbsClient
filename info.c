@@ -30,29 +30,10 @@ void feedPager( int startrow, ... )
       currentRow++;
       if ( currentRow == rows )
       {
-         /* More prompt */
-         printf( "--MORE-- " );
-         fflush( stdout );
-         int inputChar;
-
-         inputChar = readFoldedKey();
-         switch ( inputChar )
+         if ( more( &currentRow, -1 ) < 0 )
          {
-            case 'n':
-            case 's':
-            case 'q':
-               printf( "\r        \r" );
-               va_end( ap );
-               return;
-               /* NOTREACHED */
-            case '\n':
-               currentRow--;
-               printf( "\r        \r" );
-               break;
-            default:
-               currentRow = 1;
-               printf( "\r        \r" );
-               break;
+            va_end( ap );
+            return;
          }
       }
    }
@@ -347,14 +328,9 @@ void information( void )
 
    while ( true )
    {
-      if ( flagsConfiguration.useAnsi )
-      {
-         colorize( "\r\n@YC@Copyright  @YL@Cicense  @YW@Carranty  @YT@Cechnical  @YQ@Cuit\r\n@YClient information -> @G" );
-      }
-      else
-      {
-         stdPrintf( "\r\n<C>opyright <L>icense <W>arranty  <T>echnical <Q>uit\r\nClient information -> " );
-      }
+      printThemedMnemonicText( "\r\n<C>opyright  <L>icense  <W>arranty  <T>echnical  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nClient information -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
       int inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
       switch ( inputChar )
       {

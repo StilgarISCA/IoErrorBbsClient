@@ -81,6 +81,17 @@ int colorize( const char *ptrText )
    return 1;
 }
 
+void printAnsiForegroundColorValue( int colorValue )
+{
+   (void)colorValue;
+}
+
+void printThemedMnemonicText( const char *ptrText, int defaultColor )
+{
+   (void)ptrText;
+   (void)defaultColor;
+}
+
 int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    const friend *const *ptrLeftFriend;
@@ -188,6 +199,13 @@ static void defaultColors_WhenClearAllApplied_SetsKnownDefaults( void **state )
    if ( color.postname != 6 || color.postfriendname != 1 || color.expressname != 2 )
    {
       fail_msg( "defaultColors(1) did not set post/express defaults as expected" );
+   }
+   if ( color.ansiBlackTextColor != 2 || color.ansiBlueTextColor != 4 ||
+        color.ansiMagentaTextColor != 5 || color.ansiWhiteTextColor != 7 )
+   {
+      fail_msg( "defaultColors(1) did not set full ANSI fallback colors as expected; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
    }
 }
 
@@ -455,13 +473,66 @@ static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
    }
    if ( color.postdate != 75 || color.postfrienddate != 25 ||
         color.postname != 214 || color.postfriendname != 175 ||
-        color.input2 != 36 || color.moreprompt != 221 ||
+        color.input2 != 214 || color.moreprompt != 221 ||
         color.expressname != 214 || color.expressfriendname != 175 )
    {
       fail_msg( "colorblindColors should map post, input, and express roles onto the preset palette; got postdate=%d frienddate=%d postname=%d friendname=%d input2=%d moreprompt=%d expressname=%d expressfriendname=%d",
                 color.postdate, color.postfrienddate, color.postname,
                 color.postfriendname, color.input2, color.moreprompt,
                 color.expressname, color.expressfriendname );
+   }
+   if ( color.ansiBlackTextColor != 146 || color.ansiBlueTextColor != 75 ||
+        color.ansiMagentaTextColor != 175 || color.ansiWhiteTextColor != 221 )
+   {
+      fail_msg( "colorblindColors should theme the full incoming ANSI palette; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
+   }
+}
+
+static void brilliantColors_WhenApplied_SetsBrightDefaultPalette( void **state )
+{
+   // Arrange
+   (void)state;
+
+   resetState();
+   memset( &color, 0, sizeof( color ) );
+
+   // Act
+   brilliantColors();
+
+   // Assert
+   if ( color.text != 10 || color.forum != 11 || color.number != 14 ||
+        color.errorTextColor != 9 )
+   {
+      fail_msg( "brilliantColors should set bright general colors; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.background != 0 )
+   {
+      fail_msg( "brilliantColors should keep a black background; got %d", color.background );
+   }
+   if ( color.postdate != 13 || color.postfrienddate != 13 ||
+        color.postname != 14 || color.postfriendname != 9 ||
+        color.posttext != 10 || color.postfriendtext != 10 ||
+        color.anonymous != 11 || color.moreprompt != 11 ||
+        color.input1 != 10 || color.input2 != 14 ||
+        color.expresstext != 10 || color.expressname != 10 ||
+        color.expressfriendname != 10 || color.expressfriendtext != 10 )
+   {
+      fail_msg( "brilliantColors should map the default roles onto bright ANSI values; got postdate=%d frienddate=%d postname=%d friendname=%d posttext=%d friendposttext=%d anonymous=%d moreprompt=%d input1=%d input2=%d expresstext=%d expressname=%d expressfriendname=%d expressfriendtext=%d",
+                color.postdate, color.postfrienddate, color.postname,
+                color.postfriendname, color.posttext, color.postfriendtext,
+                color.anonymous, color.moreprompt, color.input1, color.input2,
+                color.expresstext, color.expressname,
+                color.expressfriendname, color.expressfriendtext );
+   }
+   if ( color.ansiBlackTextColor != 10 || color.ansiBlueTextColor != 12 ||
+        color.ansiMagentaTextColor != 13 || color.ansiWhiteTextColor != 15 )
+   {
+      fail_msg( "brilliantColors should theme the full incoming ANSI palette; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
    }
 }
 
@@ -505,6 +576,42 @@ static void hotDogColors_WhenApplied_SetsClassicHotDogPalette( void **state )
                 color.postdate, color.postfrienddate, color.postname,
                 color.postfriendname, color.anonymous, color.moreprompt,
                 color.input1, color.expressname, color.expressfriendname );
+   }
+   if ( color.ansiBlackTextColor != 130 || color.ansiBlueTextColor != 214 ||
+        color.ansiMagentaTextColor != 130 || color.ansiWhiteTextColor != 220 )
+   {
+      fail_msg( "hotDogColors should eliminate stray gray and purple by theming the full incoming ANSI palette; got black=%d blue=%d magenta=%d white=%d",
+                color.ansiBlackTextColor, color.ansiBlueTextColor,
+                color.ansiMagentaTextColor, color.ansiWhiteTextColor );
+   }
+}
+
+static void ansiTransform_WhenHotDogPaletteApplied_UsesThemeColorsForAllAnsiDigits( void **state )
+{
+   int transformedBlack;
+   int transformedBlue;
+   int transformedMagenta;
+   int transformedWhite;
+
+   // Arrange
+   (void)state;
+
+   resetState();
+   hotDogColors();
+
+   // Act
+   transformedBlack = ansiTransform( '0' );
+   transformedBlue = ansiTransform( '4' );
+   transformedMagenta = ansiTransform( '5' );
+   transformedWhite = ansiTransform( '7' );
+
+   // Assert
+   if ( transformedBlack != 130 || transformedBlue != 214 ||
+        transformedMagenta != 130 || transformedWhite != 220 )
+   {
+      fail_msg( "ansiTransform should map all incoming ANSI digits through the active Hotdog stand palette; got black=%d blue=%d magenta=%d white=%d",
+                transformedBlack, transformedBlue, transformedMagenta,
+                transformedWhite );
    }
 }
 
@@ -706,8 +813,10 @@ int main( void )
       cmocka_unit_test( formatAnsiForegroundSequence_WhenBrightColorRequested_UsesBrightAnsiCode ),
       cmocka_unit_test( formatAnsiForegroundSequence_WhenExtendedColorRequested_Uses256ColorCode ),
       cmocka_unit_test( formatAnsiDisplayStateSequence_WhenDefaultBackgroundRequested_UsesCombinedSelectors ),
+      cmocka_unit_test( brilliantColors_WhenApplied_SetsBrightDefaultPalette ),
       cmocka_unit_test( colorblindColors_WhenApplied_SetsAccessiblePalette ),
       cmocka_unit_test( hotDogColors_WhenApplied_SetsClassicHotDogPalette ),
+      cmocka_unit_test( ansiTransform_WhenHotDogPaletteApplied_UsesThemeColorsForAllAnsiDigits ),
       cmocka_unit_test( ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes ),
       cmocka_unit_test( ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged ),
       cmocka_unit_test( ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracksColor ),

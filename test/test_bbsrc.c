@@ -20,6 +20,8 @@ static int setupCallCount;
 static int setupVersionArg;
 static int perrorCallCount;
 static int writeBbsRcCallCount;
+static int promptForScreenReaderModeCallCount;
+static int defaultNameAutocompleteIfUnsetCallCount;
 static char aryLastPerrorMessage[128];
 static char aryLastPerrorHeading[64];
 static char aryStdPrintfLog[16384];
@@ -30,6 +32,8 @@ static void resetTracking( void )
    setupVersionArg = 0;
    perrorCallCount = 0;
    writeBbsRcCallCount = 0;
+   promptForScreenReaderModeCallCount = 0;
+   defaultNameAutocompleteIfUnsetCallCount = 0;
    aryLastPerrorMessage[0] = '\0';
    aryLastPerrorHeading[0] = '\0';
    aryStdPrintfLog[0] = '\0';
@@ -234,6 +238,21 @@ void setup( int oldversion )
 void writeBbsRc( void )
 {
    writeBbsRcCallCount++;
+}
+
+void promptForScreenReaderModeIfUnset( void )
+{
+   promptForScreenReaderModeCallCount++;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
+   flagsConfiguration.hasScreenReaderModeSetting = 1;
+}
+
+void defaultNameAutocompleteIfUnset( void )
+{
+   defaultNameAutocompleteIfUnsetCallCount++;
+   flagsConfiguration.shouldEnableNameAutocomplete =
+      (unsigned int)!flagsConfiguration.isScreenReaderModeEnabled;
+   flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
 void sPerror( const char *message, const char *heading )
@@ -612,6 +631,53 @@ static void readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns(
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesLegacyIscaIp_RewritesToCanonicalHostname( void **state )
+{
+   char aryPath[PATH_MAX];
+   FILE *ptrConfig;
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for legacy ISCA IP migration test" );
+      return;
+   }
+
+   ptrConfig = fopen( aryPath, "w" );
+   if ( ptrConfig == NULL )
+   {
+      fail_msg( "Arrange failed: unable to open temporary config file" );
+      unlink( aryPath );
+      return;
+   }
+   fputs( "site 206.217.131.27 23\n", ptrConfig );
+   fclose( ptrConfig );
+
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strcmp( aryBbsHost, BBS_HOSTNAME ) != 0 )
+   {
+      fail_msg( "legacy ISCA IP should migrate to %s; got %s", BBS_HOSTNAME, aryBbsHost );
+   }
+   if ( bbsPort != BBS_PORT_NUMBER )
+   {
+      fail_msg( "legacy ISCA IP should keep the default port; got %u", bbsPort );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **state )
 {
    // Arrange
@@ -647,6 +713,265 @@ static void readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive( void **s
    if ( flagsConfiguration.shouldUseTcpKeepalive )
    {
       fail_msg( "keepalive 0 should disable TCP keepalive" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for screenreader=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "screenreader 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for screenreader=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      fail_msg( "screenreader 1 should enable screen reader mode" );
+   }
+   if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      fail_msg( "screenreader 1 should mark the setting as present" );
+   }
+   if ( promptForScreenReaderModeCallCount != 0 )
+   {
+      fail_msg( "screenreader 1 should not trigger the missing-setting prompt helper; got %d calls",
+                promptForScreenReaderModeCallCount );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsTitleBarZero_DisablesTitleBarUpdates( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for titlebar=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "titlebar 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for titlebar=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldEnableTitleBar )
+   {
+      fail_msg( "titlebar 0 should disable terminal title updates" );
+   }
+   if ( !flagsConfiguration.hasTitleBarSetting )
+   {
+      fail_msg( "titlebar 0 should mark the title bar setting as present" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for autocomplete=0 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "autocomplete 0\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for autocomplete=0 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      fail_msg( "autocomplete 0 should disable name autocomplete" );
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      fail_msg( "autocomplete 0 should mark the setting as present" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for missing screenreader test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keepalive 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for missing screenreader test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( promptForScreenReaderModeCallCount != 1 )
+   {
+      fail_msg( "missing screenreader setting should trigger one prompt helper call; got %d",
+                promptForScreenReaderModeCallCount );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "missing screenreader setting should rewrite .bbsrc once; got %d",
+                writeBbsRcCallCount );
+   }
+   if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      fail_msg( "prompt helper should mark the screen reader setting as present" );
+   }
+   if ( defaultNameAutocompleteIfUnsetCallCount != 1 )
+   {
+      fail_msg( "missing autocomplete setting should trigger one default helper call; got %d",
+                defaultNameAutocompleteIfUnsetCallCount );
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      fail_msg( "autocomplete default helper should mark the setting as present" );
+   }
+   if ( !flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      fail_msg( "autocomplete should default on when screen reader mode is disabled" );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
+static void readBbsRc_WhenAutocompleteMissingAndScreenReaderEnabled_DefaultsAutocompleteOff( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for missing autocomplete test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "screenreader 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for missing autocomplete test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( defaultNameAutocompleteIfUnsetCallCount != 1 )
+   {
+      fail_msg( "missing autocomplete setting should trigger one default helper call; got %d",
+                defaultNameAutocompleteIfUnsetCallCount );
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      fail_msg( "missing autocomplete setting should be marked present after defaulting" );
+   }
+   if ( flagsConfiguration.shouldEnableNameAutocomplete )
+   {
+      fail_msg( "autocomplete should default off when screen reader mode is enabled" );
+   }
+   if ( writeBbsRcCallCount != 1 )
+   {
+      fail_msg( "missing autocomplete setting should rewrite .bbsrc once; got %d",
+                writeBbsRcCallCount );
    }
 
    cleanupReadState();
@@ -1066,6 +1391,58 @@ static void readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values( voi
    unlink( aryPath );
 }
 
+static void readBbsRc_WhenConfigUsesLongNamedColorLine_ParsesWithoutLineTooLongWarning( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for long named-color test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "color brightgreen brightyellow brightcyan brightred brightgreen brightblue brightmagenta brightmagenta brightcyan brightgreen brightmagenta brightred brightgreen brightyellow brightyellow brightwhite brightwhite 0 brightgreen brightcyan brightgreen brightgreen brightgreen brightgreen\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write long named-color configuration content" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( strstr( aryStdPrintfLog, "too long" ) != NULL )
+   {
+      fail_msg( "long named color lines should not trigger a line-too-long warning; log was: %s",
+                aryStdPrintfLog );
+   }
+   if ( color.text != 10 || color.forum != 11 || color.number != 14 || color.errorTextColor != 9 )
+   {
+      fail_msg( "long named color parsing should still set general colors correctly; got text=%d forum=%d number=%d error=%d",
+                color.text, color.forum, color.number, color.errorTextColor );
+   }
+   if ( color.postdate != 13 || color.postname != 14 || color.posttext != 10 )
+   {
+      fail_msg( "long named color parsing should still set post colors; got date=%d name=%d text=%d",
+                color.postdate, color.postname, color.posttext );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+
 static void readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms( void **state )
 {
    // Arrange
@@ -1157,7 +1534,13 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigIsEmpty_AppliesDefaults ),
       cmocka_unit_test( readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsObsoleteBrowserSetting_RewritesAndWarns ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesLegacyIscaIp_RewritesToCanonicalHostname ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsKeepaliveZero_DisablesTcpKeepalive ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsTitleBarZero_DisablesTitleBarUpdates ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode ),
+      cmocka_unit_test( readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete ),
+      cmocka_unit_test( readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites ),
+      cmocka_unit_test( readBbsRc_WhenAutocompleteMissingAndScreenReaderEnabled_DefaultsAutocompleteOff ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsOne_EnablesClickableUrls ),
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidClickableUrlsDefinition_PrintsWarningAndKeepsDefault ),
@@ -1167,6 +1550,7 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigContainsInvalidColor_PrintsWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values ),
+      cmocka_unit_test( readBbsRc_WhenConfigUsesLongNamedColorLine_ParsesWithoutLineTooLongWarning ),
       cmocka_unit_test( readBbsRc_WhenConfigUsesMixedNamedAndNumericColors_ParsesBothForms ),
       cmocka_unit_test( readBbsRc_WhenConfigFileMissing_CreatesFileAndUsesDefaults ),
    };

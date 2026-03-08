@@ -43,7 +43,7 @@ extern sigjmp_buf jumpEnv; /* Yuck!  I have to use longjmp!  Gag! */
 extern jmp_buf jumpEnv; /* Yuck!  I have to use longjmp!  Gag! */
 #endif
 
-extern char aryBbsHost[64];         /* name of bbs host (bbs.isca.uiowa.edu) */
+extern char aryBbsHost[64];         /* name of bbs host (bbs.iscabbs.com) */
 extern char aryCommandLineHost[64]; /* name of bbs host from command line */
 extern unsigned short bbsPort;      /* port to connect to (23 or 992) */
 extern unsigned short cmdLinePort;  /* port to connect to from command line */

@@ -43,7 +43,7 @@ static int ctrl( const char *ptrToken )
  * Parses the bbsrc file, setting necessary globals depending on the content of
  * the bbsrc, or returning an error if the bbsrc couldn't be properly parsed.
  */
-#define MAX_LINE_LENGTH 255
+#define MAX_LINE_LENGTH 512
 #define FRIEND_COMMAND_PREFIX_LEN 7
 #define FRIEND_NAME_PARSE_LENGTH 19
 #define FRIEND_INFO_OFFSET 30
@@ -153,6 +153,7 @@ typedef enum
    BBRC_CMD_CLICKABLE_URLS,
    BBRC_CMD_COLOR,
    BBRC_CMD_COMMANDKEY,
+   BBRC_CMD_AUTOCOMPLETE,
    BBRC_CMD_EDITOR,
    BBRC_CMD_ENEMY,
    BBRC_CMD_FRIEND,
@@ -167,7 +168,9 @@ typedef enum
    BBRC_CMD_SQUELCH,
    BBRC_CMD_SUSP,
    BBRC_CMD_TCP_KEEPALIVE,
+   BBRC_CMD_TITLEBAR,
    BBRC_CMD_URL,
+   BBRC_CMD_SCREENREADER,
    BBRC_CMD_VERSION,
    BBRC_CMD_XLAND,
    BBRC_CMD_XWRAP
@@ -198,6 +201,9 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "squelch ", 8, BBRC_CMD_SQUELCH },
          { "keepalive", 9, BBRC_CMD_TCP_KEEPALIVE },
          { "clickableurls", 13, BBRC_CMD_CLICKABLE_URLS },
+         { "titlebar", 8, BBRC_CMD_TITLEBAR },
+         { "screenreader", 12, BBRC_CMD_SCREENREADER },
+         { "autocomplete", 12, BBRC_CMD_AUTOCOMPLETE },
          { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
@@ -306,6 +312,12 @@ void readBbsRc( void )
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
    flagsConfiguration.shouldUseTcpKeepalive = 1;
    flagsConfiguration.shouldEnableClickableUrls = 1;
+   flagsConfiguration.shouldEnableTitleBar = 1;
+   flagsConfiguration.hasTitleBarSetting = 0;
+   flagsConfiguration.isScreenReaderModeEnabled = 0;
+   flagsConfiguration.hasScreenReaderModeSetting = 0;
+   flagsConfiguration.shouldEnableNameAutocomplete = 1;
+   flagsConfiguration.hasNameAutocompleteSetting = 0;
 
    defaultColors( 1 );
 
@@ -417,6 +429,132 @@ void readBbsRc( void )
                break;
             }
 
+         case BBRC_CMD_TITLEBAR:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.shouldEnableTitleBar = 1;
+                  flagsConfiguration.hasTitleBarSetting = 1;
+               }
+               else
+               {
+                  const char *ptrTitleBarValue;
+
+                  ptrTitleBarValue = ptrSpace + 1;
+                  while ( *ptrTitleBarValue != '\0' && isspace( (unsigned char)*ptrTitleBarValue ) )
+                  {
+                     ptrTitleBarValue++;
+                  }
+                  if ( *ptrTitleBarValue == '\0' )
+                  {
+                     flagsConfiguration.shouldEnableTitleBar = 1;
+                     flagsConfiguration.hasTitleBarSetting = 1;
+                  }
+                  else if ( *ptrTitleBarValue == '0' )
+                  {
+                     flagsConfiguration.shouldEnableTitleBar = 0;
+                     flagsConfiguration.hasTitleBarSetting = 1;
+                  }
+                  else if ( *ptrTitleBarValue == '1' )
+                  {
+                     flagsConfiguration.shouldEnableTitleBar = 1;
+                     flagsConfiguration.hasTitleBarSetting = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of title bar option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
+         case BBRC_CMD_SCREENREADER:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.isScreenReaderModeEnabled = 1;
+                  flagsConfiguration.hasScreenReaderModeSetting = 1;
+               }
+               else
+               {
+                  const char *ptrScreenReaderValue;
+
+                  ptrScreenReaderValue = ptrSpace + 1;
+                  while ( *ptrScreenReaderValue != '\0' && isspace( (unsigned char)*ptrScreenReaderValue ) )
+                  {
+                     ptrScreenReaderValue++;
+                  }
+                  if ( *ptrScreenReaderValue == '\0' )
+                  {
+                     flagsConfiguration.isScreenReaderModeEnabled = 1;
+                     flagsConfiguration.hasScreenReaderModeSetting = 1;
+                  }
+                  else if ( *ptrScreenReaderValue == '0' )
+                  {
+                     flagsConfiguration.isScreenReaderModeEnabled = 0;
+                     flagsConfiguration.hasScreenReaderModeSetting = 1;
+                  }
+                  else if ( *ptrScreenReaderValue == '1' )
+                  {
+                     flagsConfiguration.isScreenReaderModeEnabled = 1;
+                     flagsConfiguration.hasScreenReaderModeSetting = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of screen reader option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
+         case BBRC_CMD_AUTOCOMPLETE:
+            {
+               const char *ptrSpace;
+
+               ptrSpace = strchr( aryLine, ' ' );
+               if ( ptrSpace == NULL )
+               {
+                  flagsConfiguration.shouldEnableNameAutocomplete = 1;
+                  flagsConfiguration.hasNameAutocompleteSetting = 1;
+               }
+               else
+               {
+                  const char *ptrAutocompleteValue;
+
+                  ptrAutocompleteValue = ptrSpace + 1;
+                  while ( *ptrAutocompleteValue != '\0' && isspace( (unsigned char)*ptrAutocompleteValue ) )
+                  {
+                     ptrAutocompleteValue++;
+                  }
+                  if ( *ptrAutocompleteValue == '\0' )
+                  {
+                     flagsConfiguration.shouldEnableNameAutocomplete = 1;
+                     flagsConfiguration.hasNameAutocompleteSetting = 1;
+                  }
+                  else if ( *ptrAutocompleteValue == '0' )
+                  {
+                     flagsConfiguration.shouldEnableNameAutocomplete = 0;
+                     flagsConfiguration.hasNameAutocompleteSetting = 1;
+                  }
+                  else if ( *ptrAutocompleteValue == '1' )
+                  {
+                     flagsConfiguration.shouldEnableNameAutocomplete = 1;
+                     flagsConfiguration.hasNameAutocompleteSetting = 1;
+                  }
+                  else
+                  {
+                     stdPrintf( "Invalid definition of autocomplete option ignored.\n" );
+                  }
+               }
+               break;
+            }
+
          case BBRC_CMD_COLOR:
             {
                int *ptrColorValues;
@@ -502,11 +640,7 @@ void readBbsRc( void )
                      shouldUseSsl = 1;
                   }
                }
-               if ( !strcmp( aryBbsHost, "128.255.200.69" ) ||
-                    !strcmp( aryBbsHost, "128.255.85.69" ) ||
-                    !strcmp( aryBbsHost, "128.255.95.69" ) ||
-                    !strcmp( aryBbsHost, "128.255.3.160" ) ||
-                    !strcmp( aryBbsHost, "bbs.iscabbs.info" ) )
+               if ( !strcmp( aryBbsHost, "206.217.131.27" ) )
                {
                   snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
                }
@@ -994,6 +1128,21 @@ void readBbsRc( void )
       {
          setup( -1 );
       }
+   }
+   else if ( !flagsConfiguration.hasScreenReaderModeSetting )
+   {
+      promptForScreenReaderModeIfUnset();
+      shouldRewriteBbsRc = true;
+   }
+   if ( !flagsConfiguration.hasTitleBarSetting )
+   {
+      flagsConfiguration.hasTitleBarSetting = 1;
+      shouldRewriteBbsRc = true;
+   }
+   if ( !flagsConfiguration.hasNameAutocompleteSetting )
+   {
+      defaultNameAutocompleteIfUnset();
+      shouldRewriteBbsRc = true;
    }
    if ( shouldShowBrowserMigrationNotice )
    {

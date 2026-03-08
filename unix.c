@@ -313,54 +313,74 @@ void openTmpFile( void )
    }
 }
 
+static bool terminalSupportsTitleBarUpdates( void )
+{
+   const char *ptrTerm;
+   const char *ptrTermProgram;
+
+   ptrTerm = getenv( "TERM" );
+   ptrTermProgram = getenv( "TERM_PROGRAM" );
+
+   if ( ptrTermProgram != NULL &&
+        ( strcmp( ptrTermProgram, "Apple_Terminal" ) == 0 ||
+          strcmp( ptrTermProgram, "iTerm.app" ) == 0 ) )
+   {
+      return true;
+   }
+   if ( ptrTerm == NULL )
+   {
+      return false;
+   }
+   if ( strncmp( ptrTerm, "xterm", 5 ) == 0 ||
+        strncmp( ptrTerm, "screen", 6 ) == 0 ||
+        strncmp( ptrTerm, "tmux", 4 ) == 0 )
+   {
+      return true;
+   }
+
+   return false;
+}
+
 void titleBar( void )
 {
-#ifdef ENABLE_TITLEBAR
    char aryTitle[80];
+
+   if ( !flagsConfiguration.shouldEnableTitleBar ||
+        flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      return;
+   }
 
    snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
              aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
              VERSION, "Unix" );
-   /* xterm */
-   if ( !strcmp( getenv( "TERM" ), "xterm" ) )
+   if ( terminalSupportsTitleBarUpdates() )
    {
       printf( "\033]0;%s\007", aryTitle );
+      fflush( stdout );
    }
-   /* NeXT */
-   if ( getenv( "STUART" ) )
-   {
-      printf( "\033]1;%s\\", aryTitle );
-      printf( "\033]2;%s\\", aryTitle );
-   }
-#endif
    return;
 }
 
 void noTitleBar( void )
 {
-#ifdef ENABLE_TITLEBAR
-   /* xterm */
-   if ( !strcmp( getenv( "TERM" ), "xterm" ) )
+   if ( !flagsConfiguration.shouldEnableTitleBar ||
+        flagsConfiguration.isScreenReaderModeEnabled )
    {
-      printf( "\033]0;xterm\007" );
+      return;
    }
-   /* NeXT */
-   if ( getenv( "STUART" ) )
-   {
-      struct winsize ws;
 
-      ioctl( 0, TIOCGWINSZ, (char *)&ws );
-      printf( "\033]1; csh (%s)\033\\", rindex( (char *)ttyname( 0 ), '/' ) + 1 );
-      printf( "\033]2; (%s) %dx%d\033\\", rindex( (char *)ttyname( 0 ), '/' ) + 1, ws.ws_col, ws.ws_row );
+   if ( terminalSupportsTitleBarUpdates() )
+   {
+      printf( "\033]0;\007" );
+      fflush( stdout );
    }
-   fflush( stdout );
-#endif
    return;
 }
 
 /*
  * Open a socket connection to the bbs.  Defaults to BBS_HOSTNAME with port BBS_PORT_NUMBER
- * (by default a standard telnet to bbs.isca.uiowa.edu) but can be overridden
+ * (by default a standard telnet to bbs.iscabbs.com) but can be overridden
  * in the bbsrc file if/when the source to the ISCA BBS is released and others
  * start their own on different machines and/or ports.
  */
@@ -475,7 +495,7 @@ void connectBbs( void )
       isSsl = 1;
    }
 #endif
-   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "Ins" );
+   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "In" );
    titleBar();
    fflush( stdout );
 

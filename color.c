@@ -7,12 +7,12 @@
 #include "defs.h"
 #include "ext.h"
 
-static const char *COLOR_MAIN_MENU_KEYS = "gipsoxq \n";
+static const char *COLOR_MAIN_MENU_KEYS = "pgisoxq \n";
 static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";
 static const char *COLOR_INPUT_MENU_KEYS = "ctq \n";
 static const char *COLOR_POST_MENU_KEYS = "dntq \n";
 static const char *COLOR_EXPRESS_MENU_KEYS = "ntq \n";
-static const char *COLOR_RESET_MENU_KEYS = "dchq \n";
+static const char *COLOR_RESET_MENU_KEYS = "dbchq \n";
 static const char *COLOR_USER_OR_FRIEND_KEYS = "ufq \n";
 static const char *COLOR_FOREGROUND_KEYS = "krgybmcw12345678";
 static const char *COLOR_BACKGROUND_KEYS = "krgybmcwd12345678";
@@ -29,6 +29,18 @@ typedef struct
    int colorValue;
    const char *ptrDisplayName;
 } PickerColorOption;
+
+typedef struct
+{
+   int keyChar;
+   const char *ptrLabel;
+   int textColor;
+   int accentColor;
+   int backgroundColor;
+} PresetMenuOption;
+
+static void printAnsiDisplayState( int foregroundColor, int backgroundColor );
+static int transformIncomingAnsiColor( int inputChar );
 
 static const NamedColorSpec aryNamedColors[] =
    {
@@ -91,6 +103,13 @@ static const PickerColorOption aryBackgroundPickerOptions[] =
       { '8', 15, "Bright white" },
       { 'd', COLOR_VALUE_DEFAULT, "Default" } };
 
+static const PresetMenuOption aryPresetMenuOptions[] =
+   {
+      { 'd', "Default", 2, 3, 0 },
+      { 'b', "Brilliant", 10, 11, 0 },
+      { 'c', "Colorblind", 231, 75, 16 },
+      { 'h', "Hotdog stand", 220, 196, 16 } };
+
 static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
 {
    while ( *ptrLeft && *ptrRight )
@@ -104,6 +123,16 @@ static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
    }
 
    return *ptrLeft == '\0' && *ptrRight == '\0';
+}
+
+static void printPresetMenuItem( const PresetMenuOption *ptrOption )
+{
+   stdPrintf( " " );
+   printAnsiDisplayState( ptrOption->textColor, ptrOption->backgroundColor );
+   printAnsiForegroundColorValue( ptrOption->accentColor );
+   stdPrintf( "%c", toupper( ptrOption->keyChar ) );
+   printAnsiForegroundColorValue( ptrOption->textColor );
+   stdPrintf( "%s\r\n", ptrOption->ptrLabel + 1 );
 }
 
 int colorValueFromLegacyDigit( int inputChar )
@@ -194,33 +223,51 @@ static const PickerColorOption *findPickerColorOption( const PickerColorOption *
 
 static void printForegroundPickerMenu( void )
 {
-   colorize( "\r\n@Y[K]@C Black           @Y[R]@C Red             @Y[G]@C Green           @Y[Y]@C Yellow\r\n" );
-   colorize( "@Y[B]@C Blue            @Y[M]@C Magenta         @Y[C]@C Cyan            @Y[W]@C White\r\n" );
-   colorize( "@Y[1]@C Bright black   @Y[2]@C Bright red      @Y[3]@C Bright green    @Y[4]@C Bright yellow\r\n" );
-   colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
-   colorize( "@YSelect color -> @G" );
+   printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
+   printThemedMnemonicText( "[<B>] Blue            [<M>] Magenta         [<C>] Cyan            [<W>] White\r\n", color.number );
+   printThemedMnemonicText( "[<1>] Bright black   [<2>] Bright red      [<3>] Bright green    [<4>] Bright yellow\r\n", color.number );
+   printThemedMnemonicText( "[<5>] Bright blue    [<6>] Bright magenta  [<7>] Bright cyan     [<8>] Bright white\r\n", color.number );
+   printThemedMnemonicText( "Select color -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 }
 
 static void printBackgroundPickerMenu( void )
 {
-   colorize( "\r\n@Y[K]@C Black           @Y[R]@C Red             @Y[G]@C Green           @Y[Y]@C Yellow\r\n" );
-   colorize( "@Y[B]@C Blue            @Y[M]@C Magenta         @Y[C]@C Cyan            @Y[W]@C White\r\n" );
-   colorize( "@Y[1]@C Bright black   @Y[2]@C Bright red      @Y[3]@C Bright green    @Y[4]@C Bright yellow\r\n" );
-   colorize( "@Y[5]@C Bright blue    @Y[6]@C Bright magenta  @Y[7]@C Bright cyan     @Y[8]@C Bright white\r\n" );
-   colorize( "@Y[D]@C Default\r\n" );
-   colorize( "@YSelect background -> @G" );
+   printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
+   printThemedMnemonicText( "[<B>] Blue            [<M>] Magenta         [<C>] Cyan            [<W>] White\r\n", color.number );
+   printThemedMnemonicText( "[<1>] Bright black   [<2>] Bright red      [<3>] Bright green    [<4>] Bright yellow\r\n", color.number );
+   printThemedMnemonicText( "[<5>] Bright blue    [<6>] Bright magenta  [<7>] Bright cyan     [<8>] Bright white\r\n", color.number );
+   printThemedMnemonicText( "[<D>] Default\r\n", color.number );
+   printThemedMnemonicText( "Select background -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 }
 
 static void presetColorConfig( void )
 {
+   size_t optionIndex;
+
    stdPrintf( "Color presets\r\n\n" );
-   colorize( "@YD@Cefault  @YC@Colorblind  @YH@Cotdog Stand  @YQ@Cuit@Y -> @G" );
+   for ( optionIndex = 0;
+         optionIndex < sizeof( aryPresetMenuOptions ) / sizeof( aryPresetMenuOptions[0] );
+         optionIndex++ )
+   {
+      printPresetMenuItem( &aryPresetMenuOptions[optionIndex] );
+   }
+   printAnsiDisplayState( color.text, color.background );
+   printThemedMnemonicText( " Quit\r\n", color.number );
+   printThemedMnemonicText( "Select preset -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 
    switch ( readValidatedMenuKey( COLOR_RESET_MENU_KEYS ) )
    {
       case 'd':
          stdPrintf( "Default\r\n" );
          defaultColors( 1 );
+         break;
+
+      case 'b':
+         stdPrintf( "Brilliant\r\n" );
+         brilliantColors();
          break;
 
       case 'c':
@@ -242,15 +289,6 @@ static void presetColorConfig( void )
       default:
          break;
    }
-}
-
-static void printAnsiForegroundColor( int colorValue )
-{
-   char aryAnsiSequence[32];
-
-   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                 colorValue );
-   stdPrintf( "%s", aryAnsiSequence );
 }
 
 static void printAnsiBackgroundColor( int colorValue )
@@ -297,7 +335,7 @@ static int transformPostHeaderColor( int inputChar, int isFriend )
          }
          return color.posttext;
       default:
-         return colorValueFromLegacyDigit( inputChar );
+         return transformIncomingAnsiColor( inputChar );
    }
 }
 
@@ -305,63 +343,63 @@ static void printGeneralColorPreview( void )
 {
    printAnsiDisplayState( color.forum, color.background );
    stdPrintf( "Lobby> " );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Enter message\r\n\n" );
-   printAnsiForegroundColor( color.errorTextColor );
+   printAnsiForegroundColorValue( color.errorTextColor );
    stdPrintf( "Only Sysops may post to the lobby\r\n\n" );
-   printAnsiForegroundColor( color.forum );
+   printAnsiForegroundColorValue( color.forum );
    stdPrintf( "Lobby> " );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Goto " );
-   printAnsiForegroundColor( color.forum );
+   printAnsiForegroundColorValue( color.forum );
    stdPrintf( "[Babble]  " );
-   printAnsiForegroundColor( color.number );
+   printAnsiForegroundColorValue( color.number );
    stdPrintf( "150" );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( " messages, " );
-   printAnsiForegroundColor( color.number );
+   printAnsiForegroundColorValue( color.number );
    stdPrintf( "1" );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( " new\r\n" );
 }
 
 static void printPostColorPreview( int dateColor, int textColor,
                                    int nameColor, const char *ptrName )
 {
-   printAnsiForegroundColor( dateColor );
+   printAnsiForegroundColorValue( dateColor );
    stdPrintf( "Jan  1, 2000 11:01" );
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( " from " );
-   printAnsiForegroundColor( nameColor );
+   printAnsiForegroundColorValue( nameColor );
    stdPrintf( "%s", ptrName );
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( "\r\nHi there!\r\n" );
-   printAnsiForegroundColor( color.forum );
+   printAnsiForegroundColorValue( color.forum );
    stdPrintf( "[Lobby> msg #1]\r\n" );
 }
 
 static void printExpressColorPreview( int textColor, int nameColor,
                                       const char *ptrName )
 {
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( "*** Message (#1) from " );
-   printAnsiForegroundColor( nameColor );
+   printAnsiForegroundColorValue( nameColor );
    stdPrintf( "%s", ptrName );
-   printAnsiForegroundColor( textColor );
+   printAnsiForegroundColorValue( textColor );
    stdPrintf( " at 11:01 ***\r\n>Hi there!\r\n" );
 }
 
 static void printInputColorPreview( void )
 {
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Message eXpress\r\nRecipient: " );
-   printAnsiForegroundColor( color.input1 );
+   printAnsiForegroundColorValue( color.input1 );
    stdPrintf( "Exam" );
-   printAnsiForegroundColor( color.input2 );
+   printAnsiForegroundColorValue( color.input2 );
    stdPrintf( "ple User\r\n" );
-   printAnsiForegroundColor( color.input1 );
+   printAnsiForegroundColorValue( color.input1 );
    stdPrintf( ">Hi there!\r\n" );
-   printAnsiForegroundColor( color.text );
+   printAnsiForegroundColorValue( color.text );
    stdPrintf( "Message received by Example User.\r\n" );
 }
 
@@ -369,24 +407,7 @@ int ansiTransform( int inputChar )
 {
    int transformedColor;
 
-   transformedColor = colorValueFromLegacyDigit( inputChar );
-   switch ( inputChar )
-   {
-      case '6':
-         transformedColor = color.number;
-         break;
-      case '3':
-         transformedColor = color.forum;
-         break;
-      case '2':
-         transformedColor = color.text;
-         break;
-      case '1':
-         transformedColor = color.errorTextColor;
-         break;
-      default:
-         break;
-   }
+   transformedColor = transformIncomingAnsiColor( inputChar );
 
    return transformedColor;
 }
@@ -454,7 +475,7 @@ int ansiTransformPost( int inputChar, int isFriend )
 {
    int transformedColor;
 
-   transformedColor = colorValueFromLegacyDigit( inputChar );
+   transformedColor = transformIncomingAnsiColor( inputChar );
    switch ( inputChar )
    {
       case '3':
@@ -477,6 +498,31 @@ int ansiTransformPost( int inputChar, int isFriend )
          break;
    }
    return transformedColor;
+}
+
+static int transformIncomingAnsiColor( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case '0':
+         return color.ansiBlackTextColor;
+      case '1':
+         return color.errorTextColor;
+      case '2':
+         return color.text;
+      case '3':
+         return color.forum;
+      case '4':
+         return color.ansiBlueTextColor;
+      case '5':
+         return color.ansiMagentaTextColor;
+      case '6':
+         return color.number;
+      case '7':
+         return color.ansiWhiteTextColor;
+      default:
+         return colorValueFromLegacyDigit( inputChar );
+   }
 }
 
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
@@ -522,8 +568,10 @@ void colorConfig( void )
    }
    while ( true )
    {
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YG@Ceneral  @YI@Cnput  @YP@Costs  pre@YS@Cets  @YO@Cptions  @YX@Cpress  @YQ@Cuit\r\n@YColor config -> @G" );
-      colorize( aryPromptText );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<P>resets  <G>eneral  <I>nput  po<S>ts  <O>ptions  <X>press  <Q>uit" );
+      printThemedMnemonicText( aryPromptText, color.number );
+      printThemedMnemonicText( "\r\nColor config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
 
       int inputChar = readValidatedMenuKey( COLOR_MAIN_MENU_KEYS );
 
@@ -543,12 +591,12 @@ void colorConfig( void )
             break;
 
          case 'p':
-            stdPrintf( "Post colors\r\n\n" );
-            postColorConfig();
+            presetColorConfig();
             break;
 
          case 's':
-            presetColorConfig();
+            stdPrintf( "Post colors\r\n\n" );
+            postColorConfig();
             break;
 
          case 'x':
@@ -594,8 +642,9 @@ void generalColorConfig( void )
    {
       printGeneralColorPreview();
 
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YB@Cackground  @YE@Crror  @YF@Corum  @YN@Cumber  @YT@Cext  @YQ@Cuit@Y -> @G" );
-      colorize( aryPromptText );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<B>ackground  <E>rror  <F>orum  <N>umber  <T>ext  <Q>uit -> " );
+      printThemedMnemonicText( aryPromptText, color.number );
+      printAnsiForegroundColorValue( color.text );
 
       int menuOption = readValidatedMenuKey( COLOR_GENERAL_MENU_KEYS );
 
@@ -641,8 +690,9 @@ void inputColorConfig( void )
    {
       printInputColorPreview();
 
-      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YT@Cext  @YC@Completion  @YQ@Cuit@Y -> @G" );
-      colorize( aryPromptText );
+      snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<T>ext  <C>ompletion  <Q>uit -> " );
+      printThemedMnemonicText( aryPromptText, color.number );
+      printAnsiForegroundColorValue( color.text );
 
       int menuOption = readValidatedMenuKey( COLOR_INPUT_MENU_KEYS );
 
@@ -753,8 +803,9 @@ char postColorMenu( void )
    int inputChar;
    char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YD@Cate  @YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
-   colorize( aryPromptText );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<D>ate  <N>ame  <T>ext  <Q>uit -> " );
+   printThemedMnemonicText( aryPromptText, color.number );
+   printAnsiForegroundColorValue( color.text );
 
    inputChar = readValidatedMenuKey( COLOR_POST_MENU_KEYS );
 
@@ -860,8 +911,9 @@ char expressColorMenu( void )
    int inputChar;
    char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n@YN@Came  @YT@Cext  @YQ@Cuit@Y -> @G" );
-   colorize( aryPromptText );
+   snprintf( aryPromptText, sizeof( aryPromptText ), "\r\n<N>ame  <T>ext  <Q>uit -> " );
+   printThemedMnemonicText( aryPromptText, color.number );
+   printAnsiForegroundColorValue( color.text );
 
    inputChar = readValidatedMenuKey( COLOR_EXPRESS_MENU_KEYS );
 
@@ -888,10 +940,13 @@ char expressColorMenu( void )
 char userOrFriend( void )
 {
    int inputChar;
-   char aryPromptText[100];
 
-   snprintf( aryPromptText, sizeof( aryPromptText ), "@GConfigure for @YU@Cser @Gor @YF@Criend @Y-> @G" );
-   colorize( aryPromptText );
+   printThemedMnemonicText( "Configure for ", color.text );
+   printThemedMnemonicText( "<U>ser", color.number );
+   printThemedMnemonicText( " or ", color.text );
+   printThemedMnemonicText( "<F>riend", color.number );
+   printThemedMnemonicText( " -> ", color.forum );
+   printAnsiForegroundColorValue( color.text );
 
    inputChar = readValidatedMenuKey( COLOR_USER_OR_FRIEND_KEYS );
 
