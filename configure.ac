@@ -16,6 +16,10 @@ AC_ARG_ENABLE(native-optimizations,
    [  --disable-native-optimizations  disable macOS host-specific tuning flags],
    [],
    [enable_native_optimizations=yes])
+AC_ARG_ENABLE(release-build,
+   [  --enable-release-build         build an optimized release binary],
+   [],
+   [enable_release_build=no])
 AC_ARG_ENABLE(universal-binary,
    [  --enable-universal-binary       build a universal macOS binary for Apple Silicon and Intel],
    [],
@@ -31,6 +35,15 @@ AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 OPTIMIZATION_CFLAGS=""
 UNIVERSAL_CFLAGS=""
 UNIVERSAL_LDFLAGS=""
+
+if test "x$ac_env_CFLAGS_set" != "xset"; then
+   if test "x$enable_release_build" = "xyes"; then
+      CFLAGS="-O2 -DNDEBUG"
+   else
+      CFLAGS="-g -Og"
+   fi
+fi
+
 case "$host_os" in
 darwin*)
 if test "x$enable_universal_binary" = "xyes"; then

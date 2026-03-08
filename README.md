@@ -32,12 +32,37 @@ make install
 
 ### Build Modes
 
-The default configure path will add host-appropriate tuning flags on macOS:
+The default configure path produces a development build.
 
-- Apple Silicon builds use Apple Silicon tuning flags
-- Intel Mac builds use Intel tuning flags
+- Dev build is the default
+- Dev build uses debug-friendly flags
+- macOS builds still add host-appropriate tuning flags by default:
+  - Apple Silicon builds use Apple Silicon tuning flags
+  - Intel Mac builds use Intel tuning flags
 
-To build a universal macOS binary for both Apple Silicon and Intel Macs:
+Default dev build:
+
+```bash
+make clean
+autoreconf -i
+./configure
+make -j4
+make check
+make cppcheck
+```
+
+Release build:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-release-build
+make -j4
+make check
+make cppcheck
+```
+
+Universal macOS build for both Apple Silicon and Intel Macs:
 
 ```bash
 make clean
