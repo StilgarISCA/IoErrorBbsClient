@@ -21,10 +21,31 @@ More background is documented in `history.md`.
 ## Quick Start
 
 ```bash
+make clean
 autoreconf -i
 ./configure
-make
+make -j4
+make check
+make cppcheck
 make install
+```
+
+### Build Modes
+
+The default configure path will add host-appropriate tuning flags on macOS:
+
+- Apple Silicon builds use Apple Silicon tuning flags
+- Intel Mac builds use Intel tuning flags
+
+To build a universal macOS binary for both Apple Silicon and Intel Macs:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-universal-binary
+make -j4
+make check
+make cppcheck
 ```
 
 ## Formatting and Linting
@@ -51,11 +72,15 @@ clang-tidy -p . -fix -fix-errors -format-style=file \
 
 ```bash
 # Apply repository formatting rules (.clang-format)
-clang-format -i $(git ls-files '*.c' '*.h')
+/opt/homebrew/opt/llvm/bin/clang-format -i $(git ls-files '*.c' '*.h')
 
 # Verify build
 make clean
+autoreconf -i
+./configure
 make -j4
+make check
+make cppcheck
 ```
 
 ## License

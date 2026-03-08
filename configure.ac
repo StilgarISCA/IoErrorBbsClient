@@ -16,6 +16,10 @@ AC_ARG_ENABLE(native-optimizations,
    [  --disable-native-optimizations  disable macOS host-specific tuning flags],
    [],
    [enable_native_optimizations=yes])
+AC_ARG_ENABLE(universal-binary,
+   [  --enable-universal-binary       build a universal macOS binary for Apple Silicon and Intel],
+   [],
+   [enable_universal_binary=no])
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -25,9 +29,31 @@ AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 
 OPTIMIZATION_CFLAGS=""
+UNIVERSAL_CFLAGS=""
+UNIVERSAL_LDFLAGS=""
 case "$host_os" in
 darwin*)
-if test "x$enable_native_optimizations" = "xyes"; then
+if test "x$enable_universal_binary" = "xyes"; then
+   universalFlags="-arch arm64 -arch x86_64"
+   saved_CFLAGS="$CFLAGS"
+   saved_LDFLAGS="$LDFLAGS"
+   CFLAGS="$CFLAGS $universalFlags"
+   LDFLAGS="$LDFLAGS $universalFlags"
+   AC_MSG_CHECKING([whether $CC supports macOS universal binary flags])
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+      [
+         AC_MSG_RESULT([yes])
+         UNIVERSAL_CFLAGS="$universalFlags"
+         UNIVERSAL_LDFLAGS="$universalFlags"
+      ],
+      [
+         AC_MSG_RESULT([no])
+         AC_MSG_ERROR([--enable-universal-binary requires compiler support for -arch arm64 -arch x86_64])
+      ]
+   )
+   CFLAGS="$saved_CFLAGS"
+   LDFLAGS="$saved_LDFLAGS"
+elif test "x$enable_native_optimizations" = "xyes"; then
    if test "x$ac_env_CFLAGS_set" != "xset"; then
       case "$host_cpu" in
       arm64|aarch64)
@@ -241,6 +267,8 @@ fi
 AC_SUBST([CMOCKA_CFLAGS])
 AC_SUBST([CMOCKA_LIBS])
 AC_SUBST([OPTIMIZATION_CFLAGS])
+AC_SUBST([UNIVERSAL_CFLAGS])
+AC_SUBST([UNIVERSAL_LDFLAGS])
 
 AC_SUBST(PLATFORM_OBJS)
 AC_CONFIG_HEADERS([config.h])
