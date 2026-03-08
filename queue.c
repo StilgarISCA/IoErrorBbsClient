@@ -61,7 +61,6 @@ int deleteQueue( queue *ptrQueue )
  */
 int pushQueue( const char *ptrObject, queue *ptrQueue )
 {
-   int remainingBytes;
    char *ptrQueueWrite; /* Pointer into the queue */
 
    if ( ptrQueue->itemCount >= ptrQueue->size )
@@ -77,10 +76,13 @@ int pushQueue( const char *ptrObject, queue *ptrQueue )
 #if DEBUG
    stdPrintf( "{Queuing %s, %d objects} ", ptrObject, ptrQueue->itemCount );
 #endif
-   /* Copy the object into its queue position */
-   for ( remainingBytes = ptrQueue->objsize; --remainingBytes >= 0; *ptrQueueWrite++ = *ptrObject++ )
+   /* Clear the destination slot so the queued string is always terminated. */
+   memset( ptrQueueWrite, 0, (size_t)ptrQueue->objsize );
+
+   /* Copy the string into its queue position without reading past the source. */
+   if ( ptrQueue->objsize > 0 )
    {
-      ;
+      snprintf( ptrQueueWrite, (size_t)ptrQueue->objsize, "%s", ptrObject );
    }
 
    /* Wrap around if we've gone past the end of the queue. */
@@ -98,7 +100,6 @@ int pushQueue( const char *ptrObject, queue *ptrQueue )
  */
 int popQueue( char *ptrObject, queue *ptrQueue )
 {
-   int remainingBytes;
    const char *ptrQueueRead; /* Pointer into the queue */
 
    if ( ptrQueue->itemCount <= 0 )
@@ -115,10 +116,7 @@ int popQueue( char *ptrObject, queue *ptrQueue )
    stdPrintf( "{Dequeuing %s, %d objects}\r\n", ptrQueueRead, ptrQueue->itemCount );
 #endif
    /* Copy the object. */
-   for ( remainingBytes = ptrQueue->objsize; --remainingBytes >= 0; *ptrObject++ = *ptrQueueRead++ )
-   {
-      ;
-   }
+   memcpy( ptrObject, ptrQueueRead, (size_t)ptrQueue->objsize );
 
    if ( ++ptrQueue->head >= ptrQueue->size )
    {
