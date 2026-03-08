@@ -386,9 +386,13 @@ void noTitleBar( void )
  */
 void connectBbs( void )
 {
-   const struct hostent *host;
    register int connectResult;
-   struct sockaddr_in socketAddress;
+   struct addrinfo addressHints;
+   struct addrinfo *ptrAddressInfo;
+   struct addrinfo *ptrAddressList;
+   int savedErrno;
+   char aryPortString[8];
+   const char *ptrLookupHost;
 
    if ( !*aryBbsHost )
    {
@@ -406,37 +410,59 @@ void connectBbs( void )
    {
       cmdLinePort = bbsPort;
    }
-   strncpy( (char *)&socketAddress, "", sizeof socketAddress );
-   socketAddress.sin_family = AF_INET;
-   socketAddress.sin_port = htons( cmdLinePort ); /* Spurious gcc warning */
-   if ( isdigit( *aryCommandLineHost ) )
+
+   snprintf( aryPortString, sizeof( aryPortString ), "%u", (unsigned int)cmdLinePort );
+   memset( &addressHints, 0, sizeof( addressHints ) );
+   addressHints.ai_family = AF_INET;
+   addressHints.ai_socktype = SOCK_STREAM;
+
+   ptrLookupHost = aryCommandLineHost;
+   connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
+   if ( connectResult != 0 )
    {
-      socketAddress.sin_addr.s_addr = inet_addr( aryCommandLineHost );
+      ptrLookupHost = BBS_IP_ADDRESS;
+      connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
    }
-   else if ( !( host = gethostbyname( aryCommandLineHost ) ) )
+   if ( connectResult != 0 )
    {
-      socketAddress.sin_addr.s_addr = inet_addr( BBS_IP_ADDRESS );
-   }
-   else
-   {
-      strncpy( (char *)&socketAddress.sin_addr, host->h_addr, sizeof socketAddress.sin_addr );
+      fatalExit( gai_strerror( connectResult ), "Network error" );
    }
 
-   net = socket( AF_INET, SOCK_STREAM, 0 );
+   net = -1;
+   savedErrno = 0;
+   for ( ptrAddressInfo = ptrAddressList; ptrAddressInfo != NULL; ptrAddressInfo = ptrAddressInfo->ai_next )
+   {
+      net = socket( ptrAddressInfo->ai_family,
+                    ptrAddressInfo->ai_socktype,
+                    ptrAddressInfo->ai_protocol );
+      if ( net < 0 )
+      {
+         savedErrno = errno;
+         continue;
+      }
+
+      /* Client configuration controls keepalive probes. */
+      configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
+
+      connectResult = connect( net, ptrAddressInfo->ai_addr, ptrAddressInfo->ai_addrlen );
+      if ( connectResult == 0 )
+      {
+         break;
+      }
+
+      savedErrno = errno;
+      close( net );
+      net = -1;
+   }
+   freeaddrinfo( ptrAddressList );
+
    if ( net < 0 )
-   {
-      fatalPerror( "socket", "Local error" );
-   }
-
-   /* Client configuration controls keepalive probes. */
-   configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
-
-   connectResult = connect( net, (struct sockaddr *)&socketAddress, sizeof socketAddress );
-   if ( connectResult < 0 )
    {
 #define BBSREFUSED "The BBS has refused connection, try again later.\r\n"
 #define BBSNETDOWN "Network problems prevent connection with the BBS, try again later.\r\n"
 #define BBSHOSTDOWN "The BBS is down or there are network problems, try again later.\r\n"
+
+      errno = savedErrno;
 
 #ifdef ECONNREFUSED
       if ( errno == ECONNREFUSED )
