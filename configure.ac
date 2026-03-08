@@ -33,6 +33,8 @@ AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 
 OPTIMIZATION_CFLAGS=""
+SANITIZER_CFLAGS=""
+SANITIZER_LDFLAGS=""
 UNIVERSAL_CFLAGS=""
 UNIVERSAL_LDFLAGS=""
 
@@ -42,6 +44,29 @@ if test "x$ac_env_CFLAGS_set" != "xset"; then
    else
       CFLAGS="-g -Og"
    fi
+fi
+
+if test "x$enable_release_build" != "xyes" && test "x$enable_universal_binary" != "xyes"; then
+   sanitizerCflags="-fsanitize=address,undefined -fno-omit-frame-pointer"
+   sanitizerLdflags="-fsanitize=address,undefined"
+   saved_CFLAGS="$CFLAGS"
+   saved_LDFLAGS="$LDFLAGS"
+   CFLAGS="$CFLAGS $sanitizerCflags"
+   LDFLAGS="$LDFLAGS $sanitizerLdflags"
+   AC_MSG_CHECKING([whether $CC supports development sanitizer flags])
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+      [
+         AC_MSG_RESULT([yes])
+         SANITIZER_CFLAGS="$sanitizerCflags"
+         SANITIZER_LDFLAGS="$sanitizerLdflags"
+      ],
+      [
+         AC_MSG_RESULT([no])
+         AC_MSG_WARN([development sanitizer flags are unavailable with this compiler; continuing without them])
+      ]
+   )
+   CFLAGS="$saved_CFLAGS"
+   LDFLAGS="$saved_LDFLAGS"
 fi
 
 case "$host_os" in
@@ -280,6 +305,8 @@ fi
 AC_SUBST([CMOCKA_CFLAGS])
 AC_SUBST([CMOCKA_LIBS])
 AC_SUBST([OPTIMIZATION_CFLAGS])
+AC_SUBST([SANITIZER_CFLAGS])
+AC_SUBST([SANITIZER_LDFLAGS])
 AC_SUBST([UNIVERSAL_CFLAGS])
 AC_SUBST([UNIVERSAL_LDFLAGS])
 
