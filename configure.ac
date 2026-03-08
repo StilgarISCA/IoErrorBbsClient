@@ -12,6 +12,10 @@ AC_ARG_WITH(ssl,
    ]
 )
 AC_ARG_ENABLE(save-password, [  --enable-save-password  allow passwords to be saved])
+AC_ARG_ENABLE(native-optimizations,
+   [  --disable-native-optimizations  disable macOS host-specific tuning flags],
+   [],
+   [enable_native_optimizations=yes])
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -19,6 +23,50 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
+
+OPTIMIZATION_CFLAGS=""
+case "$host_os" in
+darwin*)
+if test "x$enable_native_optimizations" = "xyes"; then
+   if test "x$ac_env_CFLAGS_set" != "xset"; then
+      case "$host_cpu" in
+      arm64|aarch64)
+         for optimizationFlag in "-mcpu=native" "-mcpu=apple-m1"; do
+            saved_CFLAGS="$CFLAGS"
+            CFLAGS="$CFLAGS $optimizationFlag"
+            AC_MSG_CHECKING([whether $CC accepts $optimizationFlag])
+            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+               [
+                  AC_MSG_RESULT([yes])
+                  OPTIMIZATION_CFLAGS="$OPTIMIZATION_CFLAGS $optimizationFlag"
+                  CFLAGS="$saved_CFLAGS"
+                  break
+               ],
+               [AC_MSG_RESULT([no])]
+            )
+            CFLAGS="$saved_CFLAGS"
+         done
+         ;;
+      x86_64|amd64)
+         for optimizationFlag in "-march=native" "-mtune=native"; do
+            saved_CFLAGS="$CFLAGS"
+            CFLAGS="$CFLAGS $optimizationFlag"
+            AC_MSG_CHECKING([whether $CC accepts $optimizationFlag])
+            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+               [
+                  AC_MSG_RESULT([yes])
+                  OPTIMIZATION_CFLAGS="$OPTIMIZATION_CFLAGS $optimizationFlag"
+               ],
+               [AC_MSG_RESULT([no])]
+            )
+            CFLAGS="$saved_CFLAGS"
+         done
+         ;;
+      esac
+   fi
+fi
+;;
+esac
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -linet:
@@ -192,6 +240,7 @@ if test "x$have_cmocka" = "xyes"; then
 fi
 AC_SUBST([CMOCKA_CFLAGS])
 AC_SUBST([CMOCKA_LIBS])
+AC_SUBST([OPTIMIZATION_CFLAGS])
 
 AC_SUBST(PLATFORM_OBJS)
 AC_CONFIG_HEADERS([config.h])

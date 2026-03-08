@@ -1,3 +1,5 @@
+AM_CFLAGS = $(OPTIMIZATION_CFLAGS)
+
 bin_PROGRAMS = bbs
 man_MANS = bbs.1
 
