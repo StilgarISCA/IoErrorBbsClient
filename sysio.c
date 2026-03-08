@@ -13,6 +13,11 @@
 
 char swork[BUFSIZ]; /* temp buffer for color stripping */
 
+static bool shouldFlushImmediately( const char *ptrText )
+{
+   return strchr( ptrText, '\n' ) == NULL;
+}
+
 /* stdPutChar() and capPutChar() write a single character to stdout and the
  * capture file, respectively.  On error, they terminate the client.
  */
@@ -111,7 +116,10 @@ int stdPuts( const char *ptrText )
    {
       fatalPerror( "stdPuts", "Local error" );
    }
-   fflush( stdout );
+   if ( shouldFlushImmediately( ptrText ) )
+   {
+      fflush( stdout );
+   }
    capPuts( ptrText );
    return 1;
 }
@@ -129,7 +137,10 @@ int capPuts( const char *ptrText )
          tempFileError();
          return 1;
       }
-      fflush( tempFile );
+      if ( shouldFlushImmediately( aryBuffer ) )
+      {
+         fflush( tempFile );
+      }
    }
    return 1;
 }

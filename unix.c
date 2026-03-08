@@ -931,8 +931,8 @@ void initialize( const char *protocol )
 
    isAway = 0;
 
-#ifdef _IOFBF
-   setvbuf( stdout, NULL, _IOFBF, 4096 );
+#ifdef _IOLBF
+   setvbuf( stdout, NULL, _IOLBF, 0 );
 #endif
 
    stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION, "macOS/Unix" );
