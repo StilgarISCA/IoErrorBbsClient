@@ -38,6 +38,7 @@ slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), .
 
       if ( !( ptrList->items = (void *)calloc( 1, (size_t)nitems * sizeof( void * ) ) ) )
       {
+         free( ptrList );
          return NULL;
       }
       va_start( argList, sortfn );
