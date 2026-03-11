@@ -75,16 +75,18 @@ static void setPtyInput( const int *aryInput, size_t inputCount )
 }
 
 /* inkey.c dependencies outside this test scope. */
-void fatalPerror( const char *message, const char *heading )
+noreturn void fatalPerror( const char *message, const char *heading )
 {
    (void)message;
    (void)heading;
    fatalPerrorCallCount++;
+   abort();
 }
 
-void myExit( void )
+noreturn void myExit( void )
 {
    myExitCallCount++;
+   abort();
 }
 
 void openBrowser( void )

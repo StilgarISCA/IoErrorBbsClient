@@ -13,6 +13,11 @@
 
 char swork[BUFSIZ]; /* temp buffer for color stripping */
 
+static bool shouldFlushImmediately( const char *ptrText )
+{
+   return strchr( ptrText, '\n' ) == NULL;
+}
+
 /* stdPutChar() and capPutChar() write a single character to stdout and the
  * capture file, respectively.  On error, they terminate the client.
  */
@@ -107,8 +112,14 @@ char *stripAnsi( char *ptrText, size_t bufferSize )
  */
 int stdPuts( const char *ptrText )
 {
-   printf( "%s", ptrText );
-   fflush( stdout );
+   if ( fputs( ptrText, stdout ) == EOF )
+   {
+      fatalPerror( "stdPuts", "Local error" );
+   }
+   if ( shouldFlushImmediately( ptrText ) )
+   {
+      fflush( stdout );
+   }
    capPuts( ptrText );
    return 1;
 }
@@ -118,22 +129,36 @@ int capPuts( const char *ptrText )
    if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive )
    {
       char aryBuffer[BUFSIZ];
+
       snprintf( aryBuffer, sizeof( aryBuffer ), "%s", ptrText );
       stripAnsi( aryBuffer, sizeof( aryBuffer ) );
-      fprintf( tempFile, "%s", aryBuffer );
-      fflush( tempFile );
+      if ( fputs( aryBuffer, tempFile ) == EOF )
+      {
+         tempFileError();
+         return 1;
+      }
+      if ( shouldFlushImmediately( aryBuffer ) )
+      {
+         fflush( tempFile );
+      }
    }
    return 1;
 }
 
 int netPuts( const char *ptrText )
 {
-   const char *ptrRead;
+   size_t textLength;
 
-   for ( ptrRead = ptrText; *ptrRead; ptrRead++ )
+   textLength = strlen( ptrText );
+   if ( textLength == 0 )
    {
-      netput( *ptrRead );
+      return 1;
    }
+   if ( fwrite( ptrText, sizeof( char ), textLength, netOutputFile ) != textLength )
+   {
+      fatalPerror( "netPuts", "Network error" );
+   }
+
    return 1;
 }
 

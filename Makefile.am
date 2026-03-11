@@ -1,5 +1,24 @@
+AM_CPPFLAGS = -I$(srcdir)
+AM_CFLAGS = $(OPTIMIZATION_CFLAGS) $(LTO_CFLAGS) $(STACK_PROTECTOR_CFLAGS) $(WARNING_CFLAGS) $(SANITIZER_CFLAGS)
+AM_LDFLAGS = $(LTO_LDFLAGS) $(SANITIZER_LDFLAGS)
+bbs_CFLAGS = $(AM_CFLAGS) $(UNIVERSAL_CFLAGS)
+bbs_LDFLAGS = $(AM_LDFLAGS) $(UNIVERSAL_LDFLAGS)
+
 bin_PROGRAMS = bbs
 man_MANS = bbs.1
+releasepackagedir = release
+releaseartifact = $(PACKAGE)-$(VERSION)-$(HOST_TRIPLE)
+releasebinary = $(releasepackagedir)/$(releaseartifact)
+releasedsym = $(releasebinary).dSYM
+noinst_HEADERS = \
+	browser.h \
+	defs.h \
+	ext.h \
+	proto.h \
+	sysio.h \
+	telnet.h \
+	unix.h \
+	users.h
 
 bbs_SOURCES = \
 	browser.c \
@@ -60,7 +79,7 @@ test_edit_LDADD = $(CMOCKA_LIBS)
 test_telnet_SOURCES = test/test_telnet.c test/test_helpers.c telnet.c queue.c global.c
 test_telnet_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_telnet_LDADD = $(CMOCKA_LIBS)
-EXTRA_DIST = test/test_helpers.h
+EXTRA_DIST = bbs.1 test/test_helpers.h
 else
 TESTS =
 endif
@@ -68,7 +87,27 @@ endif
 install-exec-hook:
 	@echo 'Now hot Asian sluts will come out of your computer whenever you type "bbs".'
 
-.PHONY: cppcheck analyze
+.PHONY: analyze cppcheck release-package
+
+release-package: bbs
+	@if test "x$(RELEASE_BUILD_ENABLED)" != "xyes"; then \
+		echo "release-package requires ./configure --enable-release-build"; \
+		exit 1; \
+	fi
+	@mkdir -p $(releasepackagedir)
+	@rm -f $(releasebinary)
+	@rm -rf $(releasedsym)
+	cp bbs $(releasebinary)
+	@if test "x$(DSYMUTIL)" != "xno"; then \
+		$(DSYMUTIL) $(releasebinary) -o $(releasedsym); \
+	fi
+	@if test "x$(STRIP)" != "xno"; then \
+		$(STRIP) -x $(releasebinary); \
+	fi
+	@echo "Release binary: $(releasebinary)"
+	@if test -d "$(releasedsym)"; then \
+		echo "Debug symbols: $(releasedsym)"; \
+	fi
 
 cppcheck:
 	@if ! command -v cppcheck >/dev/null 2>&1; then \

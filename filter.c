@@ -10,6 +10,53 @@
 
 static char thisline[320]; /* Copy of the current aryLine */
 
+static void printThemedWhoListHeader( const char *ptrText )
+{
+   if ( flagsConfiguration.useAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.forum );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%s", ptrText );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.text );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   stdPrintf( "%s", ptrText );
+}
+
+static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
+                                     const char *ptrTimeText, const char *ptrInfo )
+{
+   if ( flagsConfiguration.useAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postfriendname );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%-19s%c ", ptrName, statusMarker );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postfrienddate );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%s", ptrTimeText );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postfriendtext );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "  %s\r\n", ptrInfo );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.text );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   stdPrintf( "%-19s%c %s  %s\r\n", ptrName, statusMarker, ptrTimeText, ptrInfo );
+}
+
 static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength )
 {
    stdPrintf( "%.*s", (int)sequenceLength, ptrAnsiSequence );
@@ -52,7 +99,7 @@ void filterWhoList( register int inputChar )
    static unsigned char *ptrWhoEntryWrite = NULL;
    static long timestamp = 0; /* Friend list timestamp */
    static long extime = 0;    /* Extended time decoder */
-   char aryTempText[80], aryDisplayLine[100];
+   char aryTempText[80];
 
    if ( !ptrWhoEntryWrite )
    { /* First time through */
@@ -104,25 +151,52 @@ void filterWhoList( register int inputChar )
             }
             if ( savedWhoCount )
             { /* we've stored an old whoListProgress */
-               stdPrintf( timer == -1 ? "Die die die fornicate (666)\r\n\n" : "Your friends online (%d:%02d old)\r\n\n",
-                          (int)( elapsedSeconds / 60 ),
-                          (int)( elapsedSeconds % 60 ) );
+               if ( timer == -1 )
+               {
+                  printThemedWhoListHeader( "Die die die fornicate (666)\r\n\n" );
+               }
+               else
+               {
+                  snprintf( aryTempText, sizeof( aryTempText ),
+                            "Your friends online (%d:%02d old)\r\n\n",
+                            (int)( elapsedSeconds / 60 ),
+                            (int)( elapsedSeconds % 60 ) );
+                  printThemedWhoListHeader( aryTempText );
+               }
                for ( ; friendColumn++ < savedWhoCount; )
                {
-                  snprintf( aryTempText, sizeof( aryTempText ), "%s", (char *)arySavedWhoNames[friendColumn - 1] + 1 );
-                  snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%c%-18s%c @R   %2d:%02d@G  @C%s\r\n" : "%c%-18s%c    %2d:%02d  %s\r\n",
-                            *aryTempText & 0x7f, aryTempText + 1, *aryTempText & 0x80 ? '*' : ' ',
-                            ( *arySavedWhoNames[friendColumn - 1] + (int)( elapsedSeconds / 60 ) ) / 60,
-                            ( *arySavedWhoNames[friendColumn - 1] + (int)( elapsedSeconds / 60 ) ) % 60,
-                            arySavedWhoInfo[friendColumn - 1] );
-                  colorize( aryDisplayLine );
+                  char aryTimeText[16];
+
+                  snprintf( aryTempText, sizeof( aryTempText ), "%s",
+                            (char *)arySavedWhoNames[friendColumn - 1] + 1 );
+                  snprintf( aryTimeText, sizeof( aryTimeText ), "   %2d:%02d",
+                            ( *arySavedWhoNames[friendColumn - 1] +
+                              (int)( elapsedSeconds / 60 ) ) /
+                               60,
+                            ( *arySavedWhoNames[friendColumn - 1] +
+                              (int)( elapsedSeconds / 60 ) ) %
+                               60 );
+                  printThemedWhoListEntry( aryTempText + 1,
+                                           *aryTempText & 0x80 ? '*' : ' ',
+                                           aryTimeText,
+                                           (char *)arySavedWhoInfo[friendColumn - 1] );
                }
                friendColumn--;
             }
             else
             {
-               stdPrintf( timer == -1 ? "Die die die (666)" : "No friends online (%d:%02d old)",
-                          (int)( elapsedSeconds / 60 ), (int)( elapsedSeconds % 60 ) );
+               if ( timer == -1 )
+               {
+                  printThemedWhoListHeader( "Die die die (666)" );
+               }
+               else
+               {
+                  snprintf( aryTempText, sizeof( aryTempText ),
+                            "No friends online (%d:%02d old)",
+                            (int)( elapsedSeconds / 60 ),
+                            (int)( elapsedSeconds % 60 ) );
+                  printThemedWhoListHeader( aryTempText );
+               }
             }
             whoListProgress = 0;
             ptrWhoEntryWrite = NULL;
@@ -209,21 +283,30 @@ void filterWhoList( register int inputChar )
                   {
                      extime = (long)( *aryWhoEntry );
                   }
-                  if ( extime >= 1440 )
                   {
-                     snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%-19s%c @R%2ldd%02ld:%02ld@G  @C%s\r\n" : "%-19s%c %2ldd%02ld:%02ld  %s\r\n",
-                               aryTempText, aryWhoEntry[1] & 0x80 ? '*' : ' ',
-                               extime / 1440,
-                               ( extime % 1440 ) / 60, ( extime % 1440 ) % 60,
-                               ptrFriend->info );
+                     char aryTimeText[16];
+
+                     if ( extime >= 1440 )
+                     {
+                        snprintf( aryTimeText, sizeof( aryTimeText ),
+                                  "%2ldd%02ld:%02ld",
+                                  extime / 1440,
+                                  ( extime % 1440 ) / 60,
+                                  ( extime % 1440 ) % 60 );
+                     }
+                     else
+                     {
+                        snprintf( aryTimeText, sizeof( aryTimeText ),
+                                  "   %2ld:%02ld",
+                                  extime / 60,
+                                  extime % 60 );
+                     }
+
+                     printThemedWhoListEntry( aryTempText,
+                                              aryWhoEntry[1] & 0x80 ? '*' : ' ',
+                                              aryTimeText,
+                                              ptrFriend->info );
                   }
-                  else
-                  {
-                     snprintf( aryDisplayLine, sizeof( aryDisplayLine ), flagsConfiguration.useAnsi ? "@Y%-19s%c @R   %2ld:%02ld@G  @C%s\r\n" : "%-19s%c    %2ld:%02ld  %s\r\n",
-                               aryTempText, aryWhoEntry[1] & 0x80 ? '*' : ' ',
-                               extime / 60, extime % 60, ptrFriend->info );
-                  }
-                  colorize( aryDisplayLine );
                   *arySavedWhoNames[savedWhoCount] = *aryWhoEntry;
                   snprintf( (char *)arySavedWhoNames[savedWhoCount] + 1, sizeof( arySavedWhoNames[savedWhoCount] ) - 1, "%s", (char *)aryWhoEntry + 1 );
                   snprintf( (char *)arySavedWhoInfo[savedWhoCount], sizeof( arySavedWhoInfo[savedWhoCount] ), "%s", ptrFriend->info );
@@ -416,6 +499,11 @@ void filterPost( register int inputChar )
          return;
       }
    }
+   if ( needs.prochdr && posthdrp == NULL )
+   {
+      posthdrp = posthdr;
+      *posthdr = 0;
+   }
    /* At this point we should either insert the character into the post
      * buffer, or echo it to the screen.
      */
@@ -581,23 +669,12 @@ void filterData( register int inputChar )
    }
 
    /* Automatic X reply */
-   /*
-    if (sendingXState == SX_SENT_NAME) {
-   sendingXState = SX_SEND_NEXT;
-#if DEBUG
-   	stdPrintf("filterData 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland);
-#endif
-    }
-    */
    /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->itemCount && (isAway || isXland))
    sendAnX();
    */
    if ( sendingXState == SX_SEND_NEXT && !*thisline && inputChar == '\r' )
    {
       sendingXState = SX_NOT;
-#if DEBUG
-      stdPrintf( "filterData 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
       if ( xlandQueue->itemCount && ( isAway || isXland ) )
       {
          sendAnX();
