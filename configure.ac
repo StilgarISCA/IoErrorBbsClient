@@ -40,7 +40,7 @@ UNIVERSAL_LDFLAGS=""
 
 if test "x$ac_env_CFLAGS_set" != "xset"; then
    if test "x$enable_release_build" = "xyes"; then
-      CFLAGS="-O2 -DNDEBUG"
+      CFLAGS="-O2 -g -DNDEBUG"
    else
       CFLAGS="-g -Og"
    fi
