@@ -622,7 +622,9 @@ void getString( int length, char *result, int line )
          {
             break;
          }
-         for ( ptrWordStart = ptrCursor - 1; *ptrWordStart != ' ' && ptrWordStart > result; ptrWordStart-- )
+         for ( ptrWordStart = ptrCursor - 1;
+               ptrWordStart > result && *ptrWordStart != ' ';
+               ptrWordStart-- )
          {
             ;
          }
