@@ -2,6 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT([IoErrorBbsClient],[2.3.10-Stilgar])
 AC_CONFIG_SRCDIR([filter.c])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
+AC_CANONICAL_HOST
 
 AC_ARG_WITH(ssl,
    [  --with-ssl=PATH         use OpenSSL (no BBSs support this yet) ],
@@ -26,11 +27,56 @@ AC_ARG_ENABLE(universal-binary,
    [enable_universal_binary=no])
 
 dnl Checks for programs.
+if test "x$CC" = "x"; then
+   case "$host_os" in
+   darwin*)
+      AC_CHECK_PROGS([DEFAULT_CLANG], [clang], [no])
+      if test "x$DEFAULT_CLANG" != "xno"; then
+         CC="$DEFAULT_CLANG"
+      fi
+      ;;
+   esac
+fi
+
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
-AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
+
+compilerFamily="Unknown"
+isClangCompiler=no
+isAppleClangCompiler=no
+AC_MSG_CHECKING([whether $CC is Clang])
+AC_COMPILE_IFELSE(
+   [AC_LANG_PROGRAM([[
+#ifndef __clang__
+#error not clang
+#endif
+   ]], [[]])],
+   [
+      AC_MSG_RESULT([yes])
+      isClangCompiler=yes
+      compilerFamily="Clang"
+      AC_MSG_CHECKING([whether $CC is Apple Clang])
+      AC_COMPILE_IFELSE(
+         [AC_LANG_PROGRAM([[
+#ifndef __apple_build_version__
+#error not apple clang
+#endif
+         ]], [[]])],
+         [
+            AC_MSG_RESULT([yes])
+            isAppleClangCompiler=yes
+            compilerFamily="Apple Clang"
+         ],
+         [AC_MSG_RESULT([no])]
+      )
+   ],
+   [
+      AC_MSG_RESULT([no])
+      compilerFamily="GCC-compatible"
+   ]
+)
 
 OPTIMIZATION_CFLAGS=""
 STACK_PROTECTOR_CFLAGS=""
@@ -350,6 +396,43 @@ AC_SUBST(PLATFORM_OBJS)
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+
+if test "x$enable_release_build" = "xyes"; then
+   buildMode="release"
+else
+   buildMode="dev"
+fi
+
+if test "x$SANITIZER_CFLAGS" != "x"; then
+   sanitizerMode="enabled"
+else
+   sanitizerMode="disabled"
+fi
+
+if test "x$OPTIMIZATION_CFLAGS" != "x"; then
+   nativeOptimizationMode="enabled"
+else
+   nativeOptimizationMode="disabled"
+fi
+
+if test "x$STACK_PROTECTOR_CFLAGS" != "x"; then
+   stackProtectorMode="$STACK_PROTECTOR_CFLAGS"
+else
+   stackProtectorMode="disabled"
+fi
+
+cat <<CFG
+
+Configuration summary:
+  Compiler: $CC
+  Compiler family: $compilerFamily
+  Build mode: $buildMode
+  Sanitizers: $sanitizerMode
+  Universal binary: $enable_universal_binary
+  Native optimizations: $nativeOptimizationMode
+  Stack protector: $stackProtectorMode
+
+CFG
 
 if test x$enable_save_password = xyes; then
    cat <<SPT;
