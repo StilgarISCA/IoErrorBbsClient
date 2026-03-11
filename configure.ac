@@ -33,6 +33,7 @@ AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 
 OPTIMIZATION_CFLAGS=""
+STACK_PROTECTOR_CFLAGS=""
 SANITIZER_CFLAGS=""
 SANITIZER_LDFLAGS=""
 UNIVERSAL_CFLAGS=""
@@ -45,6 +46,22 @@ if test "x$ac_env_CFLAGS_set" != "xset"; then
       CFLAGS="-g -Og"
    fi
 fi
+
+for stackProtectorFlag in "-fstack-protector-strong" "-fstack-protector"; do
+   saved_CFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS $stackProtectorFlag"
+   AC_MSG_CHECKING([whether $CC accepts $stackProtectorFlag])
+   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+      [
+         AC_MSG_RESULT([yes])
+         STACK_PROTECTOR_CFLAGS="$stackProtectorFlag"
+         CFLAGS="$saved_CFLAGS"
+         break
+      ],
+      [AC_MSG_RESULT([no])]
+   )
+   CFLAGS="$saved_CFLAGS"
+done
 
 if test "x$enable_release_build" != "xyes" && test "x$enable_universal_binary" != "xyes"; then
    sanitizerCflags="-fsanitize=address,undefined -fno-omit-frame-pointer"
