@@ -1018,7 +1018,10 @@ void sInfo( const char *info, const char *heading )
 void sPerror( const char *message, const char *heading )
 {
    char aryErrorBuffer[4096];
+   int savedErrno = errno;
+
    snprintf( aryErrorBuffer, sizeof( aryErrorBuffer ), "%s: %s", heading, message );
+   errno = savedErrno;
    perror( aryErrorBuffer );
    fprintf( stderr, "\r" );
    return;

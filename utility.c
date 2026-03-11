@@ -122,7 +122,10 @@ void replyMessage( void )
 
 noreturn void fatalPerror( const char *error, const char *heading )
 {
+   int savedErrno = errno;
+
    fflush( stdout );
+   errno = savedErrno;
    sPerror( error, heading );
    myExit();
 }
