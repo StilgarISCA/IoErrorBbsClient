@@ -76,6 +76,38 @@ static void resetLists( void )
    }
 }
 
+static void addFriend( const char *ptrName, const char *ptrInfo )
+{
+   friend *ptrFriend;
+
+   if ( friendList == NULL )
+   {
+      friendList = slistCreate( 0, fSortCompareVoid );
+      if ( friendList == NULL )
+      {
+         fail_msg( "slistCreate failed while preparing friendList for filter tests" );
+         return;
+      }
+   }
+
+   ptrFriend = calloc( 1, sizeof( friend ) );
+   if ( ptrFriend == NULL )
+   {
+      fail_msg( "calloc failed while creating friend entry for filter tests" );
+      return;
+   }
+
+   ptrFriend->magic = 0x3231;
+   snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrName );
+   snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", ptrInfo );
+
+   if ( !slistAddItem( friendList, ptrFriend, 1 ) )
+   {
+      free( ptrFriend );
+      fail_msg( "slistAddItem failed while adding friend entry for filter tests" );
+   }
+}
+
 /* filter.c dependencies not under direct test in this file. */
 int ansiTransform( int inputChar )
 {
@@ -290,6 +322,16 @@ void getString( int length, char *result, int line )
 int strCompareVoid( const void *ptrLeft, const void *ptrRight )
 {
    return strcmp( (const char *)ptrLeft, (const char *)ptrRight );
+}
+
+int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
+{
+   const friend *const *ptrLeftFriend;
+   const friend *const *ptrRightFriend;
+
+   ptrLeftFriend = ptrLeft;
+   ptrRightFriend = ptrRight;
+   return strcmp( ( *ptrLeftFriend )->name, ( *ptrRightFriend )->name );
 }
 
 static void isAutomaticReply_WhenReplyPrefixPresent_ReturnsTrue( void **state )
@@ -801,6 +843,152 @@ static void emitUrlDetectionReport_WhenScreenReaderModeEnabled_EmitsNoSummary( v
    resetLists();
 }
 
+static void filterWhoList_WhenSavedFriendsRendered_UsesThemeColors( void **state )
+{
+   // Arrange
+   char aryExpectedHeaderColor[32];
+   char aryExpectedNameColor[32];
+   char aryExpectedTimeColor[32];
+   char aryExpectedInfoColor[32];
+   char aryExpectedResetColor[32];
+
+   (void)state;
+
+   resetState();
+   flagsConfiguration.useAnsi = 1;
+   color.forum = 33;
+   color.postfriendname = 196;
+   color.postfrienddate = 220;
+   color.postfriendtext = 214;
+   color.text = 231;
+   savedWhoCount = 1;
+   arySavedWhoNames[0][0] = 65;
+   snprintf( (char *)arySavedWhoNames[0] + 1, sizeof( arySavedWhoNames[0] ) - 1, "%c%s",
+             (char)0x80 | 'S', "tilgar" );
+   snprintf( (char *)arySavedWhoInfo[0], sizeof( arySavedWhoInfo[0] ), "%s",
+             "Color-themed friend" );
+
+   // Act
+   filterWhoList( 0 );
+
+   // Assert
+   formatAnsiForegroundSequence( aryExpectedHeaderColor, sizeof( aryExpectedHeaderColor ),
+                                 color.forum );
+   formatAnsiForegroundSequence( aryExpectedNameColor, sizeof( aryExpectedNameColor ),
+                                 color.postfriendname );
+   formatAnsiForegroundSequence( aryExpectedTimeColor, sizeof( aryExpectedTimeColor ),
+                                 color.postfrienddate );
+   formatAnsiForegroundSequence( aryExpectedInfoColor, sizeof( aryExpectedInfoColor ),
+                                 color.postfriendtext );
+   formatAnsiForegroundSequence( aryExpectedResetColor, sizeof( aryExpectedResetColor ),
+                                 color.text );
+   if ( strstr( aryPrintLog, aryExpectedHeaderColor ) == NULL )
+   {
+      fail_msg( "saved friends-online header should use forum color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedNameColor ) == NULL )
+   {
+      fail_msg( "saved friends-online entry should use friend name color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedTimeColor ) == NULL )
+   {
+      fail_msg( "saved friends-online entry should use friend time color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedInfoColor ) == NULL )
+   {
+      fail_msg( "saved friends-online entry should use friend info color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedResetColor ) == NULL )
+   {
+      fail_msg( "saved friends-online output should restore text color afterward; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "tilgar" ) == NULL )
+   {
+      fail_msg( "saved friends-online output should include the saved friend name; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "Color-themed friend" ) == NULL )
+   {
+      fail_msg( "saved friends-online output should include the saved friend info; log was: %s", aryPrintLog );
+   }
+}
+
+static void filterWhoList_WhenLiveFriendRendered_UsesThemeColors( void **state )
+{
+   // Arrange
+   char aryExpectedNameColor[32];
+   char aryExpectedTimeColor[32];
+   char aryExpectedInfoColor[32];
+   char aryExpectedResetColor[32];
+   const unsigned char aryWhoBytes[] = { 66, 'S', 't', 'i', 'l', 'g', 'a', 'r' };
+   size_t byteIndex;
+
+   (void)state;
+
+   resetState();
+   resetLists();
+   flagsConfiguration.useAnsi = 1;
+   color.postfriendname = 196;
+   color.postfrienddate = 220;
+   color.postfriendtext = 214;
+   color.text = 231;
+   whoListProgress = 1;
+   whoList = slistCreate( 0, sortCompareVoid );
+   if ( whoList == NULL )
+   {
+      fail_msg( "slistCreate failed while preparing whoList for filter tests" );
+      return;
+   }
+   addFriend( "Stilgar", "Live themed friend" );
+
+   // Act
+   for ( byteIndex = 0; byteIndex < sizeof( aryWhoBytes ); byteIndex++ )
+   {
+      filterWhoList( aryWhoBytes[byteIndex] );
+   }
+   filterWhoList( 0 );
+   filterWhoList( 0 );
+
+   // Assert
+   formatAnsiForegroundSequence( aryExpectedNameColor, sizeof( aryExpectedNameColor ),
+                                 color.postfriendname );
+   formatAnsiForegroundSequence( aryExpectedTimeColor, sizeof( aryExpectedTimeColor ),
+                                 color.postfrienddate );
+   formatAnsiForegroundSequence( aryExpectedInfoColor, sizeof( aryExpectedInfoColor ),
+                                 color.postfriendtext );
+   formatAnsiForegroundSequence( aryExpectedResetColor, sizeof( aryExpectedResetColor ),
+                                 color.text );
+   if ( strstr( aryPrintLog, "Your friends online (new)" ) == NULL )
+   {
+      fail_msg( "live friends-online output should include the new-list header; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedNameColor ) == NULL )
+   {
+      fail_msg( "live friends-online entry should use friend name color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedTimeColor ) == NULL )
+   {
+      fail_msg( "live friends-online entry should use friend time color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedInfoColor ) == NULL )
+   {
+      fail_msg( "live friends-online entry should use friend info color; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, aryExpectedResetColor ) == NULL )
+   {
+      fail_msg( "live friends-online output should restore text color afterward; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "Stilgar" ) == NULL )
+   {
+      fail_msg( "live friends-online output should include the live friend name; log was: %s", aryPrintLog );
+   }
+   if ( strstr( aryPrintLog, "Live themed friend" ) == NULL )
+   {
+      fail_msg( "live friends-online output should include the live friend info; log was: %s", aryPrintLog );
+   }
+
+   resetLists();
+}
+
 static void filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence( void **state )
 {
    // Arrange
@@ -888,6 +1076,8 @@ int main( void )
       cmocka_unit_test( emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState ),
       cmocka_unit_test( emitUrlDetectionReport_WhenClickableUrlsDisabled_EmitsNoSummary ),
       cmocka_unit_test( emitUrlDetectionReport_WhenScreenReaderModeEnabled_EmitsNoSummary ),
+      cmocka_unit_test( filterWhoList_WhenSavedFriendsRendered_UsesThemeColors ),
+      cmocka_unit_test( filterWhoList_WhenLiveFriendRendered_UsesThemeColors ),
       cmocka_unit_test( filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
