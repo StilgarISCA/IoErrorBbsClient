@@ -499,6 +499,11 @@ void filterPost( register int inputChar )
          return;
       }
    }
+   if ( needs.prochdr && posthdrp == NULL )
+   {
+      posthdrp = posthdr;
+      *posthdr = 0;
+   }
    /* At this point we should either insert the character into the post
      * buffer, or echo it to the screen.
      */
