@@ -399,8 +399,10 @@ AC_OUTPUT
 
 if test "x$enable_release_build" = "xyes"; then
    buildMode="release"
+   optimizationMode="release"
 else
    buildMode="dev"
+   optimizationMode="development"
 fi
 
 if test "x$SANITIZER_CFLAGS" != "x"; then
@@ -415,20 +417,48 @@ else
    nativeOptimizationMode="disabled"
 fi
 
+if test "x$enable_universal_binary" = "xyes"; then
+   universalMode="enabled"
+else
+   universalMode="disabled"
+fi
+
 if test "x$STACK_PROTECTOR_CFLAGS" != "x"; then
    stackProtectorMode="$STACK_PROTECTOR_CFLAGS"
 else
    stackProtectorMode="disabled"
 fi
 
+if test "x$ac_cv_openssldir" != "xno"; then
+   sslMode="enabled"
+else
+   sslMode="disabled"
+fi
+
+if test "x$enable_save_password" = "xyes"; then
+   savePasswordMode="enabled"
+else
+   savePasswordMode="disabled"
+fi
+
+if test "x$have_cmocka" = "xyes"; then
+   cmockaMode="found"
+else
+   cmockaMode="not found"
+fi
+
 cat <<CFG
 
 Configuration summary:
-  Compiler: $CC
-  Compiler family: $compilerFamily
+  Compiler: $CC ($compilerFamily)
+  Host: $host
   Build mode: $buildMode
+  Optimization mode: $optimizationMode
+  Universal binary: $universalMode
+  OpenSSL support: $sslMode
+  Save password support: $savePasswordMode
+  CMocka: $cmockaMode
   Sanitizers: $sanitizerMode
-  Universal binary: $enable_universal_binary
   Native optimizations: $nativeOptimizationMode
   Stack protector: $stackProtectorMode
 
