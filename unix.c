@@ -113,9 +113,6 @@ int initSSL( void )
       return 0;
    }
 
-#if DEBUG
-   printf( "SSL initialized\n" );
-#endif
    return 1;
 }
 #endif /* HAVE_OPENSSL */
@@ -940,9 +937,6 @@ void initialize( const char *protocol )
    stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
    stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
    stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
-#if DEBUG
-   stdPrintf( "DEBUGGING VERSION - DEBUGGING CODE IS ENABLED!  DO NOT USE THIS CLIENT!\r\n\n" );
-#endif
    fflush( stdout );
    xlandQueue = newQueue( 21, MAX_USER_NAME_HISTORY_COUNT );
    if ( !xlandQueue )

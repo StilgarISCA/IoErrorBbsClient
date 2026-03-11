@@ -93,14 +93,8 @@ void sendAnX( void )
 {
    /* get the ball rolling with the bbs */
    sendingXState = SX_WANT_TO;
-#if DEBUG
-   stdPrintf( "sendAnX 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
    sendTrackedChar( 'x' );
    sendingXState = SENDING_X_STATE_SENT_COMMAND_X;
-#if DEBUG
-   stdPrintf( "sendAnX 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
 }
 
 /* fake getFiveLines for the bbs */
@@ -124,9 +118,6 @@ void replyMessage( void )
       sendTrackedNewline();
    }
    sendingXState = SX_NOT;
-#if DEBUG
-   stdPrintf( "replyMessage 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
 }
 
 void fatalPerror( const char *error, const char *heading )

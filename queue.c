@@ -73,9 +73,6 @@ int pushQueue( const char *ptrObject, queue *ptrQueue )
    /* Find the target address within the queue to insert object. */
    ptrQueueWrite = ptrQueue->start + ptrQueue->objsize * ptrQueue->tail;
 
-#if DEBUG
-   stdPrintf( "{Queuing %s, %d objects} ", ptrObject, ptrQueue->itemCount );
-#endif
    /* Clear the destination slot so the queued string is always terminated. */
    memset( ptrQueueWrite, 0, (size_t)ptrQueue->objsize );
 
@@ -112,9 +109,6 @@ int popQueue( char *ptrObject, queue *ptrQueue )
    /* Find the object within the queue. */
    ptrQueueRead = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head );
 
-#if DEBUG
-   stdPrintf( "{Dequeuing %s, %d objects}\r\n", ptrQueueRead, ptrQueue->itemCount );
-#endif
    /* Copy the object. */
    memcpy( ptrObject, ptrQueueRead, (size_t)ptrQueue->objsize );
 

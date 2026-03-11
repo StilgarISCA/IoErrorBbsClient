@@ -664,23 +664,12 @@ void filterData( register int inputChar )
    }
 
    /* Automatic X reply */
-   /*
-    if (sendingXState == SX_SENT_NAME) {
-   sendingXState = SX_SEND_NEXT;
-#if DEBUG
-   	stdPrintf("filterData 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland);
-#endif
-    }
-    */
    /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->itemCount && (isAway || isXland))
    sendAnX();
    */
    if ( sendingXState == SX_SEND_NEXT && !*thisline && inputChar == '\r' )
    {
       sendingXState = SX_NOT;
-#if DEBUG
-      stdPrintf( "filterData 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
       if ( xlandQueue->itemCount && ( isAway || isXland ) )
       {
          sendAnX();
