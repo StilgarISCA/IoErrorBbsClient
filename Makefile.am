@@ -6,6 +6,10 @@ bbs_LDFLAGS = $(AM_LDFLAGS) $(UNIVERSAL_LDFLAGS)
 
 bin_PROGRAMS = bbs
 man_MANS = bbs.1
+releasepackagedir = release
+releaseartifact = $(PACKAGE)-$(VERSION)-$(HOST_TRIPLE)
+releasebinary = $(releasepackagedir)/$(releaseartifact)
+releasedsym = $(releasebinary).dSYM
 noinst_HEADERS = \
 	browser.h \
 	defs.h \
@@ -83,7 +87,27 @@ endif
 install-exec-hook:
 	@echo 'Now hot Asian sluts will come out of your computer whenever you type "bbs".'
 
-.PHONY: cppcheck analyze
+.PHONY: analyze cppcheck release-package
+
+release-package: bbs
+	@if test "x$(RELEASE_BUILD_ENABLED)" != "xyes"; then \
+		echo "release-package requires ./configure --enable-release-build"; \
+		exit 1; \
+	fi
+	@mkdir -p $(releasepackagedir)
+	@rm -f $(releasebinary)
+	@rm -rf $(releasedsym)
+	cp bbs $(releasebinary)
+	@if test "x$(DSYMUTIL)" != "xno"; then \
+		$(DSYMUTIL) $(releasebinary) -o $(releasedsym); \
+	fi
+	@if test "x$(STRIP)" != "xno"; then \
+		$(STRIP) -x $(releasebinary); \
+	fi
+	@echo "Release binary: $(releasebinary)"
+	@if test -d "$(releasedsym)"; then \
+		echo "Debug symbols: $(releasedsym)"; \
+	fi
 
 cppcheck:
 	@if ! command -v cppcheck >/dev/null 2>&1; then \

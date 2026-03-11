@@ -1,4 +1,4 @@
-#IoError BBS Client
+# IoError BBS Client
 
 This fork is **2.3.10-Stilgar** by Stilgar, based on the ISCABBS client 1.5.1
 (stdio patch) by Serendipity.
@@ -61,6 +61,19 @@ make check
 make cppcheck
 ```
 
+Release package:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-release-build
+make -j4
+make release-package
+```
+
+`make release-package` creates a stripped release binary under `release/` and
+keeps a matching macOS `.dSYM` bundle for postmortem debugging.
+
 Release validation:
 
 ```bash
@@ -91,10 +104,10 @@ make cppcheck
 ## Formatting and Linting
 
 ```bash
-#Apply repository formatting rules(.clang - format )
+# Apply repository formatting rules (.clang-format)
 /opt/homebrew/opt/llvm/bin/clang-format -i $(git ls-files '*.c' '*.h')
 
-#Verify the default dev build
+# Verify the default dev build
 make clean
 autoreconf -i
 ./configure
@@ -106,10 +119,10 @@ make cppcheck
 Optional clang-tidy setup:
 
 ```bash
-#Generate / refresh compile_commands.json for clang - tidy
+# Generate/refresh compile_commands.json for clang-tidy
 bear -- make clean all -j4
 
-#Add required braces to control statements
+# Add required braces to control statements
 /opt/homebrew/opt/llvm/bin/clang-tidy -p . -fix -fix-errors -format-style=file \
   -checks='-*,readability-braces-around-statements' \
   --extra-arg=-isysroot \
