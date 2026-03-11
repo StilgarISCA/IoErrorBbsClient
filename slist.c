@@ -232,10 +232,8 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
    	 * item, or an item that is greater than the one in list1
    	 * that we are currently looking at.
    	 */
-      int compareResult;
-
       /* First item in n2 not less than current item n1 */
-      while ( ( compareResult = ptrResultList->sortfn( list1->items[leftIndex], list2->items[rightIndex] ) ) < 0 )
+      while ( ptrResultList->sortfn( list1->items[leftIndex], list2->items[rightIndex] ) < 0 )
       {
          rightIndex++;
          /* If this happens, we're done */
