@@ -1,3 +1,4 @@
+AM_CPPFLAGS = -I$(srcdir)
 AM_CFLAGS = $(OPTIMIZATION_CFLAGS) $(STACK_PROTECTOR_CFLAGS) $(WARNING_CFLAGS) $(SANITIZER_CFLAGS)
 AM_LDFLAGS = $(SANITIZER_LDFLAGS)
 bbs_CFLAGS = $(AM_CFLAGS) $(UNIVERSAL_CFLAGS)
@@ -5,6 +6,15 @@ bbs_LDFLAGS = $(AM_LDFLAGS) $(UNIVERSAL_LDFLAGS)
 
 bin_PROGRAMS = bbs
 man_MANS = bbs.1
+noinst_HEADERS = \
+	browser.h \
+	defs.h \
+	ext.h \
+	proto.h \
+	sysio.h \
+	telnet.h \
+	unix.h \
+	users.h
 
 bbs_SOURCES = \
 	browser.c \
@@ -65,7 +75,7 @@ test_edit_LDADD = $(CMOCKA_LIBS)
 test_telnet_SOURCES = test/test_telnet.c test/test_helpers.c telnet.c queue.c global.c
 test_telnet_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_telnet_LDADD = $(CMOCKA_LIBS)
-EXTRA_DIST = test/test_helpers.h
+EXTRA_DIST = bbs.1 test/test_helpers.h
 else
 TESTS =
 endif
