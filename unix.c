@@ -1040,11 +1040,20 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
 {
    FILE *ptrOldFile;
    FILE *ptrNewFile;
-   long targetSize;
+   struct stat targetFileStatus;
+   bool shouldCopy;
 
    ptrOldFile = fopen( oldpath, "r" );
    if ( !ptrOldFile )
    {
+      return;
+   }
+
+   shouldCopy = ( stat( newpath, &targetFileStatus ) != 0 || targetFileStatus.st_size == 0 );
+   if ( !shouldCopy )
+   {
+      fclose( ptrOldFile );
+      unlink( oldpath );
       return;
    }
 
@@ -1055,8 +1064,6 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
       return;
    }
 
-   targetSize = ftell( ptrNewFile );
-   if ( targetSize == 0 )
    {
       char aryCopyBuffer[BUFSIZ];
       size_t bytesRead;
