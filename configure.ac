@@ -34,6 +34,7 @@ AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 
 OPTIMIZATION_CFLAGS=""
 STACK_PROTECTOR_CFLAGS=""
+WARNING_CFLAGS=""
 SANITIZER_CFLAGS=""
 SANITIZER_LDFLAGS=""
 UNIVERSAL_CFLAGS=""
@@ -47,7 +48,23 @@ if test "x$ac_env_CFLAGS_set" != "xset"; then
    fi
 fi
 
-for stackProtectorFlag in "-fstack-protector-strong" "-fstack-protector"; do
+for warningFlag in "-Wall" "-Wextra" "-Wformat=2" "-Wformat-security" "-Werror=format-security";
+do
+   saved_CFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS $warningFlag"
+   AC_MSG_CHECKING([whether $CC accepts $warningFlag])
+   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+      [
+         AC_MSG_RESULT([yes])
+         WARNING_CFLAGS="$WARNING_CFLAGS $warningFlag"
+      ],
+      [AC_MSG_RESULT([no])]
+   )
+   CFLAGS="$saved_CFLAGS"
+done
+
+for stackProtectorFlag in "-fstack-protector-strong" "-fstack-protector";
+do
    saved_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $stackProtectorFlag"
    AC_MSG_CHECKING([whether $CC accepts $stackProtectorFlag])
@@ -322,6 +339,8 @@ fi
 AC_SUBST([CMOCKA_CFLAGS])
 AC_SUBST([CMOCKA_LIBS])
 AC_SUBST([OPTIMIZATION_CFLAGS])
+AC_SUBST([STACK_PROTECTOR_CFLAGS])
+AC_SUBST([WARNING_CFLAGS])
 AC_SUBST([SANITIZER_CFLAGS])
 AC_SUBST([SANITIZER_LDFLAGS])
 AC_SUBST([UNIVERSAL_CFLAGS])
