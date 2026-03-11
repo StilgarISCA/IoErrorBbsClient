@@ -284,7 +284,14 @@ int stdPrintf( const char *format, ... )
    size_t currentLength;
 
    va_start( argList, format );
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
    vsnprintf( aryBuffer, sizeof( aryBuffer ), format, argList );
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
    va_end( argList );
 
    currentLength = strlen( aryStdPrintfLog );
