@@ -1,2 +1,0 @@
-* Improve line editing a la GNU readline
-* Make entire client thread-safe.  Major work but it has to be done.
