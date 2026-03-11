@@ -1,4 +1,4 @@
-# IoError BBS Client
+#IoError BBS Client
 
 This fork is **2.3.10-Stilgar** by Stilgar, based on the ISCABBS client 1.5.1
 (stdio patch) by Serendipity.
@@ -27,7 +27,6 @@ autoreconf -i
 make -j4
 make check
 make cppcheck
-make install
 ```
 
 ### Build Modes
@@ -35,7 +34,7 @@ make install
 The default configure path produces a development build.
 
 - Dev build is the default
-- Dev build uses debug-friendly flags
+- Dev build uses debug-friendly flags and sanitizers
 - macOS builds still add host-appropriate tuning flags by default:
   - Apple Silicon builds use Apple Silicon tuning flags
   - Intel Mac builds use Intel tuning flags
@@ -62,6 +61,22 @@ make check
 make cppcheck
 ```
 
+Release validation:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-release-build
+make -j4
+make check
+make cppcheck
+make distcheck
+```
+
+`make distcheck` validates that the distribution tarball can be packaged, built,
+tested, installed, uninstalled, and cleaned successfully from a fresh
+out-of-tree build.
+
 Universal macOS build for both Apple Silicon and Intel Macs:
 
 ```bash
@@ -76,36 +91,30 @@ make cppcheck
 ## Formatting and Linting
 
 ```bash
-# Generate/refresh compile_commands.json for clang-tidy
-bear -- make clean all -j4
-
-# Run static analysis with cppcheck
-make cppcheck
-
-# Run full analysis (cppcheck + clang-tidy when available)
-make analyze
-```
-
-```bash
-# Add required braces to control statements
-clang-tidy -p . -fix -fix-errors -format-style=file \
-  -checks='-*,readability-braces-around-statements' \
-  --extra-arg=-isysroot \
-  --extra-arg="$(xcrun --sdk macosx --show-sdk-path)" \
-  $(git ls-files '*.c')
-```
-
-```bash
-# Apply repository formatting rules (.clang-format)
+#Apply repository formatting rules(.clang - format )
 /opt/homebrew/opt/llvm/bin/clang-format -i $(git ls-files '*.c' '*.h')
 
-# Verify build
+#Verify the default dev build
 make clean
 autoreconf -i
 ./configure
 make -j4
 make check
 make cppcheck
+```
+
+Optional clang-tidy setup:
+
+```bash
+#Generate / refresh compile_commands.json for clang - tidy
+bear -- make clean all -j4
+
+#Add required braces to control statements
+/opt/homebrew/opt/llvm/bin/clang-tidy -p . -fix -fix-errors -format-style=file \
+  -checks='-*,readability-braces-around-statements' \
+  --extra-arg=-isysroot \
+  --extra-arg="$(xcrun --sdk macosx --show-sdk-path)" \
+  $(git ls-files '*.c')
 ```
 
 ## License
