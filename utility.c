@@ -120,21 +120,21 @@ void replyMessage( void )
    sendingXState = SX_NOT;
 }
 
-void fatalPerror( const char *error, const char *heading )
+noreturn void fatalPerror( const char *error, const char *heading )
 {
    fflush( stdout );
    sPerror( error, heading );
    myExit();
 }
 
-void fatalExit( const char *message, const char *heading )
+noreturn void fatalExit( const char *message, const char *heading )
 {
    fflush( stdout );
    sError( message, heading );
    myExit();
 }
 
-void myExit( void )
+noreturn void myExit( void )
 {
    fflush( stdout );
    if ( childPid )

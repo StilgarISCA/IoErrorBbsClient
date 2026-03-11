@@ -190,7 +190,7 @@ int fStrCompareVoid( const void *ptrName, const void *ptrFriend )
    return strcmp( (const char *)ptrName, ( (const friend *)ptrFriend )->name );
 }
 
-void fatalExit( const char *message, const char *heading )
+noreturn void fatalExit( const char *message, const char *heading )
 {
    fail_msg( "fatalExit invoked unexpectedly: %s (%s)", message, heading );
    abort();

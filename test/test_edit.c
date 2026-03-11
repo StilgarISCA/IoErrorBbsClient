@@ -46,10 +46,11 @@ void continuedPostHelper( void )
 {
 }
 
-void fatalPerror( const char *error, const char *heading )
+noreturn void fatalPerror( const char *error, const char *heading )
 {
    (void)error;
    (void)heading;
+   abort();
 }
 
 char *findChar( const char *ptrString, int targetChar )

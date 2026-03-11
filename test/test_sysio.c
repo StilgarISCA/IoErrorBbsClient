@@ -40,11 +40,12 @@ static void resetState( void )
 }
 
 /* sysio.c dependency stubs. */
-void fatalPerror( const char *message, const char *heading )
+noreturn void fatalPerror( const char *message, const char *heading )
 {
    (void)message;
    (void)heading;
    fatalPerrorCallCount++;
+   abort();
 }
 
 void tempFileError( void )

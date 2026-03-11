@@ -11,11 +11,17 @@
 #ifndef PROTO_H_INCLUDED
 #define PROTO_H_INCLUDED
 
+#include <stdnoreturn.h>
+
 #ifdef STDC_HEADERS
 #define P( x ) x
 #else
 #error Sorry, an ANSI C compiler is required now.
 #endif
+
+noreturn extern void fatalExit P( (const char *, const char *));
+noreturn extern void fatalPerror P( (const char *, const char *));
+noreturn extern void myExit P( (void));
 
 extern void
    ansiTransformExpress P( (char *, size_t)),
@@ -39,8 +45,6 @@ extern void
    expressConfig P( (void)),
    expressFriendColorConfig P( (void)),
    expressUserColorConfig P( (void)),
-   fatalExit P( (const char *, const char *)),
-   fatalPerror P( (const char *, const char *)),
    feedPager P( ( int, ... ) ),
    filterExpress P( (int)),
    filterData P( (int)),
@@ -65,7 +69,6 @@ extern void
    makeMessage P( (int)),
    morePromptHelper P( (void)),
    moveIfNeeded P( (const char *, const char *)),
-   myExit P( (void)),
    mySleep P( (unsigned int)),
    newAwayMessage P( (void)),
    newMacro P( (int)),

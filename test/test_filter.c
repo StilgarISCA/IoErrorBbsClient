@@ -222,9 +222,10 @@ int extractNumber( const char *ptrHeader )
    return number;
 }
 
-void fatalExit( const char *message, const char *heading )
+noreturn void fatalExit( const char *message, const char *heading )
 {
    fail_msg( "fatalExit was called unexpectedly: %s (%s)", message, heading );
+   abort();
 }
 
 char *findChar( const char *ptrString, int targetChar )
