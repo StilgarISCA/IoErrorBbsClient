@@ -81,6 +81,8 @@ AC_COMPILE_IFELSE(
 )
 
 OPTIMIZATION_CFLAGS=""
+LTO_CFLAGS=""
+LTO_LDFLAGS=""
 STACK_PROTECTOR_CFLAGS=""
 WARNING_CFLAGS=""
 SANITIZER_CFLAGS=""
@@ -110,6 +112,25 @@ do
    )
    CFLAGS="$saved_CFLAGS"
 done
+
+if test "x$enable_release_build" = "xyes" && test "x$enable_universal_binary" != "xyes"; then
+   ltoFlags="-flto"
+   saved_CFLAGS="$CFLAGS"
+   saved_LDFLAGS="$LDFLAGS"
+   CFLAGS="$CFLAGS $ltoFlags"
+   LDFLAGS="$LDFLAGS $ltoFlags"
+   AC_MSG_CHECKING([whether $CC supports release LTO flags])
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+      [
+         AC_MSG_RESULT([yes])
+         LTO_CFLAGS="$ltoFlags"
+         LTO_LDFLAGS="$ltoFlags"
+      ],
+      [AC_MSG_RESULT([no])]
+   )
+   CFLAGS="$saved_CFLAGS"
+   LDFLAGS="$saved_LDFLAGS"
+fi
 
 for stackProtectorFlag in "-fstack-protector-strong" "-fstack-protector";
 do
@@ -387,6 +408,8 @@ fi
 AC_SUBST([CMOCKA_CFLAGS])
 AC_SUBST([CMOCKA_LIBS])
 AC_SUBST([DSYMUTIL])
+AC_SUBST([LTO_CFLAGS])
+AC_SUBST([LTO_LDFLAGS])
 AC_SUBST([OPTIMIZATION_CFLAGS])
 AC_SUBST([RELEASE_BUILD_ENABLED], [$enable_release_build])
 AC_SUBST([STACK_PROTECTOR_CFLAGS])
@@ -409,6 +432,10 @@ if test "x$enable_release_build" = "xyes"; then
 else
    buildMode="dev"
    optimizationMode="development"
+fi
+
+if test "x$LTO_CFLAGS" != "x"; then
+   optimizationMode="$optimizationMode + lto"
 fi
 
 if test "x$SANITIZER_CFLAGS" != "x"; then
