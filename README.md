@@ -27,6 +27,7 @@ autoreconf -i
 make -j4
 make check
 make cppcheck
+make scan-build
 ```
 
 ### Build Modes
@@ -48,6 +49,7 @@ autoreconf -i
 make -j4
 make check
 make cppcheck
+make scan-build
 ```
 
 Release build:
@@ -59,6 +61,7 @@ autoreconf -i
 make -j4
 make check
 make cppcheck
+make scan-build
 ```
 
 Release package:
@@ -83,6 +86,7 @@ autoreconf -i
 make -j4
 make check
 make cppcheck
+make scan-build
 make distcheck
 ```
 
@@ -114,7 +118,11 @@ autoreconf -i
 make -j4
 make check
 make cppcheck
+make scan-build
 ```
+
+`make scan-build` runs Clang Static Analyzer and writes HTML reports under
+`scan-build-report/`. The target fails if the analyzer finds bugs.
 
 Optional clang-tidy setup:
 
