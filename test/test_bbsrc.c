@@ -523,7 +523,7 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
            "susp ^Z\n"
            "capture c\n"
            "awaykey a\n"
-           "aryShell !\n"
+           "shellkey !\n"
            "aryEditor nano\n"
            "a1 Back in five.\n"
            "enemy Meatball\n"

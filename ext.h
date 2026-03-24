@@ -65,7 +65,7 @@ extern int suspKey;                     /* hotkey for suspending (" suspKey) */
 extern int captureKey;                  /* Toggle text capture key (" captureKey) */
 extern int capture;                     /* Capture status */
 extern int shellKey;                    /* hotkey for shelling out (" shellKey) */
-extern char aryShell[PATH_MAX];         /* User's preferred aryShell */
+extern char aryShell[PATH_MAX];         /* Shell command launched by the client */
 extern int awayKey;                     /* Hotkey for isAway from keyboard */
 extern int browserKey;                  /* Hotkey to launch web browser */
 

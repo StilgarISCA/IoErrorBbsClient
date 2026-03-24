@@ -524,7 +524,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "commandkey %s\n", strCtrl( commandKey ) );
    fprintf( ptrBbsRc, "quit %s\n", strCtrl( quitKey ) );
    fprintf( ptrBbsRc, "susp %s\n", strCtrl( suspKey ) );
-   fprintf( ptrBbsRc, "aryShell %s\n", strCtrl( shellKey ) );
+   fprintf( ptrBbsRc, "shellkey %s\n", strCtrl( shellKey ) );
    fprintf( ptrBbsRc, "capture %s\n", strCtrl( captureKey ) );
    fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
