@@ -67,8 +67,6 @@
 #include <errno.h>
 /* extern int errno; */
 
-#include "sysio.h"
-
 #define COLOR_VALUE_DEFAULT 256
 
 static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize,

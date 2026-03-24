@@ -118,4 +118,6 @@ extern int pendingLinesToEat;
 
 extern queue *urlQueue; /* Structure holding recently seen URLs */
 
+#include "sysio.h"
+
 #endif /* EXT_H_INCLUDED */

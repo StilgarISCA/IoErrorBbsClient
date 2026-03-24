@@ -808,7 +808,7 @@ void flushInput( unsigned int invalid )
       mySleep( invalid / 2 < 3 ? invalid / 2 : 3 );
    }
 #ifdef FIONREAD
-   while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
+   while ( isPtyInputAvailable() || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
    {
       (void)ptyget();
    }
@@ -817,7 +817,7 @@ void flushInput( unsigned int invalid )
    pendingInputBytes = 0;
    ioctl( 0, TCFLSH, &pendingInputBytes );
 #endif
-   while ( INPUT_LEFT( stdin ) )
+   while ( isPtyInputAvailable() )
    {
       (void)ptyget();
    }

@@ -113,7 +113,8 @@ int getKey( void )
    	 * Main processing loop for processing a aryMacro or characters
    	 * in the stdin buffers.
    	 */
-      while ( ( macroPosition || INPUT_LEFT( stdin ) ) && !childPid && !flagsConfiguration.shouldCheckExpress )
+      while ( ( macroPosition || isPtyInputAvailable() ) && !childPid &&
+              !flagsConfiguration.shouldCheckExpress )
       {
          /* macroPosition > 0 when we are getting out input from a aryMacro key */
          if ( macroPosition > 0 )
@@ -261,9 +262,9 @@ int getKey( void )
       }
 
       /* Handle any incoming traffic in the network input buffer */
-      if ( NET_INPUT_LEFT() )
+      if ( isNetworkInputAvailable() )
       {
-         while ( NET_INPUT_LEFT() )
+         while ( isNetworkInputAvailable() )
          {
             if ( telReceive( netget() ) < 0 )
             {
