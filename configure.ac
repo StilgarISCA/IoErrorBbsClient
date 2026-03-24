@@ -92,9 +92,9 @@ UNIVERSAL_LDFLAGS=""
 
 if test "x$ac_env_CFLAGS_set" != "xset"; then
    if test "x$enable_release_build" = "xyes"; then
-      CFLAGS="-O2 -g -DNDEBUG"
+      CFLAGS="-O2 -g -DNDEBUG -UDEBUG"
    else
-      CFLAGS="-g -Og"
+      CFLAGS="-g -Og -DDEBUG -UNDEBUG"
    fi
 fi
 

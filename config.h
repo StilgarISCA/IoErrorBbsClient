@@ -8,16 +8,16 @@
 #define BUILD_COMPILER "clang (Apple Clang)"
 
 /* Define to the selected build mode */
-#define BUILD_MODE "dev"
+#define BUILD_MODE "release"
 
 /* Define to the native optimization mode */
 #define BUILD_NATIVE_OPTIMIZATION_MODE "enabled"
 
 /* Define to the selected optimization mode */
-#define BUILD_OPTIMIZATION_MODE "development"
+#define BUILD_OPTIMIZATION_MODE "release + lto"
 
 /* Define to the sanitizer mode */
-#define BUILD_SANITIZER_MODE "enabled"
+#define BUILD_SANITIZER_MODE "disabled"
 
 /* Define to the saved password support mode */
 #define BUILD_SAVE_PASSWORD_MODE "disabled"
