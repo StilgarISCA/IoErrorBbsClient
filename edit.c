@@ -25,7 +25,7 @@ static void printEditorCommandPrompt( void )
          "Xpress" };
    size_t itemIndex;
 
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       printf( "<A>bort <C>ontinue <E>dit <P>rint <S>ave <X>press -> " );
       return;
@@ -399,7 +399,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             sendTrackedChar( 'c' );
             flagsConfiguration.shouldCheckExpress = 1;
             (void)inKey();
-            if ( flagsConfiguration.useAnsi )
+            if ( flagsConfiguration.shouldUseAnsi )
             {
                printEditorCommandPrompt();
             }
@@ -456,7 +456,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
 
          case 'c':
             printf( "Continue...\r\n" );
-            if ( flagsConfiguration.useAnsi )
+            if ( flagsConfiguration.shouldUseAnsi )
             {
                continuedPostHelper();
             }
@@ -600,13 +600,13 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                {
                   fatalPerror( "openTmpFile: fopen", "Local error" );
                }
-               if ( flagsConfiguration.useAnsi )
+               if ( flagsConfiguration.shouldUseAnsi )
                {
                   char aryAnsiSequence[32];
 
                   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                                   lastColor, color.background,
-                                                  flagsConfiguration.useBold );
+                                                  flagsConfiguration.shouldUseBold );
                   printf( "%s", aryAnsiSequence );
                }
                printf( "[Editing complete]\r\n" );

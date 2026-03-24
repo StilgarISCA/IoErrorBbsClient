@@ -241,8 +241,8 @@ typedef struct
    unsigned int isLastSave : 1;                   /* true if last time aryUser edited they saved */
    unsigned int shouldCheckExpress : 1;           /* true if waiting to check BBS for X's */
    unsigned int isConfigMode : 1;                 /* true if we are in bbsrc config funcs */
-   unsigned int useAnsi : 1;                      /* true if BBS is in ANSI color mode */
-   unsigned int useBold : 1;                      /* true if using bold in ANSI color mode */
+   unsigned int shouldUseAnsi : 1;                /* true if BBS is in ANSI color mode */
+   unsigned int shouldUseBold : 1;                /* true if using bold in ANSI color mode */
    unsigned int shouldDisableBold : 1;            /* true if we need to force bold ANSI off */
    unsigned int isMorePromptActive : 1;           /* true if we are inside a MORE prompt */
    unsigned int shouldSquelchPost : 1;            /* true if we should squelch enemy posts */
@@ -285,23 +285,23 @@ typedef struct
    int ansiBlackTextColor;   /* Incoming ANSI black fallback color */
    int ansiBlueTextColor;    /* Incoming ANSI blue fallback color */
    int ansiMagentaTextColor; /* Incoming ANSI magenta fallback color */
-   int postdate;             /* Post date stamp color */
-   int postname;             /* Post author name color */
-   int posttext;             /* Post text color */
-   int postfrienddate;       /* Post friend date stamp color */
-   int postfriendname;       /* Post friend name color */
-   int postfriendtext;       /* Post friend text color */
+   int postDate;             /* Post date stamp color */
+   int postName;             /* Post author name color */
+   int postText;             /* Post text color */
+   int postFriendDate;       /* Post friend date stamp color */
+   int postFriendName;       /* Post friend name color */
+   int postFriendText;       /* Post friend text color */
    int anonymous;            /* Anonymous post header color */
-   int moreprompt;           /* More prompt color */
+   int morePrompt;           /* More prompt color */
    int ansiWhiteTextColor;   /* Incoming ANSI white fallback color */
    int reserved5;
    int background;        /* Background color */
-   int input1;            /* Text input fields */
-   int input2;            /* Text input fields (highlight) */
-   int expresstext;       /* X message text color */
-   int expressname;       /* X message name color */
-   int expressfriendtext; /* X message from friend text color */
-   int expressfriendname; /* X message from friend name color*/
+   int inputText;         /* Text input fields */
+   int inputHighlight;    /* Text input fields (highlight) */
+   int expressText;       /* X message text color */
+   int expressName;       /* X message name color */
+   int expressFriendText; /* X message from friend text color */
+   int expressFriendName; /* X message from friend name color*/
 } Color;
 
 #include "proto.h"

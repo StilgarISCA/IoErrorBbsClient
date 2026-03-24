@@ -1323,28 +1323,28 @@ static void readBbsRc_WhenConfigUsesNamedColors_ParsesExtendedPaletteValues( voi
       fail_msg( "named color parsing should set general colors to extended palette values; got text=%d forum=%d number=%d error=%d",
                 color.text, color.forum, color.number, color.errorTextColor );
    }
-   if ( color.postdate != 91 || color.postname != 26 || color.posttext != 231 )
+   if ( color.postDate != 91 || color.postName != 26 || color.postText != 231 )
    {
       fail_msg( "named color parsing should set post colors; got date=%d name=%d text=%d",
-                color.postdate, color.postname, color.posttext );
+                color.postDate, color.postName, color.postText );
    }
-   if ( color.postfrienddate != 160 || color.postfriendname != 34 || color.postfriendtext != 220 )
+   if ( color.postFriendDate != 160 || color.postFriendName != 34 || color.postFriendText != 220 )
    {
       fail_msg( "named color parsing should set friend post colors; got date=%d name=%d text=%d",
-                color.postfrienddate, color.postfriendname, color.postfriendtext );
+                color.postFriendDate, color.postFriendName, color.postFriendText );
    }
-   if ( color.anonymous != 26 || color.moreprompt != 44 ||
+   if ( color.anonymous != 26 || color.morePrompt != 44 ||
         color.background != COLOR_VALUE_DEFAULT )
    {
       fail_msg( "named color parsing should set anonymous/more/background colors; got anonymous=%d more=%d background=%d",
-                color.anonymous, color.moreprompt, color.background );
+                color.anonymous, color.morePrompt, color.background );
    }
-   if ( color.input1 != 231 || color.input2 != 34 || color.expresstext != 220 ||
-        color.expressname != 91 || color.expressfriendtext != 44 || color.expressfriendname != 91 )
+   if ( color.inputText != 231 || color.inputHighlight != 34 || color.expressText != 220 ||
+        color.expressName != 91 || color.expressFriendText != 44 || color.expressFriendName != 91 )
    {
-      fail_msg( "named color parsing should set input/express colors; got input1=%d input2=%d expresstext=%d expressname=%d expressfriendtext=%d expressfriendname=%d",
-                color.input1, color.input2, color.expresstext, color.expressname,
-                color.expressfriendtext, color.expressfriendname );
+      fail_msg( "named color parsing should set input/express colors; got inputText=%d inputHighlight=%d expressText=%d expressName=%d expressFriendText=%d expressFriendName=%d",
+                color.inputText, color.inputHighlight, color.expressText, color.expressName,
+                color.expressFriendText, color.expressFriendName );
    }
 
    cleanupReadState();
@@ -1388,10 +1388,10 @@ static void readBbsRc_WhenConfigUsesBrightAnsiColorNames_ParsesAnsi16Values( voi
       fail_msg( "bright ANSI color parsing should set general colors to ANSI 16 values; got text=%d forum=%d number=%d error=%d",
                 color.text, color.forum, color.number, color.errorTextColor );
    }
-   if ( color.postdate != 13 || color.postname != 12 || color.posttext != 15 )
+   if ( color.postDate != 13 || color.postName != 12 || color.postText != 15 )
    {
       fail_msg( "bright ANSI color parsing should set post colors; got date=%d name=%d text=%d",
-                color.postdate, color.postname, color.posttext );
+                color.postDate, color.postName, color.postText );
    }
 
    cleanupReadState();
@@ -1440,10 +1440,10 @@ static void readBbsRc_WhenConfigUsesLongNamedColorLine_ParsesWithoutLineTooLongW
       fail_msg( "long named color parsing should still set general colors correctly; got text=%d forum=%d number=%d error=%d",
                 color.text, color.forum, color.number, color.errorTextColor );
    }
-   if ( color.postdate != 13 || color.postname != 14 || color.posttext != 10 )
+   if ( color.postDate != 13 || color.postName != 14 || color.postText != 10 )
    {
       fail_msg( "long named color parsing should still set post colors; got date=%d name=%d text=%d",
-                color.postdate, color.postname, color.posttext );
+                color.postDate, color.postName, color.postText );
    }
 
    cleanupReadState();

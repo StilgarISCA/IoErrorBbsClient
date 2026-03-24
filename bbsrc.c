@@ -305,8 +305,8 @@ void readBbsRc( void )
    *aryBbsHost = 0;
    ptrBbsRc = findBbsRc();
    bbsFriends = findBbsFriends();
-   flagsConfiguration.useAnsi = 0;
-   flagsConfiguration.useBold = 0;
+   flagsConfiguration.shouldUseAnsi = 0;
+   flagsConfiguration.shouldUseBold = 0;
    flagsConfiguration.shouldDisableBold = 0;
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
@@ -347,7 +347,7 @@ void readBbsRc( void )
             break;
 
          case BBRC_CMD_BOLD:
-            flagsConfiguration.useBold = 1;
+            flagsConfiguration.shouldUseBold = 1;
             break;
 
          case BBRC_CMD_XLAND:

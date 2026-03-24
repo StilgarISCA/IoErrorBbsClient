@@ -306,7 +306,7 @@ static void printAnsiDisplayState( int foregroundColor, int backgroundColor )
 
    formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                    foregroundColor, backgroundColor,
-                                   flagsConfiguration.useBold );
+                                   flagsConfiguration.shouldUseBold );
    stdPrintf( "%s", aryAnsiSequence );
 }
 
@@ -317,23 +317,23 @@ static int transformPostHeaderColor( int inputChar, int isFriend )
       case '6':
          if ( isFriend )
          {
-            return color.postfriendname;
+            return color.postFriendName;
          }
-         return color.postname;
+         return color.postName;
       case '5':
          if ( isFriend )
          {
-            return color.postfrienddate;
+            return color.postFriendDate;
          }
-         return color.postdate;
+         return color.postDate;
       case '3':
          return color.anonymous;
       case '2':
          if ( isFriend )
          {
-            return color.postfriendtext;
+            return color.postFriendText;
          }
-         return color.posttext;
+         return color.postText;
       default:
          return transformIncomingAnsiColor( inputChar );
    }
@@ -393,11 +393,11 @@ static void printInputColorPreview( void )
 {
    printAnsiForegroundColorValue( color.text );
    stdPrintf( "Message eXpress\r\nRecipient: " );
-   printAnsiForegroundColorValue( color.input1 );
+   printAnsiForegroundColorValue( color.inputText );
    stdPrintf( "Exam" );
-   printAnsiForegroundColorValue( color.input2 );
+   printAnsiForegroundColorValue( color.inputHighlight );
    stdPrintf( "ple User\r\n" );
-   printAnsiForegroundColorValue( color.input1 );
+   printAnsiForegroundColorValue( color.inputText );
    stdPrintf( ">Hi there!\r\n" );
    printAnsiForegroundColorValue( color.text );
    stdPrintf( "Message received by Example User.\r\n" );
@@ -421,7 +421,7 @@ void ansiTransformExpress( char *ptrText, size_t size )
    char *ptrExpressSender, *ptrExpressMarker;
 
    /* Insert color only when ANSI is being used */
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       return;
    }
@@ -451,16 +451,16 @@ void ansiTransformExpress( char *ptrText, size_t size )
    if ( slistFind( friendList, ptrExpressSender, fStrCompareVoid ) != -1 )
    {
       formatAnsiForegroundSequence( aryMessageColor, sizeof( aryMessageColor ),
-                                    color.expressfriendtext );
+                                    color.expressFriendText );
       formatAnsiForegroundSequence( aryNameColor, sizeof( aryNameColor ),
-                                    color.expressfriendname );
+                                    color.expressFriendName );
    }
    else
    {
       formatAnsiForegroundSequence( aryMessageColor, sizeof( aryMessageColor ),
-                                    color.expresstext );
+                                    color.expressText );
       formatAnsiForegroundSequence( aryNameColor, sizeof( aryNameColor ),
-                                    color.expressname );
+                                    color.expressName );
    }
    formatAnsiForegroundSequence( aryResetColor, sizeof( aryResetColor ),
                                  color.text );
@@ -479,16 +479,16 @@ int ansiTransformPost( int inputChar, int isFriend )
    switch ( inputChar )
    {
       case '3':
-         transformedColor = color.moreprompt;
+         transformedColor = color.morePrompt;
          break;
       case '2':
          if ( isFriend )
          {
-            transformedColor = color.postfriendtext;
+            transformedColor = color.postFriendText;
          }
          else
          {
-            transformedColor = color.posttext;
+            transformedColor = color.postText;
          }
          break;
       case '1':
@@ -562,7 +562,7 @@ void colorConfig( void )
    char aryPromptText[110];
 
    stdPrintf( "Color\r\n" );
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       stdPrintf( "\r\nWARNING:  Color is off.  You will not be able to preview your selections." );
    }
@@ -623,9 +623,9 @@ void colorOptions( void )
               flagsConfiguration.shouldAutoAnswerAnsiPrompt ? "Yes" : "No" );
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = (unsigned int)yesNoDefault( flagsConfiguration.shouldAutoAnswerAnsiPrompt );
    stdPrintf( "Use bold ANSI colors when ANSI is enabled? (%s) -> ",
-              flagsConfiguration.useBold ? "Yes" : "No" );
-   flagsConfiguration.useBold = (unsigned int)yesNoDefault( flagsConfiguration.useBold );
-   if ( flagsConfiguration.useAnsi )
+              flagsConfiguration.shouldUseBold ? "Yes" : "No" );
+   flagsConfiguration.shouldUseBold = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseBold );
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       printAnsiDisplayState( lastColor, color.background );
    }
@@ -706,11 +706,11 @@ void inputColorConfig( void )
             /* NOTREACHED */
          case 'c':
             stdPrintf( "Completion\r\n\n" );
-            color.input2 = colorPicker();
+            color.inputHighlight = colorPicker();
             break;
          case 't':
             stdPrintf( "Text\r\n\n" );
-            color.input1 = colorPicker();
+            color.inputText = colorPicker();
             break;
          default:
             break;
@@ -742,8 +742,8 @@ void postUserColorConfig( void )
    {
       int menuOption;
 
-      printPostColorPreview( color.postdate, color.posttext,
-                             color.postname, A_USER );
+      printPostColorPreview( color.postDate, color.postText,
+                             color.postName, A_USER );
       menuOption = postColorMenu();
       switch ( menuOption )
       {
@@ -753,13 +753,13 @@ void postUserColorConfig( void )
             return;
             /* NOTREACHED */
          case 'd':
-            color.postdate = colorPicker();
+            color.postDate = colorPicker();
             break;
          case 'n':
-            color.postname = colorPicker();
+            color.postName = colorPicker();
             break;
          case 't':
-            color.posttext = colorPicker();
+            color.postText = colorPicker();
             break;
          default:
             break;
@@ -773,8 +773,8 @@ void postFriendColorConfig( void )
    {
       int menuOption;
 
-      printPostColorPreview( color.postfrienddate, color.postfriendtext,
-                             color.postfriendname, A_FRIEND );
+      printPostColorPreview( color.postFriendDate, color.postFriendText,
+                             color.postFriendName, A_FRIEND );
       menuOption = postColorMenu();
       switch ( menuOption )
       {
@@ -784,13 +784,13 @@ void postFriendColorConfig( void )
             return;
             /* NOTREACHED */
          case 'd':
-            color.postfrienddate = colorPicker();
+            color.postFriendDate = colorPicker();
             break;
          case 'n':
-            color.postfriendname = colorPicker();
+            color.postFriendName = colorPicker();
             break;
          case 't':
-            color.postfriendtext = colorPicker();
+            color.postFriendText = colorPicker();
             break;
          default:
             break;
@@ -856,7 +856,7 @@ void expressUserColorConfig( void )
    {
       int menuOption;
 
-      printExpressColorPreview( color.expresstext, color.expressname,
+      printExpressColorPreview( color.expressText, color.expressName,
                                 A_USER );
       menuOption = expressColorMenu();
       switch ( menuOption )
@@ -867,10 +867,10 @@ void expressUserColorConfig( void )
             return;
             /* NOTREACHED */
          case 'n':
-            color.expressname = colorPicker();
+            color.expressName = colorPicker();
             break;
          case 't':
-            color.expresstext = colorPicker();
+            color.expressText = colorPicker();
             break;
          default:
             break;
@@ -884,8 +884,8 @@ void expressFriendColorConfig( void )
    {
       int menuOption;
 
-      printExpressColorPreview( color.expressfriendtext,
-                                color.expressfriendname, A_FRIEND );
+      printExpressColorPreview( color.expressFriendText,
+                                color.expressFriendName, A_FRIEND );
       menuOption = expressColorMenu();
       switch ( menuOption )
       {
@@ -895,10 +895,10 @@ void expressFriendColorConfig( void )
             return;
             /* NOTREACHED */
          case 'n':
-            color.expressfriendname = colorPicker();
+            color.expressFriendName = colorPicker();
             break;
          case 't':
-            color.expressfriendtext = colorPicker();
+            color.expressFriendText = colorPicker();
             break;
          default:
             break;

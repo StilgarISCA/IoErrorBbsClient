@@ -666,13 +666,13 @@ void setTerm( void )
 
    getWindowSize();
 
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                       lastColor, color.background,
-                                      flagsConfiguration.useBold );
+                                      flagsConfiguration.shouldUseBold );
       printf( "%s", aryAnsiSequence );
    }
    fflush( stdout );
@@ -736,7 +736,7 @@ void setTerm( void )
  */
 void resetTerm( void )
 {
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 

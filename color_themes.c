@@ -24,26 +24,26 @@ void defaultColors( int clearall )
    ifzero( color.ansiBlackTextColor ) color.ansiBlackTextColor = 2;
    ifzero( color.ansiBlueTextColor ) color.ansiBlueTextColor = 4;
    ifzero( color.ansiMagentaTextColor ) color.ansiMagentaTextColor = 5;
-   ifzero( color.postdate ) color.postdate = 5;
-   ifzero( color.postname ) color.postname = 6;
-   ifzero( color.posttext ) color.posttext = 2;
-   ifzero( color.postfrienddate ) color.postfrienddate = 5;
-   ifzero( color.postfriendname ) color.postfriendname = 1;
-   ifzero( color.postfriendtext ) color.postfriendtext = 2;
+   ifzero( color.postDate ) color.postDate = 5;
+   ifzero( color.postName ) color.postName = 6;
+   ifzero( color.postText ) color.postText = 2;
+   ifzero( color.postFriendDate ) color.postFriendDate = 5;
+   ifzero( color.postFriendName ) color.postFriendName = 1;
+   ifzero( color.postFriendText ) color.postFriendText = 2;
    ifzero( color.anonymous ) color.anonymous = 3;
-   ifzero( color.moreprompt ) color.moreprompt = 3;
+   ifzero( color.morePrompt ) color.morePrompt = 3;
    ifzero( color.ansiWhiteTextColor ) color.ansiWhiteTextColor = 7;
    color.reserved5 = 7;
    if ( clearall )
    {
       color.background = 0;
    }
-   ifzero( color.input1 ) color.input1 = 2;
-   ifzero( color.input2 ) color.input2 = 6;
-   ifzero( color.expresstext ) color.expresstext = 2;
-   ifzero( color.expressname ) color.expressname = 2;
-   ifzero( color.expressfriendname ) color.expressfriendname = 2;
-   ifzero( color.expressfriendtext ) color.expressfriendtext = 2;
+   ifzero( color.inputText ) color.inputText = 2;
+   ifzero( color.inputHighlight ) color.inputHighlight = 6;
+   ifzero( color.expressText ) color.expressText = 2;
+   ifzero( color.expressName ) color.expressName = 2;
+   ifzero( color.expressFriendName ) color.expressFriendName = 2;
+   ifzero( color.expressFriendText ) color.expressFriendText = 2;
 }
 
 void brilliantColors( void )
@@ -55,23 +55,23 @@ void brilliantColors( void )
    color.ansiBlackTextColor = 10;
    color.ansiBlueTextColor = 12;
    color.ansiMagentaTextColor = 13;
-   color.postdate = 13;
-   color.postname = 14;
-   color.posttext = 10;
-   color.postfrienddate = 13;
-   color.postfriendname = 9;
-   color.postfriendtext = 10;
+   color.postDate = 13;
+   color.postName = 14;
+   color.postText = 10;
+   color.postFriendDate = 13;
+   color.postFriendName = 9;
+   color.postFriendText = 10;
    color.anonymous = 11;
-   color.moreprompt = 11;
+   color.morePrompt = 11;
    color.ansiWhiteTextColor = 15;
    color.reserved5 = 15;
    color.background = 0;
-   color.input1 = 10;
-   color.input2 = 14;
-   color.expresstext = 10;
-   color.expressname = 10;
-   color.expressfriendname = 10;
-   color.expressfriendtext = 10;
+   color.inputText = 10;
+   color.inputHighlight = 14;
+   color.expressText = 10;
+   color.expressName = 10;
+   color.expressFriendName = 10;
+   color.expressFriendText = 10;
 }
 
 void colorblindColors( void )
@@ -83,23 +83,23 @@ void colorblindColors( void )
    color.ansiBlackTextColor = 146;
    color.ansiBlueTextColor = 75;
    color.ansiMagentaTextColor = 175;
-   color.postdate = 75;
-   color.postname = 214;
-   color.posttext = 231;
-   color.postfrienddate = 25;
-   color.postfriendname = 175;
-   color.postfriendtext = 231;
+   color.postDate = 75;
+   color.postName = 214;
+   color.postText = 231;
+   color.postFriendDate = 25;
+   color.postFriendName = 175;
+   color.postFriendText = 231;
    color.anonymous = 221;
-   color.moreprompt = 221;
+   color.morePrompt = 221;
    color.ansiWhiteTextColor = 221;
    color.reserved5 = 231;
    color.background = 16;
-   color.input1 = 231;
-   color.input2 = 214;
-   color.expresstext = 231;
-   color.expressname = 214;
-   color.expressfriendname = 175;
-   color.expressfriendtext = 231;
+   color.inputText = 231;
+   color.inputHighlight = 214;
+   color.expressText = 231;
+   color.expressName = 214;
+   color.expressFriendName = 175;
+   color.expressFriendText = 231;
 }
 
 void hotDogColors( void )
@@ -111,21 +111,21 @@ void hotDogColors( void )
    color.ansiBlackTextColor = 130;
    color.ansiBlueTextColor = 214;
    color.ansiMagentaTextColor = 130;
-   color.postdate = 226;
-   color.postname = 226;
-   color.posttext = 214;
-   color.postfrienddate = 226;
-   color.postfriendname = 226;
-   color.postfriendtext = 214;
+   color.postDate = 226;
+   color.postName = 226;
+   color.postText = 214;
+   color.postFriendDate = 226;
+   color.postFriendName = 226;
+   color.postFriendText = 214;
    color.anonymous = 226;
-   color.moreprompt = 220;
+   color.morePrompt = 220;
    color.ansiWhiteTextColor = 220;
    color.reserved5 = 130;
    color.background = 16;
-   color.input1 = 220;
-   color.input2 = 231;
-   color.expresstext = 214;
-   color.expressname = 226;
-   color.expressfriendname = 226;
-   color.expressfriendtext = 214;
+   color.inputText = 220;
+   color.inputHighlight = 231;
+   color.expressText = 214;
+   color.expressName = 226;
+   color.expressFriendName = 226;
+   color.expressFriendText = 214;
 }

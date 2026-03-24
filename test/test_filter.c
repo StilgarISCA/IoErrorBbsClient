@@ -33,10 +33,10 @@ static void resetState( void )
 
    flagsConfiguration.shouldSquelchExpress = 0;
    flagsConfiguration.shouldSquelchPost = 0;
-   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.shouldUseAnsi = 0;
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldDisableBold = 0;
-   flagsConfiguration.useBold = 0;
+   flagsConfiguration.shouldUseBold = 0;
    flagsConfiguration.shouldEnableClickableUrls = 1;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
 
@@ -755,8 +755,8 @@ static void emitUrlDetectionReport_WhenAnsiEnabled_UsesConfiguredColorState( voi
 
    resetState();
    resetLists();
-   flagsConfiguration.useAnsi = 1;
-   flagsConfiguration.useBold = 0;
+   flagsConfiguration.shouldUseAnsi = 1;
+   flagsConfiguration.shouldUseBold = 0;
    color.number = 6;
    color.text = 2;
    color.background = 4;
@@ -863,11 +863,11 @@ static void filterWhoList_WhenSavedFriendsRendered_UsesThemeColors( void **state
    (void)state;
 
    resetState();
-   flagsConfiguration.useAnsi = 1;
+   flagsConfiguration.shouldUseAnsi = 1;
    color.forum = 33;
-   color.postfriendname = 196;
-   color.postfrienddate = 220;
-   color.postfriendtext = 214;
+   color.postFriendName = 196;
+   color.postFriendDate = 220;
+   color.postFriendText = 214;
    color.text = 231;
    savedWhoCount = 1;
    arySavedWhoNames[0][0] = 65;
@@ -883,11 +883,11 @@ static void filterWhoList_WhenSavedFriendsRendered_UsesThemeColors( void **state
    formatAnsiForegroundSequence( aryExpectedHeaderColor, sizeof( aryExpectedHeaderColor ),
                                  color.forum );
    formatAnsiForegroundSequence( aryExpectedNameColor, sizeof( aryExpectedNameColor ),
-                                 color.postfriendname );
+                                 color.postFriendName );
    formatAnsiForegroundSequence( aryExpectedTimeColor, sizeof( aryExpectedTimeColor ),
-                                 color.postfrienddate );
+                                 color.postFriendDate );
    formatAnsiForegroundSequence( aryExpectedInfoColor, sizeof( aryExpectedInfoColor ),
-                                 color.postfriendtext );
+                                 color.postFriendText );
    formatAnsiForegroundSequence( aryExpectedResetColor, sizeof( aryExpectedResetColor ),
                                  color.text );
    if ( strstr( aryPrintLog, aryExpectedHeaderColor ) == NULL )
@@ -934,10 +934,10 @@ static void filterWhoList_WhenLiveFriendRendered_UsesThemeColors( void **state )
 
    resetState();
    resetLists();
-   flagsConfiguration.useAnsi = 1;
-   color.postfriendname = 196;
-   color.postfrienddate = 220;
-   color.postfriendtext = 214;
+   flagsConfiguration.shouldUseAnsi = 1;
+   color.postFriendName = 196;
+   color.postFriendDate = 220;
+   color.postFriendText = 214;
    color.text = 231;
    whoListProgress = 1;
    whoList = slistCreate( 0, sortCompareVoid );
@@ -958,11 +958,11 @@ static void filterWhoList_WhenLiveFriendRendered_UsesThemeColors( void **state )
 
    // Assert
    formatAnsiForegroundSequence( aryExpectedNameColor, sizeof( aryExpectedNameColor ),
-                                 color.postfriendname );
+                                 color.postFriendName );
    formatAnsiForegroundSequence( aryExpectedTimeColor, sizeof( aryExpectedTimeColor ),
-                                 color.postfrienddate );
+                                 color.postFriendDate );
    formatAnsiForegroundSequence( aryExpectedInfoColor, sizeof( aryExpectedInfoColor ),
-                                 color.postfriendtext );
+                                 color.postFriendText );
    formatAnsiForegroundSequence( aryExpectedResetColor, sizeof( aryExpectedResetColor ),
                                  color.text );
    if ( strstr( aryPrintLog, "Your friends online (new)" ) == NULL )

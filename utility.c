@@ -255,7 +255,7 @@ void printAnsiForegroundColorValue( int colorValue )
 {
    char aryAnsiSequence[32];
 
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       return;
    }
@@ -274,7 +274,7 @@ void printThemedMnemonicText( const char *ptrText, int defaultColor )
       return;
    }
 
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       stdPrintf( "%s", ptrText );
       return;
@@ -606,7 +606,7 @@ char *duplicateString( const char *ptrSource )
    return ptrCopy;
 }
 
-#define ifansi if ( flagsConfiguration.useAnsi )
+#define ifansi if ( flagsConfiguration.shouldUseAnsi )
 
 int colorize( const char *str )
 {

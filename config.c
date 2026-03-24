@@ -548,7 +548,7 @@ void writeBbsRc( void )
       }
    }
    fprintf( ptrBbsRc, "version %d\n", version );
-   if ( flagsConfiguration.useBold )
+   if ( flagsConfiguration.shouldUseBold )
    {
       fprintf( ptrBbsRc, "bold\n" );
    }

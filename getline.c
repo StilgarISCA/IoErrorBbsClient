@@ -47,12 +47,12 @@ void getFiveLines( int which )
    {
       sendingXState = SX_NOT;
    }
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.input1 );
+                                    color.inputText );
       stdPrintf( "%s", aryAnsiSequence );
    }
    for ( lineIndex = 0; lineIndex < ( 20 + override + local ) && ( !lineIndex || *arySendString[lineIndex - 1] ); lineIndex++ )
@@ -93,7 +93,7 @@ void getFiveLines( int which )
       sendTrackedBuffer( arySendString[sendLineIndex], (size_t)sendCharIndex );
       sendTrackedNewline();
    }
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
@@ -169,22 +169,22 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    {
       putchar( '\b' );
    }
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.input1 );
+                                    color.inputText );
       stdPrintf( "%s", aryAnsiSequence );
    }
    for ( ; *ptrScan != 0; ptrScan++ )
    {
-      if ( ptrScan == ptrEnd && flagsConfiguration.useAnsi )
+      if ( ptrScan == ptrEnd && flagsConfiguration.shouldUseAnsi )
       {
          char aryAnsiSequence[32];
 
          formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                       color.input2 );
+                                       color.inputHighlight );
          stdPrintf( "%s", aryAnsiSequence );
       }
       putchar( *ptrScan );
@@ -193,12 +193,12 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    {
       putchar( '\b' );
    }
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.input1 );
+                                    color.inputText );
       stdPrintf( "%s", aryAnsiSequence );
    }
 }
@@ -235,12 +235,12 @@ char *getName( int quitPriv )
    static char junk[21];
 
    lastPtr = 0;
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.input1 );
+                                    color.inputText );
       stdPrintf( "%s", aryAnsiSequence );
    }
    if ( quitPriv == 1 && *aryAutoName &&
@@ -258,7 +258,7 @@ char *getName( int quitPriv )
       {
          stdPrintf( "ACK!  It didn't pop.\r\n" );
       }
-      if ( flagsConfiguration.useAnsi )
+      if ( flagsConfiguration.shouldUseAnsi )
       {
          char aryAnsiSequence[32];
 
@@ -442,12 +442,12 @@ char *getName( int quitPriv )
       }
       else
       {
-         if ( flagsConfiguration.useAnsi )
+         if ( flagsConfiguration.shouldUseAnsi )
          {
             char aryAnsiSequence[32];
 
             formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                          color.input1 );
+                                          color.inputText );
             stdPrintf( "%s", aryAnsiSequence );
          }
          for ( ; *ptrCursor != 0; ptrCursor++ )

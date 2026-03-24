@@ -139,7 +139,7 @@ int telReceive( int inputByte )
             case MORE_M: /* More prompt marker */
                state = TS_DATA;
                flagsConfiguration.isMorePromptActive ^= 1;
-               if ( !flagsConfiguration.isMorePromptActive && flagsConfiguration.useAnsi )
+               if ( !flagsConfiguration.isMorePromptActive && flagsConfiguration.shouldUseAnsi )
                {
                   morePromptHelper();
                }
