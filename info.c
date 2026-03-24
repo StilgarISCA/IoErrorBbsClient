@@ -8,7 +8,7 @@
 #include "ext.h"
 #include <stdarg.h>
 
-static const char *INFO_MENU_KEYS = "clowtq \n";
+static const char *INFO_MENU_KEYS = "clwtq \n";
 
 void feedPager( int startrow, ... )
 {
@@ -340,9 +340,6 @@ void information( void )
          case 'l':
             license();
             break;
-         case 'o':
-            otherInfo();
-            break;
          case 't':
             techInfo();
             break;
@@ -359,35 +356,4 @@ void information( void )
             break;
       }
    }
-}
-
-void otherInfo( void )
-{
-   /* You shouldn't be reading this... */
-
-   /* I mean it!  Stop reading now! */
-
-   /* Dammit, you're going to ruin all my fun! */
-
-   /* Oh well, if you insist. */
-
-   feedPager( 1,
-              "\r\n",
-              "\r\n",
-              "Important things to remember about ISCA BBS:\r\n",
-              "\r\n",
-              "1.  The content in Babble> strictly follows the Webster's dictionary\r\n",
-              "    definition.\r\n",
-              "2.  Regarding ISCA BBS women, the odds may be good, but the goods may\r\n",
-              "    be odd.\r\n",
-              "3.  Houston used to be gay.\r\n",
-              "4.  Non Sequitur> usually isn't.  And neither was Weird>.\r\n",
-              "5.  To get into Kama Sutra>, you have to be 18 or have a good fake ID.\r\n",
-              "6.  If you make your information public, God Man Megatron will post it\r\n",
-              "    on the Web within 24 hours.  Guaranteed.\r\n",
-              "7.  The Policy Board is your friend.  The Policy Board has always been\r\n",
-              "    your friend.  The Policy Board will always be your friend.\r\n",
-              "8.  The BBS is never moving to Gestalt.\r\n",
-              "9.  The performers may change, but the song is always the same.\r\n",
-              (char *)NULL );
 }
