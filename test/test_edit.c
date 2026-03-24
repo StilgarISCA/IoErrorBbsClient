@@ -53,6 +53,13 @@ noreturn void fatalPerror( const char *error, const char *heading )
    abort();
 }
 
+noreturn void fatalExit( const char *message, const char *heading )
+{
+   (void)message;
+   (void)heading;
+   abort();
+}
+
 char *findChar( const char *ptrString, int targetChar )
 {
    return (char *)strchr( ptrString, targetChar );
@@ -330,6 +337,60 @@ static void checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne( void **state 
    fclose( ptrMessageFile );
 }
 
+static void checkFile_WhenSupportedUtf8PunctuationPresent_NormalizesToAsciiAndReturnsZero( void **state )
+{
+   // Arrange
+   FILE *ptrMessageFile;
+   char aryResult[256];
+   int result;
+
+   (void)state;
+
+   resetState();
+
+   ptrMessageFile = tmpfile();
+   if ( ptrMessageFile == NULL )
+   {
+      fail_msg( "tmpfile failed in typographic punctuation test setup" );
+      return;
+   }
+   if ( fputs( "\xef\xbb\xbfIt\xe2\x80\x99s \xe2\x80\x9cquoted\xe2\x80\x9d text\xe2\x80\x94okay\xe2\x80\xa6"
+               "\xc2\xa0Soft\xc2\xad hyphen \xe2\x88\x92 math \xe2\x80\x8bjoin "
+               "\xc2\xabhi\xc2\xbb.\n",
+               ptrMessageFile ) == EOF )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Arrange failed: unable to write UTF-8 punctuation fixture" );
+      return;
+   }
+   fflush( ptrMessageFile );
+
+   // Act
+   result = checkFile( ptrMessageFile );
+
+   // Assert
+   if ( result != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "checkFile should normalize supported UTF-8 punctuation and spacing; got %d", result );
+      return;
+   }
+   if ( !tryReadFileIntoBuffer( ptrMessageFile, aryResult, sizeof( aryResult ) ) )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Assert failed: unable to read normalized message text back from temp file" );
+      return;
+   }
+   if ( strcmp( aryResult, "It's \"quoted\" text-okay... Soft hyphen - math join \"hi\".\n" ) != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "checkFile should rewrite supported UTF-8 punctuation to ASCII; got '%s'", aryResult );
+      return;
+   }
+
+   fclose( ptrMessageFile );
+}
+
 static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state )
 {
    // Arrange
@@ -445,6 +506,7 @@ int main( void )
       cmocka_unit_test( checkFile_WhenIllegalControlCharacterPresent_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTabExpansionPushesPast79_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne ),
+      cmocka_unit_test( checkFile_WhenSupportedUtf8PunctuationPresent_NormalizesToAsciiAndReturnsZero ),
       cmocka_unit_test( prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne ),
       cmocka_unit_test( prompt_WhenInvokedWithPrintCommand_LoadsExistingMessage ),
    };

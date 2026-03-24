@@ -645,44 +645,206 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
    }
 }
 
+static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
+                                               char *ptrReplacementText, size_t *ptrReplacementLength )
+{
+   int secondByte;
+   int thirdByte;
+
+   if ( inputChar == 0xc2 )
+   {
+      secondByte = getc( ptrMessageFile );
+      if ( secondByte == EOF )
+      {
+         return false;
+      }
+
+      switch ( secondByte )
+      {
+         case 0xa0: /* non-breaking space */
+            ptrReplacementText[0] = ' ';
+            *ptrReplacementLength = 1;
+            return true;
+
+         case 0xad: /* soft hyphen */
+            *ptrReplacementLength = 0;
+            return true;
+
+         case 0xab: /* left-pointing double angle quotation mark */
+         case 0xbb: /* right-pointing double angle quotation mark */
+            ptrReplacementText[0] = '"';
+            *ptrReplacementLength = 1;
+            return true;
+      }
+
+      return false;
+   }
+
+   if ( inputChar == 0xef )
+   {
+      secondByte = getc( ptrMessageFile );
+      thirdByte = getc( ptrMessageFile );
+      if ( secondByte == 0xbb && thirdByte == 0xbf ) /* byte order mark */
+      {
+         *ptrReplacementLength = 0;
+         return true;
+      }
+      return false;
+   }
+
+   if ( inputChar != 0xe2 )
+   {
+      return false;
+   }
+
+   secondByte = getc( ptrMessageFile );
+   thirdByte = getc( ptrMessageFile );
+   if ( secondByte == EOF || thirdByte == EOF )
+   {
+      return false;
+   }
+
+   if ( secondByte == 0x80 )
+   {
+      switch ( thirdByte )
+      {
+         case 0x98: /* left single quotation mark */
+         case 0x99: /* right single quotation mark */
+            ptrReplacementText[0] = '\'';
+            *ptrReplacementLength = 1;
+            return true;
+
+         case 0x9c: /* left double quotation mark */
+         case 0x9d: /* right double quotation mark */
+            ptrReplacementText[0] = '"';
+            *ptrReplacementLength = 1;
+            return true;
+
+         case 0x92: /* figure dash */
+         case 0x93: /* en dash */
+         case 0x94: /* em dash */
+         case 0x95: /* horizontal bar */
+            ptrReplacementText[0] = '-';
+            *ptrReplacementLength = 1;
+            return true;
+
+         case 0x8b: /* zero width space */
+         case 0x8c: /* zero width non-joiner */
+         case 0x8d: /* zero width joiner */
+            *ptrReplacementLength = 0;
+            return true;
+
+         case 0xa6: /* ellipsis */
+            ptrReplacementText[0] = '.';
+            ptrReplacementText[1] = '.';
+            ptrReplacementText[2] = '.';
+            *ptrReplacementLength = 3;
+            return true;
+      }
+   }
+   else if ( secondByte == 0x88 && thirdByte == 0x92 ) /* minus sign */
+   {
+      ptrReplacementText[0] = '-';
+      *ptrReplacementLength = 1;
+      return true;
+   }
+
+   return false;
+}
+
 /*
  * Checks the file for lines longer than 79 characters, unprintable characters,
- * or the file itself being too long.  Returns 1 if the file has problems and
- * cannot be saved as is, 0 otherwise.
+ * or the file itself being too long. Supported UTF-8 typographic punctuation
+ * is normalized to ASCII in place. Returns 1 if the file still has problems
+ * and cannot be saved as is, 0 otherwise.
  */
 int checkFile( FILE *ptrMessageFile )
 {
+   char *ptrNormalizedText;
+   long fileSize;
+   size_t normalizedLength;
    int count = 0;
    int line = 1;
    int total = 0;
+   bool shouldRewriteFile = false;
+
+   if ( fseek( ptrMessageFile, 0L, SEEK_END ) != 0 )
+   {
+      return 1;
+   }
+   fileSize = ftell( ptrMessageFile );
+   if ( fileSize < 0 )
+   {
+      return 1;
+   }
+   normalizedLength = 0;
+   ptrNormalizedText = calloc( (size_t)fileSize + 1, sizeof( char ) );
+   if ( ptrNormalizedText == NULL )
+   {
+      fatalExit( "Out of memory validating edit file", "Edit file error" );
+      return 1;
+   }
 
    rewind( ptrMessageFile );
    while ( !feof( ptrMessageFile ) )
    {
       int inputChar = getc( ptrMessageFile );
+      char aryReplacementText[3];
+      size_t replacementLength;
+
+      if ( inputChar == EOF )
+      {
+         break;
+      }
 
       if ( inputChar != '\r' && inputChar != '\n' )
       {
-         if ( ( inputChar >= 0 && inputChar < 32 && inputChar != TAB ) || inputChar >= DEL )
+         if ( tryNormalizeSupportedUtf8Sequence( ptrMessageFile, inputChar, aryReplacementText,
+                                                 &replacementLength ) )
          {
+            size_t replacementIndex;
+
+            shouldRewriteFile = true;
+            for ( replacementIndex = 0; replacementIndex < replacementLength; replacementIndex++ )
+            {
+               ptrNormalizedText[normalizedLength++] = aryReplacementText[replacementIndex];
+               if ( aryReplacementText[replacementIndex] == TAB )
+               {
+                  count = ( count + 8 ) & 0xf8;
+               }
+               else
+               {
+                  count++;
+               }
+               if ( count > 79 )
+               {
+                  free( ptrNormalizedText );
+                  printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
+                  return ( 1 );
+               }
+            }
+            continue;
+         }
+         else if ( ( inputChar >= 0 && inputChar < 32 && inputChar != TAB ) || inputChar >= DEL )
+         {
+            free( ptrNormalizedText );
             printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n", line );
             return ( 1 );
          }
+
+         if ( inputChar == TAB )
+         {
+            count = ( count + 8 ) & 0xf8;
+         }
          else
          {
-            if ( inputChar == TAB )
-            {
-               count = ( count + 8 ) & 0xf8;
-            }
-            else
-            {
-               count++;
-            }
-            if ( count > 79 )
-            {
-               printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
-               return ( 1 );
-            }
+            count++;
+         }
+         if ( count > 79 )
+         {
+            free( ptrNormalizedText );
+            printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
+            return ( 1 );
          }
       }
       else
@@ -691,11 +853,33 @@ int checkFile( FILE *ptrMessageFile )
          count = 0;
          line++;
       }
+
+      ptrNormalizedText[normalizedLength++] = (char)inputChar;
    }
    if ( total > 48800 )
    {
+      free( ptrNormalizedText );
       printf( "\r\n[Warning:  message too long, edit file before saving]\r\n\n" );
       return ( 1 );
    }
+   if ( shouldRewriteFile )
+   {
+      rewind( ptrMessageFile );
+      if ( ftruncate( fileno( ptrMessageFile ), 0 ) != 0 )
+      {
+         free( ptrNormalizedText );
+         fatalPerror( "ftruncate", "Edit file error" );
+      }
+      if ( normalizedLength > 0 &&
+           fwrite( ptrNormalizedText, sizeof( char ), normalizedLength, ptrMessageFile ) != normalizedLength )
+      {
+         free( ptrNormalizedText );
+         tempFileError();
+         return 1;
+      }
+      fflush( ptrMessageFile );
+      rewind( ptrMessageFile );
+   }
+   free( ptrNormalizedText );
    return ( 0 );
 }
