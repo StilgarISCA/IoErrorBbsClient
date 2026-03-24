@@ -351,7 +351,7 @@ void titleBar( void )
 
    snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
              aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
-             VERSION, "Unix" );
+             BUILD_VERSION, "Unix" );
    if ( terminalSupportsTitleBarUpdates() )
    {
       printf( "\033]0;%s\007", aryTitle );
@@ -942,7 +942,7 @@ void techInfo( void )
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
-              "ISCA BBS Client " VERSION " (macOS/Unix)\r\n",
+              "ISCA BBS Client " BUILD_VERSION " (macOS/Unix)\r\n",
               "Built on: " HOSTTYPE "\r\n",
               "Compiler: " BUILD_COMPILER "\r\n",
               "Build mode: " BUILD_MODE "\r\n",
@@ -974,7 +974,7 @@ void initialize( void )
    setvbuf( stdout, NULL, _IOLBF, 0 );
 #endif
 
-   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION, "macOS/Unix" );
+   stdPrintf( "\nISCA BBS Client %s (%s)\n", BUILD_VERSION, "macOS/Unix" );
    stdPrintf( "Copyright (C) 2024-2026 Stilgar\n" );
    stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
    stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );

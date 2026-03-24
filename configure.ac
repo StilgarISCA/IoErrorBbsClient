@@ -44,6 +44,8 @@ AC_PROG_INSTALL
 AC_CHECK_TOOL([DSYMUTIL], [dsymutil], [no])
 AC_CHECK_TOOL([STRIP], [strip], [no])
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
+AC_DEFINE_UNQUOTED([BUILD_VERSION], ["$PACKAGE_VERSION"],
+   [Define to the configured release version string])
 
 compilerFamily="Unknown"
 isClangCompiler=no
@@ -500,7 +502,7 @@ AC_DEFINE_UNQUOTED([BUILD_STACK_PROTECTOR_MODE], ["$stackProtectorMode"],
 
 AC_SUBST(PLATFORM_OBJS)
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile bbs.1])
 AC_OUTPUT
 
 cat <<CFG

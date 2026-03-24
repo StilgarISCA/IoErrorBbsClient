@@ -80,7 +80,7 @@ test_edit_LDADD = $(CMOCKA_LIBS)
 test_telnet_SOURCES = test/test_telnet.c test/test_helpers.c telnet.c queue.c global.c
 test_telnet_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_telnet_LDADD = $(CMOCKA_LIBS)
-EXTRA_DIST = bbs.1 test/test_helpers.h
+EXTRA_DIST = bbs.1.in test/test_helpers.h
 else
 TESTS =
 endif

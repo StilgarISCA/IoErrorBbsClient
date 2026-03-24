@@ -31,6 +31,9 @@
 /* Define to the universal binary mode */
 #define BUILD_UNIVERSAL_MODE "disabled"
 
+/* Define to the configured release version string */
+#define BUILD_VERSION "2.3.10-Stilgar"
+
 /* Define this if you want to enable saving passwords */
 /* #undef ENABLE_SAVE_PASSWORD */
 
