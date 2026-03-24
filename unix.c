@@ -922,9 +922,8 @@ void techInfo( void )
               (char *)NULL );
 }
 
-void initialize( const char *protocol )
+void initialize( void )
 {
-   (void)protocol;
    if ( !isatty( 0 ) || !isatty( 1 ) || !isatty( 2 ) )
    {
       exit( 0 );
