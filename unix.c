@@ -887,31 +887,38 @@ void run( char *aryCommand, char *arg )
 
 void techInfo( void )
 {
+   char aryRuntimeInfo[256];
+   char aryRuntimeAccessibility[256];
+
+   snprintf( aryRuntimeInfo,
+             sizeof( aryRuntimeInfo ),
+             "Runtime: SSL %s, keepalive %s, title bar %s, clickable URLs %s\r\n",
+             shouldUseSsl ? "on" : "off",
+             flagsConfiguration.shouldUseTcpKeepalive ? "on" : "off",
+             flagsConfiguration.shouldEnableTitleBar ? "on" : "off",
+             flagsConfiguration.shouldEnableClickableUrls ? "on" : "off" );
+   snprintf( aryRuntimeAccessibility,
+             sizeof( aryRuntimeAccessibility ),
+             "Accessibility: screen reader %s, autocomplete %s\r\n",
+             flagsConfiguration.isScreenReaderModeEnabled ? "on" : "off",
+             flagsConfiguration.shouldEnableNameAutocomplete ? "on" : "off" );
+
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
               "ISCA BBS Client " VERSION " (macOS/Unix)\r\n",
-              "Compiled on: " HOSTTYPE "\r\n",
-              "With: "
-#ifdef __STDC__
-              "ANSI "
-#endif
-#ifdef __cplusplus
-              "C++ "
-#endif
-#ifdef __GNUC__
-              "gcc "
-#endif
-#ifdef _POSIX_SOURCE
-              "POSIX "
-#endif
-#ifdef ENABLE_SAVE_PASSWORD
-              "save-password "
-#endif
-#ifdef USE_POSIX_SIGSETJMP
-              "sigsetjmp "
-#endif
-              "\r\n",
+              "Built on: " HOSTTYPE "\r\n",
+              "Compiler: " BUILD_COMPILER "\r\n",
+              "Build mode: " BUILD_MODE "\r\n",
+              "Optimization: " BUILD_OPTIMIZATION_MODE "\r\n",
+              "Universal binary: " BUILD_UNIVERSAL_MODE "\r\n",
+              "OpenSSL support: " BUILD_SSL_MODE "\r\n",
+              "Save password support: " BUILD_SAVE_PASSWORD_MODE "\r\n",
+              "Sanitizers: " BUILD_SANITIZER_MODE "\r\n",
+              "Native optimizations: " BUILD_NATIVE_OPTIMIZATION_MODE "\r\n",
+              "Stack protector: " BUILD_STACK_PROTECTOR_MODE "\r\n",
+              aryRuntimeInfo,
+              aryRuntimeAccessibility,
               (char *)NULL );
 }
 

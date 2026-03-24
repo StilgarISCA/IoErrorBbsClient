@@ -421,11 +421,6 @@ AC_SUBST([UNIVERSAL_CFLAGS])
 AC_SUBST([UNIVERSAL_LDFLAGS])
 AC_SUBST([HOST_TRIPLE], [$host])
 
-AC_SUBST(PLATFORM_OBJS)
-AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-
 if test "x$enable_release_build" = "xyes"; then
    buildMode="release"
    optimizationMode="release"
@@ -480,10 +475,38 @@ else
    cmockaMode="not found"
 fi
 
+compilerSummary="$CC ($compilerFamily)"
+
+AC_DEFINE_UNQUOTED([BUILD_COMPILER], ["$compilerSummary"],
+   [Define to the selected compiler summary])
+AC_DEFINE_UNQUOTED([BUILD_MODE], ["$buildMode"],
+   [Define to the selected build mode])
+AC_DEFINE_UNQUOTED([BUILD_OPTIMIZATION_MODE], ["$optimizationMode"],
+   [Define to the selected optimization mode])
+AC_DEFINE_UNQUOTED([BUILD_UNIVERSAL_MODE], ["$universalMode"],
+   [Define to the universal binary mode])
+AC_DEFINE_UNQUOTED([BUILD_SSL_MODE], ["$sslMode"],
+   [Define to the OpenSSL support mode])
+AC_DEFINE_UNQUOTED([BUILD_SAVE_PASSWORD_MODE], ["$savePasswordMode"],
+   [Define to the saved password support mode])
+AC_DEFINE_UNQUOTED([BUILD_CMOCKA_MODE], ["$cmockaMode"],
+   [Define to the cmocka availability mode])
+AC_DEFINE_UNQUOTED([BUILD_SANITIZER_MODE], ["$sanitizerMode"],
+   [Define to the sanitizer mode])
+AC_DEFINE_UNQUOTED([BUILD_NATIVE_OPTIMIZATION_MODE], ["$nativeOptimizationMode"],
+   [Define to the native optimization mode])
+AC_DEFINE_UNQUOTED([BUILD_STACK_PROTECTOR_MODE], ["$stackProtectorMode"],
+   [Define to the stack protector mode])
+
+AC_SUBST(PLATFORM_OBJS)
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+
 cat <<CFG
 
 Configuration summary:
-  Compiler: $CC ($compilerFamily)
+  Compiler: $compilerSummary
   Host: $host
   Build mode: $buildMode
   Optimization mode: $optimizationMode
