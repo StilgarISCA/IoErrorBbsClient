@@ -97,6 +97,29 @@ static void setKeyDefaultToUppercase( int lowerKey, bool shouldUseUppercaseByDef
    }
 }
 
+static void printThemedFriendListEntry( const friend *ptrFriend )
+{
+   if ( flagsConfiguration.shouldUseAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendName );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%-20s ", ptrFriend->name );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendText );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%s\r\n", ptrFriend->info );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.text );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   stdPrintf( "%-20s %s\r\n", ptrFriend->name, ptrFriend->info );
+}
+
 /*
  * First time setup borrowed from Client 9 with permission.
  */
@@ -720,7 +743,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
    int lines;
    char *ptrUserName;
    char aryInfo[50];
-   char aryDisplayLine[80];
    char *ptrEnemyName;
    friend *ptrFriend;
 
@@ -735,8 +757,12 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       {
          printThemedMnemonicText( "\r\n<A>dd  <D>elete  <E>dit  <L>ist  <Q>uit", color.number );
       }
-      snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
-      printThemedMnemonicText( aryDisplayLine, color.forum );
+      {
+         char aryDisplayLine[80];
+
+         snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
+         printThemedMnemonicText( aryDisplayLine, color.forum );
+      }
       printAnsiForegroundColorValue( color.text );
 
       inputChar = inKey();
@@ -870,8 +896,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
                for ( itemIndex = 0; itemIndex < (int)list->nitems; itemIndex++ )
                {
                   ptrFriend = list->items[itemIndex];
-                  snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "@Y%-20s @C%s@G\r\n", ptrFriend->name, ptrFriend->info );
-                  colorize( aryDisplayLine );
+                  printThemedFriendListEntry( ptrFriend );
                   lines++;
                   if ( lines == rows - 1 && more( &lines, -1 ) < 0 )
                   {

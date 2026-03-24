@@ -5,7 +5,7 @@
 #define BUILD_CMOCKA_MODE "found"
 
 /* Define to the selected compiler summary */
-#define BUILD_COMPILER "clang (Apple Clang)"
+#define BUILD_COMPILER "clang -std=gnu23 (Apple Clang)"
 
 /* Define to the selected build mode */
 #define BUILD_MODE "dev"
