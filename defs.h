@@ -108,8 +108,8 @@ static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize
                                           colorValue );
 }
 
-static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
-                                                int colorValue )
+static inline int formatAnsiColorSequence( char *ptrBuffer, size_t bufferSize,
+                                           int colorValue, bool isBackground )
 {
    size_t safeOffset;
    size_t writeOffset;
@@ -121,31 +121,23 @@ static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSi
 
    writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[" );
    writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
-                                          colorValue, false );
+                                          colorValue, isBackground );
    safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
    snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
              "m" );
    return 1;
 }
 
+static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                                int colorValue )
+{
+   return formatAnsiColorSequence( ptrBuffer, bufferSize, colorValue, false );
+}
+
 static inline int formatAnsiBackgroundSequence( char *ptrBuffer, size_t bufferSize,
                                                 int colorValue )
 {
-   size_t safeOffset;
-   size_t writeOffset;
-
-   if ( bufferSize == 0 )
-   {
-      return 0;
-   }
-
-   writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[" );
-   writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
-                                          colorValue, true );
-   safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
-   snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
-             "m" );
-   return 1;
+   return formatAnsiColorSequence( ptrBuffer, bufferSize, colorValue, true );
 }
 
 static inline int formatAnsiDisplayStateSequence( char *ptrBuffer, size_t bufferSize,
