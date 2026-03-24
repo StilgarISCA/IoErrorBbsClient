@@ -55,6 +55,19 @@ static void printEditorCommandPrompt( void )
    printf( "%s", aryAnsiSequence );
 }
 
+static const char *resolveEditorCommand( void )
+{
+   if ( !*aryEditor )
+   {
+      return NULL;
+   }
+   if ( strcmp( aryEditor, DEFAULT_EDITOR_CONFIG_VALUE ) == 0 )
+   {
+      return *aryMyEditor ? aryMyEditor : NULL;
+   }
+   return aryEditor;
+}
+
 void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
 {
    int inputChar;
@@ -539,89 +552,94 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             continue;
 
          case 'e':
-            printf( "Edit\r\n" );
-            if ( !*aryEditor )
             {
-               printf( "[Error:  No editor available]\r\n" );
-            }
-            else
-            {
-               if ( isupper( commandChar ) )
+               const char *ptrEditorCommand;
+
+               printf( "Edit\r\n" );
+               ptrEditorCommand = resolveEditorCommand();
+               if ( ptrEditorCommand == NULL )
                {
-                  fseek( ptrMessageFile, 0L, SEEK_END );
-                  if ( ftell( ptrMessageFile ) )
+                  printf( "[Error:  No editor available]\r\n" );
+               }
+               else
+               {
+                  if ( isupper( commandChar ) )
                   {
-                     printf( "\r\nThere is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
-                     if ( yesNo() )
+                     fseek( ptrMessageFile, 0L, SEEK_END );
+                     if ( ftell( ptrMessageFile ) )
                      {
-                        if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
+                        printf( "\r\nThere is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
+                        if ( yesNo() )
                         {
-                           fatalPerror( "load file into aryEditor: reopen temp file for truncate", "Edit file error" );
+                           if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
+                           {
+                              fatalPerror( "load file into aryEditor: reopen temp file for truncate", "Edit file error" );
+                           }
+                           ptrMessageFile = tempFile;
                         }
-                        ptrMessageFile = tempFile;
+                        else
+                        {
+                           continue;
+                        }
                      }
-                     else
+                     printf( "\r\nFilename -> " );
+                     getString( 67, aryCurrentLine, -999 );
+                     if ( !*aryCurrentLine )
                      {
                         continue;
                      }
-                  }
-                  printf( "\r\nFilename -> " );
-                  getString( 67, aryCurrentLine, -999 );
-                  if ( !*aryCurrentLine )
-                  {
-                     continue;
-                  }
-                  if ( !( ptrCopyFile = fopen( aryCurrentLine, "r" ) ) )
-                  {
-                     printf( "\r\n[Error:  named file does not exist]\r\n\n" );
-                     continue;
-                  }
-                  else
-                  {
-                     while ( ( itemIndex = getc( ptrCopyFile ) ) >= 0 )
+                     if ( !( ptrCopyFile = fopen( aryCurrentLine, "r" ) ) )
                      {
-                        if ( putc( itemIndex, ptrMessageFile ) < 0 )
+                        printf( "\r\n[Error:  named file does not exist]\r\n\n" );
+                        continue;
+                     }
+                     else
+                     {
+                        while ( ( itemIndex = getc( ptrCopyFile ) ) >= 0 )
+                        {
+                           if ( putc( itemIndex, ptrMessageFile ) < 0 )
+                           {
+                              tempFileError();
+                              break;
+                           }
+                        }
+                        if ( feof( ptrCopyFile ) && fflush( ptrMessageFile ) < 0 )
                         {
                            tempFileError();
-                           break;
                         }
+                        fclose( ptrCopyFile );
                      }
-                     if ( feof( ptrCopyFile ) && fflush( ptrMessageFile ) < 0 )
-                     {
-                        tempFileError();
-                     }
-                     fclose( ptrCopyFile );
+                  }
+                  /* We have to close and reopen the tempFile due to locking */
+                  fclose( tempFile );
+                  run( (char *)ptrEditorCommand, aryTempFileName );
+                  if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
+                  {
+                     fatalPerror( "openTmpFile: fopen", "Local error" );
+                  }
+                  if ( flagsConfiguration.shouldUseAnsi )
+                  {
+                     char aryAnsiSequence[32];
+
+                     formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                                     lastColor, color.background,
+                                                     flagsConfiguration.shouldUseBold );
+                     printf( "%s", aryAnsiSequence );
+                  }
+                  printf( "[Editing complete]\r\n" );
+                  if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )
+                  {
+                     fatalPerror( "aryEditor return: freopen(aryTempFileName, \"r+\")", "Edit file error" );
+                  }
+                  ptrMessageFile = tempFile;
+                  if ( checkFile( ptrMessageFile ) )
+                  {
+                     fflush( stdout );
+                     mySleep( 1 );
                   }
                }
-               /* We have to close and reopen the tempFile due to locking */
-               fclose( tempFile );
-               run( aryEditor, aryTempFileName );
-               if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
-               {
-                  fatalPerror( "openTmpFile: fopen", "Local error" );
-               }
-               if ( flagsConfiguration.shouldUseAnsi )
-               {
-                  char aryAnsiSequence[32];
-
-                  formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                                  lastColor, color.background,
-                                                  flagsConfiguration.shouldUseBold );
-                  printf( "%s", aryAnsiSequence );
-               }
-               printf( "[Editing complete]\r\n" );
-               if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )
-               {
-                  fatalPerror( "aryEditor return: freopen(aryTempFileName, \"r+\")", "Edit file error" );
-               }
-               ptrMessageFile = tempFile;
-               if ( checkFile( ptrMessageFile ) )
-               {
-                  fflush( stdout );
-                  mySleep( 1 );
-               }
+               continue;
             }
-            continue;
       }
       return ( 0 );
    }

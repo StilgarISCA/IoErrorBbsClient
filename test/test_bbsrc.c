@@ -475,9 +475,9 @@ static void readBbsRc_WhenConfigIsEmpty_AppliesDefaults( void **state )
    {
       fail_msg( "default site should be %s:%d, got %s:%u", BBS_HOSTNAME, BBS_PORT_NUMBER, aryBbsHost, bbsPort );
    }
-   if ( strcmp( aryEditor, "nano" ) != 0 )
+   if ( strcmp( aryEditor, DEFAULT_EDITOR_CONFIG_VALUE ) != 0 )
    {
-      fail_msg( "default editor should come from aryMyEditor; got '%s'", aryEditor );
+      fail_msg( "default editor should use the symbolic $EDITOR value; got '%s'", aryEditor );
    }
    if ( strcmp( aryAwayMessageLines[0], "I'm away from my keyboard right now." ) != 0 )
    {

@@ -1116,7 +1116,7 @@ void readBbsRc( void )
    }
    if ( !*aryEditor )
    {
-      snprintf( aryEditor, sizeof( aryEditor ), "%s", aryMyEditor );
+      snprintf( aryEditor, sizeof( aryEditor ), "%s", DEFAULT_EDITOR_CONFIG_VALUE );
    }
    if ( version != tmpVersion )
    {

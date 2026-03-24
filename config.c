@@ -227,7 +227,7 @@ void configBbsRc( void )
             }
             if ( !isLoginShell )
             {
-               stdPrintf( "Enter name of local editor to use (%s) -> ", aryEditor );
+               stdPrintf( "Enter local editor to use (%s uses shell default) -> ", aryEditor );
                getString( 72, aryMenuLine, -999 );
                if ( *aryMenuLine )
                {

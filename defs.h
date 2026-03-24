@@ -15,6 +15,7 @@
 
 #define VERSION "2.3.10-Stilgar"
 #define INT_VERSION 2310
+#define DEFAULT_EDITOR_CONFIG_VALUE "$EDITOR"
 
 #include "config.h"
 
