@@ -758,9 +758,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
                      stdPrintf( "\r\n%s is already on your %s list.\r\n", ptrUserName, name );
                      shouldSkipAdd = true;
                   }
-#if DEBUG
-                  printf( "{%d %s} ", shouldSkipAdd ? -1 : 0, ptrUserName );
-#endif
                   if ( shouldSkipAdd )
                   {
                      break;

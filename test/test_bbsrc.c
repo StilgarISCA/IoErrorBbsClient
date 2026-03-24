@@ -190,7 +190,7 @@ int fStrCompareVoid( const void *ptrName, const void *ptrFriend )
    return strcmp( (const char *)ptrName, ( (const friend *)ptrFriend )->name );
 }
 
-void fatalExit( const char *message, const char *heading )
+noreturn void fatalExit( const char *message, const char *heading )
 {
    fail_msg( "fatalExit invoked unexpectedly: %s (%s)", message, heading );
    abort();
@@ -284,7 +284,14 @@ int stdPrintf( const char *format, ... )
    size_t currentLength;
 
    va_start( argList, format );
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
    vsnprintf( aryBuffer, sizeof( aryBuffer ), format, argList );
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
    va_end( argList );
 
    currentLength = strlen( aryStdPrintfLog );

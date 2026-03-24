@@ -21,41 +21,113 @@ More background is documented in `history.md`.
 ## Quick Start
 
 ```bash
+make clean
 autoreconf -i
 ./configure
-make
-make install
+make -j4
+make check
+make cppcheck
+```
+
+### Build Modes
+
+The default configure path produces a development build.
+
+- Dev build is the default
+- Dev build uses debug-friendly flags and sanitizers
+- macOS builds still add host-appropriate tuning flags by default:
+  - Apple Silicon builds use Apple Silicon tuning flags
+  - Intel Mac builds use Intel tuning flags
+
+Default dev build:
+
+```bash
+make clean
+autoreconf -i
+./configure
+make -j4
+make check
+make cppcheck
+```
+
+Release build:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-release-build
+make -j4
+make check
+make cppcheck
+```
+
+Release package:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-release-build
+make -j4
+make release-package
+```
+
+`make release-package` creates a stripped release binary under `release/` and
+keeps a matching macOS `.dSYM` bundle for postmortem debugging.
+
+Release validation:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-release-build
+make -j4
+make check
+make cppcheck
+make distcheck
+```
+
+`make distcheck` validates that the distribution tarball can be packaged, built,
+tested, installed, uninstalled, and cleaned successfully from a fresh
+out-of-tree build.
+
+Universal macOS build for both Apple Silicon and Intel Macs:
+
+```bash
+make clean
+autoreconf -i
+./configure --enable-universal-binary
+make -j4
+make check
+make cppcheck
 ```
 
 ## Formatting and Linting
 
 ```bash
+# Apply repository formatting rules (.clang-format)
+/opt/homebrew/opt/llvm/bin/clang-format -i $(git ls-files '*.c' '*.h')
+
+# Verify the default dev build
+make clean
+autoreconf -i
+./configure
+make -j4
+make check
+make cppcheck
+```
+
+Optional clang-tidy setup:
+
+```bash
 # Generate/refresh compile_commands.json for clang-tidy
 bear -- make clean all -j4
 
-# Run static analysis with cppcheck
-make cppcheck
-
-# Run full analysis (cppcheck + clang-tidy when available)
-make analyze
-```
-
-```bash
 # Add required braces to control statements
-clang-tidy -p . -fix -fix-errors -format-style=file \
+/opt/homebrew/opt/llvm/bin/clang-tidy -p . -fix -fix-errors -format-style=file \
   -checks='-*,readability-braces-around-statements' \
   --extra-arg=-isysroot \
   --extra-arg="$(xcrun --sdk macosx --show-sdk-path)" \
   $(git ls-files '*.c')
-```
-
-```bash
-# Apply repository formatting rules (.clang-format)
-clang-format -i $(git ls-files '*.c' '*.h')
-
-# Verify build
-make clean
-make -j4
 ```
 
 ## License

@@ -79,18 +79,12 @@ int telReceive( int inputByte )
         * connections can be timed out and not be ghosted for an hour.
         */
             case CLIENT:
-#if DEBUG
-               stdPrintf( "{IAC CLIENT}" );
-#endif
                state = TS_DATA;
                netPutChar( IAC );
                netPutChar( CLIENT );
                break;
 
             case S_WHO: /* start who list transfer */
-#if DEBUG
-               stdPrintf( "{IAC S_WHO}" );
-#endif
                state = TS_DATA;
                whoListProgress = 1;
                break;
@@ -100,14 +94,6 @@ int telReceive( int inputByte )
             case G_NAME: /* get name */
             case G_STR:  /* get string */
             case CONFIG: /* do configuration */
-#if DEBUG
-               stdPrintf( "{IAC %s",
-                          inputByte == G_POST ? "G_POST" : inputByte == G_FIVE ? "G_FIVE"
-                                                        : inputByte == G_NAME  ? "G_NAME"
-                                                        : inputByte == G_STR   ? "G_STR"
-                                                        : inputByte == CONFIG  ? "CONFIG"
-                                                                               : "huh?" );
-#endif
                state = TS_GET;
                aryTelnetBuffer[telnetBufferPos++] = (unsigned char)inputByte;
                break;
@@ -128,9 +114,6 @@ int telReceive( int inputByte )
         * I ever have to worry about or maintain that BBS code!
         */
             case START:
-#if DEBUG
-               stdPrintf( "{IAC START}" );
-#endif
                state = TS_DATA;
                byte = 1;
                netPutChar( IAC );
@@ -138,9 +121,6 @@ int telReceive( int inputByte )
                break;
 
             case POST_S: /* Start of post transfer */
-#if DEBUG
-               stdPrintf( "{IAC POST_S}" );
-#endif
                state = TS_DATA;
                postHeaderActive = 1;
                postProgressState = 1;
@@ -148,9 +128,6 @@ int telReceive( int inputByte )
                break;
 
             case POST_E: /* End of post transfer */
-#if DEBUG
-               stdPrintf( "{IAC POST_E}" );
-#endif
                state = TS_DATA;
                postHeaderActive = 0;
                ptrPostBuffer = 0;
@@ -160,9 +137,6 @@ int telReceive( int inputByte )
                break;
 
             case MORE_M: /* More prompt marker */
-#if DEBUG
-               printf( "{IAC MORE_M}" );
-#endif
                state = TS_DATA;
                flagsConfiguration.isMorePromptActive ^= 1;
                if ( !flagsConfiguration.isMorePromptActive && flagsConfiguration.useAnsi )
@@ -172,9 +146,6 @@ int telReceive( int inputByte )
                break;
 
             case XMSG_S: /* Start of X message transfer */
-#if DEBUG
-               stdPrintf( "{IAC XMSG_S}" );
-#endif
                state = TS_DATA;
                *aryExpressParsing = 0;
                isExpressMessageHeaderActive = 1;
@@ -183,9 +154,6 @@ int telReceive( int inputByte )
                break;
 
             case XMSG_E: /* End of X message transfer */
-#if DEBUG
-               stdPrintf( "{IAC XMSG_E}" );
-#endif
                state = TS_DATA;
                *aryExpressParsing = 0;
                isExpressMessageHeaderActive = 0;
@@ -204,20 +172,10 @@ int telReceive( int inputByte )
             case DONT:
             case WILL:
             case WONT:
-#if DEBUG
-               stdPrintf( "{IAC %s ",
-                          inputByte == DO ? "DO" : inputByte == DONT ? "DONT"
-                                                : inputByte == WILL  ? "WILL"
-                                                : inputByte == WONT  ? "WONT"
-                                                                     : "UNKNOWN" );
-#endif
                state = TS_VOID;
                break;
 
             default:
-#if DEBUG
-               stdPrintf( "{IAC 0x%2X}", inputByte );
-#endif
                state = TS_DATA;
                break;
          }
@@ -253,9 +211,6 @@ int telReceive( int inputByte )
                      flagsConfiguration.shouldCheckExpress = 0;
                      return ( -1 );
                   }
-#if DEBUG
-                  stdPrintf( "}\r\n" );
-#endif
                   makeMessage( aryTelnetBuffer[1] );
                   break;
 
@@ -279,9 +234,6 @@ int telReceive( int inputByte )
                   break;
 
                case G_STR: /* get string */
-#if DEBUG
-                  stdPrintf( " 0x%X} ", aryTelnetBuffer[1] );
-#endif
                   sendBlock();
                   getString( aryTelnetBuffer[1], (char *)aryTelnetBuffer, -1 );
                   outputIndex = (int)strlen( (char *)aryTelnetBuffer );
@@ -290,9 +242,6 @@ int telReceive( int inputByte )
                   break;
 
                case CONFIG: /* do configuration */
-#if DEBUG
-                  stdPrintf( "}" );
-#endif
                   sendBlock();
                   configBbsRc();
                   sendTrackedNewline();
@@ -303,9 +252,6 @@ int telReceive( int inputByte )
 
          /* Ignore next byte (used for ignoring negotations we don't care about) */
       case TS_VOID:
-#if DEBUG
-         stdPrintf( "0x%X}", inputByte );
-#endif
          /*
           * Send IAC WONT in response to a telnet negotiation so unsupported
           * options do not alter the expected client state.

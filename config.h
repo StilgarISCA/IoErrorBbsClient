@@ -1,6 +1,36 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to the cmocka availability mode */
+#define BUILD_CMOCKA_MODE "found"
+
+/* Define to the selected compiler summary */
+#define BUILD_COMPILER "clang (Apple Clang)"
+
+/* Define to the selected build mode */
+#define BUILD_MODE "dev"
+
+/* Define to the native optimization mode */
+#define BUILD_NATIVE_OPTIMIZATION_MODE "enabled"
+
+/* Define to the selected optimization mode */
+#define BUILD_OPTIMIZATION_MODE "development"
+
+/* Define to the sanitizer mode */
+#define BUILD_SANITIZER_MODE "enabled"
+
+/* Define to the saved password support mode */
+#define BUILD_SAVE_PASSWORD_MODE "disabled"
+
+/* Define to the OpenSSL support mode */
+#define BUILD_SSL_MODE "disabled"
+
+/* Define to the stack protector mode */
+#define BUILD_STACK_PROTECTOR_MODE "-fstack-protector-strong"
+
+/* Define to the universal binary mode */
+#define BUILD_UNIVERSAL_MODE "disabled"
+
 /* Define this if you want to enable saving passwords */
 /* #undef ENABLE_SAVE_PASSWORD */
 

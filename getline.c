@@ -33,15 +33,9 @@ void getFiveLines( int which )
    int override = 0;
    int local = 0;
 
-#if DEBUG
-   stdPrintf( " %d SX == %d}\r\n", which, sendingXState );
-#endif
    if ( isAway && sendingXState == SX_SENT_NAME )
    {
       sendingXState = SX_REPLYING;
-#if DEBUG
-      stdPrintf( "getFiveLines 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
       replyMessage();
       return;
    }
@@ -53,9 +47,6 @@ void getFiveLines( int which )
    {
       sendingXState = SX_NOT;
    }
-#if DEBUG
-   stdPrintf( "getFiveLines 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
    if ( flagsConfiguration.useAnsi )
    {
       char aryAnsiSequence[32];
@@ -243,9 +234,6 @@ char *getName( int quitPriv )
    unsigned int invalid = 0;
    static char junk[21];
 
-#if DEBUG
-   stdPrintf( " %d SX = %d} ", quitPriv, sendingXState );
-#endif
    lastPtr = 0;
    if ( flagsConfiguration.useAnsi )
    {
@@ -266,9 +254,6 @@ char *getName( int quitPriv )
    if ( ( isAway || isXland ) && quitPriv == 2 && sendingXState == SENDING_X_STATE_SENT_COMMAND_X )
    {
       sendingXState = SX_SENT_NAME;
-#if DEBUG
-      stdPrintf( "getName 1 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
       if ( !popQueue( junk, xlandQueue ) )
       {
          stdPrintf( "ACK!  It didn't pop.\r\n" );
@@ -285,9 +270,6 @@ char *getName( int quitPriv )
       return ( junk );
    }
    sendingXState = SX_NOT;
-#if DEBUG
-   stdPrintf( "getName 2 sendingXState is %d, xland is %d\r\n", sendingXState, isXland );
-#endif
    while ( true )
    {
       shouldUppercase = 1;
@@ -640,7 +622,9 @@ void getString( int length, char *result, int line )
          {
             break;
          }
-         for ( ptrWordStart = ptrCursor - 1; *ptrWordStart != ' ' && ptrWordStart > result; ptrWordStart-- )
+         for ( ptrWordStart = ptrCursor - 1;
+               ptrWordStart > result && *ptrWordStart != ' ';
+               ptrWordStart-- )
          {
             ;
          }

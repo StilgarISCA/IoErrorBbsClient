@@ -113,9 +113,6 @@ int initSSL( void )
       return 0;
    }
 
-#if DEBUG
-   printf( "SSL initialized\n" );
-#endif
    return 1;
 }
 #endif /* HAVE_OPENSSL */
@@ -386,9 +383,13 @@ void noTitleBar( void )
  */
 void connectBbs( void )
 {
-   const struct hostent *host;
    register int connectResult;
-   struct sockaddr_in socketAddress;
+   struct addrinfo addressHints;
+   struct addrinfo *ptrAddressInfo;
+   struct addrinfo *ptrAddressList;
+   int savedErrno;
+   char aryPortString[8];
+   const char *ptrLookupHost;
 
    if ( !*aryBbsHost )
    {
@@ -406,37 +407,59 @@ void connectBbs( void )
    {
       cmdLinePort = bbsPort;
    }
-   strncpy( (char *)&socketAddress, "", sizeof socketAddress );
-   socketAddress.sin_family = AF_INET;
-   socketAddress.sin_port = htons( cmdLinePort ); /* Spurious gcc warning */
-   if ( isdigit( *aryCommandLineHost ) )
+
+   snprintf( aryPortString, sizeof( aryPortString ), "%u", (unsigned int)cmdLinePort );
+   memset( &addressHints, 0, sizeof( addressHints ) );
+   addressHints.ai_family = AF_INET;
+   addressHints.ai_socktype = SOCK_STREAM;
+
+   ptrLookupHost = aryCommandLineHost;
+   connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
+   if ( connectResult != 0 )
    {
-      socketAddress.sin_addr.s_addr = inet_addr( aryCommandLineHost );
+      ptrLookupHost = BBS_IP_ADDRESS;
+      connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
    }
-   else if ( !( host = gethostbyname( aryCommandLineHost ) ) )
+   if ( connectResult != 0 )
    {
-      socketAddress.sin_addr.s_addr = inet_addr( BBS_IP_ADDRESS );
-   }
-   else
-   {
-      strncpy( (char *)&socketAddress.sin_addr, host->h_addr, sizeof socketAddress.sin_addr );
+      fatalExit( gai_strerror( connectResult ), "Network error" );
    }
 
-   net = socket( AF_INET, SOCK_STREAM, 0 );
+   net = -1;
+   savedErrno = 0;
+   for ( ptrAddressInfo = ptrAddressList; ptrAddressInfo != NULL; ptrAddressInfo = ptrAddressInfo->ai_next )
+   {
+      net = socket( ptrAddressInfo->ai_family,
+                    ptrAddressInfo->ai_socktype,
+                    ptrAddressInfo->ai_protocol );
+      if ( net < 0 )
+      {
+         savedErrno = errno;
+         continue;
+      }
+
+      /* Client configuration controls keepalive probes. */
+      configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
+
+      connectResult = connect( net, ptrAddressInfo->ai_addr, ptrAddressInfo->ai_addrlen );
+      if ( connectResult == 0 )
+      {
+         break;
+      }
+
+      savedErrno = errno;
+      close( net );
+      net = -1;
+   }
+   freeaddrinfo( ptrAddressList );
+
    if ( net < 0 )
-   {
-      fatalPerror( "socket", "Local error" );
-   }
-
-   /* Client configuration controls keepalive probes. */
-   configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
-
-   connectResult = connect( net, (struct sockaddr *)&socketAddress, sizeof socketAddress );
-   if ( connectResult < 0 )
    {
 #define BBSREFUSED "The BBS has refused connection, try again later.\r\n"
 #define BBSNETDOWN "Network problems prevent connection with the BBS, try again later.\r\n"
 #define BBSHOSTDOWN "The BBS is down or there are network problems, try again later.\r\n"
+
+      errno = savedErrno;
 
 #ifdef ECONNREFUSED
       if ( errno == ECONNREFUSED )
@@ -864,31 +887,38 @@ void run( char *aryCommand, char *arg )
 
 void techInfo( void )
 {
+   char aryRuntimeInfo[256];
+   char aryRuntimeAccessibility[256];
+
+   snprintf( aryRuntimeInfo,
+             sizeof( aryRuntimeInfo ),
+             "Runtime: SSL %s, keepalive %s, title bar %s, clickable URLs %s\r\n",
+             shouldUseSsl ? "on" : "off",
+             flagsConfiguration.shouldUseTcpKeepalive ? "on" : "off",
+             flagsConfiguration.shouldEnableTitleBar ? "on" : "off",
+             flagsConfiguration.shouldEnableClickableUrls ? "on" : "off" );
+   snprintf( aryRuntimeAccessibility,
+             sizeof( aryRuntimeAccessibility ),
+             "Accessibility: screen reader %s, autocomplete %s\r\n",
+             flagsConfiguration.isScreenReaderModeEnabled ? "on" : "off",
+             flagsConfiguration.shouldEnableNameAutocomplete ? "on" : "off" );
+
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
               "ISCA BBS Client " VERSION " (macOS/Unix)\r\n",
-              "Compiled on: " HOSTTYPE "\r\n",
-              "With: "
-#ifdef __STDC__
-              "ANSI "
-#endif
-#ifdef __cplusplus
-              "C++ "
-#endif
-#ifdef __GNUC__
-              "gcc "
-#endif
-#ifdef _POSIX_SOURCE
-              "POSIX "
-#endif
-#ifdef ENABLE_SAVE_PASSWORD
-              "save-password "
-#endif
-#ifdef USE_POSIX_SIGSETJMP
-              "sigsetjmp "
-#endif
-              "\r\n",
+              "Built on: " HOSTTYPE "\r\n",
+              "Compiler: " BUILD_COMPILER "\r\n",
+              "Build mode: " BUILD_MODE "\r\n",
+              "Optimization: " BUILD_OPTIMIZATION_MODE "\r\n",
+              "Universal binary: " BUILD_UNIVERSAL_MODE "\r\n",
+              "OpenSSL support: " BUILD_SSL_MODE "\r\n",
+              "Save password support: " BUILD_SAVE_PASSWORD_MODE "\r\n",
+              "Sanitizers: " BUILD_SANITIZER_MODE "\r\n",
+              "Native optimizations: " BUILD_NATIVE_OPTIMIZATION_MODE "\r\n",
+              "Stack protector: " BUILD_STACK_PROTECTOR_MODE "\r\n",
+              aryRuntimeInfo,
+              aryRuntimeAccessibility,
               (char *)NULL );
 }
 
@@ -905,8 +935,8 @@ void initialize( const char *protocol )
 
    isAway = 0;
 
-#ifdef _IOFBF
-   setvbuf( stdout, NULL, _IOFBF, 4096 );
+#ifdef _IOLBF
+   setvbuf( stdout, NULL, _IOLBF, 0 );
 #endif
 
    stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION, "macOS/Unix" );
@@ -914,9 +944,6 @@ void initialize( const char *protocol )
    stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
    stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
    stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
-#if DEBUG
-   stdPrintf( "DEBUGGING VERSION - DEBUGGING CODE IS ENABLED!  DO NOT USE THIS CLIENT!\r\n\n" );
-#endif
    fflush( stdout );
    xlandQueue = newQueue( 21, MAX_USER_NAME_HISTORY_COUNT );
    if ( !xlandQueue )
@@ -998,7 +1025,10 @@ void sInfo( const char *info, const char *heading )
 void sPerror( const char *message, const char *heading )
 {
    char aryErrorBuffer[4096];
+   int savedErrno = errno;
+
    snprintf( aryErrorBuffer, sizeof( aryErrorBuffer ), "%s: %s", heading, message );
+   errno = savedErrno;
    perror( aryErrorBuffer );
    fprintf( stderr, "\r" );
    return;
@@ -1020,11 +1050,20 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
 {
    FILE *ptrOldFile;
    FILE *ptrNewFile;
-   long targetSize;
+   struct stat targetFileStatus;
+   bool shouldCopy;
 
    ptrOldFile = fopen( oldpath, "r" );
    if ( !ptrOldFile )
    {
+      return;
+   }
+
+   shouldCopy = ( stat( newpath, &targetFileStatus ) != 0 || targetFileStatus.st_size == 0 );
+   if ( !shouldCopy )
+   {
+      fclose( ptrOldFile );
+      unlink( oldpath );
       return;
    }
 
@@ -1035,8 +1074,6 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
       return;
    }
 
-   targetSize = ftell( ptrNewFile );
-   if ( targetSize == 0 )
    {
       char aryCopyBuffer[BUFSIZ];
       size_t bytesRead;

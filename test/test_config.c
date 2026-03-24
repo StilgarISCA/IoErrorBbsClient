@@ -210,9 +210,10 @@ int fSortCompareVoid( const void *ptrLeft, const void *ptrRight )
    return strcmp( ( *ptrLeftFriend )->name, ( *ptrRightFriend )->name );
 }
 
-void fatalExit( const char *message, const char *heading )
+noreturn void fatalExit( const char *message, const char *heading )
 {
    fail_msg( "fatalExit invoked unexpectedly: %s (%s)", message, heading );
+   abort();
 }
 
 char *findChar( const char *ptrString, int targetChar )
@@ -301,9 +302,10 @@ int more( int *line, int percent )
    return 0;
 }
 
-void myExit( void )
+noreturn void myExit( void )
 {
    fail_msg( "myExit invoked unexpectedly during config unit tests" );
+   abort();
 }
 
 void resetTerm( void )
@@ -339,7 +341,14 @@ int stdPrintf( const char *format, ... )
    size_t logLength;
 
    va_start( argList, format );
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
    vsnprintf( aryBuffer, sizeof( aryBuffer ), format, argList );
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
    va_end( argList );
 
    logLength = strlen( aryStdPrintfLog );
