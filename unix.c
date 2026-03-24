@@ -15,6 +15,7 @@
 #include "defs.h"
 #include "ext.h"
 #include "unix.h"
+#include <wordexp.h>
 
 static struct passwd *pw;
 
@@ -824,15 +825,53 @@ void flushInput( unsigned int invalid )
 #endif
 }
 
+static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg )
+{
+   wordexp_t parsedCommand;
+   char **aryArguments;
+   size_t argumentCount;
+   int parseResult;
+
+   parseResult = wordexp( ptrCommand, &parsedCommand, WRDE_NOCMD );
+   if ( parseResult != 0 || parsedCommand.we_wordc == 0 )
+   {
+      fprintf( stderr, "\r\n[Unable to parse command: %s]\r\n", ptrCommand );
+      _exit( 1 );
+   }
+
+   argumentCount = parsedCommand.we_wordc + ( ptrArg ? 1U : 0U );
+   aryArguments = calloc( argumentCount + 1, sizeof( char * ) );
+   if ( aryArguments != NULL )
+   {
+      for ( size_t argumentIndex = 0; argumentIndex < parsedCommand.we_wordc; argumentIndex++ )
+      {
+         aryArguments[argumentIndex] = parsedCommand.we_wordv[argumentIndex];
+      }
+      if ( ptrArg )
+      {
+         aryArguments[parsedCommand.we_wordc] = (char *)ptrArg;
+      }
+
+      execvp( aryArguments[0], aryArguments );
+      fprintf( stderr, "\r\n" );
+      sPerror( "exec", "Local error" );
+      free( aryArguments );
+      wordfree( &parsedCommand );
+      _exit( 1 );
+   }
+
+   fprintf( stderr, "\r\n" );
+   sPerror( "calloc", "Local error" );
+   wordfree( &parsedCommand );
+   _exit( 1 );
+}
+
 /*
- * Run the command 'aryCommand' with argument 'arg'.  Used only for running the aryEditor
- * right now.  In order to work properly with all the versions of Unix I've
- * tried to port this to so far without be overly complicated, I have to use a
- * setjmp to arySavedBytes the local stack context in this function, then longjmp back
- * here once I receive a signal from the child that it has terminated. So I
- * guess there actually IS a use for setjmp/longjmp after all! :-)
+ * Launch aryCommand with an optional trailing argument. Used for the external
+ * editor and subshell paths. The child exit path returns here through the
+ * existing setjmp/longjmp signal flow.
  */
-void run( char *aryCommand, char *arg )
+void run( const char *aryCommand, const char *arg )
 {
    fflush( stdout );
 #ifdef USE_POSIX_SIGSETJMP
@@ -862,10 +901,7 @@ void run( char *aryCommand, char *arg )
 
       if ( !( childPid = fork() ) )
       {
-         execlp( aryCommand, aryCommand, arg, 0 );
-         fprintf( stderr, "\r\n" );
-         sPerror( "exec", "Local error" );
-         _exit( 0 );
+         execCommandWithOptionalArg( aryCommand, arg );
       }
       else if ( childPid > 0 )
       {

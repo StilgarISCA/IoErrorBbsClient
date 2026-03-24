@@ -137,7 +137,7 @@ void sendTrackedChar( int inputChar )
    byte++;
 }
 
-void run( char *ptrCommand, char *ptrArg )
+void run( const char *ptrCommand, const char *ptrArg )
 {
    (void)ptrCommand;
    (void)ptrArg;

@@ -85,7 +85,7 @@ extern void
    replyMessage P( (void)),
    reprintLine P( (void)),
    resetTerm P( (void)),
-   run P( (char *, char *)),
+   run P( (const char *, const char *)),
    saveBbsRc P( (void)),
    sendAnX P( (void)),
    sendBlock P( (void)),

@@ -612,7 +612,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                   }
                   /* We have to close and reopen the tempFile due to locking */
                   fclose( tempFile );
-                  run( (char *)ptrEditorCommand, aryTempFileName );
+                  run( ptrEditorCommand, aryTempFileName );
                   if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
                   {
                      fatalPerror( "openTmpFile: fopen", "Local error" );

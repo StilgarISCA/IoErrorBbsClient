@@ -75,6 +75,10 @@ client when suspended, type "fg". The default suspend key is Ctrl-Z.
 You can start a subshell by pressing the command key followed by the new
 shell key. To return to the
 client from your subshell, type "exit". The default new shell key is !.
+The shell command is taken from the SHELL environment variable and may
+include optional arguments such as "fish -l", but it must still resolve
+to an executable command line rather than shell syntax like pipes or
+redirection.
 .TP
 .B Capture Key
 You can toggle \fIcapture mode\fR on and off by pressing the command key
@@ -196,6 +200,9 @@ what is installed on the system where your client is installed.
 To choose an external editor, use the \fBO\fRptions menu in the client
 configuration menu. Typical editors are emacs, nano and vi.
 On macOS you can also use editors available on your PATH.
+The editor value may include optional arguments such as "vim -f" or
+"code --wait". Quote paths with spaces. Shell syntax like pipes,
+redirection, and command substitution is not supported.
 .sp
 To start your external editor for a message, press ENTER twice (or
 Ctrl-D if uploading) and choose \fBE\fRdit from the post menu. Once you

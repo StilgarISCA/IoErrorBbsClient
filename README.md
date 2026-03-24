@@ -77,6 +77,26 @@ make release-package
 `make release-package` creates a stripped release binary under `release/` and
 keeps a matching macOS `.dSYM` bundle for postmortem debugging.
 
+## Shell And Editor Commands
+
+The shell hotkey and external editor setting can now use a normal command with
+optional arguments.
+
+Examples that work:
+- `/bin/zsh`
+- `/opt/homebrew/bin/fish -l`
+- `vim -f`
+- `"path with spaces/editor" --wait`
+
+Still not supported:
+- pipes
+- redirection
+- command substitution
+- random shell code
+
+`$SHELL` and the configured editor should point to a real executable, with
+optional arguments if needed. They should not be shell script fragments.
+
 Release validation:
 
 ```bash
