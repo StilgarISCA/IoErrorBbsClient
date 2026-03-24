@@ -216,7 +216,6 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
    assert( list2 );
    assert( list1->sortfn == list2->sortfn );
 
-   leftIndex = 0;
    rightIndex = 0;
 
    ptrResultList = slistCreate( 0, list1->sortfn );
@@ -225,7 +224,7 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
       return NULL;
    }
 
-   for ( ; leftIndex < (int)list1->nitems; leftIndex++ )
+   for ( leftIndex = 0; leftIndex < (int)list1->nitems; leftIndex++ )
    {
       /*
    	 * Now run through list2 until we find either a matching
