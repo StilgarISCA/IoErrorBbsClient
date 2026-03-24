@@ -80,6 +80,23 @@ void defaultNameAutocompleteIfUnset( void )
    flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
+static void setKeyDefaultToUppercase( int lowerKey, bool shouldUseUppercaseByDefault )
+{
+   int upperKey;
+
+   upperKey = toupper( lowerKey );
+   if ( shouldUseUppercaseByDefault )
+   {
+      aryKeyMap[lowerKey] = (char)upperKey;
+      aryKeyMap[upperKey] = (char)lowerKey;
+   }
+   else
+   {
+      aryKeyMap[lowerKey] = (char)lowerKey;
+      aryKeyMap[upperKey] = (char)upperKey;
+   }
+}
+
 /*
  * First time setup borrowed from Client 9 with permission.
  */
@@ -218,27 +235,9 @@ void configBbsRc( void )
                }
             }
             stdPrintf( "Show long who list by default? (%s) -> ", ( aryKeyMap['w'] == 'w' ) ? "No" : "Yes" );
-            if ( yesNoDefault( ( aryKeyMap['w'] != 'w' ) ? 1 : 0 ) )
-            {
-               aryKeyMap['w'] = 'W';
-               aryKeyMap['W'] = 'w';
-            }
-            else
-            {
-               aryKeyMap['w'] = 'w';
-               aryKeyMap['W'] = 'W';
-            }
+            setKeyDefaultToUppercase( 'w', yesNoDefault( ( aryKeyMap['w'] != 'w' ) ? 1 : 0 ) );
             stdPrintf( "Show full profile by default? (%s) -> ", ( aryKeyMap['p'] == 'p' ) ? "No" : "Yes" );
-            if ( yesNoDefault( ( aryKeyMap['p'] != 'p' ) ? 1 : 0 ) )
-            {
-               aryKeyMap['p'] = 'P';
-               aryKeyMap['P'] = 'p';
-            }
-            else
-            {
-               aryKeyMap['p'] = 'p';
-               aryKeyMap['P'] = 'P';
-            }
+            setKeyDefaultToUppercase( 'p', yesNoDefault( ( aryKeyMap['p'] != 'p' ) ? 1 : 0 ) );
             stdPrintf( "Enter name of site to connect to (%s) -> ", aryBbsHost );
             getString( 64, aryMenuLine, -999 );
             if ( *aryMenuLine )
