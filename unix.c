@@ -83,8 +83,141 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 #endif
 }
 
+static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
+                                     int lookupResult )
+{
+   const char *ptrReason;
+   char aryMessage[256];
+
+   ptrReason = gai_strerror( lookupResult );
+   switch ( lookupResult )
+   {
+#ifdef EAI_NONAME
+      case EAI_NONAME:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Could not resolve %s:%s.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EAI_AGAIN
+      case EAI_AGAIN:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Temporary DNS failure while looking up %s:%s.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EAI_FAMILY
+      case EAI_FAMILY:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Address family for %s:%s is not supported.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EAI_SERVICE
+      case EAI_SERVICE:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Service lookup failed for %s:%s.", ptrHost, ptrPort );
+         break;
+#endif
+      default:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Host lookup failed for %s:%s.", ptrHost, ptrPort );
+         break;
+   }
+
+   fatalExit( ptrReason, aryMessage );
+}
+
+static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort,
+                                        int connectionErrno )
+{
+   char aryMessage[256];
+
+   switch ( connectionErrno )
+   {
+#ifdef ECONNREFUSED
+      case ECONNREFUSED:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Connection to %s:%s was refused by the server.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef ETIMEDOUT
+      case ETIMEDOUT:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Connection to %s:%s timed out.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EHOSTUNREACH
+      case EHOSTUNREACH:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Host %s:%s is unreachable.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EHOSTDOWN
+      case EHOSTDOWN:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Host %s:%s appears to be down.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef ENETUNREACH
+      case ENETUNREACH:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The network path to %s:%s is unreachable.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef ENETDOWN
+      case ENETDOWN:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The local network is down while connecting to %s:%s.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EADDRNOTAVAIL
+      case EADDRNOTAVAIL:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "No usable local address is available for %s:%s.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef EAFNOSUPPORT
+      case EAFNOSUPPORT:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The resolved address family for %s:%s is not supported.", ptrHost, ptrPort );
+         break;
+#endif
+#ifdef ECONNABORTED
+      case ECONNABORTED:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Connection to %s:%s was aborted during setup.", ptrHost, ptrPort );
+         break;
+#endif
+      default:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Could not connect to %s:%s.", ptrHost, ptrPort );
+         break;
+   }
+
+   errno = connectionErrno;
+   fatalPerror( "connect", aryMessage );
+}
+
 #ifdef HAVE_OPENSSL
 SSL_CTX *ctx;
+
+static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
+                                     const char *ptrOperation )
+{
+   unsigned long errorCode;
+   const char *ptrReason;
+   char aryMessage[256];
+
+   errorCode = ERR_get_error();
+   ptrReason = ERR_reason_error_string( errorCode );
+   if ( ptrReason == NULL )
+   {
+      ptrReason = "TLS handshake failed";
+   }
+
+   snprintf( aryMessage, sizeof( aryMessage ),
+             "TLS setup failed while connecting to %s:%s during %s.",
+             ptrHost, ptrPort, ptrOperation );
+   fatalExit( ptrReason, aryMessage );
+}
 
 void killSsl( void )
 {
@@ -427,7 +560,7 @@ void connectBbs( void )
    if ( connectResult != 0 )
    {
       stdPrintf( "failed.\n" );
-      fatalExit( gai_strerror( connectResult ), "Network error" );
+      failHostLookup( aryCommandLineHost, aryPortString, connectResult );
    }
    stdPrintf( "done.\n" );
 
@@ -463,50 +596,8 @@ void connectBbs( void )
 
    if ( net < 0 )
    {
-#define BBSREFUSED "The BBS has refused connection, try again later.\r\n"
-#define BBSNETDOWN "Network problems prevent connection with the BBS, try again later.\r\n"
-#define BBSHOSTDOWN "The BBS is down or there are network problems, try again later.\r\n"
-
       stdPrintf( "failed.\n" );
-      errno = savedErrno;
-
-#ifdef ECONNREFUSED
-      if ( errno == ECONNREFUSED )
-      {
-         stdPrintf( BBSREFUSED );
-      }
-#endif
-#ifdef ENETDOWN
-      if ( errno == ENETDOWN )
-      {
-         stdPrintf( BBSNETDOWN );
-      }
-#endif
-#ifdef ENETUNREACH
-      if ( errno == ENETUNREACH )
-      {
-         stdPrintf( BBSNETDOWN );
-      }
-#endif
-#ifdef ETIMEDOUT
-      if ( errno == ETIMEDOUT )
-      {
-         stdPrintf( BBSHOSTDOWN );
-      }
-#endif
-#ifdef EHOSTDOWN
-      if ( errno == EHOSTDOWN )
-      {
-         stdPrintf( BBSHOSTDOWN );
-      }
-#endif
-#ifdef EHOSTUNREACH
-      if ( errno == EHOSTUNREACH )
-      {
-         stdPrintf( BBSNETDOWN );
-      }
-#endif
-      fatalPerror( "connect", "Network error" );
+      failSocketConnect( ptrLookupHost, aryPortString, savedErrno );
    }
    stdPrintf( "done.\n" );
 #ifdef HAVE_OPENSSL
@@ -518,16 +609,14 @@ void connectBbs( void )
       if ( SSL_set_fd( ssl, net ) != 1 )
       {
          stdPrintf( "failed.\n" );
-         printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
          shutdown( net, 2 );
-         exit( 1 );
+         failTlsConnect( ptrLookupHost, aryPortString, "TLS socket setup" );
       }
       if ( ( connectResult = SSL_connect( ssl ) ) != 1 )
       {
          stdPrintf( "failed.\n" );
-         printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
          shutdown( net, 2 );
-         exit( 1 );
+         failTlsConnect( ptrLookupHost, aryPortString, "TLS handshake" );
       }
       isSsl = 1;
       stdPrintf( "done.\n" );
