@@ -975,8 +975,7 @@ void initialize( void )
 #endif
 
    stdPrintf( "\nISCA BBS Client %s (%s)\n", BUILD_VERSION, "macOS/Unix" );
-   stdPrintf( "Copyright (C) 2024-2026 Stilgar\n" );
-   stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
+   stdPrintf( "Copyright (C) 2024-2026 Stilgar, 1995-2003 Michael Hampton\n" );
    stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
    stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
    fflush( stdout );
