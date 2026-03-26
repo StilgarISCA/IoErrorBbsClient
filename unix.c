@@ -990,8 +990,8 @@ void initialize( void )
 
    stdPrintf( "\nISCA BBS Client %s (%s)\n", BUILD_VERSION, "macOS/Unix" );
    stdPrintf( "Copyright (C) 2024-2026 Stilgar, 1995-2003 Michael Hampton\n" );
-   stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
-   stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
+   stdPrintf( "\nhttps://github.com/StilgarISCA/IoErrorBbsClient\n" );
+   stdPrintf( "GPL-2.0-or-later (see LICENSE)\n\n" );
    fflush( stdout );
    xlandQueue = newQueue( 21, MAX_USER_NAME_HISTORY_COUNT );
    if ( !xlandQueue )
