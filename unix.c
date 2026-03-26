@@ -19,6 +19,171 @@
 
 static struct passwd *pw;
 
+typedef struct
+{
+   int errorCode;
+   int messageKind;
+} ErrorMessageTemplate;
+
+enum
+{
+   HOST_LOOKUP_COULD_NOT_RESOLVE,
+   HOST_LOOKUP_TEMPORARY_DNS_FAILURE,
+   HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED,
+   HOST_LOOKUP_SERVICE_LOOKUP_FAILED,
+   HOST_LOOKUP_GENERIC_FAILURE,
+   SOCKET_CONNECT_REFUSED,
+   SOCKET_CONNECT_TIMED_OUT,
+   SOCKET_CONNECT_HOST_UNREACHABLE,
+   SOCKET_CONNECT_HOST_DOWN,
+   SOCKET_CONNECT_NETWORK_UNREACHABLE,
+   SOCKET_CONNECT_NETWORK_DOWN,
+   SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE,
+   SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED,
+   SOCKET_CONNECT_ABORTED,
+   SOCKET_CONNECT_GENERIC_FAILURE
+};
+
+static const ErrorMessageTemplate aryHostLookupErrors[] =
+   {
+#ifdef EAI_NONAME
+      { EAI_NONAME, HOST_LOOKUP_COULD_NOT_RESOLVE },
+#endif
+#ifdef EAI_AGAIN
+      { EAI_AGAIN, HOST_LOOKUP_TEMPORARY_DNS_FAILURE },
+#endif
+#ifdef EAI_FAMILY
+      { EAI_FAMILY, HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED },
+#endif
+#ifdef EAI_SERVICE
+      { EAI_SERVICE, HOST_LOOKUP_SERVICE_LOOKUP_FAILED },
+#endif
+};
+
+static const ErrorMessageTemplate arySocketConnectErrors[] =
+   {
+#ifdef ECONNREFUSED
+      { ECONNREFUSED, SOCKET_CONNECT_REFUSED },
+#endif
+#ifdef ETIMEDOUT
+      { ETIMEDOUT, SOCKET_CONNECT_TIMED_OUT },
+#endif
+#ifdef EHOSTUNREACH
+      { EHOSTUNREACH, SOCKET_CONNECT_HOST_UNREACHABLE },
+#endif
+#ifdef EHOSTDOWN
+      { EHOSTDOWN, SOCKET_CONNECT_HOST_DOWN },
+#endif
+#ifdef ENETUNREACH
+      { ENETUNREACH, SOCKET_CONNECT_NETWORK_UNREACHABLE },
+#endif
+#ifdef ENETDOWN
+      { ENETDOWN, SOCKET_CONNECT_NETWORK_DOWN },
+#endif
+#ifdef EADDRNOTAVAIL
+      { EADDRNOTAVAIL, SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE },
+#endif
+#ifdef EAFNOSUPPORT
+      { EAFNOSUPPORT, SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED },
+#endif
+#ifdef ECONNABORTED
+      { ECONNABORTED, SOCKET_CONNECT_ABORTED },
+#endif
+};
+
+static int findErrorMessageKind( int errorCode,
+                                 const ErrorMessageTemplate *ptrTemplates,
+                                 size_t templateCount, int defaultMessageKind )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < templateCount; itemIndex++ )
+   {
+      if ( ptrTemplates[itemIndex].errorCode == errorCode )
+      {
+         return ptrTemplates[itemIndex].messageKind;
+      }
+   }
+   return defaultMessageKind;
+}
+
+static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
+                                     int messageKind, const char *ptrHost,
+                                     const char *ptrPort )
+{
+   switch ( messageKind )
+   {
+      case HOST_LOOKUP_COULD_NOT_RESOLVE:
+         snprintf( ptrBuffer, bufferSize, "Could not resolve %s:%s.", ptrHost, ptrPort );
+         break;
+      case HOST_LOOKUP_TEMPORARY_DNS_FAILURE:
+         snprintf( ptrBuffer, bufferSize,
+                   "Temporary DNS failure while looking up %s:%s.", ptrHost, ptrPort );
+         break;
+      case HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Address family for %s:%s is not supported.", ptrHost, ptrPort );
+         break;
+      case HOST_LOOKUP_SERVICE_LOOKUP_FAILED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Service lookup failed for %s:%s.", ptrHost, ptrPort );
+         break;
+      default:
+         snprintf( ptrBuffer, bufferSize,
+                   "Host lookup failed for %s:%s.", ptrHost, ptrPort );
+         break;
+   }
+}
+
+static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
+                                        int messageKind, const char *ptrHost,
+                                        const char *ptrPort )
+{
+   switch ( messageKind )
+   {
+      case SOCKET_CONNECT_REFUSED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Connection to %s:%s was refused by the server.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_TIMED_OUT:
+         snprintf( ptrBuffer, bufferSize,
+                   "Connection to %s:%s timed out.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_HOST_UNREACHABLE:
+         snprintf( ptrBuffer, bufferSize,
+                   "Host %s:%s is unreachable.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_HOST_DOWN:
+         snprintf( ptrBuffer, bufferSize,
+                   "Host %s:%s appears to be down.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_NETWORK_UNREACHABLE:
+         snprintf( ptrBuffer, bufferSize,
+                   "The network path to %s:%s is unreachable.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_NETWORK_DOWN:
+         snprintf( ptrBuffer, bufferSize,
+                   "The local network is down while connecting to %s:%s.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE:
+         snprintf( ptrBuffer, bufferSize,
+                   "No usable local address is available for %s:%s.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED:
+         snprintf( ptrBuffer, bufferSize,
+                   "The resolved address family for %s:%s is not supported.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_ABORTED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Connection to %s:%s was aborted during setup.", ptrHost, ptrPort );
+         break;
+      default:
+         snprintf( ptrBuffer, bufferSize,
+                   "Could not connect to %s:%s.", ptrHost, ptrPort );
+         break;
+   }
+}
+
 static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 {
    int enabledValue;
@@ -88,39 +253,13 @@ static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
 {
    const char *ptrReason;
    char aryMessage[256];
+   int messageKind;
 
    ptrReason = gai_strerror( lookupResult );
-   switch ( lookupResult )
-   {
-#ifdef EAI_NONAME
-      case EAI_NONAME:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Could not resolve %s:%s.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EAI_AGAIN
-      case EAI_AGAIN:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Temporary DNS failure while looking up %s:%s.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EAI_FAMILY
-      case EAI_FAMILY:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Address family for %s:%s is not supported.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EAI_SERVICE
-      case EAI_SERVICE:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Service lookup failed for %s:%s.", ptrHost, ptrPort );
-         break;
-#endif
-      default:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Host lookup failed for %s:%s.", ptrHost, ptrPort );
-         break;
-   }
+   messageKind = findErrorMessageKind( lookupResult, aryHostLookupErrors,
+                                       sizeof( aryHostLookupErrors ) / sizeof( aryHostLookupErrors[0] ),
+                                       HOST_LOOKUP_GENERIC_FAILURE );
+   formatHostLookupMessage( aryMessage, sizeof( aryMessage ), messageKind, ptrHost, ptrPort );
 
    fatalExit( ptrReason, aryMessage );
 }
@@ -129,68 +268,12 @@ static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort
                                         int connectionErrno )
 {
    char aryMessage[256];
+   int messageKind;
 
-   switch ( connectionErrno )
-   {
-#ifdef ECONNREFUSED
-      case ECONNREFUSED:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Connection to %s:%s was refused by the server.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef ETIMEDOUT
-      case ETIMEDOUT:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Connection to %s:%s timed out.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EHOSTUNREACH
-      case EHOSTUNREACH:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Host %s:%s is unreachable.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EHOSTDOWN
-      case EHOSTDOWN:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Host %s:%s appears to be down.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef ENETUNREACH
-      case ENETUNREACH:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "The network path to %s:%s is unreachable.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef ENETDOWN
-      case ENETDOWN:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "The local network is down while connecting to %s:%s.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EADDRNOTAVAIL
-      case EADDRNOTAVAIL:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "No usable local address is available for %s:%s.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef EAFNOSUPPORT
-      case EAFNOSUPPORT:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "The resolved address family for %s:%s is not supported.", ptrHost, ptrPort );
-         break;
-#endif
-#ifdef ECONNABORTED
-      case ECONNABORTED:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Connection to %s:%s was aborted during setup.", ptrHost, ptrPort );
-         break;
-#endif
-      default:
-         snprintf( aryMessage, sizeof( aryMessage ),
-                   "Could not connect to %s:%s.", ptrHost, ptrPort );
-         break;
-   }
+   messageKind = findErrorMessageKind( connectionErrno, arySocketConnectErrors,
+                                       sizeof( arySocketConnectErrors ) / sizeof( arySocketConnectErrors[0] ),
+                                       SOCKET_CONNECT_GENERIC_FAILURE );
+   formatSocketConnectMessage( aryMessage, sizeof( aryMessage ), messageKind, ptrHost, ptrPort );
 
    errno = connectionErrno;
    fatalPerror( "connect", aryMessage );
