@@ -415,6 +415,9 @@ void connectBbs( void )
    addressHints.ai_socktype = SOCK_STREAM;
 
    ptrLookupHost = aryCommandLineHost;
+   stdPrintf( "Connection to: %s:%s\n", ptrLookupHost, aryPortString );
+   stdPrintf( "Looking up host... " );
+   fflush( stdout );
    connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
    if ( connectResult != 0 )
    {
@@ -423,9 +426,13 @@ void connectBbs( void )
    }
    if ( connectResult != 0 )
    {
+      stdPrintf( "failed.\n" );
       fatalExit( gai_strerror( connectResult ), "Network error" );
    }
+   stdPrintf( "done.\n" );
 
+   stdPrintf( "Opening connection... " );
+   fflush( stdout );
    net = -1;
    savedErrno = 0;
    for ( ptrAddressInfo = ptrAddressList; ptrAddressInfo != NULL; ptrAddressInfo = ptrAddressInfo->ai_next )
@@ -460,6 +467,7 @@ void connectBbs( void )
 #define BBSNETDOWN "Network problems prevent connection with the BBS, try again later.\r\n"
 #define BBSHOSTDOWN "The BBS is down or there are network problems, try again later.\r\n"
 
+      stdPrintf( "failed.\n" );
       errno = savedErrno;
 
 #ifdef ECONNREFUSED
@@ -500,26 +508,32 @@ void connectBbs( void )
 #endif
       fatalPerror( "connect", "Network error" );
    }
+   stdPrintf( "done.\n" );
 #ifdef HAVE_OPENSSL
    if ( shouldUseSsl )
    {
+      stdPrintf( "Negotiating TLS... " );
+      fflush( stdout );
       initSSL();
       if ( SSL_set_fd( ssl, net ) != 1 )
       {
+         stdPrintf( "failed.\n" );
          printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
          shutdown( net, 2 );
          exit( 1 );
       }
       if ( ( connectResult = SSL_connect( ssl ) ) != 1 )
       {
+         stdPrintf( "failed.\n" );
          printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
          shutdown( net, 2 );
          exit( 1 );
       }
       isSsl = 1;
+      stdPrintf( "done.\n" );
    }
 #endif
-   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "In" );
+   stdPrintf( "[%s Connection Established]\n", ( shouldUseSsl ) ? "Secure" : "Insecure" );
    titleBar();
    fflush( stdout );
 
