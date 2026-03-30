@@ -20,6 +20,80 @@
 
 static int lastCarriageReturn = 0;
 
+static const char *currentConnectionHost( void )
+{
+   if ( *aryCommandLineHost )
+   {
+      return aryCommandLineHost;
+   }
+   if ( *aryBbsHost )
+   {
+      return aryBbsHost;
+   }
+
+   return BBS_HOSTNAME;
+}
+
+static noreturn void failNetworkRead( int readErrno )
+{
+   char aryMessage[256];
+   char aryPortString[8];
+   const char *ptrHost;
+   const char *ptrReason;
+   unsigned short currentPort;
+
+   ptrHost = currentConnectionHost();
+   currentPort = cmdLinePort ? cmdLinePort : ( bbsPort ? bbsPort : BBS_PORT_NUMBER );
+   snprintf( aryPortString, sizeof( aryPortString ), "%u", (unsigned int)currentPort );
+   ptrReason = strerror( readErrno );
+
+   switch ( readErrno )
+   {
+#ifdef ECONNRESET
+      case ECONNRESET:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The connection to %s:%s was reset by the server (%s).",
+                   ptrHost, aryPortString, ptrReason );
+         break;
+#endif
+#ifdef ETIMEDOUT
+      case ETIMEDOUT:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The connection to %s:%s timed out while waiting for data (%s).",
+                   ptrHost, aryPortString, ptrReason );
+         break;
+#endif
+#ifdef EHOSTUNREACH
+      case EHOSTUNREACH:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The host %s:%s became unreachable while reading from the connection (%s).",
+                   ptrHost, aryPortString, ptrReason );
+         break;
+#endif
+#ifdef ENETUNREACH
+      case ENETUNREACH:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The network path to %s:%s became unreachable while reading from the connection (%s).",
+                   ptrHost, aryPortString, ptrReason );
+         break;
+#endif
+#ifdef ENETDOWN
+      case ENETDOWN:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "The local network went down while reading from %s:%s (%s).",
+                   ptrHost, aryPortString, ptrReason );
+         break;
+#endif
+      default:
+         snprintf( aryMessage, sizeof( aryMessage ),
+                   "Reading from %s:%s failed (%s).",
+                   ptrHost, aryPortString, ptrReason );
+         break;
+   }
+
+   fatalExit( aryMessage, "Network error" );
+}
+
 /*
  * The functionality of the former inKey() has been renamed to getKey(), so
  * that inKey() could strip a \n after a \r (common terminal program problem
@@ -315,8 +389,10 @@ int getKey( void )
          {
             if ( errno )
             {
+               int readErrno = errno;
+
                stdPrintf( "\r\n" );
-               fatalPerror( "recv", "Network error" );
+               failNetworkRead( readErrno );
             }
             else
             {
