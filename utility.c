@@ -10,14 +10,6 @@
 #include "defs.h"
 #include "ext.h"
 
-/* replyaway routines to reply to X's when you are isAway from keyboard */
-/* these globals used only in this file, so let 'em stay here */
-/* Please do not change this message; it's used for reply suppression
-   * (see below).  If you alter this, you will draw the ire of the ISCA
-   * BBS programmers.  Trust me, I know.  :)
-   */
-char replymsg[5] = "+!R ";
-
 void trimTrailingWhitespace( char *ptrLine )
 {
    size_t lineLength = strlen( ptrLine );
@@ -65,59 +57,6 @@ int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
       return 1;
    }
    return 0;
-}
-
-void sendTrackedChar( int inputChar )
-{
-   netPutChar( inputChar );
-   byte++;
-}
-
-void sendTrackedBuffer( const char *ptrBuffer, size_t length )
-{
-   size_t itemIndex;
-
-   for ( itemIndex = 0; itemIndex < length; itemIndex++ )
-   {
-      netPutChar( ptrBuffer[itemIndex] );
-   }
-   byte += (long)length;
-}
-
-void sendTrackedNewline( void )
-{
-   sendTrackedChar( '\n' );
-}
-
-void sendAnX( void )
-{
-   /* get the ball rolling with the bbs */
-   sendingXState = SX_WANT_TO;
-   sendTrackedChar( 'x' );
-   sendingXState = SENDING_X_STATE_SENT_COMMAND_X;
-}
-
-/* fake getFiveLines for the bbs */
-void replyMessage( void )
-{
-   int lineIndex;
-   int charIndex;
-
-   sendBlock();
-   lineIndex = (int)strlen( replymsg );
-   sendTrackedBuffer( replymsg, (size_t)lineIndex );
-   for ( lineIndex = 0; lineIndex < 5 && *aryAwayMessageLines[lineIndex]; lineIndex++ )
-   {
-      charIndex = (int)strlen( aryAwayMessageLines[lineIndex] );
-      sendTrackedBuffer( aryAwayMessageLines[lineIndex], (size_t)charIndex );
-      sendTrackedNewline();
-      stdPrintf( "%s\r\n", aryAwayMessageLines[lineIndex] );
-   }
-   if ( lineIndex < 5 )
-   { /* less than five lines */
-      sendTrackedNewline();
-   }
-   sendingXState = SX_NOT;
 }
 
 /*
