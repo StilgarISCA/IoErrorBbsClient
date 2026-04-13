@@ -36,12 +36,33 @@ static bool terminalSupportsTitleBarUpdates( void )
    return false;
 }
 
+static bool shouldUpdateTitleBar( void )
+{
+   if ( !flagsConfiguration.shouldEnableTitleBar ||
+        flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      return false;
+   }
+
+   return terminalSupportsTitleBarUpdates();
+}
+
+static void printAnsiStateAndFlush( const char *ptrAnsiSequence )
+{
+   if ( ptrAnsiSequence == NULL )
+   {
+      return;
+   }
+
+   printf( "%s", ptrAnsiSequence );
+   fflush( stdout );
+}
+
 void titleBar( void )
 {
    char aryTitle[80];
 
-   if ( !flagsConfiguration.shouldEnableTitleBar ||
-        flagsConfiguration.isScreenReaderModeEnabled )
+   if ( !shouldUpdateTitleBar() )
    {
       return;
    }
@@ -49,26 +70,19 @@ void titleBar( void )
    snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
              aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
              BUILD_VERSION, "Unix" );
-   if ( terminalSupportsTitleBarUpdates() )
-   {
-      printf( "\033]0;%s\007", aryTitle );
-      fflush( stdout );
-   }
+   printf( "\033]0;%s\007", aryTitle );
+   fflush( stdout );
 }
 
 void noTitleBar( void )
 {
-   if ( !flagsConfiguration.shouldEnableTitleBar ||
-        flagsConfiguration.isScreenReaderModeEnabled )
+   if ( !shouldUpdateTitleBar() )
    {
       return;
    }
 
-   if ( terminalSupportsTitleBarUpdates() )
-   {
-      printf( "\033]0;\007" );
-      fflush( stdout );
-   }
+   printf( "\033]0;\007" );
+   fflush( stdout );
 }
 
 /*
@@ -128,9 +142,8 @@ void setTerm( void )
       formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                       lastColor, color.background,
                                       flagsConfiguration.shouldUseBold );
-      printf( "%s", aryAnsiSequence );
+      printAnsiStateAndFlush( aryAnsiSequence );
    }
-   fflush( stdout );
 
    titleBar();
 #ifdef HAVE_TERMIO_H
@@ -196,9 +209,8 @@ void resetTerm( void )
       char aryAnsiSequence[32];
 
       formatAnsiResetSequence( aryAnsiSequence, sizeof( aryAnsiSequence ) );
-      printf( "%s", aryAnsiSequence );
+      printAnsiStateAndFlush( aryAnsiSequence );
    }
-   fflush( stdout );
    if ( !isTerminalStateSaved )
    {
       return;
