@@ -62,11 +62,76 @@ typedef struct
    BbsRcCommandId commandId;
 } BbsRcCommandSpec;
 
+typedef enum
+{
+   BBRC_OPTION_INVALID = -1,
+   BBRC_OPTION_DISABLED = 0,
+   BBRC_OPTION_ENABLED = 1
+} BbsRcOptionValue;
+
+static bool addFriendFromLine( const char *ptrLine );
 static int ctrl( const char *ptrToken );
 static BbsRcCommandId detectBbsRcCommand( const char *ptrLine );
 static bool isNewAwayMessageCommand( const char *ptrLine );
+static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue );
 static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
 static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
+
+static bool addFriendFromLine( const char *ptrLine )
+{
+   friend *ptrFriend;
+   int nameLength;
+   size_t nameLengthToCopy;
+
+   if ( strlen( ptrLine ) == FRIEND_COMMAND_PREFIX_LEN )
+   {
+      stdPrintf( "Empty username in 'friend'.\n" );
+      return true;
+   }
+   if ( slistFind( friendList, (void *)( ptrLine + FRIEND_COMMAND_PREFIX_LEN ), fStrCompareVoid ) != -1 )
+   {
+      stdPrintf( "Duplicate username in 'friend'.\n" );
+      return true;
+   }
+
+   ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
+   if ( !ptrFriend )
+   {
+      fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+      return false;
+   }
+
+   if ( strlen( ptrLine ) > FRIEND_INFO_OFFSET )
+   {
+      strncpy( ptrFriend->info, ptrLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
+      nameLengthToCopy = 0;
+      for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
+      {
+         if ( ptrLine[FRIEND_COMMAND_PREFIX_LEN + nameLength] == ' ' )
+         {
+            nameLengthToCopy = (size_t)nameLength;
+         }
+         else
+         {
+            break;
+         }
+      }
+      strncpy( ptrFriend->name, ptrLine + FRIEND_COMMAND_PREFIX_LEN, nameLengthToCopy );
+   }
+   else
+   {
+      strncpy( ptrFriend->name, ptrLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
+      snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
+   }
+
+   ptrFriend->magic = FRIEND_RECORD_MAGIC;
+   if ( !slistAddItem( friendList, ptrFriend, 1 ) )
+   {
+      fatalExit( "Can't add 'friend' to list!\n", "Fatal error" );
+      return false;
+   }
+   return true;
+}
 
 /*
  * Given a pointer to a string, this function evaluates it to a control
@@ -155,6 +220,43 @@ static bool isNewAwayMessageCommand( const char *ptrLine )
 {
    return ptrLine[0] == 'a' && ptrLine[1] >= '1' &&
           ptrLine[1] <= '5' && ptrLine[2] == ' ';
+}
+
+static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue )
+{
+   const char *ptrValue;
+
+   if ( strlen( ptrLine ) == prefixLength )
+   {
+      return BBRC_OPTION_ENABLED;
+   }
+   if ( ptrLine[prefixLength] != ' ' )
+   {
+      stdPrintf( "Invalid definition of %s ignored.\n", ptrSettingName );
+      return BBRC_OPTION_INVALID;
+   }
+
+   ptrValue = ptrLine + prefixLength + 1;
+   while ( *ptrValue != '\0' && isspace( (unsigned char)*ptrValue ) )
+   {
+      ptrValue++;
+   }
+
+   if ( *ptrValue == '\0' || *ptrValue == '1' )
+   {
+      return BBRC_OPTION_ENABLED;
+   }
+   if ( *ptrValue == '0' )
+   {
+      return BBRC_OPTION_DISABLED;
+   }
+   if ( shouldAllowAnyNonZeroValue && isdigit( (unsigned char)*ptrValue ) )
+   {
+      return (BbsRcOptionValue)( atoi( ptrValue ) != 0 );
+   }
+
+   stdPrintf( "Invalid definition of %s ignored.\n", ptrSettingName );
+   return BBRC_OPTION_INVALID;
 }
 
 static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
@@ -255,10 +357,9 @@ void readBbsRc( void )
    int parseIndex;
    const char *ptrToken;
    char *ptrMacroWrite, *ptrNameCopy;
+   BbsRcOptionValue optionValue;
    int lineNumber = 0;
    int reads = 0;
-   int nameLength;
-   size_t hold = 0;
    int tmpVersion = 0;
    bool shouldShowBrowserMigrationNotice = false;
    bool shouldRewriteBbsRc = false;
@@ -381,183 +482,51 @@ void readBbsRc( void )
             break;
 
          case BBRC_CMD_TCP_KEEPALIVE:
-            if ( strlen( aryLine ) <= 9 )
+            optionValue = parseBooleanSettingValue( aryLine, 9, "'keepalive'", true );
+            if ( optionValue != BBRC_OPTION_INVALID )
             {
-               flagsConfiguration.shouldUseTcpKeepalive = 1;
-            }
-            else if ( aryLine[9] == ' ' )
-            {
-               flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)( atoi( aryLine + 10 ) != 0 );
-            }
-            else
-            {
-               stdPrintf( "Invalid definition of 'keepalive' ignored.\n" );
+               flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)optionValue;
             }
             break;
 
          case BBRC_CMD_CLICKABLE_URLS:
+            optionValue = parseBooleanSettingValue( aryLine, strlen( "clickableurls" ),
+                                                    "clickable URL option", false );
+            if ( optionValue != BBRC_OPTION_INVALID )
             {
-               const char *ptrSpace;
-
-               ptrSpace = strchr( aryLine, ' ' );
-               if ( ptrSpace == NULL )
-               {
-                  flagsConfiguration.shouldEnableClickableUrls = 1;
-               }
-               else
-               {
-                  const char *ptrClickableValue;
-
-                  ptrClickableValue = ptrSpace + 1;
-                  while ( *ptrClickableValue != '\0' && isspace( (unsigned char)*ptrClickableValue ) )
-                  {
-                     ptrClickableValue++;
-                  }
-                  if ( *ptrClickableValue == '\0' )
-                  {
-                     flagsConfiguration.shouldEnableClickableUrls = 1;
-                  }
-                  else if ( *ptrClickableValue == '0' )
-                  {
-                     flagsConfiguration.shouldEnableClickableUrls = 0;
-                  }
-                  else if ( *ptrClickableValue == '1' )
-                  {
-                     flagsConfiguration.shouldEnableClickableUrls = 1;
-                  }
-                  else
-                  {
-                     stdPrintf( "Invalid definition of clickable URL option ignored.\n" );
-                  }
-               }
-               break;
+               flagsConfiguration.shouldEnableClickableUrls = (unsigned int)optionValue;
             }
+            break;
 
          case BBRC_CMD_TITLEBAR:
+            optionValue = parseBooleanSettingValue( aryLine, strlen( "titlebar" ),
+                                                    "title bar option", false );
+            if ( optionValue != BBRC_OPTION_INVALID )
             {
-               const char *ptrSpace;
-
-               ptrSpace = strchr( aryLine, ' ' );
-               if ( ptrSpace == NULL )
-               {
-                  flagsConfiguration.shouldEnableTitleBar = 1;
-                  flagsConfiguration.hasTitleBarSetting = 1;
-               }
-               else
-               {
-                  const char *ptrTitleBarValue;
-
-                  ptrTitleBarValue = ptrSpace + 1;
-                  while ( *ptrTitleBarValue != '\0' && isspace( (unsigned char)*ptrTitleBarValue ) )
-                  {
-                     ptrTitleBarValue++;
-                  }
-                  if ( *ptrTitleBarValue == '\0' )
-                  {
-                     flagsConfiguration.shouldEnableTitleBar = 1;
-                     flagsConfiguration.hasTitleBarSetting = 1;
-                  }
-                  else if ( *ptrTitleBarValue == '0' )
-                  {
-                     flagsConfiguration.shouldEnableTitleBar = 0;
-                     flagsConfiguration.hasTitleBarSetting = 1;
-                  }
-                  else if ( *ptrTitleBarValue == '1' )
-                  {
-                     flagsConfiguration.shouldEnableTitleBar = 1;
-                     flagsConfiguration.hasTitleBarSetting = 1;
-                  }
-                  else
-                  {
-                     stdPrintf( "Invalid definition of title bar option ignored.\n" );
-                  }
-               }
-               break;
+               flagsConfiguration.shouldEnableTitleBar = (unsigned int)optionValue;
+               flagsConfiguration.hasTitleBarSetting = 1;
             }
+            break;
 
          case BBRC_CMD_SCREENREADER:
+            optionValue = parseBooleanSettingValue( aryLine, strlen( "screenreader" ),
+                                                    "screen reader option", false );
+            if ( optionValue != BBRC_OPTION_INVALID )
             {
-               const char *ptrSpace;
-
-               ptrSpace = strchr( aryLine, ' ' );
-               if ( ptrSpace == NULL )
-               {
-                  flagsConfiguration.isScreenReaderModeEnabled = 1;
-                  flagsConfiguration.hasScreenReaderModeSetting = 1;
-               }
-               else
-               {
-                  const char *ptrScreenReaderValue;
-
-                  ptrScreenReaderValue = ptrSpace + 1;
-                  while ( *ptrScreenReaderValue != '\0' && isspace( (unsigned char)*ptrScreenReaderValue ) )
-                  {
-                     ptrScreenReaderValue++;
-                  }
-                  if ( *ptrScreenReaderValue == '\0' )
-                  {
-                     flagsConfiguration.isScreenReaderModeEnabled = 1;
-                     flagsConfiguration.hasScreenReaderModeSetting = 1;
-                  }
-                  else if ( *ptrScreenReaderValue == '0' )
-                  {
-                     flagsConfiguration.isScreenReaderModeEnabled = 0;
-                     flagsConfiguration.hasScreenReaderModeSetting = 1;
-                  }
-                  else if ( *ptrScreenReaderValue == '1' )
-                  {
-                     flagsConfiguration.isScreenReaderModeEnabled = 1;
-                     flagsConfiguration.hasScreenReaderModeSetting = 1;
-                  }
-                  else
-                  {
-                     stdPrintf( "Invalid definition of screen reader option ignored.\n" );
-                  }
-               }
-               break;
+               flagsConfiguration.isScreenReaderModeEnabled = (unsigned int)optionValue;
+               flagsConfiguration.hasScreenReaderModeSetting = 1;
             }
+            break;
 
          case BBRC_CMD_AUTOCOMPLETE:
+            optionValue = parseBooleanSettingValue( aryLine, strlen( "autocomplete" ),
+                                                    "autocomplete option", false );
+            if ( optionValue != BBRC_OPTION_INVALID )
             {
-               const char *ptrSpace;
-
-               ptrSpace = strchr( aryLine, ' ' );
-               if ( ptrSpace == NULL )
-               {
-                  flagsConfiguration.shouldEnableNameAutocomplete = 1;
-                  flagsConfiguration.hasNameAutocompleteSetting = 1;
-               }
-               else
-               {
-                  const char *ptrAutocompleteValue;
-
-                  ptrAutocompleteValue = ptrSpace + 1;
-                  while ( *ptrAutocompleteValue != '\0' && isspace( (unsigned char)*ptrAutocompleteValue ) )
-                  {
-                     ptrAutocompleteValue++;
-                  }
-                  if ( *ptrAutocompleteValue == '\0' )
-                  {
-                     flagsConfiguration.shouldEnableNameAutocomplete = 1;
-                     flagsConfiguration.hasNameAutocompleteSetting = 1;
-                  }
-                  else if ( *ptrAutocompleteValue == '0' )
-                  {
-                     flagsConfiguration.shouldEnableNameAutocomplete = 0;
-                     flagsConfiguration.hasNameAutocompleteSetting = 1;
-                  }
-                  else if ( *ptrAutocompleteValue == '1' )
-                  {
-                     flagsConfiguration.shouldEnableNameAutocomplete = 1;
-                     flagsConfiguration.hasNameAutocompleteSetting = 1;
-                  }
-                  else
-                  {
-                     stdPrintf( "Invalid definition of autocomplete option ignored.\n" );
-                  }
-               }
-               break;
+               flagsConfiguration.shouldEnableNameAutocomplete = (unsigned int)optionValue;
+               flagsConfiguration.hasNameAutocompleteSetting = 1;
             }
+            break;
 
          case BBRC_CMD_COLOR:
             {
@@ -656,59 +625,9 @@ void readBbsRc( void )
             {
                break;
             }
-            if ( strlen( aryLine ) == FRIEND_COMMAND_PREFIX_LEN )
+            if ( !addFriendFromLine( aryLine ) )
             {
-               stdPrintf( "Empty username in 'friend'.\n" );
-            }
-            else if ( slistFind( friendList, aryLine + FRIEND_COMMAND_PREFIX_LEN, fStrCompareVoid ) != -1 )
-            {
-               stdPrintf( "Duplicate username in 'friend'.\n" );
-            }
-            else if ( strlen( aryLine ) > FRIEND_INFO_OFFSET )
-            {
-               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !ptrFriend )
-               {
-                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
-                  return;
-               }
-               strncpy( ptrFriend->info, aryLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
-               for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
-               {
-                  if ( aryLine[FRIEND_COMMAND_PREFIX_LEN + nameLength] == ' ' )
-                  {
-                     hold = (size_t)nameLength;
-                  }
-                  else
-                  {
-                     break;
-                  }
-               }
-               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, hold );
-               ptrFriend->magic = FRIEND_RECORD_MAGIC;
-               if ( !slistAddItem( friendList, ptrFriend, 1 ) )
-               {
-                  fatalExit( "Can't add 'friend'!\n", "Fatal error" );
-                  return;
-               }
-            }
-            else
-            {
-               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !ptrFriend )
-               {
-                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
-                  return;
-               }
-               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
-               hold = sizeof( ptrFriend->name );
-               snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
-               ptrFriend->magic = FRIEND_RECORD_MAGIC;
-               if ( !slistAddItem( friendList, ptrFriend, 1 ) )
-               {
-                  fatalExit( "Can't add 'friend'!\n", "Fatal error" );
-                  return;
-               }
+               return;
             }
             break;
 
@@ -957,56 +876,9 @@ void readBbsRc( void )
    {
       if ( !strncmp( aryLine, "friend ", FRIEND_COMMAND_PREFIX_LEN ) )
       {
-         if ( strlen( aryLine ) == FRIEND_COMMAND_PREFIX_LEN )
+         if ( !addFriendFromLine( aryLine ) )
          {
-            stdPrintf( "Empty username in 'friend'.\n" );
-         }
-         else
-         {
-            if ( slistFind( friendList, aryLine + FRIEND_COMMAND_PREFIX_LEN, fStrCompareVoid ) != -1 )
-            {
-               stdPrintf( "Duplicate username in 'friend'.\n" );
-            }
-            else if ( strlen( aryLine ) > FRIEND_INFO_OFFSET )
-            {
-               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !ptrFriend )
-               {
-                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
-                  return;
-               }
-               strncpy( ptrFriend->info, aryLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
-               for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
-               {
-                  if ( aryLine[FRIEND_COMMAND_PREFIX_LEN + nameLength] == ' ' )
-                  {
-                     hold = (size_t)nameLength;
-                  }
-                  else
-                  {
-                     break;
-                  }
-               }
-               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, hold );
-            }
-            else
-            {
-               ptrFriend = (friend *)calloc( 1, sizeof( friend ) );
-               if ( !ptrFriend )
-               {
-                  fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
-                  return;
-               }
-               strncpy( ptrFriend->name, aryLine + FRIEND_COMMAND_PREFIX_LEN, FRIEND_NAME_PARSE_LENGTH );
-               hold = sizeof( ptrFriend->name );
-               snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
-            }
-            ptrFriend->magic = FRIEND_RECORD_MAGIC;
-            if ( !slistAddItem( friendList, ptrFriend, 1 ) )
-            {
-               fatalExit( "Can't add 'friend' to list!\n", "Fatal error" );
-               return;
-            }
+            return;
          }
       }
    }
