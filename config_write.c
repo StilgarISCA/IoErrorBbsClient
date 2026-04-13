@@ -10,19 +10,140 @@
 #include "defs.h"
 #include "ext.h"
 
+static void writeAwayMessages( void );
+static void writeColorSettings( void );
+static void writeConnectionSettings( void );
+static void writeFriendAndEnemyLists( void );
+static void writeKeyMapOverrides( void );
+static void writeMacros( void );
+static void writeMiscSettings( void );
+static void writeOptionSettings( void );
+
+static void writeAwayMessages( void )
+{
+   int itemIndex;
+
+   if ( **aryAwayMessageLines )
+   {
+      for ( itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex];
+            itemIndex++ )
+      {
+         fprintf( ptrBbsRc, "a%d %s\n", itemIndex + 1, aryAwayMessageLines[itemIndex] );
+      }
+   }
+}
+
 void writeBbsRc( void )
 {
-   int itemIndex, innerIndex;
-   const char *ptrColorName;
-   const friend *ptrFriend;
-   const int *ptrColorValues;
-
    deleteFile( aryBbsFriendsName );
    rewind( ptrBbsRc );
+
+   writeConnectionSettings();
+   writeOptionSettings();
+   writeColorSettings();
+   writeAwayMessages();
+   writeMiscSettings();
+   writeFriendAndEnemyLists();
+   writeMacros();
+   writeKeyMapOverrides();
+
+   fflush( ptrBbsRc );
+   truncateBbsRc( ftell( ptrBbsRc ) );
+}
+
+static void writeColorSettings( void )
+{
+   int itemIndex;
+   const char *ptrColorName;
+   const int *ptrColorValues;
+
+   ptrColorValues = (const int *)&color;
+   fprintf( ptrBbsRc, "color" );
+   for ( itemIndex = 0; itemIndex < COLOR_FIELD_COUNT; itemIndex++ )
+   {
+      ptrColorName = colorNameFromValue( ptrColorValues[itemIndex] );
+      if ( ptrColorName != NULL )
+      {
+         fprintf( ptrBbsRc, " %s", ptrColorName );
+      }
+      else
+      {
+         fprintf( ptrBbsRc, " %d", ptrColorValues[itemIndex] );
+      }
+   }
+   fprintf( ptrBbsRc, "\n" );
+}
+
+static void writeConnectionSettings( void )
+{
    fprintf( ptrBbsRc, "aryEditor %s\n", aryEditor );
    /* Change:  site line will always be written */
    fprintf( ptrBbsRc, "site %s %d%s\n", aryBbsHost, bbsPort,
             shouldUseSsl ? " secure" : "" );
+}
+
+static void writeFriendAndEnemyLists( void )
+{
+   int itemIndex;
+   const friend *ptrFriend;
+
+   for ( itemIndex = 0; itemIndex < (int)friendList->nitems; itemIndex++ )
+   {
+      ptrFriend = (friend *)friendList->items[itemIndex];
+      fprintf( ptrBbsRc, "friend %-20s   %s\n", ptrFriend->name, ptrFriend->info );
+   }
+   for ( itemIndex = 0; itemIndex < (int)enemyList->nitems; itemIndex++ )
+   {
+      fprintf( ptrBbsRc, "enemy %s\n", (char *)enemyList->items[itemIndex] );
+   }
+}
+
+static void writeKeyMapOverrides( void )
+{
+   int itemIndex;
+
+   for ( itemIndex = 33; itemIndex < 128; itemIndex++ )
+   {
+      if ( aryKeyMap[itemIndex] != itemIndex )
+      {
+         fprintf( ptrBbsRc, "aryKeyMap %c %c\n", itemIndex, aryKeyMap[itemIndex] );
+      }
+   }
+}
+
+static void writeMacros( void )
+{
+   int itemIndex, innerIndex;
+
+   for ( itemIndex = 0; itemIndex < 128; itemIndex++ )
+   {
+      if ( *aryMacro[itemIndex] )
+      {
+         fprintf( ptrBbsRc, "aryMacro %s ", strCtrl( itemIndex ) );
+         for ( innerIndex = 0; aryMacro[itemIndex][innerIndex]; innerIndex++ )
+         {
+            fprintf( ptrBbsRc, "%s", strCtrl( aryMacro[itemIndex][innerIndex] ) );
+         }
+         fprintf( ptrBbsRc, "\n" );
+      }
+   }
+}
+
+static void writeMiscSettings( void )
+{
+   fprintf( ptrBbsRc, "version %d\n", version );
+   if ( flagsConfiguration.shouldUseBold )
+   {
+      fprintf( ptrBbsRc, "bold\n" );
+   }
+   if ( !isXland )
+   {
+      fprintf( ptrBbsRc, "xland\n" );
+   }
+}
+
+static void writeOptionSettings( void )
+{
    fprintf( ptrBbsRc, "commandkey %s\n", strCtrl( commandKey ) );
    fprintf( ptrBbsRc, "quit %s\n", strCtrl( quitKey ) );
    fprintf( ptrBbsRc, "susp %s\n", strCtrl( suspKey ) );
@@ -51,70 +172,8 @@ void writeBbsRc( void )
       fprintf( ptrBbsRc, "autopass %s\n", aryAutoPassword );
    }
 #endif
-   ptrColorValues = (const int *)&color;
-   fprintf( ptrBbsRc, "color" );
-   for ( itemIndex = 0; itemIndex < COLOR_FIELD_COUNT; itemIndex++ )
-   {
-      ptrColorName = colorNameFromValue( ptrColorValues[itemIndex] );
-      if ( ptrColorName != NULL )
-      {
-         fprintf( ptrBbsRc, " %s", ptrColorName );
-      }
-      else
-      {
-         fprintf( ptrBbsRc, " %d", ptrColorValues[itemIndex] );
-      }
-   }
-   fprintf( ptrBbsRc, "\n" );
    if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt )
    {
       fprintf( ptrBbsRc, "autoansi\n" );
    }
-   if ( **aryAwayMessageLines )
-   {
-      for ( itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex];
-            itemIndex++ )
-      {
-         fprintf( ptrBbsRc, "a%d %s\n", itemIndex + 1, aryAwayMessageLines[itemIndex] );
-      }
-   }
-   fprintf( ptrBbsRc, "version %d\n", version );
-   if ( flagsConfiguration.shouldUseBold )
-   {
-      fprintf( ptrBbsRc, "bold\n" );
-   }
-   if ( !isXland )
-   {
-      fprintf( ptrBbsRc, "xland\n" );
-   }
-   for ( itemIndex = 0; itemIndex < (int)friendList->nitems; itemIndex++ )
-   {
-      ptrFriend = (friend *)friendList->items[itemIndex];
-      fprintf( ptrBbsRc, "friend %-20s   %s\n", ptrFriend->name, ptrFriend->info );
-   }
-   for ( itemIndex = 0; itemIndex < (int)enemyList->nitems; itemIndex++ )
-   {
-      fprintf( ptrBbsRc, "enemy %s\n", (char *)enemyList->items[itemIndex] );
-   }
-   for ( itemIndex = 0; itemIndex < 128; itemIndex++ )
-   {
-      if ( *aryMacro[itemIndex] )
-      {
-         fprintf( ptrBbsRc, "aryMacro %s ", strCtrl( itemIndex ) );
-         for ( innerIndex = 0; aryMacro[itemIndex][innerIndex]; innerIndex++ )
-         {
-            fprintf( ptrBbsRc, "%s", strCtrl( aryMacro[itemIndex][innerIndex] ) );
-         }
-         fprintf( ptrBbsRc, "\n" );
-      }
-   }
-   for ( itemIndex = 33; itemIndex < 128; itemIndex++ )
-   {
-      if ( aryKeyMap[itemIndex] != itemIndex )
-      {
-         fprintf( ptrBbsRc, "aryKeyMap %c %c\n", itemIndex, aryKeyMap[itemIndex] );
-      }
-   }
-   fflush( ptrBbsRc );
-   truncateBbsRc( ftell( ptrBbsRc ) );
 }
