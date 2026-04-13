@@ -44,6 +44,8 @@ bbs_SOURCES = \
 	slist.c \
 	sysio.c \
 	telnet.c \
+	utility_color.c \
+	utility_compare.c \
 	utility.c \
 	utility_error.c \
 	utility_input.c \
