@@ -39,7 +39,8 @@ bbs_SOURCES = \
 	sysio.c \
 	telnet.c \
 	utility.c \
-	unix.c
+	unix.c \
+	unix_net.c
 
 if HAVE_CMOCKA
 check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey test_filter test_color test_config test_sysio test_edit test_telnet
