@@ -12,7 +12,6 @@
 #include "ext.h"
 
 static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
-static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 
 #define GREETING \
    "\r\nWelcome to IO ERROR's ISCA BBS Client!  Please take a moment to familiarize\r\nyourself with some of our new features.\r\n\n"
@@ -330,76 +329,6 @@ void configBbsRc( void )
          default:
             break;
       }
-   }
-}
-
-void expressConfig( void )
-{
-   stdPrintf( "Express\r\n" );
-
-   while ( true )
-   {
-      printThemedMnemonicText( "\r\n<A>way  <X>Land  <Q>uit", color.number );
-      printThemedMnemonicText( "\r\nExpress config -> ", color.forum );
-      printAnsiForegroundColorValue( color.text );
-
-      int inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
-
-      switch ( inputChar )
-      {
-         case 'a':
-            stdPrintf( "Away from keyboard\r\n\n" );
-            newAwayMessage();
-            break;
-
-         case 'x':
-            stdPrintf( "XLand\r\n\nAutomatically reply to X messages you receive? (%s) -> ", isXland ? "Yes" : "No" );
-            isXland = yesNoDefault( isXland );
-            break;
-
-         case 'q':
-         case ' ':
-         case '\n':
-            stdPrintf( "Quit\r\n" );
-            return;
-            /* NOTREACHED */
-
-         default:
-            break;
-      }
-   }
-}
-
-void newAwayMessage( void )
-{
-   int itemIndex;
-
-   if ( **aryAwayMessageLines )
-   {
-      stdPrintf( "Current away from keyboard message is:\r\n\n" );
-      for ( itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex]; itemIndex++ )
-      {
-         stdPrintf( " %s\r\n", aryAwayMessageLines[itemIndex] );
-      }
-      stdPrintf( "\r\nDo you wish to change this? -> " );
-      if ( !yesNo() )
-      {
-         return;
-      }
-      stdPrintf( "\r\nOk, you have five lines to do something creative.\r\n\n" );
-   }
-   else
-   {
-      stdPrintf( "Enter a message, up to 5 lines\r\n\n" );
-   }
-   for ( itemIndex = 0; itemIndex < 5; itemIndex++ )
-   {
-      *aryAwayMessageLines[itemIndex] = 0;
-   }
-   for ( itemIndex = 0; itemIndex < 5 && ( !itemIndex || *aryAwayMessageLines[itemIndex - 1] ); itemIndex++ )
-   {
-      stdPrintf( ">" );
-      getString( itemIndex ? 78 : 74, aryAwayMessageLines[itemIndex], itemIndex );
    }
 }
 
