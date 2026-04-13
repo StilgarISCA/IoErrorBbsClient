@@ -31,6 +31,7 @@ extern void
    configBbsRc P( (void)),
    configureHotkeys P( (void)),
    configureMacros P( (void)),
+   configureOptionsMenu P( (void)),
    colorConfig P( (void)),
    colorblindColors P( (void)),
    hotDogColors P( (void)),
