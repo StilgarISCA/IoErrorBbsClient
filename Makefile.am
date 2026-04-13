@@ -45,6 +45,7 @@ bbs_SOURCES = \
 	sysio.c \
 	telnet.c \
 	utility.c \
+	utility_error.c \
 	unix.c \
 	unix_net.c \
 	unix_term.c
@@ -58,7 +59,7 @@ test_queue_LDADD = $(CMOCKA_LIBS)
 test_slist_SOURCES = test/test_slist.c test/test_helpers.c slist.c
 test_slist_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_slist_LDADD = $(CMOCKA_LIBS)
-test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility.c global.c
+test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility.c utility_error.c global.c
 test_utility_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_utility_LDADD = $(CMOCKA_LIBS)
 test_bbsrc_SOURCES = test/test_bbsrc.c test/test_helpers.c bbsrc.c bbsrc_parse.c queue.c slist.c global.c
