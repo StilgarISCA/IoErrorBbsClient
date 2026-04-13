@@ -7,65 +7,99 @@
 #include "defs.h"
 #include "ext.h"
 
+typedef struct
+{
+   unsigned int crlf : 1;      /* Needs initial CR/LF */
+   unsigned int prochdr : 1;   /* Needs killfile processing */
+   unsigned int ignore : 1;    /* Ignore the remainder of the X */
+   unsigned int truncated : 1; /* X message exceeded buffer */
+} ExpressFilterFlags;
+
+static void beginExpressMessage( ExpressFilterFlags *ptrFlags )
+{
+   beginUrlDetectionReport();
+   ptrExpressMessageBuffer = aryExpressMessageBuffer;
+   *aryExpressMessageBuffer = 0;
+   ptrFlags->ignore = 0;
+   ptrFlags->crlf = 0;
+   ptrFlags->prochdr = 1;
+   ptrFlags->truncated = 0;
+}
+
+static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
+                                  const char *ptrSenderName )
+{
+   int itemIndex;
+   int isAutoReply;
+
+   itemIndex = extractNumber( aryExpressMessageBuffer );
+   isAutoReply = isAutomaticReply( aryExpressMessageBuffer );
+
+   if ( ( isAway || isXland ) && ptrSenderName &&
+        !isQueued( ptrSenderName, xlandQueue ) &&
+        itemIndex > highestExpressMessageId && !isAutoReply )
+   {
+      pushQueue( ptrSenderName, xlandQueue );
+      shouldSendExpressMessage = 1;
+   }
+   else if ( isAutoReply && itemIndex > highestExpressMessageId )
+   {
+      notReplyingTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+   }
+
+   if ( itemIndex > highestExpressMessageId )
+   {
+      highestExpressMessageId = itemIndex;
+   }
+
+   replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+   ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+   if ( ptrFlags->crlf )
+   {
+      stdPrintf( "\r\n" );
+   }
+   printWithOsc8Links( aryExpressMessageBuffer );
+   if ( ptrFlags->truncated )
+   {
+      stdPrintf( "\r\n[X message truncated]\r\n" );
+   }
+   emitUrlDetectionReport();
+}
+
+static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSenderName )
+{
+   *ptrSenderName = extractNameNoHistory( aryExpressMessageBuffer );
+   if ( *ptrSenderName &&
+        slistFind( enemyList, *ptrSenderName, strCompareVoid ) != -1 )
+   {
+      if ( !flagsConfiguration.shouldSquelchExpress )
+      {
+         stdPrintf( "\r\n[X message by %s killed]\r\n", *ptrSenderName );
+      }
+      ptrFlags->ignore = 1;
+      return;
+   }
+   if ( *ptrSenderName )
+   {
+      *ptrSenderName = extractName( aryExpressMessageBuffer );
+   }
+}
+
 void filterExpress( register int inputChar )
 {
    static char *ptrSenderName; /* comparison pointer */
-   static struct
-   {
-      unsigned int crlf : 1;      /* Needs initial CR/LF */
-      unsigned int prochdr : 1;   /* Needs killfile processing */
-      unsigned int ignore : 1;    /* Ignore the remainder of the X */
-      unsigned int truncated : 1; /* X message exceeded buffer */
-   } needs;
+   static ExpressFilterFlags needs;
 
    if ( inputChar == -1 )
    { /* signal from IAC to begin/end X */
       if ( isExpressMessageInProgress )
       { /* Need to re-init for new X */
-         beginUrlDetectionReport();
-         ptrExpressMessageBuffer = aryExpressMessageBuffer;
-         *aryExpressMessageBuffer = 0;
-         needs.ignore = 0;
-         needs.crlf = 0;
-         needs.prochdr = 1;
-         needs.truncated = 0;
+         beginExpressMessage( &needs );
          return;
       }
       else if ( !needs.ignore )
       { /* Finished this X, dump it out */
-         register int itemIndex;
-
-         /* Process for automatic reply */
-         itemIndex = extractNumber( aryExpressMessageBuffer );
-         /* Don't queue if it's an outgoing X */
-         /* Only send 'x' if it's a new incoming X */
-         if ( ( isAway || isXland ) && !isQueued( ptrSenderName, xlandQueue ) &&
-              itemIndex > highestExpressMessageId && !isAutomaticReply( aryExpressMessageBuffer ) && ptrSenderName )
-         {
-            pushQueue( ptrSenderName, xlandQueue );
-            shouldSendExpressMessage = 1;
-         }
-         else if ( isAutomaticReply( aryExpressMessageBuffer ) && itemIndex > highestExpressMessageId )
-         {
-            notReplyingTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-         }
-         /* Update highestExpressMessageId with greatest number seen */
-         if ( itemIndex > highestExpressMessageId )
-         {
-            highestExpressMessageId = itemIndex;
-         }
-         replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-         ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-         if ( needs.crlf )
-         {
-            stdPrintf( "\r\n" );
-         }
-         printWithOsc8Links( aryExpressMessageBuffer );
-         if ( needs.truncated )
-         {
-            stdPrintf( "\r\n[X message truncated]\r\n" );
-         }
-         emitUrlDetectionReport();
+         finishExpressMessage( &needs, ptrSenderName );
          return;
       }
       emitUrlDetectionReport();
@@ -107,27 +141,7 @@ void filterExpress( register int inputChar )
    if ( needs.prochdr && inputChar == '\r' )
    {
       needs.prochdr = 0;
-      /* Process for kill file */
-      if ( !findSubstring( aryExpressMessageBuffer, "*** Message " ) &&
-           !findSubstring( aryExpressMessageBuffer, "%%% Question " ) )
-      {
-         /* not an X header we care about */
-      }
-      ptrSenderName = extractNameNoHistory( aryExpressMessageBuffer );
-      if ( ptrSenderName &&
-           slistFind( enemyList, ptrSenderName, strCompareVoid ) != -1 )
-      {
-         if ( !flagsConfiguration.shouldSquelchExpress )
-         {
-            stdPrintf( "\r\n[X message by %s killed]\r\n", ptrSenderName );
-         }
-         needs.ignore = 1;
-         return;
-      }
-      if ( ptrSenderName )
-      {
-         ptrSenderName = extractName( aryExpressMessageBuffer );
-      }
+      processExpressHeader( &needs, &ptrSenderName );
    }
 }
 
