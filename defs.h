@@ -13,8 +13,8 @@
 #ifndef DEFS_H_INCLUDED
 #define DEFS_H_INCLUDED
 
-#define VERSION "2.3.10-Stilgar"
 #define INT_VERSION 2310
+#define DEFAULT_EDITOR_CONFIG_VALUE "$EDITOR"
 
 #include "config.h"
 
@@ -67,8 +67,6 @@
 #include <errno.h>
 /* extern int errno; */
 
-#include "sysio.h"
-
 #define COLOR_VALUE_DEFAULT 256
 
 static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize,
@@ -108,8 +106,8 @@ static inline size_t appendAnsiColorSelector( char *ptrBuffer, size_t bufferSize
                                           colorValue );
 }
 
-static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
-                                                int colorValue )
+static inline int formatAnsiColorSequence( char *ptrBuffer, size_t bufferSize,
+                                           int colorValue, bool isBackground )
 {
    size_t safeOffset;
    size_t writeOffset;
@@ -121,31 +119,23 @@ static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSi
 
    writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[" );
    writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
-                                          colorValue, false );
+                                          colorValue, isBackground );
    safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
    snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
              "m" );
    return 1;
 }
 
+static inline int formatAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                                int colorValue )
+{
+   return formatAnsiColorSequence( ptrBuffer, bufferSize, colorValue, false );
+}
+
 static inline int formatAnsiBackgroundSequence( char *ptrBuffer, size_t bufferSize,
                                                 int colorValue )
 {
-   size_t safeOffset;
-   size_t writeOffset;
-
-   if ( bufferSize == 0 )
-   {
-      return 0;
-   }
-
-   writeOffset = (size_t)snprintf( ptrBuffer, bufferSize, "\033[" );
-   writeOffset = appendAnsiColorSelector( ptrBuffer, bufferSize, writeOffset,
-                                          colorValue, true );
-   safeOffset = writeOffset < bufferSize ? writeOffset : bufferSize - 1;
-   snprintf( ptrBuffer + safeOffset, writeOffset < bufferSize ? bufferSize - writeOffset : 0,
-             "m" );
-   return 1;
+   return formatAnsiColorSequence( ptrBuffer, bufferSize, colorValue, true );
 }
 
 static inline int formatAnsiDisplayStateSequence( char *ptrBuffer, size_t bufferSize,
@@ -249,8 +239,8 @@ typedef struct
    unsigned int isLastSave : 1;                   /* true if last time aryUser edited they saved */
    unsigned int shouldCheckExpress : 1;           /* true if waiting to check BBS for X's */
    unsigned int isConfigMode : 1;                 /* true if we are in bbsrc config funcs */
-   unsigned int useAnsi : 1;                      /* true if BBS is in ANSI color mode */
-   unsigned int useBold : 1;                      /* true if using bold in ANSI color mode */
+   unsigned int shouldUseAnsi : 1;                /* true if BBS is in ANSI color mode */
+   unsigned int shouldUseBold : 1;                /* true if using bold in ANSI color mode */
    unsigned int shouldDisableBold : 1;            /* true if we need to force bold ANSI off */
    unsigned int isMorePromptActive : 1;           /* true if we are inside a MORE prompt */
    unsigned int shouldSquelchPost : 1;            /* true if we should squelch enemy posts */
@@ -293,23 +283,23 @@ typedef struct
    int ansiBlackTextColor;   /* Incoming ANSI black fallback color */
    int ansiBlueTextColor;    /* Incoming ANSI blue fallback color */
    int ansiMagentaTextColor; /* Incoming ANSI magenta fallback color */
-   int postdate;             /* Post date stamp color */
-   int postname;             /* Post author name color */
-   int posttext;             /* Post text color */
-   int postfrienddate;       /* Post friend date stamp color */
-   int postfriendname;       /* Post friend name color */
-   int postfriendtext;       /* Post friend text color */
+   int postDate;             /* Post date stamp color */
+   int postName;             /* Post author name color */
+   int postText;             /* Post text color */
+   int postFriendDate;       /* Post friend date stamp color */
+   int postFriendName;       /* Post friend name color */
+   int postFriendText;       /* Post friend text color */
    int anonymous;            /* Anonymous post header color */
-   int moreprompt;           /* More prompt color */
+   int morePrompt;           /* More prompt color */
    int ansiWhiteTextColor;   /* Incoming ANSI white fallback color */
    int reserved5;
    int background;        /* Background color */
-   int input1;            /* Text input fields */
-   int input2;            /* Text input fields (highlight) */
-   int expresstext;       /* X message text color */
-   int expressname;       /* X message name color */
-   int expressfriendtext; /* X message from friend text color */
-   int expressfriendname; /* X message from friend name color*/
+   int inputText;         /* Text input fields */
+   int inputHighlight;    /* Text input fields (highlight) */
+   int expressText;       /* X message text color */
+   int expressName;       /* X message name color */
+   int expressFriendText; /* X message from friend text color */
+   int expressFriendName; /* X message from friend name color*/
 } Color;
 
 #include "proto.h"

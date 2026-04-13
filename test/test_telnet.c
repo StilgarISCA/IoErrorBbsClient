@@ -72,7 +72,7 @@ static void resetState( void )
    ptrPostBuffer = 0;
    oldRows = 24;
    rows = 24;
-   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.shouldUseAnsi = 0;
    flagsConfiguration.isMorePromptActive = 0;
    aryExpressParsing[0] = '\0';
    aryExpressMessageBuffer[0] = '\0';

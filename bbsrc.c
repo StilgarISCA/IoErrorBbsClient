@@ -226,6 +226,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "url ", 4, BBRC_CMD_URL },
          { "aryMacro ", sizeof( "aryMacro " ) - 1, BBRC_CMD_MACRO },
          { "aryAwayMessageLines ", sizeof( "aryAwayMessageLines " ) - 1, BBRC_CMD_OLD_AWAY },
+         { "shellkey ", 9, BBRC_CMD_SHELL },
          { "aryShell ", sizeof( "aryShell " ) - 1, BBRC_CMD_SHELL } };
    size_t itemIndex;
 
@@ -305,8 +306,8 @@ void readBbsRc( void )
    *aryBbsHost = 0;
    ptrBbsRc = findBbsRc();
    bbsFriends = findBbsFriends();
-   flagsConfiguration.useAnsi = 0;
-   flagsConfiguration.useBold = 0;
+   flagsConfiguration.shouldUseAnsi = 0;
+   flagsConfiguration.shouldUseBold = 0;
    flagsConfiguration.shouldDisableBold = 0;
    flagsConfiguration.isMorePromptActive = 0;
    flagsConfiguration.shouldAutoAnswerAnsiPrompt = 0;
@@ -347,7 +348,7 @@ void readBbsRc( void )
             break;
 
          case BBRC_CMD_BOLD:
-            flagsConfiguration.useBold = 1;
+            flagsConfiguration.shouldUseBold = 1;
             break;
 
          case BBRC_CMD_XLAND:
@@ -916,11 +917,18 @@ void readBbsRc( void )
          case BBRC_CMD_SHELL:
             if ( shellKey >= 0 )
             {
-               stdPrintf( "Additional definition for 'aryShell' ignored.\n" );
+               stdPrintf( "Additional definition for 'shellkey' ignored.\n" );
             }
             else
             {
-               shellKey = ctrl( aryLine + ( sizeof( "aryShell " ) - 1 ) );
+               if ( !strncmp( aryLine, "shellkey ", 9 ) )
+               {
+                  shellKey = ctrl( aryLine + 9 );
+               }
+               else
+               {
+                  shellKey = ctrl( aryLine + ( sizeof( "aryShell " ) - 1 ) );
+               }
             }
             break;
 
@@ -1061,7 +1069,7 @@ void readBbsRc( void )
    }
    if ( shellKey >= 0 && *aryMacro[captureKey] )
    {
-      stdPrintf( "Warning: duplicate definition of 'aryMacro' and 'aryShell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'aryMacro' and 'shellkey'\n" );
    }
    if ( quitKey >= 0 && quitKey == suspKey )
    {
@@ -1073,7 +1081,7 @@ void readBbsRc( void )
    }
    if ( quitKey >= 0 && quitKey == shellKey )
    {
-      stdPrintf( "Warning: duplicate definition of 'quit' and 'aryShell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'quit' and 'shellkey'\n" );
    }
    if ( suspKey >= 0 && suspKey == captureKey )
    {
@@ -1081,11 +1089,11 @@ void readBbsRc( void )
    }
    if ( suspKey >= 0 && suspKey == shellKey )
    {
-      stdPrintf( "Warning: duplicate definition of 'susp' and 'aryShell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'susp' and 'shellkey'\n" );
    }
    if ( captureKey >= 0 && captureKey == shellKey )
    {
-      stdPrintf( "Warning: duplicate definition of 'capture' and 'aryShell'\n" );
+      stdPrintf( "Warning: duplicate definition of 'capture' and 'shellkey'\n" );
    }
 
    /* Load who list */
@@ -1116,7 +1124,7 @@ void readBbsRc( void )
    }
    if ( !*aryEditor )
    {
-      snprintf( aryEditor, sizeof( aryEditor ), "%s", aryMyEditor );
+      snprintf( aryEditor, sizeof( aryEditor ), "%s", DEFAULT_EDITOR_CONFIG_VALUE );
    }
    if ( version != tmpVersion )
    {

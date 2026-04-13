@@ -9,10 +9,61 @@
  * differently, such system-specific stuff should be put here.
  */
 
-#define INPUT_LEFT( __fp ) ( ptrPtyInput - aryPtyInputBuffer < ptyInputLength )
-#define ptyget() ( INPUT_LEFT( stdin ) ? *ptrPtyInput++ : ( ( ptyInputLength = read( 0, aryPtyInputBuffer, sizeof aryPtyInputBuffer ) ) < 0 ? -1 : ( ( ptrPtyInput = aryPtyInputBuffer ), *ptrPtyInput++ ) ) )
+#ifndef SYSIO_H_INCLUDED
+#define SYSIO_H_INCLUDED
 
-#define NET_INPUT_LEFT() ( ptrNetInput - aryNetInputBuffer < netInputLength )
-#define netget() ( NET_INPUT_LEFT() ? *ptrNetInput++ : ( ( netInputLength = read( net, aryNetInputBuffer, sizeof aryNetInputBuffer ) ) <= 0 ? -1 : ( ( ptrNetInput = aryNetInputBuffer ), *ptrNetInput++ ) ) )
-#define netput( __c ) ( putc( __c, netOutputFile ) )
-#define netflush() ( fflush( netOutputFile ) )
+static inline bool isPtyInputAvailable( void )
+{
+   return ptrPtyInput - aryPtyInputBuffer < ptyInputLength;
+}
+
+static inline int ptyget( void )
+{
+   if ( isPtyInputAvailable() )
+   {
+      return *ptrPtyInput++;
+   }
+
+   ptyInputLength = read( 0, aryPtyInputBuffer, sizeof( aryPtyInputBuffer ) );
+   if ( ptyInputLength < 0 )
+   {
+      return -1;
+   }
+
+   ptrPtyInput = aryPtyInputBuffer;
+   return *ptrPtyInput++;
+}
+
+static inline bool isNetworkInputAvailable( void )
+{
+   return ptrNetInput - aryNetInputBuffer < netInputLength;
+}
+
+static inline int netget( void )
+{
+   if ( isNetworkInputAvailable() )
+   {
+      return *ptrNetInput++;
+   }
+
+   netInputLength = read( net, aryNetInputBuffer, sizeof( aryNetInputBuffer ) );
+   if ( netInputLength <= 0 )
+   {
+      return -1;
+   }
+
+   ptrNetInput = aryNetInputBuffer;
+   return *ptrNetInput++;
+}
+
+static inline int netput( int inputChar )
+{
+   return putc( inputChar, netOutputFile );
+}
+
+static inline int netflush( void )
+{
+   return fflush( netOutputFile );
+}
+
+#endif /* SYSIO_H_INCLUDED */

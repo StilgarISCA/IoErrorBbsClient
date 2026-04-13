@@ -80,6 +80,46 @@ void defaultNameAutocompleteIfUnset( void )
    flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
+static void setKeyDefaultToUppercase( int lowerKey, bool shouldUseUppercaseByDefault )
+{
+   int upperKey;
+
+   upperKey = toupper( lowerKey );
+   if ( shouldUseUppercaseByDefault )
+   {
+      aryKeyMap[lowerKey] = (char)upperKey;
+      aryKeyMap[upperKey] = (char)lowerKey;
+   }
+   else
+   {
+      aryKeyMap[lowerKey] = (char)lowerKey;
+      aryKeyMap[upperKey] = (char)upperKey;
+   }
+}
+
+static void printThemedFriendListEntry( const friend *ptrFriend )
+{
+   if ( flagsConfiguration.shouldUseAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendName );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%-20s ", ptrFriend->name );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendText );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%s\r\n", ptrFriend->info );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.text );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   stdPrintf( "%-20s %s\r\n", ptrFriend->name, ptrFriend->info );
+}
+
 /*
  * First time setup borrowed from Client 9 with permission.
  */
@@ -210,7 +250,7 @@ void configBbsRc( void )
             }
             if ( !isLoginShell )
             {
-               stdPrintf( "Enter name of local editor to use (%s) -> ", aryEditor );
+               stdPrintf( "Enter local editor to use (%s uses shell default) -> ", aryEditor );
                getString( 72, aryMenuLine, -999 );
                if ( *aryMenuLine )
                {
@@ -218,27 +258,9 @@ void configBbsRc( void )
                }
             }
             stdPrintf( "Show long who list by default? (%s) -> ", ( aryKeyMap['w'] == 'w' ) ? "No" : "Yes" );
-            if ( yesNoDefault( ( aryKeyMap['w'] != 'w' ) ? 1 : 0 ) )
-            {
-               aryKeyMap['w'] = 'W';
-               aryKeyMap['W'] = 'w';
-            }
-            else
-            {
-               aryKeyMap['w'] = 'w';
-               aryKeyMap['W'] = 'W';
-            }
+            setKeyDefaultToUppercase( 'w', yesNoDefault( ( aryKeyMap['w'] != 'w' ) ? 1 : 0 ) );
             stdPrintf( "Show full profile by default? (%s) -> ", ( aryKeyMap['p'] == 'p' ) ? "No" : "Yes" );
-            if ( yesNoDefault( ( aryKeyMap['p'] != 'p' ) ? 1 : 0 ) )
-            {
-               aryKeyMap['p'] = 'P';
-               aryKeyMap['P'] = 'p';
-            }
-            else
-            {
-               aryKeyMap['p'] = 'p';
-               aryKeyMap['P'] = 'P';
-            }
+            setKeyDefaultToUppercase( 'p', yesNoDefault( ( aryKeyMap['p'] != 'p' ) ? 1 : 0 ) );
             stdPrintf( "Enter name of site to connect to (%s) -> ", aryBbsHost );
             getString( 64, aryMenuLine, -999 );
             if ( *aryMenuLine )
@@ -502,7 +524,7 @@ void writeBbsRc( void )
    fprintf( ptrBbsRc, "commandkey %s\n", strCtrl( commandKey ) );
    fprintf( ptrBbsRc, "quit %s\n", strCtrl( quitKey ) );
    fprintf( ptrBbsRc, "susp %s\n", strCtrl( suspKey ) );
-   fprintf( ptrBbsRc, "aryShell %s\n", strCtrl( shellKey ) );
+   fprintf( ptrBbsRc, "shellkey %s\n", strCtrl( shellKey ) );
    fprintf( ptrBbsRc, "capture %s\n", strCtrl( captureKey ) );
    fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
    fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
@@ -548,7 +570,7 @@ void writeBbsRc( void )
       }
    }
    fprintf( ptrBbsRc, "version %d\n", version );
-   if ( flagsConfiguration.useBold )
+   if ( flagsConfiguration.shouldUseBold )
    {
       fprintf( ptrBbsRc, "bold\n" );
    }
@@ -721,7 +743,6 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
    int lines;
    char *ptrUserName;
    char aryInfo[50];
-   char aryDisplayLine[80];
    char *ptrEnemyName;
    friend *ptrFriend;
 
@@ -736,8 +757,12 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
       {
          printThemedMnemonicText( "\r\n<A>dd  <D>elete  <E>dit  <L>ist  <Q>uit", color.number );
       }
-      snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
-      printThemedMnemonicText( aryDisplayLine, color.forum );
+      {
+         char aryDisplayLine[80];
+
+         snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
+         printThemedMnemonicText( aryDisplayLine, color.forum );
+      }
       printAnsiForegroundColorValue( color.text );
 
       inputChar = inKey();
@@ -871,8 +896,7 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
                for ( itemIndex = 0; itemIndex < (int)list->nitems; itemIndex++ )
                {
                   ptrFriend = list->items[itemIndex];
-                  snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "@Y%-20s @C%s@G\r\n", ptrFriend->name, ptrFriend->info );
-                  colorize( aryDisplayLine );
+                  printThemedFriendListEntry( ptrFriend );
                   lines++;
                   if ( lines == rows - 1 && more( &lines, -1 ) < 0 )
                   {

@@ -15,8 +15,174 @@
 #include "defs.h"
 #include "ext.h"
 #include "unix.h"
+#include <wordexp.h>
 
 static struct passwd *pw;
+
+typedef struct
+{
+   int errorCode;
+   int messageKind;
+} ErrorMessageTemplate;
+
+enum
+{
+   HOST_LOOKUP_COULD_NOT_RESOLVE,
+   HOST_LOOKUP_TEMPORARY_DNS_FAILURE,
+   HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED,
+   HOST_LOOKUP_SERVICE_LOOKUP_FAILED,
+   HOST_LOOKUP_GENERIC_FAILURE,
+   SOCKET_CONNECT_REFUSED,
+   SOCKET_CONNECT_TIMED_OUT,
+   SOCKET_CONNECT_HOST_UNREACHABLE,
+   SOCKET_CONNECT_HOST_DOWN,
+   SOCKET_CONNECT_NETWORK_UNREACHABLE,
+   SOCKET_CONNECT_NETWORK_DOWN,
+   SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE,
+   SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED,
+   SOCKET_CONNECT_ABORTED,
+   SOCKET_CONNECT_GENERIC_FAILURE
+};
+
+static const ErrorMessageTemplate aryHostLookupErrors[] =
+   {
+#ifdef EAI_NONAME
+      { EAI_NONAME, HOST_LOOKUP_COULD_NOT_RESOLVE },
+#endif
+#ifdef EAI_AGAIN
+      { EAI_AGAIN, HOST_LOOKUP_TEMPORARY_DNS_FAILURE },
+#endif
+#ifdef EAI_FAMILY
+      { EAI_FAMILY, HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED },
+#endif
+#ifdef EAI_SERVICE
+      { EAI_SERVICE, HOST_LOOKUP_SERVICE_LOOKUP_FAILED },
+#endif
+};
+
+static const ErrorMessageTemplate arySocketConnectErrors[] =
+   {
+#ifdef ECONNREFUSED
+      { ECONNREFUSED, SOCKET_CONNECT_REFUSED },
+#endif
+#ifdef ETIMEDOUT
+      { ETIMEDOUT, SOCKET_CONNECT_TIMED_OUT },
+#endif
+#ifdef EHOSTUNREACH
+      { EHOSTUNREACH, SOCKET_CONNECT_HOST_UNREACHABLE },
+#endif
+#ifdef EHOSTDOWN
+      { EHOSTDOWN, SOCKET_CONNECT_HOST_DOWN },
+#endif
+#ifdef ENETUNREACH
+      { ENETUNREACH, SOCKET_CONNECT_NETWORK_UNREACHABLE },
+#endif
+#ifdef ENETDOWN
+      { ENETDOWN, SOCKET_CONNECT_NETWORK_DOWN },
+#endif
+#ifdef EADDRNOTAVAIL
+      { EADDRNOTAVAIL, SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE },
+#endif
+#ifdef EAFNOSUPPORT
+      { EAFNOSUPPORT, SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED },
+#endif
+#ifdef ECONNABORTED
+      { ECONNABORTED, SOCKET_CONNECT_ABORTED },
+#endif
+};
+
+static int findErrorMessageKind( int errorCode,
+                                 const ErrorMessageTemplate *ptrTemplates,
+                                 size_t templateCount, int defaultMessageKind )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < templateCount; itemIndex++ )
+   {
+      if ( ptrTemplates[itemIndex].errorCode == errorCode )
+      {
+         return ptrTemplates[itemIndex].messageKind;
+      }
+   }
+   return defaultMessageKind;
+}
+
+static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
+                                     int messageKind, const char *ptrHost,
+                                     const char *ptrPort )
+{
+   switch ( messageKind )
+   {
+      case HOST_LOOKUP_COULD_NOT_RESOLVE:
+         snprintf( ptrBuffer, bufferSize, "Could not resolve %s:%s.", ptrHost, ptrPort );
+         break;
+      case HOST_LOOKUP_TEMPORARY_DNS_FAILURE:
+         snprintf( ptrBuffer, bufferSize,
+                   "Temporary DNS failure while looking up %s:%s.", ptrHost, ptrPort );
+         break;
+      case HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Address family for %s:%s is not supported.", ptrHost, ptrPort );
+         break;
+      case HOST_LOOKUP_SERVICE_LOOKUP_FAILED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Service lookup failed for %s:%s.", ptrHost, ptrPort );
+         break;
+      default:
+         snprintf( ptrBuffer, bufferSize,
+                   "Host lookup failed for %s:%s.", ptrHost, ptrPort );
+         break;
+   }
+}
+
+static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
+                                        int messageKind, const char *ptrHost,
+                                        const char *ptrPort )
+{
+   switch ( messageKind )
+   {
+      case SOCKET_CONNECT_REFUSED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Connection to %s:%s was refused by the server.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_TIMED_OUT:
+         snprintf( ptrBuffer, bufferSize,
+                   "Connection to %s:%s timed out.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_HOST_UNREACHABLE:
+         snprintf( ptrBuffer, bufferSize,
+                   "Host %s:%s is unreachable.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_HOST_DOWN:
+         snprintf( ptrBuffer, bufferSize,
+                   "Host %s:%s appears to be down.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_NETWORK_UNREACHABLE:
+         snprintf( ptrBuffer, bufferSize,
+                   "The network path to %s:%s is unreachable.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_NETWORK_DOWN:
+         snprintf( ptrBuffer, bufferSize,
+                   "The local network is down while connecting to %s:%s.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE:
+         snprintf( ptrBuffer, bufferSize,
+                   "No usable local address is available for %s:%s.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED:
+         snprintf( ptrBuffer, bufferSize,
+                   "The resolved address family for %s:%s is not supported.", ptrHost, ptrPort );
+         break;
+      case SOCKET_CONNECT_ABORTED:
+         snprintf( ptrBuffer, bufferSize,
+                   "Connection to %s:%s was aborted during setup.", ptrHost, ptrPort );
+         break;
+      default:
+         snprintf( ptrBuffer, bufferSize,
+                   "Could not connect to %s:%s.", ptrHost, ptrPort );
+         break;
+   }
+}
 
 static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 {
@@ -82,8 +248,59 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 #endif
 }
 
+static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
+                                     int lookupResult )
+{
+   const char *ptrReason;
+   char aryMessage[256];
+   int messageKind;
+
+   ptrReason = gai_strerror( lookupResult );
+   messageKind = findErrorMessageKind( lookupResult, aryHostLookupErrors,
+                                       sizeof( aryHostLookupErrors ) / sizeof( aryHostLookupErrors[0] ),
+                                       HOST_LOOKUP_GENERIC_FAILURE );
+   formatHostLookupMessage( aryMessage, sizeof( aryMessage ), messageKind, ptrHost, ptrPort );
+
+   fatalExit( ptrReason, aryMessage );
+}
+
+static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort,
+                                        int connectionErrno )
+{
+   char aryMessage[256];
+   int messageKind;
+
+   messageKind = findErrorMessageKind( connectionErrno, arySocketConnectErrors,
+                                       sizeof( arySocketConnectErrors ) / sizeof( arySocketConnectErrors[0] ),
+                                       SOCKET_CONNECT_GENERIC_FAILURE );
+   formatSocketConnectMessage( aryMessage, sizeof( aryMessage ), messageKind, ptrHost, ptrPort );
+
+   errno = connectionErrno;
+   fatalPerror( "connect", aryMessage );
+}
+
 #ifdef HAVE_OPENSSL
 SSL_CTX *ctx;
+
+static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
+                                     const char *ptrOperation )
+{
+   unsigned long errorCode;
+   const char *ptrReason;
+   char aryMessage[256];
+
+   errorCode = ERR_get_error();
+   ptrReason = ERR_reason_error_string( errorCode );
+   if ( ptrReason == NULL )
+   {
+      ptrReason = "TLS handshake failed";
+   }
+
+   snprintf( aryMessage, sizeof( aryMessage ),
+             "TLS setup failed while connecting to %s:%s during %s.",
+             ptrHost, ptrPort, ptrOperation );
+   fatalExit( ptrReason, aryMessage );
+}
 
 void killSsl( void )
 {
@@ -350,7 +567,7 @@ void titleBar( void )
 
    snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
              aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
-             VERSION, "Unix" );
+             BUILD_VERSION, "Unix" );
    if ( terminalSupportsTitleBarUpdates() )
    {
       printf( "\033]0;%s\007", aryTitle );
@@ -414,6 +631,9 @@ void connectBbs( void )
    addressHints.ai_socktype = SOCK_STREAM;
 
    ptrLookupHost = aryCommandLineHost;
+   stdPrintf( "Connection to: %s:%s\n", ptrLookupHost, aryPortString );
+   stdPrintf( "Looking up host... " );
+   fflush( stdout );
    connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
    if ( connectResult != 0 )
    {
@@ -422,9 +642,13 @@ void connectBbs( void )
    }
    if ( connectResult != 0 )
    {
-      fatalExit( gai_strerror( connectResult ), "Network error" );
+      stdPrintf( "failed.\n" );
+      failHostLookup( aryCommandLineHost, aryPortString, connectResult );
    }
+   stdPrintf( "done.\n" );
 
+   stdPrintf( "Opening connection... " );
+   fflush( stdout );
    net = -1;
    savedErrno = 0;
    for ( ptrAddressInfo = ptrAddressList; ptrAddressInfo != NULL; ptrAddressInfo = ptrAddressInfo->ai_next )
@@ -455,70 +679,33 @@ void connectBbs( void )
 
    if ( net < 0 )
    {
-#define BBSREFUSED "The BBS has refused connection, try again later.\r\n"
-#define BBSNETDOWN "Network problems prevent connection with the BBS, try again later.\r\n"
-#define BBSHOSTDOWN "The BBS is down or there are network problems, try again later.\r\n"
-
-      errno = savedErrno;
-
-#ifdef ECONNREFUSED
-      if ( errno == ECONNREFUSED )
-      {
-         stdPrintf( BBSREFUSED );
-      }
-#endif
-#ifdef ENETDOWN
-      if ( errno == ENETDOWN )
-      {
-         stdPrintf( BBSNETDOWN );
-      }
-#endif
-#ifdef ENETUNREACH
-      if ( errno == ENETUNREACH )
-      {
-         stdPrintf( BBSNETDOWN );
-      }
-#endif
-#ifdef ETIMEDOUT
-      if ( errno == ETIMEDOUT )
-      {
-         stdPrintf( BBSHOSTDOWN );
-      }
-#endif
-#ifdef EHOSTDOWN
-      if ( errno == EHOSTDOWN )
-      {
-         stdPrintf( BBSHOSTDOWN );
-      }
-#endif
-#ifdef EHOSTUNREACH
-      if ( errno == EHOSTUNREACH )
-      {
-         stdPrintf( BBSNETDOWN );
-      }
-#endif
-      fatalPerror( "connect", "Network error" );
+      stdPrintf( "failed.\n" );
+      failSocketConnect( ptrLookupHost, aryPortString, savedErrno );
    }
+   stdPrintf( "done.\n" );
 #ifdef HAVE_OPENSSL
    if ( shouldUseSsl )
    {
+      stdPrintf( "Negotiating TLS... " );
+      fflush( stdout );
       initSSL();
       if ( SSL_set_fd( ssl, net ) != 1 )
       {
-         printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
+         stdPrintf( "failed.\n" );
          shutdown( net, 2 );
-         exit( 1 );
+         failTlsConnect( ptrLookupHost, aryPortString, "TLS socket setup" );
       }
       if ( ( connectResult = SSL_connect( ssl ) ) != 1 )
       {
-         printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
+         stdPrintf( "failed.\n" );
          shutdown( net, 2 );
-         exit( 1 );
+         failTlsConnect( ptrLookupHost, aryPortString, "TLS handshake" );
       }
       isSsl = 1;
+      stdPrintf( "done.\n" );
    }
 #endif
-   stdPrintf( "[%ssecure connection established]\n", ( shouldUseSsl ) ? "S" : "In" );
+   stdPrintf( "[%s Connection Established]\n", ( shouldUseSsl ) ? "Secure" : "Insecure" );
    titleBar();
    fflush( stdout );
 
@@ -666,13 +853,13 @@ void setTerm( void )
 
    getWindowSize();
 
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                       lastColor, color.background,
-                                      flagsConfiguration.useBold );
+                                      flagsConfiguration.shouldUseBold );
       printf( "%s", aryAnsiSequence );
    }
    fflush( stdout );
@@ -736,7 +923,7 @@ void setTerm( void )
  */
 void resetTerm( void )
 {
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
@@ -808,7 +995,7 @@ void flushInput( unsigned int invalid )
       mySleep( invalid / 2 < 3 ? invalid / 2 : 3 );
    }
 #ifdef FIONREAD
-   while ( INPUT_LEFT( stdin ) || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
+   while ( isPtyInputAvailable() || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
    {
       (void)ptyget();
    }
@@ -817,22 +1004,60 @@ void flushInput( unsigned int invalid )
    pendingInputBytes = 0;
    ioctl( 0, TCFLSH, &pendingInputBytes );
 #endif
-   while ( INPUT_LEFT( stdin ) )
+   while ( isPtyInputAvailable() )
    {
       (void)ptyget();
    }
 #endif
 }
 
+static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg )
+{
+   wordexp_t parsedCommand;
+   char **aryArguments;
+   size_t argumentCount;
+   int parseResult;
+
+   parseResult = wordexp( ptrCommand, &parsedCommand, WRDE_NOCMD );
+   if ( parseResult != 0 || parsedCommand.we_wordc == 0 )
+   {
+      fprintf( stderr, "\r\n[Unable to parse command: %s]\r\n", ptrCommand );
+      _exit( 1 );
+   }
+
+   argumentCount = parsedCommand.we_wordc + ( ptrArg ? 1U : 0U );
+   aryArguments = calloc( argumentCount + 1, sizeof( char * ) );
+   if ( aryArguments != NULL )
+   {
+      for ( size_t argumentIndex = 0; argumentIndex < parsedCommand.we_wordc; argumentIndex++ )
+      {
+         aryArguments[argumentIndex] = parsedCommand.we_wordv[argumentIndex];
+      }
+      if ( ptrArg )
+      {
+         aryArguments[parsedCommand.we_wordc] = (char *)ptrArg;
+      }
+
+      execvp( aryArguments[0], aryArguments );
+      fprintf( stderr, "\r\n" );
+      sPerror( "exec", "Local error" );
+      free( aryArguments );
+      wordfree( &parsedCommand );
+      _exit( 1 );
+   }
+
+   fprintf( stderr, "\r\n" );
+   sPerror( "calloc", "Local error" );
+   wordfree( &parsedCommand );
+   _exit( 1 );
+}
+
 /*
- * Run the command 'aryCommand' with argument 'arg'.  Used only for running the aryEditor
- * right now.  In order to work properly with all the versions of Unix I've
- * tried to port this to so far without be overly complicated, I have to use a
- * setjmp to arySavedBytes the local stack context in this function, then longjmp back
- * here once I receive a signal from the child that it has terminated. So I
- * guess there actually IS a use for setjmp/longjmp after all! :-)
+ * Launch aryCommand with an optional trailing argument. Used for the external
+ * editor and subshell paths. The child exit path returns here through the
+ * existing setjmp/longjmp signal flow.
  */
-void run( char *aryCommand, char *arg )
+void run( const char *aryCommand, const char *arg )
 {
    fflush( stdout );
 #ifdef USE_POSIX_SIGSETJMP
@@ -862,10 +1087,7 @@ void run( char *aryCommand, char *arg )
 
       if ( !( childPid = fork() ) )
       {
-         execlp( aryCommand, aryCommand, arg, 0 );
-         fprintf( stderr, "\r\n" );
-         sPerror( "exec", "Local error" );
-         _exit( 0 );
+         execCommandWithOptionalArg( aryCommand, arg );
       }
       else if ( childPid > 0 )
       {
@@ -906,7 +1128,7 @@ void techInfo( void )
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
-              "ISCA BBS Client " VERSION " (macOS/Unix)\r\n",
+              "ISCA BBS Client " BUILD_VERSION " (macOS/Unix)\r\n",
               "Built on: " HOSTTYPE "\r\n",
               "Compiler: " BUILD_COMPILER "\r\n",
               "Build mode: " BUILD_MODE "\r\n",
@@ -922,9 +1144,8 @@ void techInfo( void )
               (char *)NULL );
 }
 
-void initialize( const char *protocol )
+void initialize( void )
 {
-   (void)protocol;
    if ( !isatty( 0 ) || !isatty( 1 ) || !isatty( 2 ) )
    {
       exit( 0 );
@@ -939,11 +1160,10 @@ void initialize( const char *protocol )
    setvbuf( stdout, NULL, _IOLBF, 0 );
 #endif
 
-   stdPrintf( "\nISCA BBS Client %s (%s)\n", VERSION, "macOS/Unix" );
-   stdPrintf( "Copyright (C) 2024-2026 Stilgar\n" );
-   stdPrintf( "Copyright (C) 1995-2003 Michael Hampton\n" );
-   stdPrintf( "License: GPL-2.0-or-later (see LICENSE)\n" );
-   stdPrintf( "Project: https://github.com/StilgarISCA/IoErrorBbsClient\n\n" );
+   stdPrintf( "\nISCA BBS Client %s (%s)\n", BUILD_VERSION, "macOS/Unix" );
+   stdPrintf( "Copyright (C) 2024-2026 Stilgar, 1995-2003 Michael Hampton\n" );
+   stdPrintf( "\nhttps://github.com/StilgarISCA/IoErrorBbsClient\n" );
+   stdPrintf( "GPL-2.0-or-later (see LICENSE)\n\n" );
    fflush( stdout );
    xlandQueue = newQueue( 21, MAX_USER_NAME_HISTORY_COUNT );
    if ( !xlandQueue )

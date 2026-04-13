@@ -10,6 +10,7 @@ releasepackagedir = release
 releaseartifact = $(PACKAGE)-$(VERSION)-$(HOST_TRIPLE)
 releasebinary = $(releasepackagedir)/$(releaseartifact)
 releasedsym = $(releasebinary).dSYM
+scanbuildreportdir = scan-build-report
 noinst_HEADERS = \
 	browser.h \
 	defs.h \
@@ -79,7 +80,7 @@ test_edit_LDADD = $(CMOCKA_LIBS)
 test_telnet_SOURCES = test/test_telnet.c test/test_helpers.c telnet.c queue.c global.c
 test_telnet_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_telnet_LDADD = $(CMOCKA_LIBS)
-EXTRA_DIST = bbs.1 test/test_helpers.h
+EXTRA_DIST = bbs.1.in test/test_helpers.h
 else
 TESTS =
 endif
@@ -87,7 +88,7 @@ endif
 install-exec-hook:
 	@echo 'Now hot Asian sluts will come out of your computer whenever you type "bbs".'
 
-.PHONY: analyze cppcheck release-package
+.PHONY: analyze cppcheck release-package scan-build
 
 release-package: bbs
 	@if test "x$(RELEASE_BUILD_ENABLED)" != "xyes"; then \
@@ -123,6 +124,20 @@ cppcheck:
 		cppcheck --enable=warning,style,performance,portability \
 			--inconclusive --std=c11 -DHAVE_CONFIG_H -I. $(bbs_SOURCES); \
 	fi
+
+scan-build:
+	@SCAN_BUILD_BIN="$$(command -v scan-build 2>/dev/null || true)"; \
+	if test -z "$$SCAN_BUILD_BIN" && test -x /opt/homebrew/opt/llvm/bin/scan-build; then \
+		SCAN_BUILD_BIN=/opt/homebrew/opt/llvm/bin/scan-build; \
+	fi; \
+	if test -z "$$SCAN_BUILD_BIN"; then \
+		echo "scan-build is not installed or not on PATH. Install it with: brew install llvm"; \
+		exit 1; \
+	fi; \
+	rm -rf $(scanbuildreportdir); \
+	mkdir -p $(scanbuildreportdir); \
+	echo "Using scan-build at $$SCAN_BUILD_BIN"; \
+	"$$SCAN_BUILD_BIN" --status-bugs -o $(scanbuildreportdir) $(MAKE) -j4 clean all
 
 analyze: cppcheck
 	@if command -v clang-tidy >/dev/null 2>&1 && [ -f compile_commands.json ]; then \

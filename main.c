@@ -22,7 +22,7 @@ int main( int argc, char *argv[] )
    {
       isLoginShell = 0;
    }
-   initialize( "v1.5" );
+   initialize();
    findHome();
    readBbsRc();
    openTmpFile();

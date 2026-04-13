@@ -26,7 +26,7 @@ static void resetState( void )
    flushCount = 0;
    lastFlushValue = 0;
 
-   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.shouldUseAnsi = 0;
    lastColor = 0;
 
    if ( friendList != NULL )
@@ -196,7 +196,7 @@ static void defaultColors_WhenClearAllApplied_SetsKnownDefaults( void **state )
    {
       fail_msg( "defaultColors(1) should reset background to 0; got %d", color.background );
    }
-   if ( color.postname != 6 || color.postfriendname != 1 || color.expressname != 2 )
+   if ( color.postName != 6 || color.postFriendName != 1 || color.expressName != 2 )
    {
       fail_msg( "defaultColors(1) did not set post/express defaults as expected" );
    }
@@ -471,15 +471,15 @@ static void colorblindColors_WhenApplied_SetsAccessiblePalette( void **state )
    {
       fail_msg( "colorblindColors should keep a dark background; got %d", color.background );
    }
-   if ( color.postdate != 75 || color.postfrienddate != 25 ||
-        color.postname != 214 || color.postfriendname != 175 ||
-        color.input2 != 214 || color.moreprompt != 221 ||
-        color.expressname != 214 || color.expressfriendname != 175 )
+   if ( color.postDate != 75 || color.postFriendDate != 25 ||
+        color.postName != 214 || color.postFriendName != 175 ||
+        color.inputHighlight != 214 || color.morePrompt != 221 ||
+        color.expressName != 214 || color.expressFriendName != 175 )
    {
-      fail_msg( "colorblindColors should map post, input, and express roles onto the preset palette; got postdate=%d frienddate=%d postname=%d friendname=%d input2=%d moreprompt=%d expressname=%d expressfriendname=%d",
-                color.postdate, color.postfrienddate, color.postname,
-                color.postfriendname, color.input2, color.moreprompt,
-                color.expressname, color.expressfriendname );
+      fail_msg( "colorblindColors should map post, input, and express roles onto the preset palette; got postDate=%d frienddate=%d postName=%d friendname=%d inputHighlight=%d morePrompt=%d expressName=%d expressFriendName=%d",
+                color.postDate, color.postFriendDate, color.postName,
+                color.postFriendName, color.inputHighlight, color.morePrompt,
+                color.expressName, color.expressFriendName );
    }
    if ( color.ansiBlackTextColor != 146 || color.ansiBlueTextColor != 75 ||
         color.ansiMagentaTextColor != 175 || color.ansiWhiteTextColor != 221 )
@@ -512,20 +512,20 @@ static void brilliantColors_WhenApplied_SetsBrightDefaultPalette( void **state )
    {
       fail_msg( "brilliantColors should keep a black background; got %d", color.background );
    }
-   if ( color.postdate != 13 || color.postfrienddate != 13 ||
-        color.postname != 14 || color.postfriendname != 9 ||
-        color.posttext != 10 || color.postfriendtext != 10 ||
-        color.anonymous != 11 || color.moreprompt != 11 ||
-        color.input1 != 10 || color.input2 != 14 ||
-        color.expresstext != 10 || color.expressname != 10 ||
-        color.expressfriendname != 10 || color.expressfriendtext != 10 )
+   if ( color.postDate != 13 || color.postFriendDate != 13 ||
+        color.postName != 14 || color.postFriendName != 9 ||
+        color.postText != 10 || color.postFriendText != 10 ||
+        color.anonymous != 11 || color.morePrompt != 11 ||
+        color.inputText != 10 || color.inputHighlight != 14 ||
+        color.expressText != 10 || color.expressName != 10 ||
+        color.expressFriendName != 10 || color.expressFriendText != 10 )
    {
-      fail_msg( "brilliantColors should map the default roles onto bright ANSI values; got postdate=%d frienddate=%d postname=%d friendname=%d posttext=%d friendposttext=%d anonymous=%d moreprompt=%d input1=%d input2=%d expresstext=%d expressname=%d expressfriendname=%d expressfriendtext=%d",
-                color.postdate, color.postfrienddate, color.postname,
-                color.postfriendname, color.posttext, color.postfriendtext,
-                color.anonymous, color.moreprompt, color.input1, color.input2,
-                color.expresstext, color.expressname,
-                color.expressfriendname, color.expressfriendtext );
+      fail_msg( "brilliantColors should map the default roles onto bright ANSI values; got postDate=%d frienddate=%d postName=%d friendname=%d postText=%d friendposttext=%d anonymous=%d morePrompt=%d inputText=%d inputHighlight=%d expressText=%d expressName=%d expressFriendName=%d expressFriendText=%d",
+                color.postDate, color.postFriendDate, color.postName,
+                color.postFriendName, color.postText, color.postFriendText,
+                color.anonymous, color.morePrompt, color.inputText, color.inputHighlight,
+                color.expressText, color.expressName,
+                color.expressFriendName, color.expressFriendText );
    }
    if ( color.ansiBlackTextColor != 10 || color.ansiBlueTextColor != 12 ||
         color.ansiMagentaTextColor != 13 || color.ansiWhiteTextColor != 15 )
@@ -558,24 +558,24 @@ static void hotDogColors_WhenApplied_SetsClassicHotDogPalette( void **state )
    {
       fail_msg( "hotDogColors should keep a black background; got %d", color.background );
    }
-   if ( color.posttext != 214 || color.postfriendtext != 214 ||
-        color.expresstext != 214 || color.expressfriendtext != 214 )
+   if ( color.postText != 214 || color.postFriendText != 214 ||
+        color.expressText != 214 || color.expressFriendText != 214 )
    {
-      fail_msg( "hotDogColors should keep only post and eXpress bodies orange; got posttext=%d friendposttext=%d expresstext=%d friendexpresstext=%d",
-                color.posttext, color.postfriendtext, color.expresstext,
-                color.expressfriendtext );
+      fail_msg( "hotDogColors should keep only post and eXpress bodies orange; got postText=%d friendposttext=%d expressText=%d friendexpresstext=%d",
+                color.postText, color.postFriendText, color.expressText,
+                color.expressFriendText );
    }
 
-   if ( color.postdate != 226 || color.postfrienddate != 226 ||
-        color.postname != 226 || color.postfriendname != 226 ||
-        color.anonymous != 226 || color.moreprompt != 220 ||
-        color.input1 != 220 || color.expressname != 226 ||
-        color.expressfriendname != 226 )
+   if ( color.postDate != 226 || color.postFriendDate != 226 ||
+        color.postName != 226 || color.postFriendName != 226 ||
+        color.anonymous != 226 || color.morePrompt != 220 ||
+        color.inputText != 220 || color.expressName != 226 ||
+        color.expressFriendName != 226 )
    {
-      fail_msg( "hotDogColors should keep date and name headers yellow while leaving only bodies orange; got postdate=%d frienddate=%d postname=%d friendname=%d anonymous=%d moreprompt=%d input1=%d expressname=%d expressfriendname=%d",
-                color.postdate, color.postfrienddate, color.postname,
-                color.postfriendname, color.anonymous, color.moreprompt,
-                color.input1, color.expressname, color.expressfriendname );
+      fail_msg( "hotDogColors should keep date and name headers yellow while leaving only bodies orange; got postDate=%d frienddate=%d postName=%d friendname=%d anonymous=%d morePrompt=%d inputText=%d expressName=%d expressFriendName=%d",
+                color.postDate, color.postFriendDate, color.postName,
+                color.postFriendName, color.anonymous, color.morePrompt,
+                color.inputText, color.expressName, color.expressFriendName );
    }
    if ( color.ansiBlackTextColor != 130 || color.ansiBlueTextColor != 214 ||
         color.ansiMagentaTextColor != 130 || color.ansiWhiteTextColor != 220 )
@@ -623,12 +623,12 @@ static void ansiTransformExpress_WhenFriendSender_UsesFriendColorCodes( void **s
    (void)state;
 
    resetState();
-   flagsConfiguration.useAnsi = 1;
-   color.expressfriendtext = 3;
-   color.expressfriendname = 5;
+   flagsConfiguration.shouldUseAnsi = 1;
+   color.expressFriendText = 3;
+   color.expressFriendName = 5;
    color.text = 7;
-   color.expresstext = 2;
-   color.expressname = 6;
+   color.expressText = 2;
+   color.expressName = 6;
    addFriend( "Dr Strange" );
    snprintf( aryMessage, sizeof( aryMessage ), "%s", "*** Message (#1) from Dr Strange at 11:01 ***" );
 
@@ -655,7 +655,7 @@ static void ansiTransformExpress_WhenAnsiDisabled_LeavesTextUnchanged( void **st
    (void)state;
 
    resetState();
-   flagsConfiguration.useAnsi = 0;
+   flagsConfiguration.shouldUseAnsi = 0;
    snprintf( aryMessage, sizeof( aryMessage ), "%s", "*** Message (#2) from Meatball at 11:07 ***" );
    snprintf( aryOriginal, sizeof( aryOriginal ), "%s", aryMessage );
 
@@ -677,9 +677,9 @@ static void ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracks
    (void)state;
 
    resetState();
-   color.postfrienddate = 4;
-   color.postfriendname = 13;
-   color.postfriendtext = 2;
+   color.postFriendDate = 4;
+   color.postFriendName = 13;
+   color.postFriendText = 2;
    snprintf( aryHeader, sizeof( aryHeader ), "%s",
              "\033[35mMar 1, 2026 3:34 PM\033[32m from \033[36mSkankhunt Four Two\033[32m" );
 
@@ -695,7 +695,7 @@ static void ansiTransformPostHeader_WhenFriendPost_RewritesHeaderDigitsAndTracks
    {
       fail_msg( "ansiTransformPostHeader should remap friend post name color; got '%s'", aryHeader );
    }
-   if ( lastColor != color.postfriendtext )
+   if ( lastColor != color.postFriendText )
    {
       fail_msg( "ansiTransformPostHeader should set lastColor to friend post text color; got %d", lastColor );
    }

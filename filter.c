@@ -12,7 +12,7 @@ static char thisline[320]; /* Copy of the current aryLine */
 
 static void printThemedWhoListHeader( const char *ptrText )
 {
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
@@ -32,20 +32,20 @@ static void printThemedWhoListHeader( const char *ptrText )
 static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
                                      const char *ptrTimeText, const char *ptrInfo )
 {
-   if ( flagsConfiguration.useAnsi )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
       char aryAnsiSequence[32];
 
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postfriendname );
+                                    color.postFriendName );
       stdPrintf( "%s", aryAnsiSequence );
       stdPrintf( "%-19s%c ", ptrName, statusMarker );
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postfrienddate );
+                                    color.postFriendDate );
       stdPrintf( "%s", aryAnsiSequence );
       stdPrintf( "%s", ptrTimeText );
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postfriendtext );
+                                    color.postFriendText );
       stdPrintf( "%s", aryAnsiSequence );
       stdPrintf( "  %s\r\n", ptrInfo );
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
@@ -550,10 +550,10 @@ void filterPost( register int inputChar )
       { /* Escape character */
          ansiSequenceLength = 0;
          aryAnsiSequence[ansiSequenceLength++] = (char)inputChar;
-         if ( !flagsConfiguration.useAnsi )
+         if ( !flagsConfiguration.shouldUseAnsi )
          {
-            flagsConfiguration.useAnsi = 1;
-            if ( !flagsConfiguration.useBold )
+            flagsConfiguration.shouldUseAnsi = 1;
+            if ( !flagsConfiguration.shouldUseBold )
             {
                flagsConfiguration.shouldDisableBold = 1;
             }
@@ -561,7 +561,7 @@ void filterPost( register int inputChar )
          return;
       }
       /* Change color for end of more prompt */
-      if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
+      if ( flagsConfiguration.shouldUseAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
       {
          char aryMorePromptSequence[32];
 
@@ -682,7 +682,7 @@ void filterData( register int inputChar )
    }
 
    /* Change color for end of more prompt */
-   if ( flagsConfiguration.useAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
+   if ( flagsConfiguration.shouldUseAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
    {
       char aryAnsiSequence[32];
 
@@ -717,10 +717,10 @@ void filterData( register int inputChar )
       stdPrintf( "%s", aryAnsiSequence );
       bufferedAnsiSequenceLength = 0;
       aryBufferedAnsiSequence[bufferedAnsiSequenceLength++] = (char)inputChar;
-      if ( !flagsConfiguration.useAnsi )
+      if ( !flagsConfiguration.shouldUseAnsi )
       {
-         flagsConfiguration.useAnsi = 1;
-         if ( !flagsConfiguration.useBold )
+         flagsConfiguration.shouldUseAnsi = 1;
+         if ( !flagsConfiguration.shouldUseBold )
          {
             flagsConfiguration.shouldDisableBold = 1;
          }
@@ -758,7 +758,7 @@ void reprintLine( void )
 
 void morePromptHelper( void )
 {
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       return;
    }

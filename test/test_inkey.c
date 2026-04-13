@@ -16,6 +16,7 @@
 static int waitNextEventCallCount;
 static int myExitCallCount;
 static int fatalPerrorCallCount;
+static int fatalExitCallCount;
 
 static void resetState( void )
 {
@@ -24,6 +25,7 @@ static void resetState( void )
    waitNextEventCallCount = 0;
    myExitCallCount = 0;
    fatalPerrorCallCount = 0;
+   fatalExitCallCount = 0;
 
    targetByte = 0;
    bytePosition = 0;
@@ -83,6 +85,14 @@ noreturn void fatalPerror( const char *message, const char *heading )
    abort();
 }
 
+noreturn void fatalExit( const char *message, const char *heading )
+{
+   (void)message;
+   (void)heading;
+   fatalExitCallCount++;
+   abort();
+}
+
 noreturn void myExit( void )
 {
    myExitCallCount++;
@@ -93,7 +103,7 @@ void openBrowser( void )
 {
 }
 
-void run( char *ptrCommand, char *ptrArg )
+void run( const char *ptrCommand, const char *ptrArg )
 {
    (void)ptrCommand;
    (void)ptrArg;
@@ -238,7 +248,8 @@ static void getKey_WhenCommandMacroTriggered_ReturnsMacroText( void **state )
    }
    if ( fatalPerrorCallCount != 0 || myExitCallCount != 0 )
    {
-      fail_msg( "macro expansion should not hit fatal paths; fatalPerror=%d myExit=%d", fatalPerrorCallCount, myExitCallCount );
+      fail_msg( "macro expansion should not hit fatal paths; fatalPerror=%d fatalExit=%d myExit=%d",
+                fatalPerrorCallCount, fatalExitCallCount, myExitCallCount );
    }
 }
 

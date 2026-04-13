@@ -280,13 +280,13 @@ static void applyVisibleUrlReportColor( int foregroundColor )
 {
    char aryAnsiSequence[32];
 
-   if ( !flagsConfiguration.useAnsi )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
       return;
    }
    formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
                                    foregroundColor, color.background,
-                                   flagsConfiguration.useBold );
+                                   flagsConfiguration.shouldUseBold );
    stdPrintf( "%s", aryAnsiSequence );
    lastColor = foregroundColor;
 }
