@@ -8,18 +8,106 @@
 #include "ext.h"
 #include "telnet.h"
 
+typedef struct
+{
+   unsigned int crlf : 1;    /* need to add a CR/LF */
+   unsigned int prochdr : 1; /* process post header */
+   unsigned int ignore : 1;  /* kill this post */
+   unsigned int secondN : 1; /* send a second n */
+} PostFilterFlags;
+
+static void appendFilterLineChar( int inputChar )
+{
+   char *ptrCursor = aryFilterLine;
+
+   for ( ; *ptrCursor; ptrCursor++ )
+   {
+      ;
+   }
+
+   *ptrCursor++ = (char)inputChar;
+   *ptrCursor = 0;
+}
+
+static void beginPostMessage( PostFilterFlags *ptrFlags, char *posthdr,
+                              char **ptrPostHeaderCursor, int *ptrIsFriend )
+{
+   beginUrlDetectionReport();
+   *ptrPostHeaderCursor = posthdr;
+   *posthdr = 0;
+   ptrFlags->crlf = 0;
+   ptrFlags->prochdr = 1;
+   *ptrIsFriend = 0;
+   ptrFlags->ignore = 0;
+   ptrFlags->secondN = 0;
+}
+
+static void finishPostMessage( const PostFilterFlags *ptrFlags, int *ptrPostCount )
+{
+   if ( ptrFlags->secondN )
+   {
+      netPutChar( 'n' );
+      byte++;
+   }
+   filterUrl( " " );
+   ( *ptrPostCount )++;
+   emitUrlDetectionReport();
+}
+
+static void maybePrintMorePromptColor( int inputChar )
+{
+   if ( !( flagsConfiguration.shouldUseAnsi &&
+           flagsConfiguration.isMorePromptActive && inputChar == ' ' ) )
+   {
+      return;
+   }
+
+   {
+      char aryMorePromptSequence[32];
+
+      lastColor = color.text;
+      formatAnsiForegroundSequence( aryMorePromptSequence,
+                                    sizeof( aryMorePromptSequence ),
+                                    lastColor );
+      stdPrintf( "%s", aryMorePromptSequence );
+   }
+}
+
+static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
+                         const char *ptrHeader, int postCount )
+{
+   if ( !ptrSenderName ||
+        slistFind( enemyList, (void *)ptrSenderName, strCompareVoid ) == -1 )
+   {
+      return false;
+   }
+
+   ptrFlags->ignore = 1;
+   postHeaderActive = -1;
+   postProgressState = -1;
+   netPrintf( "%c%c%c%c", IAC, POST_K, postCount & 0xFF, 17 );
+   netflush();
+   if ( !flagsConfiguration.shouldSquelchPost )
+   {
+      stdPrintf( "%s[Post by %s killed]\r\n",
+                 *ptrHeader == '\n' ? "\r\n" : "", ptrSenderName );
+   }
+   else
+   {
+      pendingLinesToEat = ( ptrFlags->crlf ? 1 : 2 );
+      netPutChar( 'n' );
+      netflush();
+      byte++;
+   }
+   return true;
+}
+
 void filterPost( register int inputChar )
 {
    static int numposts = 0;  /* count of the # of posts received so far */
    static char posthdr[140]; /* store the post header here */
    static char *posthdrp;    /* pointer into posthdr */
-   static struct
-   {
-      unsigned int crlf : 1;    /* need to add a CR/LF */
-      unsigned int prochdr : 1; /* process post header */
-      unsigned int ignore : 1;  /* kill this post */
-      unsigned int secondN : 1; /* send a second n */
-   } needs;
+   static PostFilterFlags needs;
    static char aryTempText[160];
    static int isFriend; /* Current post is by a friend */
 
@@ -27,25 +115,11 @@ void filterPost( register int inputChar )
    { /* control: begin/end of post */
       if ( postProgressState )
       { /* beginning of post */
-         beginUrlDetectionReport();
-         posthdrp = posthdr;
-         *posthdr = 0;
-         needs.crlf = 0;
-         needs.prochdr = 1;
-         isFriend = 0;
-         needs.ignore = 0;
-         needs.secondN = 0;
+         beginPostMessage( &needs, posthdr, &posthdrp, &isFriend );
       }
       else
       { /* end of post */
-         if ( needs.secondN )
-         {
-            netPutChar( 'n' );
-            byte++;
-         }
-         filterUrl( " " );
-         numposts++;
-         emitUrlDetectionReport();
+         finishPostMessage( &needs, &numposts );
       }
       return;
    }
@@ -84,16 +158,7 @@ void filterPost( register int inputChar )
       }
       else
       {
-         /* This is a whole lot faster than calling strcat() */
-         char *ptrCursor = aryFilterLine;
-
-         for ( ; *ptrCursor; ptrCursor++ )
-         { /* Find end of string */
-            ;
-         }
-
-         *ptrCursor++ = (char)inputChar; /* Copy character to end of string */
-         *ptrCursor = 0;
+         appendFilterLineChar( inputChar );
       }
 
       /* Process ANSI codes in the middle of a post */
@@ -125,15 +190,7 @@ void filterPost( register int inputChar )
          return;
       }
       /* Change color for end of more prompt */
-      if ( flagsConfiguration.shouldUseAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
-      {
-         char aryMorePromptSequence[32];
-
-         lastColor = color.text;
-         formatAnsiForegroundSequence( aryMorePromptSequence, sizeof( aryMorePromptSequence ),
-                                       lastColor );
-         stdPrintf( "%s", aryMorePromptSequence );
-      }
+      maybePrintMorePromptColor( inputChar );
 
       /* Output character */
       stdPutChar( inputChar );
@@ -146,7 +203,7 @@ void filterPost( register int inputChar )
       /* If reached a \r it's time to do header processing */
       if ( inputChar == '\r' )
       {
-         char *ptrSenderNameForChecks;
+         const char *ptrSenderNameForChecks;
 
          needs.prochdr = 0;
 
@@ -155,26 +212,8 @@ void filterPost( register int inputChar )
 
          snprintf( aryTempText, sizeof( aryTempText ), "%s", posthdr );
          ptrSenderNameForChecks = extractNameNoHistory( aryTempText );
-         if ( ptrSenderNameForChecks &&
-              slistFind( enemyList, ptrSenderNameForChecks, strCompareVoid ) != -1 )
+         if ( tryKillPost( &needs, ptrSenderNameForChecks, posthdr, numposts ) )
          {
-            needs.ignore = 1;
-            postHeaderActive = -1;
-            postProgressState = -1;
-            netPrintf( "%c%c%c%c", IAC, POST_K, numposts & 0xFF, 17 );
-            netflush();
-            if ( !flagsConfiguration.shouldSquelchPost )
-            {
-               stdPrintf( "%s[Post by %s killed]\r\n",
-                          *posthdr == '\n' ? "\r\n" : "", ptrSenderNameForChecks );
-            }
-            else
-            {
-               pendingLinesToEat = ( needs.crlf ? 1 : 2 );
-               netPutChar( 'n' );
-               netflush();
-               byte++;
-            }
             return;
          }
 
