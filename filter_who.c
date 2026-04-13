@@ -8,6 +8,74 @@
 #include "ext.h"
 
 static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
+                                     const char *ptrTimeText, const char *ptrInfo );
+
+static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorText )
+{
+   char *ptrWhoCopy;
+
+   ptrWhoCopy = (char *)calloc( 1, strlen( ptrName ) + 1 );
+   if ( !ptrWhoCopy )
+   {
+      fatalExit( ptrErrorText, "Fatal error" );
+      return NULL;
+   }
+   snprintf( ptrWhoCopy, strlen( ptrName ) + 1, "%s", ptrName );
+   return ptrWhoCopy;
+}
+
+static void formatElapsedWhoHeader( char *ptrBuffer, size_t bufferSize,
+                                    const char *ptrPrefix, long elapsedSeconds )
+{
+   snprintf( ptrBuffer, bufferSize, "%s (%d:%02d old)%s",
+             ptrPrefix, (int)( elapsedSeconds / 60 ),
+             (int)( elapsedSeconds % 60 ),
+             strstr( ptrPrefix, "Your friends online" ) ? "\r\n\n" : "" );
+}
+
+static void formatWhoTimeText( char *ptrBuffer, size_t bufferSize, long elapsedMinutes )
+{
+   if ( elapsedMinutes >= 1440 )
+   {
+      snprintf( ptrBuffer, bufferSize, "%2ldd%02ld:%02ld",
+                elapsedMinutes / 1440,
+                ( elapsedMinutes % 1440 ) / 60,
+                ( elapsedMinutes % 1440 ) % 60 );
+   }
+   else
+   {
+      snprintf( ptrBuffer, bufferSize, "   %2ld:%02ld",
+                elapsedMinutes / 60,
+                elapsedMinutes % 60 );
+   }
+}
+
+static void printSavedWhoList( long elapsedSeconds, int *ptrFriendColumn )
+{
+   char aryTempText[80];
+
+   for ( ; ( *ptrFriendColumn )++ < savedWhoCount; )
+   {
+      char aryTimeText[16];
+
+      snprintf( aryTempText, sizeof( aryTempText ), "%s",
+                (char *)arySavedWhoNames[*ptrFriendColumn - 1] + 1 );
+      snprintf( aryTimeText, sizeof( aryTimeText ), "   %2d:%02d",
+                ( *arySavedWhoNames[*ptrFriendColumn - 1] +
+                  (int)( elapsedSeconds / 60 ) ) /
+                   60,
+                ( *arySavedWhoNames[*ptrFriendColumn - 1] +
+                  (int)( elapsedSeconds / 60 ) ) %
+                   60 );
+      printThemedWhoListEntry( aryTempText + 1,
+                               *aryTempText & 0x80 ? '*' : ' ',
+                               aryTimeText,
+                               (char *)arySavedWhoInfo[*ptrFriendColumn - 1] );
+   }
+   ( *ptrFriendColumn )--;
+}
+
+static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
                                      const char *ptrTimeText, const char *ptrInfo )
 {
    if ( flagsConfiguration.shouldUseAnsi )
@@ -120,31 +188,12 @@ void filterWhoList( register int inputChar )
                }
                else
                {
-                  snprintf( aryTempText, sizeof( aryTempText ),
-                            "Your friends online (%d:%02d old)\r\n\n",
-                            (int)( elapsedSeconds / 60 ),
-                            (int)( elapsedSeconds % 60 ) );
+                  formatElapsedWhoHeader( aryTempText, sizeof( aryTempText ),
+                                          "Your friends online",
+                                          elapsedSeconds );
                   printThemedWhoListHeader( aryTempText );
                }
-               for ( ; friendColumn++ < savedWhoCount; )
-               {
-                  char aryTimeText[16];
-
-                  snprintf( aryTempText, sizeof( aryTempText ), "%s",
-                            (char *)arySavedWhoNames[friendColumn - 1] + 1 );
-                  snprintf( aryTimeText, sizeof( aryTimeText ), "   %2d:%02d",
-                            ( *arySavedWhoNames[friendColumn - 1] +
-                              (int)( elapsedSeconds / 60 ) ) /
-                               60,
-                            ( *arySavedWhoNames[friendColumn - 1] +
-                              (int)( elapsedSeconds / 60 ) ) %
-                               60 );
-                  printThemedWhoListEntry( aryTempText + 1,
-                                           *aryTempText & 0x80 ? '*' : ' ',
-                                           aryTimeText,
-                                           (char *)arySavedWhoInfo[friendColumn - 1] );
-               }
-               friendColumn--;
+               printSavedWhoList( elapsedSeconds, &friendColumn );
             }
             else
             {
@@ -154,10 +203,9 @@ void filterWhoList( register int inputChar )
                }
                else
                {
-                  snprintf( aryTempText, sizeof( aryTempText ),
-                            "No friends online (%d:%02d old)",
-                            (int)( elapsedSeconds / 60 ),
-                            (int)( elapsedSeconds % 60 ) );
+                  formatElapsedWhoHeader( aryTempText, sizeof( aryTempText ),
+                                          "No friends online",
+                                          elapsedSeconds );
                   printThemedWhoListHeader( aryTempText );
                }
             }
@@ -179,15 +227,11 @@ void filterWhoList( register int inputChar )
             }
             for ( unsigned int ui = 0; ui < friendList->nitems; ui++ )
             {
-               char *ptrWhoCopy;
                const friend *ptrFriend;
 
                ptrFriend = friendList->items[ui];
-               if ( !( ptrWhoCopy = (char *)calloc( 1, strlen( ptrFriend->name ) + 1 ) ) )
-               {
-                  fatalExit( "Out of memory for list copy!\r\n", "Fatal error" );
-               }
-               snprintf( ptrWhoCopy, strlen( ptrFriend->name ) + 1, "%s", ptrFriend->name );
+               char *ptrWhoCopy = duplicateWhoNameOrDie(
+                  ptrFriend->name, "Out of memory for list copy!\r\n" );
                if ( !( slistAddItem( whoList, ptrWhoCopy, 0 ) ) )
                {
                   fatalExit( "Out of memory adding item in list copy!\r\n", "Fatal error" );
@@ -212,15 +256,8 @@ void filterWhoList( register int inputChar )
             snprintf( aryTempText, sizeof( aryTempText ), "%s", (char *)aryWhoEntry + 1 );
             *aryTempText &= 0x7f;
             {
-               char *ptrWhoCopy;
-
-               ptrWhoCopy = (char *)calloc( 1, strlen( aryTempText ) + 1 );
-               if ( !ptrWhoCopy )
-               {
-                  fatalExit( "Out of memory adding to saved aryWhoEntry list!\r\n", "Fatal error" );
-                  return;
-               }
-               snprintf( ptrWhoCopy, strlen( aryTempText ) + 1, "%s", aryTempText );
+               char *ptrWhoCopy = duplicateWhoNameOrDie(
+                  aryTempText, "Out of memory adding to saved aryWhoEntry list!\r\n" );
                if ( slistFind( whoList, ptrWhoCopy, strCompareVoid ) == -1 )
                {
                   if ( !( slistAddItem( whoList, ptrWhoCopy, 0 ) ) )
@@ -249,22 +286,7 @@ void filterWhoList( register int inputChar )
                   {
                      char aryTimeText[16];
 
-                     if ( extime >= 1440 )
-                     {
-                        snprintf( aryTimeText, sizeof( aryTimeText ),
-                                  "%2ldd%02ld:%02ld",
-                                  extime / 1440,
-                                  ( extime % 1440 ) / 60,
-                                  ( extime % 1440 ) % 60 );
-                     }
-                     else
-                     {
-                        snprintf( aryTimeText, sizeof( aryTimeText ),
-                                  "   %2ld:%02ld",
-                                  extime / 60,
-                                  extime % 60 );
-                     }
-
+                     formatWhoTimeText( aryTimeText, sizeof( aryTimeText ), extime );
                      printThemedWhoListEntry( aryTempText,
                                               aryWhoEntry[1] & 0x80 ? '*' : ' ',
                                               aryTimeText,

@@ -35,6 +35,7 @@ bbs_SOURCES = \
 	config_users.c \
 	edit.c \
 	filter.c \
+	filter_express.c \
 	filter_who.c \
 	getline.c \
 	global.c \
@@ -79,7 +80,7 @@ test_getline_LDADD = $(CMOCKA_LIBS)
 test_inkey_SOURCES = test/test_inkey.c test/test_helpers.c inkey.c global.c
 test_inkey_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_inkey_LDADD = $(CMOCKA_LIBS)
-test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter.c filter_who.c queue.c slist.c global.c
+test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter.c filter_express.c filter_who.c queue.c slist.c global.c
 test_filter_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_filter_LDADD = $(CMOCKA_LIBS)
 test_color_SOURCES = test/test_color.c test/test_helpers.c color.c color_themes.c slist.c global.c
