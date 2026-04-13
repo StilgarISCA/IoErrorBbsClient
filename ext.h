@@ -55,6 +55,7 @@ extern unsigned char arySavedWhoNames[150][21]; /* array for saved who list */
 extern int savedWhoCount;                       /* pointer to end of saved who list */
 extern slist *enemyList;                        /* 'enemy' list */
 extern slist *whoList;                          /* saved who list */
+extern char aryFilterLine[320];                 /* current filter line buffer */
 extern char arySavedHeader[160];                /* for saving our message header */
 
 extern char aryMacro[128][72];          /* array for macros */

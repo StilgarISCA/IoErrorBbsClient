@@ -55,6 +55,7 @@ extern void
    filterUrl P( (const char *)),
    beginUrlDetectionReport P( (void)),
    emitUrlDetectionReport P( (void)),
+   emitTransformedAnsiSequence P( (const char *, size_t, int, int)),
    printWithOsc8Links P( (const char *)),
    filterWhoList P( (int)),
    findHome P( (void)),

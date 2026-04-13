@@ -36,6 +36,7 @@ bbs_SOURCES = \
 	edit.c \
 	filter.c \
 	filter_express.c \
+	filter_post.c \
 	filter_who.c \
 	getline.c \
 	global.c \
@@ -68,7 +69,7 @@ test_queue_LDADD = $(CMOCKA_LIBS)
 test_slist_SOURCES = test/test_slist.c test/test_helpers.c slist.c
 test_slist_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_slist_LDADD = $(CMOCKA_LIBS)
-test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility_input.c utility_string.c global.c
+test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility_error.c utility_input.c utility_string.c global.c
 test_utility_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_utility_LDADD = $(CMOCKA_LIBS)
 test_bbsrc_SOURCES = test/test_bbsrc.c test/test_helpers.c bbsrc.c bbsrc_parse.c queue.c slist.c global.c
@@ -80,7 +81,7 @@ test_getline_LDADD = $(CMOCKA_LIBS)
 test_inkey_SOURCES = test/test_inkey.c test/test_helpers.c inkey.c global.c
 test_inkey_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_inkey_LDADD = $(CMOCKA_LIBS)
-test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter.c filter_express.c filter_who.c queue.c slist.c global.c
+test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter.c filter_express.c filter_post.c filter_who.c queue.c slist.c global.c
 test_filter_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_filter_LDADD = $(CMOCKA_LIBS)
 test_color_SOURCES = test/test_color.c test/test_helpers.c color.c color_themes.c slist.c global.c
