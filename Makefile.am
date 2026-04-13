@@ -44,11 +44,13 @@ bbs_SOURCES = \
 	slist.c \
 	sysio.c \
 	telnet.c \
+	utility_args.c \
 	utility_color.c \
 	utility_compare.c \
-	utility.c \
 	utility_error.c \
 	utility_input.c \
+	utility_line.c \
+	utility_password.c \
 	utility_send.c \
 	utility_string.c \
 	unix.c \
@@ -64,7 +66,7 @@ test_queue_LDADD = $(CMOCKA_LIBS)
 test_slist_SOURCES = test/test_slist.c test/test_helpers.c slist.c
 test_slist_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_slist_LDADD = $(CMOCKA_LIBS)
-test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility.c utility_error.c utility_input.c utility_string.c global.c
+test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility_input.c utility_string.c global.c
 test_utility_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_utility_LDADD = $(CMOCKA_LIBS)
 test_bbsrc_SOURCES = test/test_bbsrc.c test/test_helpers.c bbsrc.c bbsrc_parse.c queue.c slist.c global.c
@@ -128,16 +130,9 @@ cppcheck:
 	@if ! command -v cppcheck >/dev/null 2>&1; then \
 		echo "cppcheck is not installed. Install it with: brew install cppcheck"; \
 		exit 1; \
-	fi
-	@if [ -f compile_commands.json ]; then \
-		cppcheck --project=compile_commands.json \
-			--enable=warning,style,performance,portability \
-			--inconclusive; \
-	else \
-		echo "compile_commands.json not found; analyzing bbs sources directly"; \
-		cppcheck --enable=warning,style,performance,portability \
-			--inconclusive --std=c11 -DHAVE_CONFIG_H -I. $(bbs_SOURCES); \
-	fi
+	fi; \
+	cppcheck --enable=warning,style,performance,portability \
+		--inconclusive --std=c11 -DHAVE_CONFIG_H -I. $(bbs_SOURCES)
 
 scan-build:
 	@SCAN_BUILD_BIN="$$(command -v scan-build 2>/dev/null || true)"; \
