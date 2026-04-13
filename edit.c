@@ -752,20 +752,119 @@ static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputCh
    return false;
 }
 
+typedef struct
+{
+   size_t lineStartIndex;
+   size_t lastWrapIndex;
+   int lineWidth;
+   int lineNumber;
+   int totalWidth;
+   bool didWrapLongLine;
+} CheckFileState;
+
+static int nextLineWidth( int currentWidth, int inputChar )
+{
+   if ( inputChar == TAB )
+   {
+      return ( currentWidth + 8 ) & 0xf8;
+   }
+
+   return currentWidth + 1;
+}
+
+static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
+                                  size_t endIndex )
+{
+   int lineWidth = 0;
+   size_t itemIndex;
+
+   for ( itemIndex = startIndex; itemIndex < endIndex; itemIndex++ )
+   {
+      lineWidth = nextLineWidth( lineWidth, ptrText[itemIndex] );
+   }
+
+   return lineWidth;
+}
+
+static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
+                                 size_t endIndex )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = endIndex; itemIndex > startIndex; itemIndex-- )
+   {
+      if ( ptrText[itemIndex - 1] == ' ' )
+      {
+         return itemIndex - 1;
+      }
+   }
+
+   return SIZE_MAX;
+}
+
+static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText,
+                               size_t *ptrNormalizedLength, int inputChar )
+{
+   int updatedWidth;
+
+   if ( inputChar == '\r' || inputChar == '\n' )
+   {
+      ptrNormalizedText[( *ptrNormalizedLength )++] = (char)inputChar;
+      ptrState->lineStartIndex = *ptrNormalizedLength;
+      ptrState->lastWrapIndex = SIZE_MAX;
+      ptrState->lineWidth = 0;
+      ptrState->lineNumber++;
+      return true;
+   }
+
+   ptrNormalizedText[( *ptrNormalizedLength )++] = (char)inputChar;
+   updatedWidth = nextLineWidth( ptrState->lineWidth, inputChar );
+   ptrState->totalWidth += updatedWidth - ptrState->lineWidth;
+   ptrState->lineWidth = updatedWidth;
+
+   if ( inputChar == ' ' )
+   {
+      ptrState->lastWrapIndex = *ptrNormalizedLength - 1;
+   }
+
+   if ( ptrState->lineWidth <= 79 )
+   {
+      return true;
+   }
+
+   if ( ptrState->lastWrapIndex == SIZE_MAX ||
+        ptrState->lastWrapIndex < ptrState->lineStartIndex )
+   {
+      return false;
+   }
+
+   ptrNormalizedText[ptrState->lastWrapIndex] = '\n';
+   ptrState->didWrapLongLine = true;
+   ptrState->lineNumber++;
+   ptrState->lineStartIndex = ptrState->lastWrapIndex + 1;
+   ptrState->lineWidth = calculateDisplayWidth( ptrNormalizedText,
+                                                ptrState->lineStartIndex,
+                                                *ptrNormalizedLength );
+   ptrState->lastWrapIndex = findLastWrapIndex( ptrNormalizedText,
+                                                ptrState->lineStartIndex,
+                                                *ptrNormalizedLength );
+
+   return ptrState->lineWidth <= 79;
+}
+
 /*
  * Checks the file for lines longer than 79 characters, unprintable characters,
  * or the file itself being too long. Supported UTF-8 typographic punctuation
- * is normalized to ASCII in place. Returns 1 if the file still has problems
- * and cannot be saved as is, 0 otherwise.
+ * is normalized to ASCII in place. Long lines are wrapped automatically at
+ * spaces when that can be done safely. Returns 1 if the file still has
+ * problems and cannot be saved as is, 0 otherwise.
  */
 int checkFile( FILE *ptrMessageFile )
 {
+   CheckFileState fileState;
    char *ptrNormalizedText;
    long fileSize;
    size_t normalizedLength;
-   int count = 0;
-   int line = 1;
-   int total = 0;
    bool shouldRewriteFile = false;
 
    if ( fseek( ptrMessageFile, 0L, SEEK_END ) != 0 )
@@ -784,6 +883,12 @@ int checkFile( FILE *ptrMessageFile )
       fatalExit( "Out of memory validating edit file", "Edit file error" );
       return 1;
    }
+   fileState.lineStartIndex = 0;
+   fileState.lastWrapIndex = SIZE_MAX;
+   fileState.lineWidth = 0;
+   fileState.lineNumber = 1;
+   fileState.totalWidth = 0;
+   fileState.didWrapLongLine = false;
 
    rewind( ptrMessageFile );
    while ( !feof( ptrMessageFile ) )
@@ -807,19 +912,14 @@ int checkFile( FILE *ptrMessageFile )
             shouldRewriteFile = true;
             for ( replacementIndex = 0; replacementIndex < replacementLength; replacementIndex++ )
             {
-               ptrNormalizedText[normalizedLength++] = aryReplacementText[replacementIndex];
-               if ( aryReplacementText[replacementIndex] == TAB )
-               {
-                  count = ( count + 8 ) & 0xf8;
-               }
-               else
-               {
-                  count++;
-               }
-               if ( count > 79 )
+               if ( !appendCheckedChar( &fileState,
+                                        ptrNormalizedText,
+                                        &normalizedLength,
+                                        aryReplacementText[replacementIndex] ) )
                {
                   free( ptrNormalizedText );
-                  printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
+                  printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
+                          fileState.lineNumber );
                   return ( 1 );
                }
             }
@@ -828,39 +928,36 @@ int checkFile( FILE *ptrMessageFile )
          else if ( ( inputChar >= 0 && inputChar < 32 && inputChar != TAB ) || inputChar >= DEL )
          {
             free( ptrNormalizedText );
-            printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n", line );
+            printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n",
+                    fileState.lineNumber );
             return ( 1 );
          }
 
-         if ( inputChar == TAB )
-         {
-            count = ( count + 8 ) & 0xf8;
-         }
-         else
-         {
-            count++;
-         }
-         if ( count > 79 )
+         if ( !appendCheckedChar( &fileState,
+                                  ptrNormalizedText,
+                                  &normalizedLength,
+                                  inputChar ) )
          {
             free( ptrNormalizedText );
-            printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n", line );
+            printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
+                    fileState.lineNumber );
             return ( 1 );
          }
       }
       else
       {
-         total += count;
-         count = 0;
-         line++;
+         appendCheckedChar( &fileState, ptrNormalizedText, &normalizedLength, inputChar );
       }
-
-      ptrNormalizedText[normalizedLength++] = (char)inputChar;
    }
-   if ( total > 48800 )
+   if ( fileState.totalWidth > 48800 )
    {
       free( ptrNormalizedText );
       printf( "\r\n[Warning:  message too long, edit file before saving]\r\n\n" );
       return ( 1 );
+   }
+   if ( fileState.didWrapLongLine )
+   {
+      shouldRewriteFile = true;
    }
    if ( shouldRewriteFile )
    {
@@ -879,6 +976,10 @@ int checkFile( FILE *ptrMessageFile )
       }
       fflush( ptrMessageFile );
       rewind( ptrMessageFile );
+      if ( fileState.didWrapLongLine )
+      {
+         printf( "\r\n[Wrapped long lines while saving]\r\n\n" );
+      }
    }
    free( ptrNormalizedText );
    return ( 0 );

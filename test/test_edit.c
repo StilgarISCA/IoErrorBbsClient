@@ -224,6 +224,55 @@ static void checkFile_WhenLineExceeds79Chars_ReturnsOne( void **state )
    fclose( ptrMessageFile );
 }
 
+static void checkFile_WhenLongLineHasSpaces_WrapsAndReturnsZero( void **state )
+{
+   FILE *ptrMessageFile;
+   char aryResult[256];
+   int result;
+
+   (void)state;
+
+   resetState();
+
+   ptrMessageFile = tmpfile();
+   if ( ptrMessageFile == NULL )
+   {
+      fail_msg( "tmpfile failed in line-wrap test setup" );
+      return;
+   }
+   if ( fputs( "This draft line is intentionally long enough to require wrapping when the file is saved automatically.\n",
+               ptrMessageFile ) == EOF )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Arrange failed: unable to write wrapable long line fixture" );
+      return;
+   }
+   fflush( ptrMessageFile );
+
+   result = checkFile( ptrMessageFile );
+
+   if ( result != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "checkFile should auto-wrap long prose lines; got %d", result );
+      return;
+   }
+   if ( !tryReadFileIntoBuffer( ptrMessageFile, aryResult, sizeof( aryResult ) ) )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "Assert failed: unable to read wrapped message text back from temp file" );
+      return;
+   }
+   if ( strchr( aryResult, '\n' ) == NULL || strcmp( aryResult, "This draft line is intentionally long enough to require wrapping when the file\nis saved automatically.\n" ) != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "checkFile should wrap long prose lines at spaces; got '%s'", aryResult );
+      return;
+   }
+
+   fclose( ptrMessageFile );
+}
+
 static void checkFile_WhenIllegalControlCharacterPresent_ReturnsOne( void **state )
 {
    // Arrange
@@ -503,6 +552,7 @@ int main( void )
    const struct CMUnitTest aryTests[] = {
       cmocka_unit_test( checkFile_WhenMessageIsValid_ReturnsZero ),
       cmocka_unit_test( checkFile_WhenLineExceeds79Chars_ReturnsOne ),
+      cmocka_unit_test( checkFile_WhenLongLineHasSpaces_WrapsAndReturnsZero ),
       cmocka_unit_test( checkFile_WhenIllegalControlCharacterPresent_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTabExpansionPushesPast79_ReturnsOne ),
       cmocka_unit_test( checkFile_WhenTotalMessageSizeExceedsLimit_ReturnsOne ),
