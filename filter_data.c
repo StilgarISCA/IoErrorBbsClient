@@ -63,26 +63,22 @@ void filterData( register int inputChar )
       char *ptrCursor = aryFilterLine;
 
       while ( *ptrCursor )
-      { /* Find end of string */
+      {
          ptrCursor++;
       }
 
-      *ptrCursor++ = (char)inputChar; /* Copy character to end of string */
+      *ptrCursor++ = (char)inputChar;
       *ptrCursor = 0;
    }
 
-   /* Auto-answer ANSI question */
-   if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt && strstr( aryFilterLine, "Are you on an ANSI" ) )
+   if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt &&
+        strstr( aryFilterLine, "Are you on an ANSI" ) )
    {
       netPutChar( 'y' );
       byte++;
-      *aryFilterLine = 0; /* Kill it; we don't need it */
+      *aryFilterLine = 0;
    }
 
-   /* Automatic X reply */
-   /*  if (sendingXState == SX_SEND_NEXT && xlandQueue->itemCount && (isAway || isXland))
-   sendAnX();
-   */
    if ( sendingXState == SX_SEND_NEXT && !*aryFilterLine && inputChar == '\r' )
    {
       sendingXState = SX_NOT;
@@ -92,8 +88,8 @@ void filterData( register int inputChar )
       }
    }
 
-   /* Change color for end of more prompt */
-   if ( flagsConfiguration.shouldUseAnsi && flagsConfiguration.isMorePromptActive && inputChar == ' ' )
+   if ( flagsConfiguration.shouldUseAnsi &&
+        flagsConfiguration.isMorePromptActive && inputChar == ' ' )
    {
       char aryAnsiSequence[32];
 
@@ -103,7 +99,6 @@ void filterData( register int inputChar )
       stdPrintf( "%s", aryAnsiSequence );
    }
 
-   /* Parse ANSI sequences */
    if ( bufferedAnsiSequenceLength > 0 )
    {
       if ( bufferedAnsiSequenceLength < sizeof( aryBufferedAnsiSequence ) )
@@ -120,7 +115,7 @@ void filterData( register int inputChar )
       return;
    }
    if ( inputChar == '\033' )
-   { /* Escape character */
+   {
       char aryAnsiSequence[32];
 
       formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
@@ -147,10 +142,9 @@ void filterData( register int inputChar )
    }
    else
    {
-      pendingLinesToEat = 0; /* pendingLinesToEat should never be less than 0 */
+      pendingLinesToEat = 0;
       stdPutChar( inputChar );
    }
-   return;
 }
 
 void reprintLine( void )
