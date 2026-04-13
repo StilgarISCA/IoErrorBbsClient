@@ -11,26 +11,18 @@
 #include "ext.h"
 
 static const char replymsg[] = "+!R ";
-
-void replyMessage( void );
-void sendAnX( void );
-void sendTrackedBuffer( const char *ptrBuffer, size_t length );
-void sendTrackedChar( int inputChar );
-void sendTrackedNewline( void );
+static void sendTrackedCString( const char *ptrText );
 
 /* fake getFiveLines for the bbs */
 void replyMessage( void )
 {
    int lineIndex;
-   int charIndex;
 
    sendBlock();
-   lineIndex = (int)strlen( replymsg );
-   sendTrackedBuffer( replymsg, (size_t)lineIndex );
+   sendTrackedCString( replymsg );
    for ( lineIndex = 0; lineIndex < 5 && *aryAwayMessageLines[lineIndex]; lineIndex++ )
    {
-      charIndex = (int)strlen( aryAwayMessageLines[lineIndex] );
-      sendTrackedBuffer( aryAwayMessageLines[lineIndex], (size_t)charIndex );
+      sendTrackedCString( aryAwayMessageLines[lineIndex] );
       sendTrackedNewline();
       stdPrintf( "%s\r\n", aryAwayMessageLines[lineIndex] );
    }
@@ -63,6 +55,11 @@ void sendTrackedChar( int inputChar )
 {
    netPutChar( inputChar );
    byte++;
+}
+
+static void sendTrackedCString( const char *ptrText )
+{
+   sendTrackedBuffer( ptrText, strlen( ptrText ) );
 }
 
 void sendTrackedNewline( void )

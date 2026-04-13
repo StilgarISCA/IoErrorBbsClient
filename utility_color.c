@@ -10,11 +10,11 @@
 #include "defs.h"
 #include "ext.h"
 
-#define ifansi if ( flagsConfiguration.shouldUseAnsi )
+static void printAnsiColorValue( int colorValue, bool isBackground );
+static bool tryPrintLegacyAtColor( int inputChar );
 
 int colorize( const char *str )
 {
-   char aryAnsiSequence[32];
    const char *ptrText;
 
    for ( ptrText = str; *ptrText; ptrText++ )
@@ -27,141 +27,9 @@ int colorize( const char *str )
          }
          else
          {
-            switch ( *++ptrText )
+            if ( !tryPrintLegacyAtColor( *++ptrText ) )
             {
-               case '@':
-                  putchar( (int)'@' );
-                  break;
-               case 'k':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 0 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'K':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 0 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'r':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 1 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'R':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 1 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'g':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 2 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'G':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 2 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'y':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 3 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'Y':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 3 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'b':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 4 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'B':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 4 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'm':
-               case 'p':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 5 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'M':
-               case 'P':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 5 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'c':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 6 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'C':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 6 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'w':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 7 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'W':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 7 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'd':
-                  ifansi
-                  {
-                     formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 9 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               case 'D':
-                  ifansi
-                  {
-                     formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), 9 );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  break;
-               default:
-                  break;
+               /* Ignore unknown @-tokens for compatibility with the legacy formatter. */
             }
          }
       }
@@ -173,7 +41,7 @@ int colorize( const char *str )
    return 1;
 }
 
-void printAnsiForegroundColorValue( int colorValue )
+static void printAnsiColorValue( int colorValue, bool isBackground )
 {
    char aryAnsiSequence[32];
 
@@ -182,9 +50,20 @@ void printAnsiForegroundColorValue( int colorValue )
       return;
    }
 
-   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                 colorValue );
+   if ( isBackground )
+   {
+      formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), colorValue );
+   }
+   else
+   {
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), colorValue );
+   }
    stdPrintf( "%s", aryAnsiSequence );
+}
+
+void printAnsiForegroundColorValue( int colorValue )
+{
+   printAnsiColorValue( colorValue, false );
 }
 
 void printThemedMnemonicText( const char *ptrText, int defaultColor )
@@ -217,5 +96,73 @@ void printThemedMnemonicText( const char *ptrText, int defaultColor )
 
       stdPutChar( *ptrScan );
       ptrScan++;
+   }
+}
+
+static bool tryPrintLegacyAtColor( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case '@':
+         stdPutChar( '@' );
+         return true;
+      case 'k':
+         printAnsiColorValue( 0, true );
+         return true;
+      case 'K':
+         printAnsiColorValue( 0, false );
+         return true;
+      case 'r':
+         printAnsiColorValue( 1, true );
+         return true;
+      case 'R':
+         printAnsiColorValue( 1, false );
+         return true;
+      case 'g':
+         printAnsiColorValue( 2, true );
+         return true;
+      case 'G':
+         printAnsiColorValue( 2, false );
+         return true;
+      case 'y':
+         printAnsiColorValue( 3, true );
+         return true;
+      case 'Y':
+         printAnsiColorValue( 3, false );
+         return true;
+      case 'b':
+         printAnsiColorValue( 4, true );
+         return true;
+      case 'B':
+         printAnsiColorValue( 4, false );
+         return true;
+      case 'm':
+      case 'p':
+         printAnsiColorValue( 5, true );
+         return true;
+      case 'M':
+      case 'P':
+         printAnsiColorValue( 5, false );
+         return true;
+      case 'c':
+         printAnsiColorValue( 6, true );
+         return true;
+      case 'C':
+         printAnsiColorValue( 6, false );
+         return true;
+      case 'w':
+         printAnsiColorValue( 7, true );
+         return true;
+      case 'W':
+         printAnsiColorValue( 7, false );
+         return true;
+      case 'd':
+         printAnsiColorValue( 9, true );
+         return true;
+      case 'D':
+         printAnsiColorValue( 9, false );
+         return true;
+      default:
+         return false;
    }
 }
