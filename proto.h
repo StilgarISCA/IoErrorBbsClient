@@ -29,6 +29,8 @@ extern void
    arguments P( (int, char **)),
    brilliantColors P( (void)),
    configBbsRc P( (void)),
+   configureHotkeys P( (void)),
+   configureMacros P( (void)),
    colorConfig P( (void)),
    colorblindColors P( (void)),
    hotDogColors P( (void)),

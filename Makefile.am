@@ -27,6 +27,7 @@ bbs_SOURCES = \
 	color.c \
 	color_themes.c \
 	config.c \
+	config_keys.c \
 	config_users.c \
 	edit.c \
 	filter.c \
@@ -71,7 +72,7 @@ test_filter_LDADD = $(CMOCKA_LIBS)
 test_color_SOURCES = test/test_color.c test/test_helpers.c color.c color_themes.c slist.c global.c
 test_color_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_color_LDADD = $(CMOCKA_LIBS)
-test_config_SOURCES = test/test_config.c test/test_helpers.c config.c config_users.c slist.c global.c
+test_config_SOURCES = test/test_config.c test/test_helpers.c config.c config_keys.c config_users.c slist.c global.c
 test_config_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_config_LDADD = $(CMOCKA_LIBS)
 test_sysio_SOURCES = test/test_sysio.c test/test_helpers.c sysio.c global.c
