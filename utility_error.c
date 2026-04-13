@@ -10,6 +10,9 @@
 #include "defs.h"
 #include "ext.h"
 
+static void reopenTempFileForShutdown( void );
+static void waitForChildShutdown( void );
+
 noreturn void fatalExit( const char *message, const char *heading )
 {
    fflush( stdout );
@@ -27,9 +30,19 @@ noreturn void fatalPerror( const char *error, const char *heading )
    myExit();
 }
 
-noreturn void myExit( void )
+static void reopenTempFileForShutdown( void )
 {
-   fflush( stdout );
+   if ( flagsConfiguration.isLastSave )
+   {
+      if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
+      {
+         sPerror( "myExit: reopen temp file before exit", "Shutdown warning" );
+      }
+   }
+}
+
+static void waitForChildShutdown( void )
+{
    if ( childPid )
    {
       /* Wait for child to terminate */
@@ -40,6 +53,12 @@ noreturn void myExit( void )
          sigpause( 0 );
       }
    }
+}
+
+noreturn void myExit( void )
+{
+   fflush( stdout );
+   waitForChildShutdown();
    resetTerm();
 #ifdef HAVE_OPENSSL
    if ( isSsl )
@@ -47,13 +66,7 @@ noreturn void myExit( void )
       killSsl();
    }
 #endif
-   if ( flagsConfiguration.isLastSave )
-   {
-      if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
-      {
-         sPerror( "myExit: reopen temp file before exit", "Shutdown warning" );
-      }
-   }
+   reopenTempFileForShutdown();
    deinitialize();
    exit( 0 );
 }
