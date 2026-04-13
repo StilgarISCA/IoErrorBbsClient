@@ -10,6 +10,9 @@
 #include "defs.h"
 #include "ext.h"
 
+static int printYesNoResult( int inputChar );
+static int readValidatedInput( const char *allowedChars, bool shouldFoldInput );
+
 void handleInvalidInput( unsigned int *ptrInvalidCount )
 {
    if ( ( *ptrInvalidCount )++ )
@@ -97,6 +100,18 @@ int more( int *line, int percentComplete )
    return ( *line < 0 ? -1 : 0 );
 }
 
+static int printYesNoResult( int inputChar )
+{
+   if ( inputChar == 'y' || inputChar == 'Y' )
+   {
+      stdPrintf( "Yes\r\n" );
+      return 1;
+   }
+
+   stdPrintf( "No\r\n" );
+   return 0;
+}
+
 int readFoldedKey( void )
 {
    int inputChar;
@@ -109,13 +124,22 @@ int readFoldedKey( void )
    return inputChar;
 }
 
-int readValidatedKey( const char *allowedChars )
+static int readValidatedInput( const char *allowedChars, bool shouldFoldInput )
 {
    unsigned int invalid = 0;
 
    while ( true )
    {
-      int inputChar = inKey();
+      int inputChar;
+
+      if ( shouldFoldInput )
+      {
+         inputChar = readFoldedKey();
+      }
+      else
+      {
+         inputChar = inKey();
+      }
       if ( findChar( allowedChars, inputChar ) )
       {
          return inputChar;
@@ -124,19 +148,14 @@ int readValidatedKey( const char *allowedChars )
    }
 }
 
+int readValidatedKey( const char *allowedChars )
+{
+   return readValidatedInput( allowedChars, false );
+}
+
 int readValidatedMenuKey( const char *allowedCharsLowercase )
 {
-   unsigned int invalid = 0;
-
-   while ( true )
-   {
-      int inputChar = readFoldedKey();
-      if ( findChar( allowedCharsLowercase, inputChar ) )
-      {
-         return inputChar;
-      }
-      handleInvalidInput( &invalid );
-   }
+   return readValidatedInput( allowedCharsLowercase, true );
 }
 
 int yesNo( void )
@@ -144,16 +163,7 @@ int yesNo( void )
    register int inputChar;
 
    inputChar = readValidatedKey( "nNyY" );
-   if ( inputChar == 'y' || inputChar == 'Y' )
-   {
-      stdPrintf( "Yes\r\n" );
-      return ( 1 );
-   }
-   else
-   {
-      stdPrintf( "No\r\n" );
-      return ( 0 );
-   }
+   return printYesNoResult( inputChar );
 }
 
 int yesNoDefault( int defaultAnswer )
@@ -165,15 +175,10 @@ int yesNoDefault( int defaultAnswer )
    {
       inputChar = ( defaultAnswer ? 'Y' : 'N' );
    }
-   if ( inputChar == 'y' || inputChar == 'Y' )
+   if ( inputChar == 'y' || inputChar == 'Y' ||
+        inputChar == 'n' || inputChar == 'N' )
    {
-      stdPrintf( "Yes\r\n" );
-      return ( 1 );
-   }
-   else if ( inputChar == 'n' || inputChar == 'N' )
-   {
-      stdPrintf( "No\r\n" );
-      return ( 0 );
+      return printYesNoResult( inputChar );
    }
    else
    {
