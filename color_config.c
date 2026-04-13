@@ -82,6 +82,10 @@ static const PresetMenuOption aryPresetMenuOptions[] =
 static const char *A_FRIEND = "Example Friend";
 static const char *A_USER = "Example User";
 
+static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
+                                    const char *ptrPreviewName );
+static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
+                                 int *ptrNameColor, const char *ptrPreviewName );
 static const PickerColorOption *findPickerColorOption( const PickerColorOption *ptrOptions,
                                                        size_t itemCount,
                                                        int keyChar );
@@ -97,18 +101,19 @@ static void printForegroundPickerMenu( void );
 static void printGeneralColorPreview( void );
 static void printInputColorPreview( void );
 static void printPresetMenuItem( const PresetMenuOption *ptrOption );
+static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
+                                                     const PickerColorOption *ptrOptions,
+                                                     size_t itemCount,
+                                                     void ( *printMenu )( void ) );
 
 int backgroundPicker( void )
 {
    const PickerColorOption *ptrOption;
-   int inputChar;
 
-   printBackgroundPickerMenu();
-
-   inputChar = readValidatedMenuKey( COLOR_BACKGROUND_KEYS );
-   ptrOption = findPickerColorOption( aryBackgroundPickerOptions,
-                                      sizeof( aryBackgroundPickerOptions ) / sizeof( aryBackgroundPickerOptions[0] ),
-                                      inputChar );
+   ptrOption = readPickerSelection( COLOR_BACKGROUND_KEYS,
+                                    aryBackgroundPickerOptions,
+                                    sizeof( aryBackgroundPickerOptions ) / sizeof( aryBackgroundPickerOptions[0] ),
+                                    printBackgroundPickerMenu );
    if ( ptrOption == NULL )
    {
       return 0;
@@ -190,14 +195,11 @@ void colorOptions( void )
 int colorPicker( void )
 {
    const PickerColorOption *ptrOption;
-   int inputChar;
 
-   printForegroundPickerMenu();
-
-   inputChar = readValidatedMenuKey( COLOR_FOREGROUND_KEYS );
-   ptrOption = findPickerColorOption( aryForegroundPickerOptions,
-                                      sizeof( aryForegroundPickerOptions ) / sizeof( aryForegroundPickerOptions[0] ),
-                                      inputChar );
+   ptrOption = readPickerSelection( COLOR_FOREGROUND_KEYS,
+                                    aryForegroundPickerOptions,
+                                    sizeof( aryForegroundPickerOptions ) / sizeof( aryForegroundPickerOptions[0] ),
+                                    printForegroundPickerMenu );
    if ( ptrOption == NULL )
    {
       return 0;
@@ -258,10 +260,21 @@ char expressColorMenu( void )
 
 void expressFriendColorConfig( void )
 {
+   configureExpressColors( &color.expressFriendText, &color.expressFriendName,
+                           A_FRIEND );
+}
+
+void expressUserColorConfig( void )
+{
+   configureExpressColors( &color.expressText, &color.expressName, A_USER );
+}
+
+static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
+                                    const char *ptrPreviewName )
+{
    while ( true )
    {
-      printExpressColorPreview( color.expressFriendText,
-                                color.expressFriendName, A_FRIEND );
+      printExpressColorPreview( *ptrTextColor, *ptrNameColor, ptrPreviewName );
 
       switch ( expressColorMenu() )
       {
@@ -270,10 +283,10 @@ void expressFriendColorConfig( void )
          case '\n':
             return;
          case 'n':
-            color.expressFriendName = colorPicker();
+            *ptrNameColor = colorPicker();
             break;
          case 't':
-            color.expressFriendText = colorPicker();
+            *ptrTextColor = colorPicker();
             break;
          default:
             break;
@@ -281,24 +294,28 @@ void expressFriendColorConfig( void )
    }
 }
 
-void expressUserColorConfig( void )
+static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
+                                 int *ptrNameColor, const char *ptrPreviewName )
 {
    while ( true )
    {
-      printExpressColorPreview( color.expressText, color.expressName,
-                                A_USER );
+      postColorPreview( *ptrDateColor, *ptrTextColor, *ptrNameColor,
+                        ptrPreviewName );
 
-      switch ( expressColorMenu() )
+      switch ( postColorMenu() )
       {
          case 'q':
          case ' ':
          case '\n':
             return;
+         case 'd':
+            *ptrDateColor = colorPicker();
+            break;
          case 'n':
-            color.expressName = colorPicker();
+            *ptrNameColor = colorPicker();
             break;
          case 't':
-            color.expressText = colorPicker();
+            *ptrTextColor = colorPicker();
             break;
          default:
             break;
@@ -455,58 +472,14 @@ char postColorMenu( void )
 
 void postFriendColorConfig( void )
 {
-   while ( true )
-   {
-      postColorPreview( color.postFriendDate, color.postFriendText,
-                        color.postFriendName, A_FRIEND );
-
-      switch ( postColorMenu() )
-      {
-         case 'q':
-         case ' ':
-         case '\n':
-            return;
-         case 'd':
-            color.postFriendDate = colorPicker();
-            break;
-         case 'n':
-            color.postFriendName = colorPicker();
-            break;
-         case 't':
-            color.postFriendText = colorPicker();
-            break;
-         default:
-            break;
-      }
-   }
+   configurePostColors( &color.postFriendDate, &color.postFriendText,
+                        &color.postFriendName, A_FRIEND );
 }
 
 void postUserColorConfig( void )
 {
-   while ( true )
-   {
-      postColorPreview( color.postDate, color.postText,
-                        color.postName, A_USER );
-
-      switch ( postColorMenu() )
-      {
-         case 'q':
-         case ' ':
-         case '\n':
-            return;
-         case 'd':
-            color.postDate = colorPicker();
-            break;
-         case 'n':
-            color.postName = colorPicker();
-            break;
-         case 't':
-            color.postText = colorPicker();
-            break;
-         default:
-            break;
-      }
-   }
+   configurePostColors( &color.postDate, &color.postText,
+                        &color.postName, A_USER );
 }
 
 static void postColorPreview( int dateColor, int textColor, int nameColor,
@@ -665,6 +638,19 @@ static void printPresetMenuItem( const PresetMenuOption *ptrOption )
    stdPrintf( "%c", toupper( ptrOption->keyChar ) );
    printAnsiForegroundColorValue( ptrOption->textColor );
    stdPrintf( "%s\r\n", ptrOption->ptrLabel + 1 );
+}
+
+static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
+                                                     const PickerColorOption *ptrOptions,
+                                                     size_t itemCount,
+                                                     void ( *printMenu )( void ) )
+{
+   int inputChar;
+
+   printMenu();
+   inputChar = readValidatedMenuKey( ptrAllowedKeys );
+
+   return findPickerColorOption( ptrOptions, itemCount, inputChar );
 }
 
 char userOrFriend( void )
