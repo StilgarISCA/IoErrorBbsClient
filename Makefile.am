@@ -36,6 +36,7 @@ bbs_SOURCES = \
 	config_users.c \
 	edit.c \
 	edit_check.c \
+	edit_prompt.c \
 	filter_data.c \
 	filter_express.c \
 	filter_post.c \
@@ -95,7 +96,7 @@ test_config_LDADD = $(CMOCKA_LIBS)
 test_sysio_SOURCES = test/test_sysio.c test/test_helpers.c sysio.c global.c
 test_sysio_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_sysio_LDADD = $(CMOCKA_LIBS)
-test_edit_SOURCES = test/test_edit.c test/test_helpers.c edit.c edit_check.c global.c
+test_edit_SOURCES = test/test_edit.c test/test_helpers.c edit.c edit_check.c edit_prompt.c global.c
 test_edit_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_edit_LDADD = $(CMOCKA_LIBS)
 test_telnet_SOURCES = test/test_telnet.c test/test_helpers.c telnet.c queue.c global.c
