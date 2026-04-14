@@ -5,12 +5,15 @@
  */
 
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
 #include "network_globals.h"
-#include "proto.h"
 #include "sysio.h"
+#include "telnet.h"
 #include "unix.h"
+#include "utility.h"
 
 static bool terminalSupportsTitleBarUpdates( void )
 {

@@ -8,8 +8,8 @@
  * This file handles command-line argument parsing.
  */
 #include "defs.h"
+#include "client.h"
 #include "config_globals.h"
-#include "proto.h"
 
 /*
  * Process command line arguments.  argv[1] is an alternate host, if present,

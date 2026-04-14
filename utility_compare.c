@@ -8,7 +8,7 @@
  * This file handles comparison helpers used by lists and searches.
  */
 #include "defs.h"
-#include "proto.h"
+#include "utility.h"
 
 static int compareFriendNames( const friend *ptrLeft, const friend *ptrRight );
 static int compareStringPointers( const char *const *ptrLeft, const char *const *ptrRight );

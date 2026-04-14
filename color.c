@@ -6,8 +6,9 @@
 
 #include "defs.h"
 #include "client_globals.h"
+#include "color.h"
 #include "filter_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 typedef struct
 {

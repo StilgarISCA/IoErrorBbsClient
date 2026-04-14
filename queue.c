@@ -9,7 +9,6 @@
  */
 
 #include "defs.h"
-#include "proto.h"
 
 /* Make a queue containing itemCount objects of size size.  Return a pointer to
  * the queue or NULL if it could not be created.

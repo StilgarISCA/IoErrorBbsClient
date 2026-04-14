@@ -8,7 +8,6 @@
  * This file handles the legacy saved-password encoding helpers.
  */
 #include "defs.h"
-#include "proto.h"
 
 #ifdef ENABLE_SAVE_PASSWORD
 /*

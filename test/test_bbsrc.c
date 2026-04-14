@@ -13,7 +13,16 @@
 
 #include "defs.h"
 #include "ext.h"
-#include "proto.h"
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include "color.h"
+#include "config_menu.h"
+#include "edit.h"
+#include "filter.h"
+#include "getline_input.h"
+#include "telnet.h"
+#include "utility.h"
 #include "test_helpers.h"
 
 static int setupCallCount;

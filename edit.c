@@ -10,9 +10,12 @@
  * on a lost cause.  Use a real editor, that is what '.edit' is for!
  */
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
-#include "proto.h"
+#include "edit.h"
+#include "utility.h"
 
 void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
 {

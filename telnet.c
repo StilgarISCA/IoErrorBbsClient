@@ -29,10 +29,16 @@
  * a pisser when I realized I'd have to do that!
  */
 #include "defs.h"
+#include "browser.h"
+#include "client.h"
 #include "client_globals.h"
+#include "config_menu.h"
+#include "edit.h"
+#include "filter.h"
 #include "filter_globals.h"
+#include "getline_input.h"
 #include "network_globals.h"
-#include "proto.h"
+#include "utility.h"
 #include "telnet.h"
 
 int telReceive( int inputByte )

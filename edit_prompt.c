@@ -5,10 +5,16 @@
  */
 
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
+#include "edit.h"
+#include "filter.h"
 #include "filter_globals.h"
-#include "proto.h"
+#include "getline_input.h"
+#include "telnet.h"
+#include "utility.h"
 
 static void continueAfterExternalEdit( FILE **ptrMessageFile );
 static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath );

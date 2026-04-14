@@ -6,7 +6,8 @@
 
 #include "defs.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "color.h"
+#include "utility.h"
 
 static const char *COLOR_MAIN_MENU_KEYS = "pgisoxq \n";
 static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";

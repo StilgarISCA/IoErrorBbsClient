@@ -10,8 +10,10 @@
  */
 #include "defs.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
-#include "proto.h"
+#include "config_menu.h"
+#include "utility.h"
 
 static const char *CONFIG_MACRO_MENU_KEYS = "elq \n";
 

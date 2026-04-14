@@ -5,12 +5,15 @@
  */
 
 #include "defs.h"
+#include "browser.h"
 #include "client_globals.h"
+#include "color.h"
 #include "filter_globals.h"
 #include "network_globals.h"
-#include "proto.h"
+#include "filter.h"
 #include "sysio.h"
 #include "telnet.h"
+#include "utility.h"
 
 typedef struct
 {

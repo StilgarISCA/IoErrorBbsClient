@@ -15,7 +15,10 @@
  */
 #include "defs.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "color.h"
+#include "getline_input.h"
+#include "telnet.h"
+#include "utility.h"
 
 /*
  * Used for getting X's and profiles.  'which' tells which of those two we are

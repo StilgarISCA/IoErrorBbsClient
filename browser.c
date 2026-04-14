@@ -5,11 +5,15 @@
  */
 
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
+#include "filter.h"
 #include "filter_globals.h"
+#include "getline_input.h"
 #include "network_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 #include "browser.h"
 

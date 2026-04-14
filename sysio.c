@@ -8,11 +8,13 @@
  */
 
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
 #include "network_globals.h"
-#include "proto.h"
 #include "sysio.h"
+#include "utility.h"
 #include <stdarg.h>
 
 char swork[BUFSIZ]; /* temp buffer for color stripping */

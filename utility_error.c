@@ -8,9 +8,10 @@
  * This file handles fatal errors and shutdown cleanup.
  */
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
 #include "config_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 static void reopenTempFileForShutdown( void );
 static void waitForChildShutdown( void );

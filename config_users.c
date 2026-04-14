@@ -9,8 +9,12 @@
  * the client configuration menu.
  */
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "color.h"
+#include "config_menu.h"
+#include "getline_input.h"
+#include "utility.h"
 
 typedef enum
 {

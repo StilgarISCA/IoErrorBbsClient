@@ -10,8 +10,10 @@
 #include "defs.h"
 #include "client_globals.h"
 #include "config_globals.h"
+#include "getline_input.h"
 #include "network_globals.h"
-#include "proto.h"
+#include "telnet.h"
+#include "utility.h"
 
 static const char replymsg[] = "+!R ";
 static void sendTrackedCString( const char *ptrText );

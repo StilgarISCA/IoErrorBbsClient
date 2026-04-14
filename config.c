@@ -9,10 +9,14 @@
  * it should do the job.  Someone else can put a nicer interface on it.
  */
 #include "defs.h"
+#include "bbsrc.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
 #include "filter_globals.h"
-#include "proto.h"
+#include "config_menu.h"
+#include "utility.h"
 
 static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
 

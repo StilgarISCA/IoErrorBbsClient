@@ -5,8 +5,10 @@
  */
 
 #include "defs.h"
+#include "client.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "color.h"
+#include "utility.h"
 #include <stdarg.h>
 
 static const char *INFO_MENU_KEYS = "clwtq \n";

@@ -9,7 +9,8 @@
  */
 #include "defs.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "color.h"
+#include "utility.h"
 
 static void printAnsiColorValue( int colorValue, bool isBackground );
 static void printAnsiSequence( const char *ptrSequence );

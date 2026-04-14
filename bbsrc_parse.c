@@ -8,10 +8,14 @@
  * This file parses .bbsrc and applies the configured settings.
  */
 #include "defs.h"
+#include "bbsrc.h"
+#include "client.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
+#include "config_menu.h"
 #include "filter_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 #define MAX_LINE_LENGTH 512
 #define FRIEND_COMMAND_PREFIX_LEN 7

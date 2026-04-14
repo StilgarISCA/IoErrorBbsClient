@@ -5,7 +5,7 @@
 
 #include "defs.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "color.h"
 
 /*
  * defaultColors is called once with an arg of 1 before the bbsrc file is

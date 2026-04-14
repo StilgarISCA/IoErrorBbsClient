@@ -9,7 +9,7 @@
  */
 #include "defs.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );
 

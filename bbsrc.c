@@ -8,8 +8,10 @@
  * This file opens .bbsrc and legacy friends files.
  */
 #include "defs.h"
+#include "bbsrc.h"
+#include "client.h"
 #include "config_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 /*
  * Opens the bbsrc file, warning the user if it can't be opened or can't be

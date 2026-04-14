@@ -8,10 +8,13 @@
  * This file writes the client configuration back to .bbsrc.
  */
 #include "defs.h"
+#include "bbsrc.h"
 #include "client_globals.h"
+#include "color.h"
 #include "config_globals.h"
+#include "config_menu.h"
 #include "filter_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 static void writeAwayMessages( void );
 static void writeColorSettings( void );

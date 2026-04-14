@@ -5,7 +5,9 @@
  */
 
 #include "defs.h"
-#include "proto.h"
+#include "client.h"
+#include "edit.h"
+#include "utility.h"
 
 typedef struct
 {

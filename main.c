@@ -8,8 +8,10 @@
  * Program entry point.
  */
 #include "defs.h"
+#include "bbsrc.h"
+#include "client.h"
 #include "client_globals.h"
-#include "proto.h"
+#include "utility.h"
 
 int main( int argc, char *argv[] )
 {

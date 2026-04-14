@@ -8,7 +8,7 @@
  * This file handles line cleanup and normalized line reading.
  */
 #include "defs.h"
-#include "proto.h"
+#include "utility.h"
 
 int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
                         int *ptrLineNumber, int *ptrReadCount,

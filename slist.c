@@ -10,7 +10,7 @@
  */
 
 #include "defs.h"
-#include "proto.h"
+#include "utility.h"
 #include <stdarg.h>
 
 /*
