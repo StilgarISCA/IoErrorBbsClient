@@ -24,9 +24,15 @@ static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
 static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
                                  size_t endIndex );
 static int nextLineWidth( int currentWidth, int inputChar );
+static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber );
+static int reportLineTooLong( char *ptrNormalizedText, int lineNumber );
+static int reportMessageTooLong( char *ptrNormalizedText );
 static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
                                                char *ptrReplacementText,
                                                size_t *ptrReplacementLength );
+static int rewriteNormalizedFile( FILE *ptrMessageFile,
+                                  const char *ptrNormalizedText,
+                                  size_t normalizedLength );
 
 static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText,
                                size_t *ptrNormalizedLength, int inputChar )
@@ -92,6 +98,29 @@ static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
    return lineWidth;
 }
 
+static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber )
+{
+   free( ptrNormalizedText );
+   printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n",
+           lineNumber );
+   return 1;
+}
+
+static int reportLineTooLong( char *ptrNormalizedText, int lineNumber )
+{
+   free( ptrNormalizedText );
+   printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
+           lineNumber );
+   return 1;
+}
+
+static int reportMessageTooLong( char *ptrNormalizedText )
+{
+   free( ptrNormalizedText );
+   printf( "\r\n[Warning:  message too long, edit file before saving]\r\n\n" );
+   return 1;
+}
+
 /*
  * Checks the file for lines longer than 79 characters, unprintable characters,
  * or the file itself being too long. Supported UTF-8 typographic punctuation
@@ -134,8 +163,6 @@ int checkFile( FILE *ptrMessageFile )
    while ( !feof( ptrMessageFile ) )
    {
       int inputChar = getc( ptrMessageFile );
-      char aryReplacementText[3];
-      size_t replacementLength;
 
       if ( inputChar == EOF )
       {
@@ -144,6 +171,9 @@ int checkFile( FILE *ptrMessageFile )
 
       if ( inputChar != '\r' && inputChar != '\n' )
       {
+         char aryReplacementText[3];
+         size_t replacementLength;
+
          if ( tryNormalizeSupportedUtf8Sequence( ptrMessageFile, inputChar,
                                                  aryReplacementText,
                                                  &replacementLength ) )
@@ -158,10 +188,8 @@ int checkFile( FILE *ptrMessageFile )
                                         &normalizedLength,
                                         aryReplacementText[replacementIndex] ) )
                {
-                  free( ptrNormalizedText );
-                  printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
-                          fileState.lineNumber );
-                  return 1;
+                  return reportLineTooLong( ptrNormalizedText,
+                                            fileState.lineNumber );
                }
             }
             continue;
@@ -169,10 +197,8 @@ int checkFile( FILE *ptrMessageFile )
          else if ( ( inputChar >= 0 && inputChar < 32 && inputChar != TAB ) ||
                    inputChar >= DEL )
          {
-            free( ptrNormalizedText );
-            printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n",
-                    fileState.lineNumber );
-            return 1;
+            return reportIllegalCharacter( ptrNormalizedText,
+                                           fileState.lineNumber );
          }
 
          if ( !appendCheckedChar( &fileState,
@@ -180,10 +206,8 @@ int checkFile( FILE *ptrMessageFile )
                                   &normalizedLength,
                                   inputChar ) )
          {
-            free( ptrNormalizedText );
-            printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
-                    fileState.lineNumber );
-            return 1;
+            return reportLineTooLong( ptrNormalizedText,
+                                      fileState.lineNumber );
          }
       }
       else
@@ -194,9 +218,7 @@ int checkFile( FILE *ptrMessageFile )
    }
    if ( fileState.totalWidth > 48800 )
    {
-      free( ptrNormalizedText );
-      printf( "\r\n[Warning:  message too long, edit file before saving]\r\n\n" );
-      return 1;
+      return reportMessageTooLong( ptrNormalizedText );
    }
    if ( fileState.didWrapLongLine )
    {
@@ -204,22 +226,12 @@ int checkFile( FILE *ptrMessageFile )
    }
    if ( shouldRewriteFile )
    {
-      rewind( ptrMessageFile );
-      if ( ftruncate( fileno( ptrMessageFile ), 0 ) != 0 )
+      if ( rewriteNormalizedFile( ptrMessageFile, ptrNormalizedText,
+                                  normalizedLength ) )
       {
          free( ptrNormalizedText );
-         fatalPerror( "ftruncate", "Edit file error" );
-      }
-      if ( normalizedLength > 0 &&
-           fwrite( ptrNormalizedText, sizeof( char ), normalizedLength,
-                   ptrMessageFile ) != normalizedLength )
-      {
-         free( ptrNormalizedText );
-         tempFileError();
          return 1;
       }
-      fflush( ptrMessageFile );
-      rewind( ptrMessageFile );
       if ( fileState.didWrapLongLine )
       {
          printf( "\r\n[Wrapped long lines while saving]\r\n\n" );
@@ -253,6 +265,28 @@ static int nextLineWidth( int currentWidth, int inputChar )
    }
 
    return currentWidth + 1;
+}
+
+static int rewriteNormalizedFile( FILE *ptrMessageFile,
+                                  const char *ptrNormalizedText,
+                                  size_t normalizedLength )
+{
+   rewind( ptrMessageFile );
+   if ( ftruncate( fileno( ptrMessageFile ), 0 ) != 0 )
+   {
+      fatalPerror( "ftruncate", "Edit file error" );
+   }
+   if ( normalizedLength > 0 &&
+        fwrite( ptrNormalizedText, sizeof( char ), normalizedLength,
+                ptrMessageFile ) != normalizedLength )
+   {
+      tempFileError();
+      return 1;
+   }
+   fflush( ptrMessageFile );
+   rewind( ptrMessageFile );
+
+   return 0;
 }
 
 static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
