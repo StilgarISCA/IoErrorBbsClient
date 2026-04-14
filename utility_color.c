@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static void printAnsiColorValue( int colorValue, bool isBackground );
 static void printAnsiSequence( const char *ptrSequence );

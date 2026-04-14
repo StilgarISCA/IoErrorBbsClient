@@ -6,6 +6,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 #define MAX_ALIAS_INPUT_LENGTH 19
 #define MAX_USER_NAME_INPUT_LENGTH 40

@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static int printYesNoResult( int inputChar );
 static int readValidatedInput( const char *allowedChars, bool shouldFoldInput );

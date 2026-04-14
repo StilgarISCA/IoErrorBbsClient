@@ -6,6 +6,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static void continueAfterExternalEdit( FILE **ptrMessageFile );
 static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath );

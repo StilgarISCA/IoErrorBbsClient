@@ -10,6 +10,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static const char *CONFIG_MACRO_MENU_KEYS = "elq \n";
 

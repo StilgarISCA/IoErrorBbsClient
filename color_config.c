@@ -6,6 +6,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static const char *COLOR_MAIN_MENU_KEYS = "pgisoxq \n";
 static const char *COLOR_GENERAL_MENU_KEYS = "befntq \n";

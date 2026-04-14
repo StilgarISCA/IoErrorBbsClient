@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 int main( int argc, char *argv[] )
 {

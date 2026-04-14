@@ -17,6 +17,8 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
+#include "sysio.h"
 
 static int lastCarriageReturn = 0;
 

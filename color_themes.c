@@ -5,6 +5,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 /*
  * defaultColors is called once with an arg of 1 before the bbsrc file is

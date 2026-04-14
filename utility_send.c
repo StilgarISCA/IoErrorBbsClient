@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static const char replymsg[] = "+!R ";
 static void sendTrackedCString( const char *ptrText );

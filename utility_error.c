@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static void reopenTempFileForShutdown( void );
 static void waitForChildShutdown( void );

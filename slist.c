@@ -11,6 +11,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 #include <stdarg.h>
 
 /*

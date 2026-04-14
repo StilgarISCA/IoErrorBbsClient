@@ -6,6 +6,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
                                      const char *ptrTimeText, const char *ptrInfo );

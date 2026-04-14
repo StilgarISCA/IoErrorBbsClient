@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 #define SCREEN_READER_INFO \
    "Screen reader friendly mode keeps this client easier for VoiceOver and other\r\nscreen readers to follow.  You can change this later from the Options menu."

@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static int compareFriendNames( const friend *ptrLeft, const friend *ptrRight );
 static int compareStringPointers( const char *const *ptrLeft, const char *const *ptrRight );

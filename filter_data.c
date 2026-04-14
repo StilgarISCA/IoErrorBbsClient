@@ -6,6 +6,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 #include "telnet.h"
 
 static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength )

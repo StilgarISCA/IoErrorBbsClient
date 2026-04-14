@@ -30,6 +30,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 #include "telnet.h"
 
 int telReceive( int inputByte )

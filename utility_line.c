@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
                         int *ptrLineNumber, int *ptrReadCount,

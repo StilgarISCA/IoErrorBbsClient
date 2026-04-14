@@ -14,6 +14,7 @@
 #define _IN_UNIX_C
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 #include "unix.h"
 #include <wordexp.h>
 

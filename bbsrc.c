@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 /*
  * Opens the bbsrc file, warning the user if it can't be opened or can't be

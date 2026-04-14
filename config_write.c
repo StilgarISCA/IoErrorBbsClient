@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 static void writeAwayMessages( void );
 static void writeColorSettings( void );

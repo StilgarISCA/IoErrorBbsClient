@@ -9,6 +9,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 #define MAX_LINE_LENGTH 512
 #define FRIEND_COMMAND_PREFIX_LEN 7

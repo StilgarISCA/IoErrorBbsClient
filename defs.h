@@ -302,6 +302,4 @@ typedef struct
    int expressFriendName; /* X message from friend name color*/
 } Color;
 
-#include "proto.h"
-
 #endif /* DEFS_H_INCLUDED */

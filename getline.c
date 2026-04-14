@@ -15,6 +15,7 @@
  */
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
 
 /*
  * Used for getting X's and profiles.  'which' tells which of those two we are

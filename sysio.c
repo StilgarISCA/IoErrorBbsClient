@@ -9,6 +9,8 @@
 
 #include "defs.h"
 #include "ext.h"
+#include "proto.h"
+#include "sysio.h"
 #include <stdarg.h>
 
 char swork[BUFSIZ]; /* temp buffer for color stripping */
