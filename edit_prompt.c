@@ -7,6 +7,10 @@
 #include "defs.h"
 #include "ext.h"
 
+static void continueAfterExternalEdit( FILE **ptrMessageFile );
+static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath );
+static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
+                                      int commandChar );
 static void printEditorCommandPrompt( void )
 {
    char aryAnsiSequence[32];
@@ -66,6 +70,115 @@ static const char *resolveEditorCommand( void )
    return aryEditor;
 }
 
+static void continueAfterExternalEdit( FILE **ptrMessageFile )
+{
+   if ( flagsConfiguration.shouldUseAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                      lastColor, color.background,
+                                      flagsConfiguration.shouldUseBold );
+      printf( "%s", aryAnsiSequence );
+   }
+   printf( "[Editing complete]\r\n" );
+   if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )
+   {
+      fatalPerror( "aryEditor return: freopen(aryTempFileName, \"r+\")", "Edit file error" );
+   }
+   *ptrMessageFile = tempFile;
+   if ( checkFile( *ptrMessageFile ) )
+   {
+      fflush( stdout );
+      mySleep( 1 );
+   }
+}
+
+static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath )
+{
+   FILE *ptrCopyFile;
+   int inputChar;
+
+   ptrCopyFile = fopen( ptrInputPath, "r" );
+   if ( ptrCopyFile == NULL )
+   {
+      printf( "\r\n[Error:  named file does not exist]\r\n\n" );
+      return false;
+   }
+
+   while ( ( inputChar = getc( ptrCopyFile ) ) >= 0 )
+   {
+      if ( putc( inputChar, ptrMessageFile ) < 0 )
+      {
+         tempFileError();
+         fclose( ptrCopyFile );
+         return false;
+      }
+   }
+   if ( feof( ptrCopyFile ) && fflush( ptrMessageFile ) < 0 )
+   {
+      tempFileError();
+      fclose( ptrCopyFile );
+      return false;
+   }
+   fclose( ptrCopyFile );
+   return true;
+}
+
+static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
+                                      int commandChar )
+{
+   if ( !isupper( commandChar ) )
+   {
+      return true;
+   }
+
+   fseek( *ptrMessageFile, 0L, SEEK_END );
+   if ( ftell( *ptrMessageFile ) )
+   {
+      printf( "\r\nThere is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
+      if ( yesNo() )
+      {
+         if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
+         {
+            fatalPerror( "load file into aryEditor: reopen temp file for truncate", "Edit file error" );
+         }
+         *ptrMessageFile = tempFile;
+      }
+      else
+      {
+         return false;
+      }
+   }
+   printf( "\r\nFilename -> " );
+   getString( 67, ptrInputPath, -999 );
+   if ( !*ptrInputPath )
+   {
+      return false;
+   }
+
+   return copyNamedFileIntoMessage( *ptrMessageFile, ptrInputPath );
+}
+
+static void sendEditorCommand( int inputChar )
+{
+   sendBlock();
+   sendTrackedChar( CTRL_D );
+   sendTrackedChar( inputChar );
+}
+
+static void showEditorCommandPrompt( void )
+{
+   if ( flagsConfiguration.shouldUseAnsi )
+   {
+      printEditorCommandPrompt();
+   }
+   else
+   {
+      printf( "<A>bort <C>ontinue <E>dit <P>rint <S>ave <X>press -> " );
+   }
+}
+
 /*
  * This function used to be part of edit(), it was broken out because stupid
  * DEC optimizers found edit() too long to optimize without a warning, and that
@@ -75,7 +188,6 @@ static const char *resolveEditorCommand( void )
  */
 int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
 {
-   FILE *ptrCopyFile;
    int itemIndex;
    int inputChar = commandChar;
    int lineLength;
@@ -91,19 +203,10 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
       {
          if ( itemIndex != 1 )
          {
-            sendBlock();
-            sendTrackedChar( CTRL_D );
-            sendTrackedChar( 'c' );
+            sendEditorCommand( 'c' );
             flagsConfiguration.shouldCheckExpress = 1;
             (void)inKey();
-            if ( flagsConfiguration.shouldUseAnsi )
-            {
-               printEditorCommandPrompt();
-            }
-            else
-            {
-               printf( "<A>bort <C>ontinue <E>dit <P>rint <S>ave <X>press -> " );
-            }
+            showEditorCommandPrompt();
             fflush( stdout );
          }
          itemIndex = 0;
@@ -143,9 +246,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             printf( "Abort: are you sure? " );
             if ( yesNo() )
             {
-               sendBlock();
-               sendTrackedChar( CTRL_D );
-               sendTrackedChar( 'a' );
+               sendEditorCommand( 'a' );
                flagsConfiguration.isPosting = 0;
                return ( -1 );
             }
@@ -213,13 +314,11 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                continue;
             }
             rewind( ptrMessageFile );
-            sendBlock();
             while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
                sendTrackedChar( inputChar );
             }
-            sendTrackedChar( CTRL_D );
-            sendTrackedChar( 's' );
+            sendEditorCommand( 's' );
             flagsConfiguration.isLastSave = 1;
             flagsConfiguration.isPosting = 0;
             return ( -1 );
@@ -229,9 +328,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
          case 'x':
          case '?':
          case '/':
-            sendBlock();
-            sendTrackedChar( CTRL_D );
-            sendTrackedChar( inputChar );
+            sendEditorCommand( inputChar );
             looper();
             netPutChar( 'c' );
             continue;
@@ -248,52 +345,11 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                }
                else
                {
-                  if ( isupper( commandChar ) )
+                  if ( !loadNamedFileIntoMessage( &ptrMessageFile,
+                                                  aryCurrentLine,
+                                                  commandChar ) )
                   {
-                     fseek( ptrMessageFile, 0L, SEEK_END );
-                     if ( ftell( ptrMessageFile ) )
-                     {
-                        printf( "\r\nThere is text in your edit file.  Do you wish to erase it? (Y/N) -> " );
-                        if ( yesNo() )
-                        {
-                           if ( !( tempFile = freopen( aryTempFileName, "w+", tempFile ) ) )
-                           {
-                              fatalPerror( "load file into aryEditor: reopen temp file for truncate", "Edit file error" );
-                           }
-                           ptrMessageFile = tempFile;
-                        }
-                        else
-                        {
-                           continue;
-                        }
-                     }
-                     printf( "\r\nFilename -> " );
-                     getString( 67, aryCurrentLine, -999 );
-                     if ( !*aryCurrentLine )
-                     {
-                        continue;
-                     }
-                     if ( !( ptrCopyFile = fopen( aryCurrentLine, "r" ) ) )
-                     {
-                        printf( "\r\n[Error:  named file does not exist]\r\n\n" );
-                        continue;
-                     }
-                     else
-                     {
-                        while ( ( itemIndex = getc( ptrCopyFile ) ) >= 0 )
-                        {
-                           if ( putc( itemIndex, ptrMessageFile ) < 0 )
-                           {
-                              tempFileError();
-                              break;
-                           }
-                        }
-                        if ( feof( ptrCopyFile ) && fflush( ptrMessageFile ) < 0 )
-                        {
-                           tempFileError();
-                        }
-                        fclose( ptrCopyFile );
-                     }
+                     continue;
                   }
                   /* We have to close and reopen the tempFile due to locking */
                   fclose( tempFile );
@@ -302,26 +358,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                   {
                      fatalPerror( "openTmpFile: fopen", "Local error" );
                   }
-                  if ( flagsConfiguration.shouldUseAnsi )
-                  {
-                     char aryAnsiSequence[32];
-
-                     formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                                     lastColor, color.background,
-                                                     flagsConfiguration.shouldUseBold );
-                     printf( "%s", aryAnsiSequence );
-                  }
-                  printf( "[Editing complete]\r\n" );
-                  if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )
-                  {
-                     fatalPerror( "aryEditor return: freopen(aryTempFileName, \"r+\")", "Edit file error" );
-                  }
-                  ptrMessageFile = tempFile;
-                  if ( checkFile( ptrMessageFile ) )
-                  {
-                     fflush( stdout );
-                     mySleep( 1 );
-                  }
+                  continueAfterExternalEdit( &ptrMessageFile );
                }
                continue;
             }
