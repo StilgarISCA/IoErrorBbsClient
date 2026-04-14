@@ -10,6 +10,14 @@
 #define MAX_ALIAS_INPUT_LENGTH 19
 #define MAX_USER_NAME_INPUT_LENGTH 40
 
+static void clearSmartCompletion( const char *ptrCursor, int *ptrSmart );
+static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer );
+static void printNameInputColor( int colorValue );
+static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart );
+static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
+                                    int *ptrSmart );
+static void rewindTypedName( char **ptrCursor, const char *ptrBuffer );
+
 /*
  * Find a unique matching name to the input entered so far by the user.
  */
@@ -66,6 +74,94 @@ int smartName( char *ptrBuffer, char *ptrEnd )
    return 1;
 }
 
+static void clearSmartCompletion( const char *ptrCursor, int *ptrSmart )
+{
+   if ( *ptrSmart )
+   {
+      smartErase( ptrCursor );
+      *ptrSmart = 0;
+   }
+}
+
+static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer )
+{
+   for ( *ptrCursor = ptrBuffer; **ptrCursor != '\0'; ( *ptrCursor )++ )
+   {
+      ;
+   }
+}
+
+static void printNameInputColor( int colorValue )
+{
+   char aryAnsiSequence[32];
+
+   if ( !flagsConfiguration.shouldUseAnsi )
+   {
+      return;
+   }
+
+   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                 colorValue );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
+static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart )
+{
+   clearSmartCompletion( *ptrCursor, ptrSmart );
+   rewindTypedName( ptrCursor, ptrBuffer );
+   printf( "%s", aryLastName[lastPtr] );
+   snprintf( ptrBuffer, MAX_USER_NAME_INPUT_LENGTH + 1, "%s",
+             aryLastName[lastPtr] );
+   if ( ++lastPtr == 20 || aryLastName[lastPtr][0] == 0 )
+   {
+      lastPtr = 0;
+   }
+   moveCursorToBufferEnd( ptrCursor, ptrBuffer );
+}
+
+static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
+                                    int *ptrSmart )
+{
+   clearSmartCompletion( *ptrCursor, ptrSmart );
+   rewindTypedName( ptrCursor, ptrBuffer );
+   if ( --lastPtr < 0 )
+   {
+      for ( lastPtr = 19; lastPtr > 0; --lastPtr )
+      {
+         if ( aryLastName[lastPtr][0] != 0 )
+         {
+            break;
+         }
+      }
+   }
+   if ( --lastPtr < 0 )
+   {
+      for ( lastPtr = 19; lastPtr > 0; --lastPtr )
+      {
+         if ( aryLastName[lastPtr][0] != 0 )
+         {
+            break;
+         }
+      }
+   }
+   printf( "%s", aryLastName[lastPtr] );
+   snprintf( ptrBuffer, MAX_USER_NAME_INPUT_LENGTH + 1, "%s",
+             aryLastName[lastPtr] );
+   if ( ++lastPtr == 20 || aryLastName[lastPtr][0] == 0 )
+   {
+      lastPtr = 0;
+   }
+   moveCursorToBufferEnd( ptrCursor, ptrBuffer );
+}
+
+static void rewindTypedName( char **ptrCursor, const char *ptrBuffer )
+{
+   for ( ; *ptrCursor > ptrBuffer; --( *ptrCursor ) )
+   {
+      printf( "\b \b" );
+   }
+}
+
 void smartPrint( const char *ptrBuffer, const char *ptrEnd )
 {
    const char *ptrScan = ptrEnd;
@@ -74,23 +170,12 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    {
       putchar( '\b' );
    }
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.inputText );
-      stdPrintf( "%s", aryAnsiSequence );
-   }
+   printNameInputColor( color.inputText );
    for ( ; *ptrScan != 0; ptrScan++ )
    {
       if ( ptrScan == ptrEnd && flagsConfiguration.shouldUseAnsi )
       {
-         char aryAnsiSequence[32];
-
-         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                       color.inputHighlight );
-         stdPrintf( "%s", aryAnsiSequence );
+         printNameInputColor( color.inputHighlight );
       }
       putchar( *ptrScan );
    }
@@ -98,14 +183,7 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    {
       putchar( '\b' );
    }
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.inputText );
-      stdPrintf( "%s", aryAnsiSequence );
-   }
+   printNameInputColor( color.inputText );
 }
 
 void smartErase( const char *ptrEnd )
@@ -130,7 +208,7 @@ void smartErase( const char *ptrEnd )
  */
 char *getName( int quitPriv )
 {
-   register char *ptrCursor;
+   char *ptrCursor;
    static char aryNameBuffer[MAX_USER_NAME_INPUT_LENGTH + 1];
    register int inputChar;
    int smart = 0;
@@ -140,14 +218,7 @@ char *getName( int quitPriv )
    static char junk[21];
 
    lastPtr = 0;
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.inputText );
-      stdPrintf( "%s", aryAnsiSequence );
-   }
+   printNameInputColor( color.inputText );
    if ( quitPriv == 1 && *aryAutoName &&
         strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
    {
@@ -164,14 +235,7 @@ char *getName( int quitPriv )
       {
          stdPrintf( "ACK!  It didn't pop.\r\n" );
       }
-      if ( flagsConfiguration.shouldUseAnsi )
-      {
-         char aryAnsiSequence[32];
-
-         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                       lastColor );
-         stdPrintf( "%s", aryAnsiSequence );
-      }
+      printNameInputColor( lastColor );
       stdPrintf( "\rAutomatic reply to %s                     \r\n", junk );
       return ( junk );
    }
@@ -200,68 +264,12 @@ char *getName( int quitPriv )
          }
          if ( inputChar == 14 )
          {
-            if ( smart )
-            {
-               smartErase( ptrCursor );
-               smart = 0;
-            }
-            for ( ; ptrCursor > aryNameBuffer; --ptrCursor )
-            {
-               printf( "\b \b" );
-            }
-            printf( "%s", aryLastName[lastPtr] );
-            snprintf( aryNameBuffer, sizeof( aryNameBuffer ), "%s", aryLastName[lastPtr] );
-            if ( ++lastPtr == 20 || aryLastName[lastPtr][0] == 0 )
-            {
-               lastPtr = 0;
-            }
-            for ( ptrCursor = aryNameBuffer; *ptrCursor != '\0'; ptrCursor++ )
-            {
-               ;
-            }
+            recallNextLastName( aryNameBuffer, &ptrCursor, &smart );
             continue;
          }
          if ( inputChar == 16 )
          {
-            if ( smart )
-            {
-               smartErase( ptrCursor );
-               smart = 0;
-            }
-            for ( ; ptrCursor > aryNameBuffer; --ptrCursor )
-            {
-               printf( "\b \b" );
-            }
-            if ( --lastPtr < 0 )
-            {
-               for ( lastPtr = 19; lastPtr > 0; --lastPtr )
-               {
-                  if ( aryLastName[lastPtr][0] != 0 )
-                  {
-                     break;
-                  }
-               }
-            }
-            if ( --lastPtr < 0 )
-            {
-               for ( lastPtr = 19; lastPtr > 0; --lastPtr )
-               {
-                  if ( aryLastName[lastPtr][0] != 0 )
-                  {
-                     break;
-                  }
-               }
-            }
-            printf( "%s", aryLastName[lastPtr] );
-            snprintf( aryNameBuffer, sizeof( aryNameBuffer ), "%s", aryLastName[lastPtr] );
-            if ( ++lastPtr == 20 || aryLastName[lastPtr][0] == 0 )
-            {
-               lastPtr = 0;
-            }
-            for ( ptrCursor = aryNameBuffer; *ptrCursor != 0; ptrCursor++ )
-            {
-               ;
-            }
+            recallPreviousLastName( aryNameBuffer, &ptrCursor, &smart );
             continue;
          }
          if ( inputChar == ' ' && ( isFirstChar || shouldUppercase ) )
@@ -290,8 +298,7 @@ char *getName( int quitPriv )
                --ptrCursor;
                if ( smart == 1 )
                {
-                  smartErase( aryNameBuffer );
-                  smart = 0;
+                  clearSmartCompletion( aryNameBuffer, &smart );
                }
                shouldUppercase = ( ptrCursor == aryNameBuffer || *( ptrCursor - 1 ) == ' ' );
                if ( shouldUppercase && inputChar == CTRL_W )
@@ -347,14 +354,7 @@ char *getName( int quitPriv )
       }
       else
       {
-         if ( flagsConfiguration.shouldUseAnsi )
-         {
-            char aryAnsiSequence[32];
-
-            formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                          color.inputText );
-            stdPrintf( "%s", aryAnsiSequence );
-         }
+         printNameInputColor( color.inputText );
          for ( ; *ptrCursor != 0; ptrCursor++ )
          {
             putchar( *ptrCursor );
