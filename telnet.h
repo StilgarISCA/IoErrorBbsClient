@@ -11,6 +11,9 @@
  * change what the BBS end does.
  */
 
+#ifndef TELNET_H_INCLUDED
+#define TELNET_H_INCLUDED
+
 #define IAC 255  /* interpret as command: */
 #define DONT 254 /* you are not to use option */
 #define DO 253   /* please, you use option */
@@ -50,3 +53,11 @@
 #define TS_CR 2
 #define TS_GET 3
 #define TS_VOID 4
+
+void sendBlock( void );
+void sendNaws( void );
+void telInit( void );
+
+int telReceive( int inputByte );
+
+#endif /* TELNET_H_INCLUDED */
