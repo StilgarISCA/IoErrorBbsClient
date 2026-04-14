@@ -29,7 +29,9 @@
  * a pisser when I realized I'd have to do that!
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "filter_globals.h"
+#include "network_globals.h"
 #include "proto.h"
 #include "telnet.h"
 

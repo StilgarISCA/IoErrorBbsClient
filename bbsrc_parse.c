@@ -8,7 +8,9 @@
  * This file parses .bbsrc and applies the configured settings.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "config_globals.h"
+#include "filter_globals.h"
 #include "proto.h"
 
 #define MAX_LINE_LENGTH 512

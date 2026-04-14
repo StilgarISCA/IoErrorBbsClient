@@ -5,7 +5,8 @@
  */
 
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "filter_globals.h"
 #include "proto.h"
 
 #define MAX_ALIAS_INPUT_LENGTH 19

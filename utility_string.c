@@ -8,7 +8,7 @@
  * This file handles string search and message header parsing helpers.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
 #include "proto.h"
 
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );

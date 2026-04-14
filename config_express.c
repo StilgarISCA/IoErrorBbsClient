@@ -9,7 +9,8 @@
  * configuration menu.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "config_globals.h"
 #include "proto.h"
 
 static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";

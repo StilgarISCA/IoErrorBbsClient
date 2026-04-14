@@ -5,7 +5,7 @@
  */
 
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
 #include "proto.h"
 
 static const char *COLOR_MAIN_MENU_KEYS = "pgisoxq \n";

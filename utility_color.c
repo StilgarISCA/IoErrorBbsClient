@@ -8,7 +8,7 @@
  * This file handles ANSI color output helpers.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
 #include "proto.h"
 
 static void printAnsiColorValue( int colorValue, bool isBackground );

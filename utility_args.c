@@ -8,7 +8,7 @@
  * This file handles command-line argument parsing.
  */
 #include "defs.h"
-#include "ext.h"
+#include "config_globals.h"
 #include "proto.h"
 
 /*

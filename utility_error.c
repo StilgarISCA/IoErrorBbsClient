@@ -8,7 +8,8 @@
  * This file handles fatal errors and shutdown cleanup.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "config_globals.h"
 #include "proto.h"
 
 static void reopenTempFileForShutdown( void );

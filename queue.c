@@ -9,7 +9,6 @@
  */
 
 #include "defs.h"
-#include "ext.h"
 #include "proto.h"
 
 /* Make a queue containing itemCount objects of size size.  Return a pointer to

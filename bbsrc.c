@@ -8,7 +8,7 @@
  * This file opens .bbsrc and legacy friends files.
  */
 #include "defs.h"
-#include "ext.h"
+#include "config_globals.h"
 #include "proto.h"
 
 /*

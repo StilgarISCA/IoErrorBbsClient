@@ -8,7 +8,7 @@
  * Program entry point.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
 #include "proto.h"
 
 int main( int argc, char *argv[] )

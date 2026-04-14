@@ -9,7 +9,9 @@
  * it should do the job.  Someone else can put a nicer interface on it.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "config_globals.h"
+#include "filter_globals.h"
 #include "proto.h"
 
 static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";

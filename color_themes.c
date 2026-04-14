@@ -4,7 +4,7 @@
  */
 
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
 #include "proto.h"
 
 /*

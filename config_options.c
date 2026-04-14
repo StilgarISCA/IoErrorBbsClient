@@ -8,7 +8,8 @@
  * This file handles setup defaults and options-menu configuration.
  */
 #include "defs.h"
-#include "ext.h"
+#include "client_globals.h"
+#include "config_globals.h"
 #include "proto.h"
 
 #define SCREEN_READER_INFO \

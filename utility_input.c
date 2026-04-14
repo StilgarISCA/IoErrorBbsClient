@@ -8,7 +8,8 @@
  * This file handles input validation and simple menu prompts.
  */
 #include "defs.h"
-#include "ext.h"
+#include "config_globals.h"
+#include "network_globals.h"
 #include "proto.h"
 
 static int printYesNoResult( int inputChar );
