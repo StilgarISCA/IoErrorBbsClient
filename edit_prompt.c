@@ -74,12 +74,7 @@ static void continueAfterExternalEdit( FILE **ptrMessageFile )
 {
    if ( flagsConfiguration.shouldUseAnsi )
    {
-      char aryAnsiSequence[32];
-
-      formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                      lastColor, color.background,
-                                      flagsConfiguration.shouldUseBold );
-      printf( "%s", aryAnsiSequence );
+      printAnsiDisplayStateValue( lastColor, color.background );
    }
    printf( "[Editing complete]\r\n" );
    if ( !( tempFile = freopen( aryTempFileName, "r+", tempFile ) ) )

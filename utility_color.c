@@ -11,6 +11,7 @@
 #include "ext.h"
 
 static void printAnsiColorValue( int colorValue, bool isBackground );
+static void printAnsiSequence( const char *ptrSequence );
 static bool tryPrintLegacyAtColor( int inputChar );
 
 int colorize( const char *str )
@@ -58,12 +59,50 @@ static void printAnsiColorValue( int colorValue, bool isBackground )
    {
       formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ), colorValue );
    }
-   stdPrintf( "%s", aryAnsiSequence );
+   printAnsiSequence( aryAnsiSequence );
+}
+
+static void printAnsiSequence( const char *ptrSequence )
+{
+   stdPrintf( "%s", ptrSequence );
+}
+
+void printAnsiBackgroundColorValue( int colorValue )
+{
+   printAnsiColorValue( colorValue, true );
+}
+
+void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
+{
+   char aryAnsiSequence[32];
+
+   if ( !flagsConfiguration.shouldUseAnsi )
+   {
+      return;
+   }
+
+   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                   foregroundColor, backgroundColor,
+                                   flagsConfiguration.shouldUseBold );
+   printAnsiSequence( aryAnsiSequence );
 }
 
 void printAnsiForegroundColorValue( int colorValue )
 {
    printAnsiColorValue( colorValue, false );
+}
+
+void printAnsiResetValue( void )
+{
+   char aryAnsiSequence[32];
+
+   if ( !flagsConfiguration.shouldUseAnsi )
+   {
+      return;
+   }
+
+   formatAnsiResetSequence( aryAnsiSequence, sizeof( aryAnsiSequence ) );
+   printAnsiSequence( aryAnsiSequence );
 }
 
 void printThemedMnemonicText( const char *ptrText, int defaultColor )

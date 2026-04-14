@@ -47,17 +47,6 @@ static bool shouldUpdateTitleBar( void )
    return terminalSupportsTitleBarUpdates();
 }
 
-static void printAnsiStateAndFlush( const char *ptrAnsiSequence )
-{
-   if ( ptrAnsiSequence == NULL )
-   {
-      return;
-   }
-
-   printf( "%s", ptrAnsiSequence );
-   fflush( stdout );
-}
-
 void titleBar( void )
 {
    char aryTitle[80];
@@ -137,12 +126,8 @@ void setTerm( void )
 
    if ( flagsConfiguration.shouldUseAnsi )
    {
-      char aryAnsiSequence[32];
-
-      formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                      lastColor, color.background,
-                                      flagsConfiguration.shouldUseBold );
-      printAnsiStateAndFlush( aryAnsiSequence );
+      printAnsiDisplayStateValue( lastColor, color.background );
+      fflush( stdout );
    }
 
    titleBar();
@@ -206,10 +191,8 @@ void resetTerm( void )
 {
    if ( flagsConfiguration.shouldUseAnsi )
    {
-      char aryAnsiSequence[32];
-
-      formatAnsiResetSequence( aryAnsiSequence, sizeof( aryAnsiSequence ) );
-      printAnsiStateAndFlush( aryAnsiSequence );
+      printAnsiResetValue();
+      fflush( stdout );
    }
    if ( !isTerminalStateSaved )
    {

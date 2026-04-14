@@ -92,8 +92,6 @@ static const PickerColorOption *findPickerColorOption( const PickerColorOption *
 static void postColorPreview( int dateColor, int textColor, int nameColor,
                               const char *ptrName );
 static void presetColorConfig( void );
-static void printAnsiBackgroundColor( int colorValue );
-static void printAnsiDisplayState( int foregroundColor, int backgroundColor );
 static void printBackgroundPickerMenu( void );
 static void printExpressColorPreview( int textColor, int nameColor,
                                       const char *ptrName );
@@ -120,7 +118,7 @@ int backgroundPicker( void )
    }
 
    stdPrintf( "%s\r\n", ptrOption->ptrDisplayName );
-   printAnsiBackgroundColor( ptrOption->colorValue );
+   printAnsiBackgroundColorValue( ptrOption->colorValue );
    stdPrintf( "\n" );
 
    return ptrOption->colorValue;
@@ -188,7 +186,7 @@ void colorOptions( void )
    flagsConfiguration.shouldUseBold = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseBold );
    if ( flagsConfiguration.shouldUseAnsi )
    {
-      printAnsiDisplayState( lastColor, color.background );
+      printAnsiDisplayStateValue( lastColor, color.background );
    }
 }
 
@@ -508,7 +506,7 @@ static void presetColorConfig( void )
    {
       printPresetMenuItem( &aryPresetMenuOptions[optionIndex] );
    }
-   printAnsiDisplayState( color.text, color.background );
+   printAnsiDisplayStateValue( color.text, color.background );
    printThemedMnemonicText( " Quit\r\n", color.number );
    printThemedMnemonicText( "Select preset -> ", color.forum );
    printAnsiForegroundColorValue( color.text );
@@ -539,25 +537,6 @@ static void presetColorConfig( void )
       default:
          break;
    }
-}
-
-static void printAnsiBackgroundColor( int colorValue )
-{
-   char aryAnsiSequence[32];
-
-   formatAnsiBackgroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                 colorValue );
-   stdPrintf( "%s", aryAnsiSequence );
-}
-
-static void printAnsiDisplayState( int foregroundColor, int backgroundColor )
-{
-   char aryAnsiSequence[32];
-
-   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                   foregroundColor, backgroundColor,
-                                   flagsConfiguration.shouldUseBold );
-   stdPrintf( "%s", aryAnsiSequence );
 }
 
 static void printBackgroundPickerMenu( void )
@@ -594,7 +573,7 @@ static void printForegroundPickerMenu( void )
 
 static void printGeneralColorPreview( void )
 {
-   printAnsiDisplayState( color.forum, color.background );
+   printAnsiDisplayStateValue( color.forum, color.background );
    stdPrintf( "Lobby> " );
    printAnsiForegroundColorValue( color.text );
    stdPrintf( "Enter message\r\n\n" );
@@ -633,7 +612,7 @@ static void printInputColorPreview( void )
 static void printPresetMenuItem( const PresetMenuOption *ptrOption )
 {
    stdPrintf( " " );
-   printAnsiDisplayState( ptrOption->textColor, ptrOption->backgroundColor );
+   printAnsiDisplayStateValue( ptrOption->textColor, ptrOption->backgroundColor );
    printAnsiForegroundColorValue( ptrOption->accentColor );
    stdPrintf( "%c", toupper( ptrOption->keyChar ) );
    printAnsiForegroundColorValue( ptrOption->textColor );

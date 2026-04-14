@@ -139,6 +139,16 @@ int ansiTransformPost( int inputChar, int isFriend )
    return inputChar;
 }
 
+void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
+{
+   char aryAnsiSequence[32];
+
+   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                   foregroundColor, backgroundColor,
+                                   flagsConfiguration.shouldUseBold );
+   stdPrintf( "%s", aryAnsiSequence );
+}
+
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 {
    (void)ptrText;

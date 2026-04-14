@@ -86,6 +86,17 @@ void printAnsiForegroundColorValue( int colorValue )
    (void)colorValue;
 }
 
+void printAnsiBackgroundColorValue( int colorValue )
+{
+   (void)colorValue;
+}
+
+void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
+{
+   (void)foregroundColor;
+   (void)backgroundColor;
+}
+
 void printThemedMnemonicText( const char *ptrText, int defaultColor )
 {
    (void)ptrText;

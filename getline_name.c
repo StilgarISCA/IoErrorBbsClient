@@ -12,7 +12,6 @@
 
 static void clearSmartCompletion( const char *ptrCursor, int *ptrSmart );
 static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer );
-static void printNameInputColor( int colorValue );
 static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart );
 static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
                                     int *ptrSmart );
@@ -91,20 +90,6 @@ static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer )
    }
 }
 
-static void printNameInputColor( int colorValue )
-{
-   char aryAnsiSequence[32];
-
-   if ( !flagsConfiguration.shouldUseAnsi )
-   {
-      return;
-   }
-
-   formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                 colorValue );
-   stdPrintf( "%s", aryAnsiSequence );
-}
-
 static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart )
 {
    clearSmartCompletion( *ptrCursor, ptrSmart );
@@ -170,12 +155,12 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    {
       putchar( '\b' );
    }
-   printNameInputColor( color.inputText );
+   printAnsiForegroundColorValue( color.inputText );
    for ( ; *ptrScan != 0; ptrScan++ )
    {
       if ( ptrScan == ptrEnd && flagsConfiguration.shouldUseAnsi )
       {
-         printNameInputColor( color.inputHighlight );
+         printAnsiForegroundColorValue( color.inputHighlight );
       }
       putchar( *ptrScan );
    }
@@ -183,7 +168,7 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    {
       putchar( '\b' );
    }
-   printNameInputColor( color.inputText );
+   printAnsiForegroundColorValue( color.inputText );
 }
 
 void smartErase( const char *ptrEnd )
@@ -218,7 +203,7 @@ char *getName( int quitPriv )
    static char junk[21];
 
    lastPtr = 0;
-   printNameInputColor( color.inputText );
+   printAnsiForegroundColorValue( color.inputText );
    if ( quitPriv == 1 && *aryAutoName &&
         strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
    {
@@ -235,7 +220,7 @@ char *getName( int quitPriv )
       {
          stdPrintf( "ACK!  It didn't pop.\r\n" );
       }
-      printNameInputColor( lastColor );
+      printAnsiForegroundColorValue( lastColor );
       stdPrintf( "\rAutomatic reply to %s                     \r\n", junk );
       return ( junk );
    }
@@ -354,7 +339,7 @@ char *getName( int quitPriv )
       }
       else
       {
-         printNameInputColor( color.inputText );
+         printAnsiForegroundColorValue( color.inputText );
          for ( ; *ptrCursor != 0; ptrCursor++ )
          {
             putchar( *ptrCursor );

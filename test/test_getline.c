@@ -134,6 +134,11 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void printAnsiForegroundColorValue( int colorValue )
+{
+   (void)colorValue;
+}
+
 void sendTrackedBuffer( const char *ptrBuffer, size_t length )
 {
    size_t itemIndex;

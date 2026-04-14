@@ -278,16 +278,11 @@ static void clearDetectedUrlQueue( void )
 
 static void applyVisibleUrlReportColor( int foregroundColor )
 {
-   char aryAnsiSequence[32];
-
    if ( !flagsConfiguration.shouldUseAnsi )
    {
       return;
    }
-   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                   foregroundColor, color.background,
-                                   flagsConfiguration.shouldUseBold );
-   stdPrintf( "%s", aryAnsiSequence );
+   printAnsiDisplayStateValue( foregroundColor, color.background );
    lastColor = foregroundColor;
 }
 

@@ -127,6 +127,12 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
+{
+   (void)foregroundColor;
+   (void)backgroundColor;
+}
+
 void sendTrackedChar( int inputChar )
 {
    if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
