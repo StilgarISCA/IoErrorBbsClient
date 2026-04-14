@@ -42,6 +42,7 @@ bbs_SOURCES = \
 	filter_post.c \
 	filter_who.c \
 	getline.c \
+	getline_name.c \
 	global.c \
 	info.c \
 	inkey.c \
@@ -78,7 +79,7 @@ test_utility_LDADD = $(CMOCKA_LIBS)
 test_bbsrc_SOURCES = test/test_bbsrc.c test/test_helpers.c bbsrc.c bbsrc_parse.c queue.c slist.c global.c
 test_bbsrc_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_bbsrc_LDADD = $(CMOCKA_LIBS)
-test_getline_SOURCES = test/test_getline.c test/test_helpers.c getline.c slist.c global.c
+test_getline_SOURCES = test/test_getline.c test/test_helpers.c getline.c getline_name.c slist.c global.c
 test_getline_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_getline_LDADD = $(CMOCKA_LIBS)
 test_inkey_SOURCES = test/test_inkey.c test/test_helpers.c inkey.c global.c
