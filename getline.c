@@ -20,6 +20,229 @@
 #include "telnet.h"
 #include "utility.h"
 
+typedef struct
+{
+   unsigned int invalid;
+   int hidden;
+   int length;
+} GetStringState;
+
+static char aryWrap[80];
+
+static void applyWrapSeed( int length, int line, char *result, char **ptrCursor );
+static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
+                                 const GetStringState *ptrState );
+static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor );
+static bool handleCtrlWEdit( char *result, char **ptrCursor );
+static bool handleGetStringOverflow( int inputChar, int line, char *result,
+                                     char **ptrCursor );
+static bool maybeUseSavedPassword( char *result, GetStringState *ptrState );
+static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState );
+static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState );
+static void saveHiddenPasswordIfNeeded( const char *ptrResult,
+                                        const GetStringState *ptrState );
+
+static void applyWrapSeed( int length, int line, char *result, char **ptrCursor )
+{
+   if ( line <= 0 )
+   {
+      *aryWrap = 0;
+   }
+   else if ( *aryWrap )
+   {
+      printf( "%s", aryWrap );
+      if ( length > 0 )
+      {
+         snprintf( result, (size_t)length + 1, "%s", aryWrap );
+      }
+      else
+      {
+         *result = 0;
+      }
+      *ptrCursor = result + strlen( result );
+      *aryWrap = 0;
+   }
+}
+
+static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
+                                 const GetStringState *ptrState )
+{
+   if ( *ptrCursor >= result + ptrState->length || !isprint( inputChar ) )
+   {
+      return false;
+   }
+
+   **ptrCursor = (char)inputChar;
+   ( *ptrCursor )++;
+   putchar( ptrState->hidden ? '.' : inputChar );
+   return true;
+}
+
+static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor )
+{
+   if ( inputChar != '\b' && inputChar != CTRL_X )
+   {
+      return false;
+   }
+   if ( *ptrCursor == result )
+   {
+      return true;
+   }
+
+   do
+   {
+      printf( "\b \b" );
+      --( *ptrCursor );
+   } while ( inputChar == CTRL_X && *ptrCursor > result );
+   return true;
+}
+
+static bool handleCtrlWEdit( char *result, char **ptrCursor )
+{
+   char *ptrWordStart;
+   int foundWord;
+
+   for ( ptrWordStart = result; ptrWordStart < *ptrCursor; ptrWordStart++ )
+   {
+      if ( *ptrWordStart != ' ' )
+      {
+         break;
+      }
+   }
+   foundWord = ( ptrWordStart == *ptrCursor );
+   for ( ; *ptrCursor > result &&
+           ( !foundWord || ( *ptrCursor )[-1] != ' ' );
+         ( *ptrCursor )-- )
+   {
+      if ( ( *ptrCursor )[-1] != ' ' )
+      {
+         foundWord = 1;
+      }
+      printf( "\b \b" );
+   }
+
+   return true;
+}
+
+static bool handleGetStringOverflow( int inputChar, int line, char *result,
+                                     char **ptrCursor )
+{
+   char *ptrWordStart;
+   char *rest;
+
+   if ( line < 0 || line == 19 )
+   {
+      return true;
+   }
+   if ( inputChar == ' ' )
+   {
+      return false;
+   }
+   for ( ptrWordStart = *ptrCursor - 1;
+         ptrWordStart > result && *ptrWordStart != ' ';
+         ptrWordStart-- )
+   {
+      ;
+   }
+   if ( ptrWordStart > result )
+   {
+      *ptrWordStart = 0;
+      for ( rest = aryWrap, ptrWordStart++; ptrWordStart < *ptrCursor;
+            printf( "\b \b" ) )
+      {
+         *rest++ = *ptrWordStart++;
+      }
+      *rest++ = (char)inputChar;
+      *rest = 0;
+   }
+   else
+   {
+      *aryWrap = (char)inputChar;
+      *( aryWrap + 1 ) = 0;
+   }
+
+   return false;
+}
+
+static bool maybeUseSavedPassword( char *result, GetStringState *ptrState )
+{
+#ifdef ENABLE_SAVE_PASSWORD
+   if ( ptrState->hidden != 0 && *aryAutoPassword && !isAutoPasswordSent )
+   {
+      size_t charIndex;
+      size_t resultLength;
+
+      jhpdecode( result, aryAutoPassword, strlen( aryAutoPassword ) );
+      resultLength = strlen( result );
+      for ( charIndex = 0; charIndex < resultLength; charIndex++ )
+      {
+         stdPutChar( '.' );
+      }
+      stdPrintf( "\r\n" );
+      isAutoPasswordSent = 1;
+      return true;
+   }
+#else
+   (void)result;
+   (void)ptrState;
+#endif
+
+   return false;
+}
+
+static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState )
+{
+   ptrState->invalid = 0;
+   ptrState->hidden = 0;
+   ptrState->length = *ptrLength;
+
+   if ( ptrState->length < 0 )
+   {
+      ptrState->length = -ptrState->length;
+      ptrState->hidden = ptrState->length;
+   }
+   if ( ptrState->length > 128 )
+   {
+      ptrState->length = 256 - ptrState->length;
+      ptrState->hidden = ptrState->length;
+   }
+
+   *ptrLength = ptrState->length;
+}
+
+static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState )
+{
+   size_t charIndex;
+   size_t resultLength;
+
+   if ( !ptrState->hidden )
+   {
+      capPuts( ptrResult );
+      return;
+   }
+
+   resultLength = strlen( ptrResult );
+   for ( charIndex = 0; charIndex < resultLength; charIndex++ )
+   {
+      capPutChar( '.' );
+   }
+}
+
+static void saveHiddenPasswordIfNeeded( const char *ptrResult,
+                                        const GetStringState *ptrState )
+{
+#ifdef ENABLE_SAVE_PASSWORD
+   if ( ptrState->hidden != 0 )
+   {
+      jhpencode( aryAutoPassword, ptrResult, strlen( ptrResult ) );
+      writeBbsRc();
+   }
+#else
+   (void)ptrResult;
+   (void)ptrState;
+#endif
+}
+
 /*
  * Used for getting X's and profiles.  'which' tells which of those two we are
  * wanting, to allow the special commands for X's, like PING and ABORT. When
@@ -117,69 +340,17 @@ void getFiveLines( int which )
  */
 void getString( int length, char *result, int line )
 {
-   static char wrap[80];
-   char *rest;
-   register char *ptrCursor = result;
-   register char *ptrWordStart;
+   GetStringState state;
+   char *ptrCursor = result;
    register int inputChar;
-   int hidden;
-   unsigned int invalid = 0;
 
-   if ( line <= 0 )
+   normalizeGetStringMode( &length, &state );
+   applyWrapSeed( length, line, result, &ptrCursor );
+   if ( maybeUseSavedPassword( result, &state ) )
    {
-      *wrap = 0;
+      return;
    }
-   else if ( *wrap )
-   {
-      printf( "%s", wrap );
-      {
-         int maxlen = length;
-         if ( maxlen < 0 )
-         {
-            maxlen = -maxlen;
-         }
-         if ( maxlen > 0 )
-         {
-            snprintf( result, (size_t)maxlen + 1, "%s", wrap );
-         }
-         else
-         {
-            *result = 0;
-         }
-      }
-      ptrCursor = result + strlen( result );
-      *wrap = 0;
-   }
-   hidden = 0;
-   if ( length < 0 )
-   {
-      length = 0 - length;
-      hidden = length;
-   }
-   if ( length > 128 )
-   {
-      length = 256 - length;
-      hidden = length;
-   }
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( hidden != 0 && *aryAutoPassword )
-   {
-      if ( !isAutoPasswordSent )
-      {
-         jhpdecode( result, aryAutoPassword, strlen( aryAutoPassword ) );
-         {
-            size_t rlen = strlen( result );
-            for ( size_t charIndex = 0; charIndex < rlen; charIndex++ )
-            {
-               stdPutChar( '.' );
-            }
-         }
-         stdPrintf( "\r\n" );
-         isAutoPasswordSent = 1;
-         return;
-      }
-   }
-#endif
+
    while ( true )
    {
       inputChar = inKey();
@@ -194,115 +365,37 @@ void getString( int length, char *result, int line )
       if ( inputChar < ' ' && inputChar != '\b' &&
            inputChar != CTRL_X && inputChar != CTRL_W )
       {
-         handleInvalidInput( &invalid );
+         handleInvalidInput( &state.invalid );
          continue;
       }
       else
       {
-         invalid = 0;
+         state.invalid = 0;
       }
-      if ( inputChar == '\b' || inputChar == CTRL_X )
-      {
-         if ( ptrCursor == result )
-         {
-            continue;
-         }
-         else
-         {
-            do
-            {
-               printf( "\b \b" );
-               --ptrCursor;
-            } while ( inputChar == CTRL_X && ptrCursor > result );
-         }
-      }
-      else if ( inputChar == CTRL_W )
-      {
-         for ( ptrWordStart = result; ptrWordStart < ptrCursor; ptrWordStart++ )
-         {
-            if ( *ptrWordStart != ' ' )
-            {
-               break;
-            }
-         }
-         inputChar = ( ptrWordStart == ptrCursor );
-         for ( ; ptrCursor > result &&
-                 ( !inputChar || ptrCursor[-1] != ' ' );
-               ptrCursor-- )
-         {
-            if ( ptrCursor[-1] != ' ' )
-            {
-               inputChar = 1;
-            }
-            printf( "\b \b" );
-         }
-      }
-      else if ( ptrCursor < result + length && isprint( inputChar ) )
-      {
-         *ptrCursor++ = (char)inputChar;
-         if ( !hidden )
-         {
-            putchar( inputChar );
-         }
-         else
-         {
-            putchar( '.' );
-         }
-      }
-      else if ( line < 0 || line == 19 )
+      if ( handleBackspaceEdit( inputChar, result, &ptrCursor ) )
       {
          continue;
       }
-      else
+      if ( inputChar == CTRL_W )
       {
-         if ( inputChar == ' ' )
-         {
-            break;
-         }
-         for ( ptrWordStart = ptrCursor - 1;
-               ptrWordStart > result && *ptrWordStart != ' ';
-               ptrWordStart-- )
-         {
-            ;
-         }
-         if ( ptrWordStart > result )
-         {
-            *ptrWordStart = 0;
-            for ( rest = wrap, ptrWordStart++; ptrWordStart < ptrCursor;
-                  printf( "\b \b" ) )
-            {
-               *rest++ = *ptrWordStart++;
-            }
-            *rest++ = (char)inputChar;
-            *rest = 0;
-         }
-         else
-         {
-            *wrap = (char)inputChar;
-            *( wrap + 1 ) = 0;
-         }
+         handleCtrlWEdit( result, &ptrCursor );
+         continue;
+      }
+      if ( appendPrintableChar( inputChar, result, &ptrCursor, &state ) )
+      {
+         continue;
+      }
+      if ( line < 0 || line == 19 )
+      {
+         continue;
+      }
+      if ( !handleGetStringOverflow( inputChar, line, result, &ptrCursor ) )
+      {
          break;
       }
    }
    *ptrCursor = 0;
-   if ( !hidden )
-   {
-      capPuts( result );
-   }
-   else
-   {
-      size_t rlen = strlen( result );
-      for ( size_t charIndex = 0; charIndex < rlen; charIndex++ )
-      {
-         capPutChar( '.' );
-      }
-   }
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( hidden != 0 )
-   {
-      jhpencode( aryAutoPassword, result, strlen( result ) );
-      writeBbsRc();
-   }
-#endif
+   recordCapturedString( result, &state );
+   saveHiddenPasswordIfNeeded( result, &state );
    stdPrintf( "\r\n" );
 }
