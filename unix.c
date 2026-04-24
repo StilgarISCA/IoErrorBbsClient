@@ -28,9 +28,11 @@ static struct passwd *pw;
 static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg );
 
 
-/*
- * Quits gracefully when we are given a HUP or STOP signal.
- */
+/// @brief Exit the client cleanly from a signal handler.
+///
+/// @param signalNumber Signal number being handled.
+///
+/// @return This signal handler does not return a useful value.
 RETSIGTYPE bye( int signalNumber )
 {
    (void)signalNumber;
@@ -38,6 +40,15 @@ RETSIGTYPE bye( int signalNumber )
 }
 
 
+/// @brief Parse a command string and execute it with an optional trailing argument.
+///
+/// The command string is expanded with `wordexp()` using `WRDE_NOCMD` so
+/// command substitution is rejected before `execvp()` is called.
+///
+/// @param ptrCommand Command string to execute.
+/// @param ptrArg Optional argument appended after the parsed command words.
+///
+/// @return This function does not return to the caller.
 static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg )
 {
    wordexp_t parsedCommand;
@@ -80,7 +91,9 @@ static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrA
 }
 
 
-/* Locate .bbsfriends and keep permissions restricted when the file exists. */
+/// @brief Resolve and open the legacy friends file path.
+///
+/// @return A stream for the resolved friends file.
 FILE *findBbsFriends( void )
 {
    if ( isLoginShell )
@@ -111,12 +124,12 @@ FILE *findBbsFriends( void )
 }
 
 
-/*
- * Locate the bbsrc file.  Usually is ~/.bbsrc, can be overriden by providing
- * an argument to the command that invokes this client.  If the argument is not
- * provided the BBSRC environment will specify the name of the BBSRC file if it
- * is set.  Returns a pointer to the file via openbbsrc().
- */
+/// @brief Resolve and open the main `.bbsrc` path.
+///
+/// Environment overrides and login-shell temp paths are handled before the file
+/// is opened through `openBbsRc()`.
+///
+/// @return A stream for the resolved configuration file.
 FILE *findBbsRc( void )
 {
    FILE *ptrFileHandle;
@@ -156,9 +169,9 @@ FILE *findBbsRc( void )
 }
 
 
-/*
- * Find the aryUser's home directory (needed for .bbsrc and .bbstmp)
- */
+/// @brief Discover the current username and mark login-shell sessions.
+///
+/// @return This function does not return a value.
 void findHome( void )
 {
    if ( ( pw = getpwuid( getuid() ) ) )
@@ -184,9 +197,11 @@ void findHome( void )
 }
 
 
-/*
- * Handles a WINCH signal given when the window is resized
- */
+/// @brief Handle terminal resize signals and send an updated NAWS record.
+///
+/// @param signalNumber Signal number being handled.
+///
+/// @return This signal handler does not return a useful value.
 RETSIGTYPE naws( int signalNumber )
 {
    (void)signalNumber;
@@ -200,10 +215,9 @@ RETSIGTYPE naws( int signalNumber )
 }
 
 
-/*
- * Opens the temp file, ~/.bbstmp.  If the BBSTMP environment variable is set,
- * that file is used instead.
- */
+/// @brief Resolve and open the message temp file used by the editor paths.
+///
+/// @return This function does not return a value.
 void openTmpFile( void )
 {
    if ( isLoginShell )
@@ -240,15 +254,11 @@ void openTmpFile( void )
 }
 
 
-/*
- * Handles the death of the child by doing a longjmp back to the function that
- * forked it.  We get spurious signals when the child is stopped, and to avoid
- * confusion we don't allow the child to be stopped -- therefore we attempt to
- * send a continue signal to the child here.  If it fails, we assume the child
- * did in fact die, and longjmp back to the function that forked it.  If it
- * doesn't fail, the child is restarted and the aryUser is forced to exit the
- * child cleanly to get back into the main client.
- */
+/// @brief Handle child-process exit and return control to the parent flow.
+///
+/// @param signalNumber Signal number being handled.
+///
+/// @return This signal handler does not return a useful value.
 RETSIGTYPE reapChild( int signalNumber )
 {
    (void)signalNumber;
@@ -265,11 +275,15 @@ RETSIGTYPE reapChild( int signalNumber )
 }
 
 
-/*
- * Launch aryCommand with an optional trailing argument. Used for the external
- * editor and subshell paths. The child exit path returns here through the
- * existing setjmp/longjmp signal flow.
- */
+/// @brief Launch a local command such as the shell or external editor.
+///
+/// The child exit path returns here through the existing setjmp/longjmp signal
+/// flow.
+///
+/// @param aryCommand Command string to execute.
+/// @param arg Optional trailing argument for the command.
+///
+/// @return This function does not return a value.
 void run( const char *aryCommand, const char *arg )
 {
    fflush( stdout );
@@ -320,6 +334,9 @@ void run( const char *aryCommand, const char *arg )
    }
 }
 
+/// @brief Show the technical information screen.
+///
+/// @return This function does not return a value.
 void techInfo( void )
 {
    char aryRuntimeInfo[256];
@@ -357,6 +374,9 @@ void techInfo( void )
               (char *)NULL );
 }
 
+/// @brief Initialize Unix-side runtime state before connecting to the BBS.
+///
+/// @return This function does not return a value.
 void initialize( void )
 {
    if ( !isatty( 0 ) || !isatty( 1 ) || !isatty( 2 ) )
@@ -415,6 +435,9 @@ void initialize( void )
    }
 }
 
+/// @brief Tear down Unix-side temporary files and title-bar state.
+///
+/// @return This function does not return a value.
 void deinitialize( void )
 {
    char aryTempFile[PATH_MAX];
@@ -431,11 +454,23 @@ void deinitialize( void )
    }
 }
 
+/// @brief Delete a file path using the Unix unlink call.
+///
+/// @param pathname File path to delete.
+///
+/// @return Result from `unlink()`.
 int deleteFile( const char *pathname )
 {
    return unlink( pathname );
 }
 
+/// @brief Show a yes/no prompt using the Unix text UI.
+///
+/// @param info Informational text shown before the prompt.
+/// @param question Prompt question text.
+/// @param def Default yes/no choice.
+///
+/// @return `1` for yes, or `0` for no.
 int sPrompt( const char *info, const char *question, int def )
 {
    stdPrintf( "\r\n%s\r\n\n", info );
@@ -447,6 +482,12 @@ int sPrompt( const char *info, const char *question, int def )
    return 0;
 }
 
+/// @brief Show an informational message using the Unix text UI.
+///
+/// @param info Informational text to print.
+/// @param heading Unused heading parameter kept for interface compatibility.
+///
+/// @return This function does not return a value.
 void sInfo( const char *info, const char *heading )
 {
    (void)heading;
@@ -455,6 +496,12 @@ void sInfo( const char *info, const char *heading )
    return;
 }
 
+/// @brief Print a `perror`-style message using the Unix text UI.
+///
+/// @param message Error text to append to the heading.
+/// @param heading Heading text for the error line.
+///
+/// @return This function does not return a value.
 void sPerror( const char *message, const char *heading )
 {
    char aryErrorBuffer[4096];
@@ -467,6 +514,12 @@ void sPerror( const char *message, const char *heading )
    return;
 }
 
+/// @brief Print a plain error message using the Unix text UI.
+///
+/// @param message Error text to print.
+/// @param heading Heading text for the error line.
+///
+/// @return This function does not return a value.
 void sError( const char *message, const char *heading )
 {
    char aryErrorBuffer[4096];
@@ -475,10 +528,12 @@ void sError( const char *message, const char *heading )
    fprintf( stderr, "%s\r\n", aryErrorBuffer );
 }
 
-/*
- * Move oldpath to newpath if oldpath exists and newpath does not exist.
- * Then delete oldpath, even if newpath already exists.
- */
+/// @brief Move a file to a new path if the old file exists and the new file is missing or empty.
+///
+/// @param oldpath Existing source path.
+/// @param newpath Destination path.
+///
+/// @return This function does not return a value.
 void moveIfNeeded( const char *oldpath, const char *newpath )
 {
    FILE *ptrOldFile;
@@ -527,9 +582,9 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
 }
 
 
-/*
- * Initialize necessary signals
- */
+/// @brief Install the signal handlers used during normal client runtime.
+///
+/// @return This function does not return a value.
 void sigInit( void )
 {
    oldRows = -1;
@@ -551,9 +606,9 @@ void sigInit( void )
 }
 
 
-/*
- * Turn off signals now that we are ready to terminate
- */
+/// @brief Disable the runtime signal handlers during shutdown.
+///
+/// @return This function does not return a value.
 void sigOff( void )
 {
    signal( SIGALRM, SIG_IGN );
@@ -565,9 +620,11 @@ void sigOff( void )
 }
 
 
-/*
- * Truncates bbsrc file to the specified length.
- */
+/// @brief Truncate the `.bbsrc` file to a given length.
+///
+/// @param userNameLength New file length.
+///
+/// @return This function does not return a value.
 void truncateBbsRc( long userNameLength )
 {
    if ( ftruncate( fileno( ptrBbsRc ), userNameLength ) < 0 )
@@ -575,4 +632,3 @@ void truncateBbsRc( long userNameLength )
       fatalExit( "ftruncate", "Local error" );
    }
 }
-

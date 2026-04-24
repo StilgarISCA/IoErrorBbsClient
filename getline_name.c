@@ -30,6 +30,12 @@ static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
 static void rewindTypedName( char **ptrCursor, const char *ptrBuffer );
 
 
+/// @brief Clear any active name-autocomplete suffix from the display.
+///
+/// @param ptrCursor Current cursor position in the name buffer.
+/// @param ptrSmart Tracks whether a smart completion is active.
+///
+/// @return This helper does not return a value.
 static void clearSmartCompletion( const char *ptrCursor, int *ptrSmart )
 {
    if ( *ptrSmart )
@@ -40,12 +46,11 @@ static void clearSmartCompletion( const char *ptrCursor, int *ptrSmart )
 }
 
 
-/*
- * Used for getting names (user names, room names, etc.)  Capitalizes first
- * letter of word automatically)  Does different things depending on the value
- * of quitPriv (that stuff should be left alone)  The name is then returned to
- * the caller.
- */
+/// @brief Read a user, room, or alias name with history and autocomplete support.
+///
+/// @param quitPriv Mode selector controlling the special handling for login and X paths.
+///
+/// @return Pointer to the collected name buffer.
 char *getName( int quitPriv )
 {
    char *ptrCursor;
@@ -223,6 +228,12 @@ char *getName( int quitPriv )
 }
 
 
+/// @brief Move the cursor pointer to the end of the current name buffer.
+///
+/// @param ptrCursor Receives the updated cursor position.
+/// @param ptrBuffer Name buffer to scan.
+///
+/// @return This helper does not return a value.
 static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer )
 {
    for ( *ptrCursor = ptrBuffer; **ptrCursor != '\0'; ( *ptrCursor )++ )
@@ -232,6 +243,13 @@ static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer )
 }
 
 
+/// @brief Recall the next saved name from history.
+///
+/// @param ptrBuffer Name buffer to replace.
+/// @param ptrCursor Receives the updated cursor position.
+/// @param ptrSmart Tracks whether a smart completion is active.
+///
+/// @return This helper does not return a value.
 static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart )
 {
    clearSmartCompletion( *ptrCursor, ptrSmart );
@@ -247,6 +265,13 @@ static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart
 }
 
 
+/// @brief Recall the previous saved name from history.
+///
+/// @param ptrBuffer Name buffer to replace.
+/// @param ptrCursor Receives the updated cursor position.
+/// @param ptrSmart Tracks whether a smart completion is active.
+///
+/// @return This helper does not return a value.
 static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
                                     int *ptrSmart )
 {
@@ -283,6 +308,12 @@ static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
 }
 
 
+/// @brief Rewind the terminal cursor back over the currently typed name.
+///
+/// @param ptrCursor Current cursor position to rewind.
+/// @param ptrBuffer Start of the name buffer.
+///
+/// @return This helper does not return a value.
 static void rewindTypedName( char **ptrCursor, const char *ptrBuffer )
 {
    for ( ; *ptrCursor > ptrBuffer; --( *ptrCursor ) )
@@ -292,6 +323,11 @@ static void rewindTypedName( char **ptrCursor, const char *ptrBuffer )
 }
 
 
+/// @brief Erase the highlighted smart-completion suffix from the terminal.
+///
+/// @param ptrEnd Start of the smart-completed suffix.
+///
+/// @return This function does not return a value.
 void smartErase( const char *ptrEnd )
 {
    const char *ptrScan = ptrEnd;
@@ -307,9 +343,12 @@ void smartErase( const char *ptrEnd )
 }
 
 
-/*
- * Find a unique matching name to the input entered so far by the user.
- */
+/// @brief Find a unique name completion for the text typed so far.
+///
+/// @param ptrBuffer Name buffer containing the typed prefix.
+/// @param ptrEnd End of the typed prefix inside the buffer.
+///
+/// @return Non-zero if a unique completion was found, otherwise `0`.
 int smartName( char *ptrBuffer, char *ptrEnd )
 {
    int found = -1;
@@ -364,6 +403,12 @@ int smartName( char *ptrBuffer, char *ptrEnd )
 }
 
 
+/// @brief Print the smart-completed name with the completion suffix highlighted.
+///
+/// @param ptrBuffer Start of the name buffer.
+/// @param ptrEnd End of the text originally typed by the user.
+///
+/// @return This function does not return a value.
 void smartPrint( const char *ptrBuffer, const char *ptrEnd )
 {
    const char *ptrScan = ptrEnd;
@@ -387,4 +432,3 @@ void smartPrint( const char *ptrBuffer, const char *ptrEnd )
    }
    printAnsiForegroundColorValue( color.inputText );
 }
-

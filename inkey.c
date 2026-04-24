@@ -4,17 +4,6 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-/*
- * Return next letter the aryUser typed.  This function can be indirectly
- * recursive -- inKey may call telReceive(), which calls other functions which can
- * call inKey()...
- *
- * Basically, if there is a keypress waiting in the stdio buffer, it is returned
- * immediately, if not the socket's stdio buffer is checked (this is where the
- * recursion can take place) and if that is also empty, the output buffers are
- * flushed, then the program blocks in select() until either the aryUser types
- * something or something is sent from the remote side.
- */
 #include "defs.h"
 #include "browser.h"
 #include "client.h"
@@ -59,6 +48,9 @@ static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
 static bool tryReplaySavedByte( int *ptrInputChar );
 
 
+/// @brief Resolve the current host name used for network error reporting.
+///
+/// @return Host name string for the active connection target.
 static const char *currentConnectionHost( void )
 {
    if ( *aryCommandLineHost )
@@ -74,6 +66,11 @@ static const char *currentConnectionHost( void )
 }
 
 
+/// @brief Abort with a detailed network read error message.
+///
+/// @param readErrno Saved `errno` value from the failed read.
+///
+/// @return This helper does not return.
 static noreturn void failNetworkRead( int readErrno )
 {
    char aryMessage[256];
@@ -135,6 +132,9 @@ static noreturn void failNetworkRead( int readErrno )
 }
 
 
+/// @brief Flush pending network and terminal output before waiting for input.
+///
+/// @return This helper does not return a value.
 static void flushPendingOutput( void )
 {
    if ( netflush() < 0 )
@@ -150,6 +150,9 @@ static void flushPendingOutput( void )
 }
 
 
+/// @brief Retrieve the next raw key or macro byte for the client.
+///
+/// @return Next raw input byte, or `-1` if the connection closed.
 int getKey( void )
 {
    static int macroKey = 0;
@@ -215,6 +218,15 @@ int getKey( void )
 }
 
 
+/// @brief Handle already-buffered local terminal input and macro playback.
+///
+/// @param ptrMacroKey Current macro key slot.
+/// @param ptrMacroPosition Current macro playback position.
+/// @param ptrPendingInputChar Saved pending local input byte.
+/// @param ptrIsMacroNext Tracks whether the next byte is a macro selector.
+/// @param ptrWasUndefinedCommand Tracks whether the undefined-command banner is active.
+///
+/// @return Result describing whether input was consumed, should continue, or should return.
 static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
                                               int *ptrMacroPosition,
                                               int *ptrPendingInputChar,
@@ -288,6 +300,15 @@ static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
 }
 
 
+/// @brief Handle a command-key sequence or macro selection.
+///
+/// @param inputChar Command character that followed the command key.
+/// @param ptrMacroKey Current macro key slot.
+/// @param ptrMacroPosition Current macro playback position.
+/// @param ptrIsMacroNext Tracks whether the next byte is a macro selector.
+/// @param ptrWasUndefinedCommand Tracks whether the undefined-command banner is active.
+///
+/// @return Result describing whether input was consumed, should continue, or should return.
 static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
                                            int *ptrMacroPosition,
                                            int *ptrIsMacroNext,
@@ -399,6 +420,12 @@ static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
 }
 
 
+/// @brief Wait for the next terminal or network event when no buffered input exists.
+///
+/// @param ptrMacroPosition Current macro playback position.
+/// @param ptrPendingInputChar Saved pending local input byte.
+///
+/// @return Result describing whether input was consumed, should continue, or should return.
 static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
                                      int *ptrPendingInputChar )
 {
@@ -458,12 +485,12 @@ static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
 }
 
 
-/*
- * The functionality of the former inKey() has been renamed to getKey(), so
- * that inKey() could strip a \n after a \r (common terminal program problem
- * with aryUser misconfiguration) and translate certain keypresses into common
- * Unix equivalents (i.e. \r -> \n, DEL -> BS, ctrl-U -> ctrl-X)
- */
+/// @brief Return the next normalized user input key.
+///
+/// Carriage returns, delete, and `CTRL_U` are translated into the common local
+/// editing equivalents expected by the rest of the client.
+///
+/// @return Next normalized input byte, or `-1` if the connection closed.
 int inKey( void )
 {
    register int inputChar;
@@ -495,6 +522,11 @@ int inKey( void )
 }
 
 
+/// @brief Replay a saved byte from local buffering when protocol state requires it.
+///
+/// @param ptrInputChar Receives the replayed byte.
+///
+/// @return `true` if a saved byte was replayed, otherwise `false`.
 static bool tryReplaySavedByte( int *ptrInputChar )
 {
    if ( !targetByte || childPid || flagsConfiguration.shouldCheckExpress )
@@ -518,4 +550,3 @@ static bool tryReplaySavedByte( int *ptrInputChar )
    bytePosition++;
    return true;
 }
-

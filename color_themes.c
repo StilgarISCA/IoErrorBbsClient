@@ -7,16 +7,11 @@
 #include "client_globals.h"
 #include "color.h"
 
-/*
- * defaultColors is called once with an arg of 1 before the bbsrc file is
- * read.  This initializes all the color variables.  It is then called again
- * after the bbsrc file is read, with an arg of 0.  This helps with theme
- * fields which might become used after a user upgrades to a later version.
- * They will get their default values instead of zero, which would render
- * as black.
- */
 #define ifzero( x ) if ( ( x ) < 0 || clearall )
 
+/// @brief Apply the bright theme palette to the current color settings.
+///
+/// @return This function does not return a value.
 void brilliantColors( void )
 {
    color.text = 10;
@@ -46,6 +41,9 @@ void brilliantColors( void )
 }
 
 
+/// @brief Apply the colorblind-friendly theme palette to the current colors.
+///
+/// @return This function does not return a value.
 void colorblindColors( void )
 {
    color.text = 231;
@@ -74,6 +72,12 @@ void colorblindColors( void )
    color.expressFriendText = 231;
 }
 
+/// @brief Fill unset color fields with the built-in default theme values.
+///
+/// @param clearall When non-zero, reinitialize every color field, including the
+/// background color. When zero, only unset fields are filled in.
+///
+/// @return This function does not return a value.
 void defaultColors( int clearall )
 {
    ifzero( color.text ) color.text = 2;
@@ -106,6 +110,9 @@ void defaultColors( int clearall )
 }
 
 
+/// @brief Apply the hot dog theme palette to the current color settings.
+///
+/// @return This function does not return a value.
 void hotDogColors( void )
 {
    color.text = 220;

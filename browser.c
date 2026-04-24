@@ -41,6 +41,11 @@ static void trimUrlTailPunctuation( char *ptrUrlStart );
 static queue *ptrDetectedUrlQueue;
 
 
+/// @brief Apply the themed color used while printing a visible URL report.
+///
+/// @param foregroundColor Foreground color value to emit.
+///
+/// @return This helper does not return a value.
 static void applyVisibleUrlReportColor( int foregroundColor )
 {
    if ( !flagsConfiguration.shouldUseAnsi )
@@ -52,6 +57,9 @@ static void applyVisibleUrlReportColor( int foregroundColor )
 }
 
 
+/// @brief Start a fresh clickable URL detection report.
+///
+/// @return This function does not return a value.
 void beginUrlDetectionReport( void )
 {
    if ( !ensureDetectedUrlQueue() )
@@ -62,18 +70,27 @@ void beginUrlDetectionReport( void )
 }
 
 
+/// @brief Switch output to the body color for URL report entries.
+///
+/// @return This helper does not return a value.
 static void beginVisibleUrlReportBodyColor( void )
 {
    applyVisibleUrlReportColor( color.text );
 }
 
 
+/// @brief Switch output to the header color for URL reports.
+///
+/// @return This helper does not return a value.
 static void beginVisibleUrlReportHeaderColor( void )
 {
    applyVisibleUrlReportColor( color.number );
 }
 
 
+/// @brief Empty the queued list of detected URLs.
+///
+/// @return This helper does not return a value.
 static void clearDetectedUrlQueue( void )
 {
    char aryTempText[1024];
@@ -89,6 +106,9 @@ static void clearDetectedUrlQueue( void )
 }
 
 
+/// @brief Emit the queued clickable URL report.
+///
+/// @return This function does not return a value.
 void emitUrlDetectionReport( void )
 {
    char aryUrl[1024];
@@ -116,12 +136,18 @@ void emitUrlDetectionReport( void )
 }
 
 
+/// @brief Restore normal themed output after a URL report finishes.
+///
+/// @return This helper does not return a value.
 static void endVisibleUrlReportColor( void )
 {
    applyVisibleUrlReportColor( color.text );
 }
 
 
+/// @brief Ensure the detected URL queue exists.
+///
+/// @return `true` if the queue is available, otherwise `false`.
 static bool ensureDetectedUrlQueue( void )
 {
    if ( ptrDetectedUrlQueue != NULL )
@@ -133,6 +159,13 @@ static bool ensureDetectedUrlQueue( void )
 }
 
 
+/// @brief Scan one rendered line for URLs and queue newly detected links.
+///
+/// Wrapped URLs are stitched back together best-effort before they are queued.
+///
+/// @param ptrLine Line text to inspect.
+///
+/// @return This function does not return a value.
 void filterUrl( const char *ptrLine )
 {
    static bool hasPendingUrl = false;
@@ -248,6 +281,13 @@ void filterUrl( const char *ptrLine )
 }
 
 
+/// @brief Finalize a pending wrapped URL fragment and queue it if valid.
+///
+/// @param aryPendingUrl Buffer holding the pending URL.
+/// @param pendingUrlSize Size of the pending URL buffer.
+/// @param ptrHasPendingUrl Tracks whether a pending URL is active.
+///
+/// @return This helper does not return a value.
 static void finalizePendingUrl( char *aryPendingUrl, size_t pendingUrlSize, bool *ptrHasPendingUrl )
 {
    (void)pendingUrlSize;
@@ -261,6 +301,11 @@ static void finalizePendingUrl( char *aryPendingUrl, size_t pendingUrlSize, bool
 }
 
 
+/// @brief Find the first URL start sequence in mutable text.
+///
+/// @param ptrText Text to scan.
+///
+/// @return Pointer to the first detected URL start, or `NULL` if none is found.
 static char *findUrlStart( char *ptrText )
 {
    char *ptrHttps;
@@ -289,6 +334,11 @@ static char *findUrlStart( char *ptrText )
 }
 
 
+/// @brief Find the first URL start sequence in read-only text.
+///
+/// @param ptrText Text to scan.
+///
+/// @return Pointer to the first detected URL start, or `NULL` if none is found.
 static const char *findUrlStartConst( const char *ptrText )
 {
    const char *ptrHttps;
@@ -317,6 +367,11 @@ static const char *findUrlStartConst( const char *ptrText )
 }
 
 
+/// @brief Check whether a character is valid inside a detected URL body.
+///
+/// @param inputChar Character to classify.
+///
+/// @return `true` if the character can remain inside the URL, otherwise `false`.
 static bool isUrlBodyChar( int inputChar )
 {
    static const char *ptrAllowedPunctuation = "-._~:/?#[]@!$&'()*+,;=%";
@@ -329,6 +384,11 @@ static bool isUrlBodyChar( int inputChar )
 }
 
 
+/// @brief Check whether a character terminates a detected URL.
+///
+/// @param inputChar Character to classify.
+///
+/// @return `true` if the character ends the URL, otherwise `false`.
 static bool isUrlTerminator( int inputChar )
 {
    if ( inputChar == 0 || isspace( inputChar ) )
@@ -339,6 +399,11 @@ static bool isUrlTerminator( int inputChar )
 }
 
 
+/// @brief Ask macOS to open a URL with the default browser handler.
+///
+/// @param ptrUrl URL to open.
+///
+/// @return `true` if the browser command was started successfully, otherwise `false`.
 static bool launchBrowserUrl( const char *ptrUrl )
 {
    char *aryArguments[3];
@@ -364,6 +429,9 @@ static bool launchBrowserUrl( const char *ptrUrl )
 }
 
 
+/// @brief Let the user choose and open a queued URL from the browser menu.
+///
+/// @return This function does not return a value.
 void openBrowser( void )
 {
    int inputIndex;
@@ -434,6 +502,11 @@ void openBrowser( void )
 }
 
 
+/// @brief Print text while wrapping detected URLs in OSC 8 hyperlink escapes.
+///
+/// @param ptrText Text to print.
+///
+/// @return This function does not return a value.
 void printWithOsc8Links( const char *ptrText )
 {
    const char *ptrCursor;
@@ -538,6 +611,11 @@ void printWithOsc8Links( const char *ptrText )
 }
 
 
+/// @brief Queue a detected URL for the visible report output.
+///
+/// @param ptrUrl URL text to queue.
+///
+/// @return This helper does not return a value.
 static void queueUrlForReport( const char *ptrUrl )
 {
    char aryTempText[1024];
@@ -557,6 +635,11 @@ static void queueUrlForReport( const char *ptrUrl )
 }
 
 
+/// @brief Queue a detected URL only if it is not already present.
+///
+/// @param ptrUrl URL text to queue.
+///
+/// @return This helper does not return a value.
 static void queueUrlIfNew( const char *ptrUrl )
 {
    char aryTempText[1024];
@@ -577,6 +660,9 @@ static void queueUrlIfNew( const char *ptrUrl )
 }
 
 
+/// @brief Check whether clickable URL reporting should be shown.
+///
+/// @return `true` if clickable URL reporting is enabled, otherwise `false`.
 static bool shouldEmitClickableUrls( void )
 {
    if ( flagsConfiguration.isScreenReaderModeEnabled )
@@ -588,6 +674,11 @@ static bool shouldEmitClickableUrls( void )
 }
 
 
+/// @brief Trim trailing punctuation that should not remain part of a URL.
+///
+/// @param ptrUrlStart URL text to trim in place.
+///
+/// @return This helper does not return a value.
 static void trimUrlTailPunctuation( char *ptrUrlStart )
 {
    size_t urlLength;

@@ -17,7 +17,16 @@
 #include "edit.h"
 #include "utility.h"
 
-void makeMessage( int upload ) /* 0 = normal, 1 = upload (end w/^D) */
+/// @brief Run the interactive local message editor.
+///
+/// This editor flow is derived from the original BBS-side editor and keeps the
+/// same wrapping, save, and prompt behavior while the client is in local post
+/// mode.
+///
+/// @param upload Non-zero when upload mode should end on `CTRL_D`.
+///
+/// @return This function does not return a value.
+void makeMessage( int upload )
 {
    int inputChar;
    FILE *ptrMessageFile = tempFile;

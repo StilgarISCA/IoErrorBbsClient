@@ -13,6 +13,12 @@
 #include "client_globals.h"
 #include "utility.h"
 
+/// @brief Entry point for the BBS client.
+///
+/// @param argc Argument count.
+/// @param argv Argument vector.
+///
+/// @return Process exit status.
 int main( int argc, char *argv[] )
 {
    aryEscape[0] = '\033';

@@ -18,6 +18,9 @@
 
 static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 
+/// @brief Clear every stored away-message line.
+///
+/// @return This function does not return a value.
 static void clearAwayMessageLines( void )
 {
    int itemIndex;
@@ -28,6 +31,9 @@ static void clearAwayMessageLines( void )
    }
 }
 
+/// @brief Run the express and away-message configuration submenu.
+///
+/// @return This function does not return a value.
 void expressConfig( void )
 {
    stdPrintf( "Express\r\n" );
@@ -68,6 +74,11 @@ void expressConfig( void )
    }
 }
 
+/// @brief Prompt for a new away message and store up to five lines.
+///
+/// Existing away text is shown first and can be kept unchanged.
+///
+/// @return This function does not return a value.
 void newAwayMessage( void )
 {
    int itemIndex;

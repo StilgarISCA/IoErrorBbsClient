@@ -71,6 +71,14 @@ static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
 }
 
 
+/// @brief Seed a wrapped input field with leftover text from the previous line.
+///
+/// @param length Maximum input length.
+/// @param line Input line index.
+/// @param result Destination buffer.
+/// @param ptrCursor Receives the updated cursor position.
+///
+/// @return This helper does not return a value.
 static void applyWrapSeed( int length, int line, char *result, char **ptrCursor )
 {
    if ( line <= 0 )
@@ -94,11 +102,11 @@ static void applyWrapSeed( int length, int line, char *result, char **ptrCursor 
 }
 
 
-/*
- * Used for getting X's and profiles.  'which' tells which of those two we are
- * wanting, to allow the special commands for X's, like PING and ABORT. When
- * we've got what we need, we send it immediately over the net.
- */
+/// @brief Collect and send a five-line input block such as an X or profile entry.
+///
+/// @param which Bitmask controlling the special command handling for this input mode.
+///
+/// @return This function does not return a value.
 void getFiveLines( int which )
 {
    register int lineIndex;
@@ -185,11 +193,13 @@ void getFiveLines( int which )
 }
 
 
-/*
- * Gets a generic string of length length, puts it in result and returns a a
- * pointer to result.  If the length given is negative, the string is echoed
- * with '.' instead of the character typed (used for passwords)
- */
+/// @brief Read a short input string with local editing and optional hidden echo.
+///
+/// @param length Maximum input length. Negative values request hidden echo.
+/// @param result Destination buffer for the collected string.
+/// @param line Line index used for wrapped multi-line input.
+///
+/// @return This function does not return a value.
 void getString( int length, char *result, int line )
 {
    GetStringState state;
@@ -253,6 +263,13 @@ void getString( int length, char *result, int line )
 }
 
 
+/// @brief Handle backspace-style editing inside `getString()`.
+///
+/// @param inputChar Input character to process.
+/// @param result Start of the input buffer.
+/// @param ptrCursor Current cursor position.
+///
+/// @return `true` if the input was handled as backspace editing, otherwise `false`.
 static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor )
 {
    if ( inputChar != '\b' && inputChar != CTRL_X )
@@ -273,6 +290,12 @@ static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor )
 }
 
 
+/// @brief Erase the previous word inside `getString()`.
+///
+/// @param result Start of the input buffer.
+/// @param ptrCursor Current cursor position.
+///
+/// @return Always returns `true`.
 static bool handleCtrlWEdit( char *result, char **ptrCursor )
 {
    char *ptrWordStart;
@@ -301,6 +324,14 @@ static bool handleCtrlWEdit( char *result, char **ptrCursor )
 }
 
 
+/// @brief Move overflow text into the wrap buffer for the next input line.
+///
+/// @param inputChar Character that triggered overflow.
+/// @param line Current line index.
+/// @param result Input buffer.
+/// @param ptrCursor Current cursor position.
+///
+/// @return `true` if input should continue on the current line, otherwise `false`.
 static bool handleGetStringOverflow( int inputChar, int line, char *result,
                                      char **ptrCursor )
 {
@@ -342,6 +373,12 @@ static bool handleGetStringOverflow( int inputChar, int line, char *result,
 }
 
 
+/// @brief Autofill a saved hidden password when that feature is enabled.
+///
+/// @param result Destination buffer for the decoded password.
+/// @param ptrState Current input mode state.
+///
+/// @return `true` if a saved password was used, otherwise `false`.
 static bool maybeUseSavedPassword( char *result, GetStringState *ptrState )
 {
 #ifdef ENABLE_SAVE_PASSWORD
@@ -369,6 +406,12 @@ static bool maybeUseSavedPassword( char *result, GetStringState *ptrState )
 }
 
 
+/// @brief Normalize the raw `getString()` length into active input mode state.
+///
+/// @param ptrLength Requested input length to normalize in place.
+/// @param ptrState Receives the normalized mode state.
+///
+/// @return This helper does not return a value.
 static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState )
 {
    ptrState->invalid = 0;
@@ -390,6 +433,12 @@ static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState )
 }
 
 
+/// @brief Record the collected string into the capture log.
+///
+/// @param ptrResult Collected input string.
+/// @param ptrState Current input mode state.
+///
+/// @return This helper does not return a value.
 static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState )
 {
    size_t charIndex;
@@ -409,6 +458,12 @@ static void recordCapturedString( const char *ptrResult, const GetStringState *p
 }
 
 
+/// @brief Save a hidden password back into the config when enabled.
+///
+/// @param ptrResult Collected hidden input string.
+/// @param ptrState Current input mode state.
+///
+/// @return This helper does not return a value.
 static void saveHiddenPasswordIfNeeded( const char *ptrResult,
                                         const GetStringState *ptrState )
 {
@@ -423,4 +478,3 @@ static void saveHiddenPasswordIfNeeded( const char *ptrResult,
    (void)ptrState;
 #endif
 }
-

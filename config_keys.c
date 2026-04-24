@@ -20,6 +20,9 @@ static const char *CONFIG_MACRO_MENU_KEYS = "elq \n";
 static void editConfiguredMacros( void );
 static void listConfiguredMacros( void );
 
+/// @brief Configure the client's hotkeys from the options menu.
+///
+/// @return This function does not return a value.
 void configureHotkeys( void )
 {
    stdPrintf( "Hotkeys\r\n\n" );
@@ -50,6 +53,9 @@ void configureHotkeys( void )
    stdPrintf( "%s\r\n", strCtrl( browserKey = newKey( browserKey ) ) );
 }
 
+/// @brief Run the macro configuration submenu.
+///
+/// @return This function does not return a value.
 void configureMacros( void )
 {
    int inputChar;
@@ -81,6 +87,9 @@ void configureMacros( void )
    }
 }
 
+/// @brief Prompt for a macro key and edit macros until the command key ends the loop.
+///
+/// @return This function does not return a value.
 static void editConfiguredMacros( void )
 {
    int inputChar;
@@ -101,6 +110,11 @@ static void editConfiguredMacros( void )
    stdPrintf( "Done\r\n" );
 }
 
+/// @brief Display the currently configured macros.
+///
+/// Output is paged through the normal `more()` prompt.
+///
+/// @return This function does not return a value.
 static void listConfiguredMacros( void )
 {
    int innerIndex;
@@ -126,12 +140,16 @@ static void listConfiguredMacros( void )
    }
 }
 
-/*
- * Gets a new hotkey value or returns the old value if the default is taken. If
- * the old value is specified as -1, no checking is done to see if the new
- * value doesn't conflict with other hotkeys. Calls getKey() instead of inKey()
- * to avoid the character translation.
- */
+/// @brief Read a replacement hotkey while avoiding collisions with other hotkeys.
+///
+/// The raw key is read with `getKey()` so terminal translations do not change
+/// the configured value.
+///
+/// @param oldkey Existing hotkey value, or `-1` to skip conflict checks against
+/// the current key being replaced.
+///
+/// @return The accepted replacement key, or `oldkey` if the user keeps the
+/// current binding.
 int newKey( int oldkey )
 {
    while ( true )
@@ -160,9 +178,11 @@ int newKey( int oldkey )
    }
 }
 
-/*
- * Gets a new value for aryMacro 'which'.
- */
+/// @brief Edit the macro bound to a specific key.
+///
+/// @param which Key code whose macro should be updated.
+///
+/// @return This function does not return a value.
 void newMacro( int which )
 {
    register int itemIndex;
@@ -225,9 +245,12 @@ void newMacro( int which )
    }
 }
 
-/*
- * Returns a printable representation of inputChar.
- */
+/// @brief Format a key value in printable control-key notation.
+///
+/// @param inputChar Key code to format.
+///
+/// @return A pointer to a static buffer containing either the literal printable
+/// character or a caret-style control representation.
 char *strCtrl( int inputChar )
 {
    static char aryControlText[3];

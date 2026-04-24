@@ -29,15 +29,11 @@ static int savelocalmode;
 #endif
 
 
-/*
- * This function flushes the input buffer in the same manner as the BBS does.
- * By doing it on the client end we arySavedBytes the BBS the trouble of doing it, but
- * in general the same thing will happen on one end or the other, so you won't
- * speed things up at all by changing this, the sleep is there for your
- * protection to insure a cut and paste gone awry or aryLine noise doesn't cause
- * you too much hassle of posting random garbage, changing your profile or
- * configuration or whatever.
- */
+/// @brief Flush pending terminal input after invalid or dangerous key sequences.
+///
+/// @param invalid Count of invalid bytes seen so far, used to scale the delay.
+///
+/// @return This function does not return a value.
 void flushInput( unsigned int invalid )
 {
 #if defined( FIONREAD ) || defined( TCFLSH )
@@ -66,9 +62,9 @@ void flushInput( unsigned int invalid )
 }
 
 
-/*
- * Get the current window size.
- */
+/// @brief Read the current terminal height and clamp it to supported limits.
+///
+/// @return The number of terminal rows now stored in `rows`.
 int getWindowSize( void )
 {
 #ifdef TIOCGWINSZ
@@ -92,12 +88,20 @@ int getWindowSize( void )
 }
 
 
+/// @brief Sleep for the requested number of seconds.
+///
+/// @param sec Number of seconds to sleep.
+///
+/// @return This function does not return a value.
 void mySleep( unsigned int sec )
 {
    sleep( sec );
 }
 
 
+/// @brief Clear any custom terminal title.
+///
+/// @return This function does not return a value.
 void noTitleBar( void )
 {
    if ( !shouldUpdateTitleBar() )
@@ -110,9 +114,9 @@ void noTitleBar( void )
 }
 
 
-/*
- * Reset the terminal to the previous state it was in when we started.
- */
+/// @brief Restore the terminal state saved before client mode was enabled.
+///
+/// @return This function does not return a value.
 void resetTerm( void )
 {
    if ( flagsConfiguration.shouldUseAnsi )
@@ -135,9 +139,9 @@ void resetTerm( void )
 }
 
 
-/*
- * Set terminal state to proper modes for running the client/bbs
- */
+/// @brief Put the terminal into the mode expected by the interactive client.
+///
+/// @return This function does not return a value.
 void setTerm( void )
 {
 #ifdef HAVE_TERMIO_H
@@ -214,6 +218,9 @@ void setTerm( void )
 }
 
 
+/// @brief Decide whether title-bar updates should be emitted right now.
+///
+/// @return `true` when title-bar updates are enabled and supported.
 static bool shouldUpdateTitleBar( void )
 {
    if ( !flagsConfiguration.shouldEnableTitleBar ||
@@ -226,11 +233,9 @@ static bool shouldUpdateTitleBar( void )
 }
 
 
-/*
- * Suspend the client.  Restores terminal to previous state before suspending,
- * puts it back in proper mode when client restarts, and checks if the window
- * size was changed while we were isAway.
- */
+/// @brief Suspend the client process and restore the terminal around the stop.
+///
+/// @return This function does not return a value.
 void suspend( void )
 {
    noTitleBar();
@@ -246,6 +251,9 @@ void suspend( void )
 }
 
 
+/// @brief Detect whether the current terminal supports title-bar updates.
+///
+/// @return `true` when the terminal is one of the supported title-capable terminals.
 static bool terminalSupportsTitleBarUpdates( void )
 {
    const char *ptrTerm;
@@ -275,6 +283,9 @@ static bool terminalSupportsTitleBarUpdates( void )
 }
 
 
+/// @brief Update the terminal title with the current connection state.
+///
+/// @return This function does not return a value.
 void titleBar( void )
 {
    char aryTitle[80];

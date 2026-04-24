@@ -13,9 +13,13 @@
 #include "utility.h"
 #include <stdarg.h>
 
-/*
- * slistAddItem adds an item to the list.
- */
+/// @brief Append an item to a sorted list.
+///
+/// @param list List to modify.
+/// @param item Item pointer to add.
+/// @param deferSort Non-zero to skip immediate resorting.
+///
+/// @return `1` on success, or `0` when the backing array could not be grown.
 int slistAddItem( slist *list, void *item, int deferSort )
 {
    void **ptrItems;
@@ -35,11 +39,12 @@ int slistAddItem( slist *list, void *item, int deferSort )
 }
 
 
-/*
- * slistCreate creates a list with the given number of items already
- * allocated.  If the number of items is >0, the pointers must be
- * passed as arguments.
- */
+/// @brief Create a new sorted list.
+///
+/// @param nitems Number of initial items supplied through the variadic arguments.
+/// @param sortfn Comparison function used to keep the list sorted.
+///
+/// @return A new list on success, or `NULL` on allocation failure.
 slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), ... )
 {
    slist *ptrList;
@@ -78,10 +83,11 @@ slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), .
 }
 
 
-/*
- * slistDestroy destroys a list.  It does not destroy the data items
- * in the list.
- */
+/// @brief Destroy a sorted list container without freeing its items.
+///
+/// @param list List to destroy.
+///
+/// @return This function does not return a value.
 void slistDestroy( slist *list )
 {
    free( list->items );
@@ -90,9 +96,11 @@ void slistDestroy( slist *list )
 }
 
 
-/*
- * slistDestroyItems destroys the data items in a list.
- */
+/// @brief Free every item stored in a sorted list.
+///
+/// @param list List whose items should be freed.
+///
+/// @return This function does not return a value.
 void slistDestroyItems( slist *list )
 {
    unsigned int itemIndex;
@@ -105,12 +113,13 @@ void slistDestroyItems( slist *list )
 }
 
 
-/*
- * slistFind locates an item based on the results of the search function.
- * Returns entry on success, -1 on failure.  findfn() should compare a to b
- * and return <0 if a < b, >0 if a > b, or 0 if a == b.
- * Algorithm is a binary search.
- */
+/// @brief Locate an item in a sorted list with a binary search.
+///
+/// @param list List to search.
+/// @param toFind Search key.
+/// @param findfn Comparison callback.
+///
+/// @return The matching item index, or `-1` when no item matched.
 int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const void * ) )
 {
    int upperBound;
@@ -153,16 +162,12 @@ int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const v
 }
 
 
-/*
- * slistIntersection creates the intersection of two slists, that is, the
- * list of items which appear on both lists.  We presume that we can create
- * the intersection if and only if the two lists use the same sortfn.  Data
- * members are copied using a shallow copy from list1, since this is typically
- * used for "throwaway" lists...  This function is designed to run in linear
- * linear time for list1 + list2.  Returns the list, an empty list if there
- * are no intersecting items, or NULL on error.  Do NOT destroy the list
- * items; they don't belong to you!
- */
+/// @brief Build the shallow intersection of two sorted lists.
+///
+/// @param list1 Left input list.
+/// @param list2 Right input list.
+///
+/// @return A new list containing the shared items, or `NULL` on error.
 slist *slistIntersection( const slist *list1, const slist *list2 )
 {
    int leftIndex;        /* Count of items processed */
@@ -224,10 +229,12 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
 }
 
 
-/*
- * slistRemoveItem removes an item from the list.  It does not free the
- * object being pointed to.
- */
+/// @brief Remove one item from the sorted list without freeing the item itself.
+///
+/// @param list List to modify.
+/// @param item Zero-based item index to remove.
+///
+/// @return `1` on success, or `0` if shrinking the backing array failed.
 int slistRemoveItem( slist *list, int item )
 {
    void **ptrItems;
@@ -258,14 +265,14 @@ int slistRemoveItem( slist *list, int item )
 }
 
 
-/*
- * slistSort sorts the list using qsort. qsort may not be the best choice,
- * but it's good-enough for the BBS client.
- */
+/// @brief Sort the list in place with its configured comparison function.
+///
+/// @param list List to sort.
+///
+/// @return This function does not return a value.
 void slistSort( slist *list )
 {
    assert( list );
 
    qsort( list->items, list->nitems, sizeof( void * ), list->sortfn );
 }
-

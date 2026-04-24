@@ -16,6 +16,11 @@ static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, siz
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );
 
 
+/// @brief Duplicate a NUL-terminated string with heap storage.
+///
+/// @param ptrSource Source text to copy.
+///
+/// @return A newly allocated copy of `ptrSource`, or `NULL` on allocation failure.
 char *duplicateString( const char *ptrSource )
 {
    size_t length;
@@ -31,6 +36,12 @@ char *duplicateString( const char *ptrSource )
 }
 
 
+/// @brief Extract the sender name from a header and move it to the recent-name history.
+///
+/// @param header Header text to parse.
+///
+/// @return A pointer to the stored history entry, or `NULL` when no sender name
+/// could be extracted.
 char *extractName( const char *header )
 {
    int charIndex;
@@ -60,6 +71,12 @@ char *extractName( const char *header )
 }
 
 
+/// @brief Extract the sender name from a header without updating name history.
+///
+/// @param header Header text to parse.
+///
+/// @return A pointer to a static buffer containing the extracted name, or `NULL`
+/// when no sender name could be found.
 char *extractNameNoHistory( const char *header )
 {
    static char aryExtractedName[sizeof( aryLastName[0] )];
@@ -72,6 +89,11 @@ char *extractNameNoHistory( const char *header )
 }
 
 
+/// @brief Extract the numeric message identifier from a `(#...)` header field.
+///
+/// @param header Header text to parse.
+///
+/// @return The parsed message number, or `0` when no number is present.
 int extractNumber( const char *header )
 {
    char *ptrMessageNumber;
@@ -92,6 +114,12 @@ int extractNumber( const char *header )
 }
 
 
+/// @brief Find the first occurrence of a character in a string.
+///
+/// @param ptrString String to search.
+/// @param targetChar Character to locate.
+///
+/// @return A pointer to the first matching character, or `NULL` when not found.
 char *findChar( const char *ptrString, int targetChar )
 {
    const char *ptrSearch;
@@ -120,6 +148,12 @@ char *findChar( const char *ptrString, int targetChar )
 }
 
 
+/// @brief Find the first occurrence of a substring within a string.
+///
+/// @param ptrString String to search.
+/// @param ptrSubstring Substring to locate.
+///
+/// @return A pointer to the first matching substring, or `NULL` when not found.
 char *findSubstring( const char *ptrString, const char *ptrSubstring )
 {
    const char *ptrSearch;
@@ -150,6 +184,13 @@ char *findSubstring( const char *ptrString, const char *ptrSubstring )
 }
 
 
+/// @brief Parse a sender name out of a formatted message header.
+///
+/// @param header Header text to inspect.
+/// @param ptrNameBuffer Destination buffer for the parsed name.
+/// @param nameBufferSize Size of `ptrNameBuffer`.
+///
+/// @return `true` when a name was parsed successfully, otherwise `false`.
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize )
 {
    char *ptrHeaderName;
@@ -206,4 +247,3 @@ static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, siz
    ptrNameBuffer[nameLength] = '\0';
    return nameLength > 0;
 }
-

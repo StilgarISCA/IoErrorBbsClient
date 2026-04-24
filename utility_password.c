@@ -10,14 +10,17 @@
 #include "defs.h"
 
 #ifdef ENABLE_SAVE_PASSWORD
-/*
- * Encode/decode password with a simple algorithm.
- * jhp 5Feb95 (Marx Marvelous)
- *
- * This code is horribly insecure.  Don't use it for any passwords
- * you care about!  Also note it's closely tied to ASCII and won't
- * work with a non-ASCII system.  - IO
- */
+/// @brief Decode a saved password with the legacy rolling ASCII algorithm.
+///
+/// This helper preserves the original 1995 algorithm by jhp (Marx Marvelous).
+/// The scheme is intentionally weak and is kept only for backward
+/// compatibility with existing saved passwords.
+///
+/// @param ptrDestination Output buffer that receives the decoded text.
+/// @param src Encoded input string.
+/// @param seedLength Initial rolling seed.
+///
+/// @return `ptrDestination`.
 char *jhpdecode( char *ptrDestination, const char *src, size_t seedLength )
 {
    char *ptrDestIterator; /* dest iterator */
@@ -33,6 +36,17 @@ char *jhpdecode( char *ptrDestination, const char *src, size_t seedLength )
    return ptrDestination;
 }
 
+/// @brief Encode a password with the legacy rolling ASCII algorithm.
+///
+/// This helper preserves the original 1995 algorithm by jhp (Marx Marvelous).
+/// The scheme is intentionally weak and is kept only for backward
+/// compatibility with existing saved passwords.
+///
+/// @param ptrDestination Output buffer that receives the encoded text.
+/// @param src Plaintext input string.
+/// @param seedLength Initial rolling seed.
+///
+/// @return `ptrDestination`.
 char *jhpencode( char *ptrDestination, const char *src, size_t seedLength )
 {
    char *ptrDestIterator; /* dest iterator */

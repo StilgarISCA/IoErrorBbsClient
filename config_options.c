@@ -21,6 +21,9 @@
 static void setKeyDefaultToUppercase( int lowerKey,
                                       bool shouldUseUppercaseByDefault );
 
+/// @brief Run the general options submenu and update in-memory settings.
+///
+/// @return This function does not return a value.
 void configureOptionsMenu( void )
 {
    char aryMenuLine[80];
@@ -118,6 +121,11 @@ void configureOptionsMenu( void )
    flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
+/// @brief Set the default autocomplete behavior when the user has not chosen one yet.
+///
+/// Screen reader mode disables this feature by default.
+///
+/// @return This function does not return a value.
 void defaultNameAutocompleteIfUnset( void )
 {
    if ( flagsConfiguration.hasNameAutocompleteSetting )
@@ -130,6 +138,9 @@ void defaultNameAutocompleteIfUnset( void )
    flagsConfiguration.hasNameAutocompleteSetting = 1;
 }
 
+/// @brief Prompt for screen reader mode when no explicit setting has been saved.
+///
+/// @return This function does not return a value.
 void promptForScreenReaderModeIfUnset( void )
 {
    if ( flagsConfiguration.hasScreenReaderModeSetting )
@@ -144,6 +155,13 @@ void promptForScreenReaderModeIfUnset( void )
    flagsConfiguration.hasScreenReaderModeSetting = 1;
 }
 
+/// @brief Flip a two-key command mapping between lowercase and uppercase defaults.
+///
+/// @param lowerKey Lowercase command character in the key map.
+/// @param shouldUseUppercaseByDefault Non-zero to map the lowercase key to the
+/// uppercase action by default, zero to restore the normal lowercase default.
+///
+/// @return This function does not return a value.
 static void setKeyDefaultToUppercase( int lowerKey,
                                       bool shouldUseUppercaseByDefault )
 {

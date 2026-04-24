@@ -31,6 +31,11 @@ static void sendEditorCommand( int inputChar );
 static void showEditorCommandPrompt( void );
 
 
+/// @brief Reopen the temp file and revalidate it after returning from an external editor.
+///
+/// @param ptrMessageFile Address of the current draft file handle.
+///
+/// @return This helper does not return a value.
 static void continueAfterExternalEdit( FILE **ptrMessageFile )
 {
    if ( flagsConfiguration.shouldUseAnsi )
@@ -51,6 +56,12 @@ static void continueAfterExternalEdit( FILE **ptrMessageFile )
 }
 
 
+/// @brief Copy the contents of a named file into the current draft.
+///
+/// @param ptrMessageFile Draft file to append to.
+/// @param ptrInputPath Source file path to copy.
+///
+/// @return `true` on success, otherwise `false`.
 static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath )
 {
    FILE *ptrCopyFile;
@@ -83,6 +94,13 @@ static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInput
 }
 
 
+/// @brief Load a named file into the current draft from the editor prompt.
+///
+/// @param ptrMessageFile Address of the current draft file handle.
+/// @param ptrInputPath Buffer that receives the file path from the user.
+/// @param commandChar Editor command that triggered the load.
+///
+/// @return `true` if the load should continue, otherwise `false`.
 static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
                                       int commandChar )
 {
@@ -118,6 +136,9 @@ static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
    return copyNamedFileIntoMessage( *ptrMessageFile, ptrInputPath );
 }
 
+/// @brief Print the ANSI-colored editor command prompt legend.
+///
+/// @return This helper does not return a value.
 static void printEditorCommandPrompt( void )
 {
    char aryAnsiSequence[32];
@@ -165,13 +186,13 @@ static void printEditorCommandPrompt( void )
 }
 
 
-/*
- * This function used to be part of edit(), it was broken out because stupid
- * DEC optimizers found edit() too long to optimize without a warning, and that
- * warning made people think something went wrong in the compilation.  This
- * also might even make this stuff easier for others to understand, but I doubt
- * it.
- */
+/// @brief Handle the command prompt shown while composing a local message.
+///
+/// @param ptrMessageFile Draft file being edited.
+/// @param previousChar Last character seen by the main editor loop.
+/// @param commandChar Command character that opened the prompt.
+///
+/// @return `1` to continue editing, `0` to return to the caller, or `-1` to stop posting.
 int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
 {
    int itemIndex;
@@ -354,6 +375,9 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
 }
 
 
+/// @brief Resolve the configured external editor command for the current session.
+///
+/// @return Editor command string to execute, or `NULL` if none is available.
 static const char *resolveEditorCommand( void )
 {
    if ( !*aryEditor )
@@ -368,6 +392,11 @@ static const char *resolveEditorCommand( void )
 }
 
 
+/// @brief Send a one-character editor command back to the server.
+///
+/// @param inputChar Command character to send.
+///
+/// @return This helper does not return a value.
 static void sendEditorCommand( int inputChar )
 {
    sendBlock();
@@ -376,6 +405,9 @@ static void sendEditorCommand( int inputChar )
 }
 
 
+/// @brief Show the editor command prompt using the current color mode.
+///
+/// @return This helper does not return a value.
 static void showEditorCommandPrompt( void )
 {
    if ( flagsConfiguration.shouldUseAnsi )
@@ -387,4 +419,3 @@ static void showEditorCommandPrompt( void )
       printf( "<A>bort <C>ontinue <E>dit <P>rint <S>ave <X>press -> " );
    }
 }
-

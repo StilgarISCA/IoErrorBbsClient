@@ -57,6 +57,14 @@ static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
 static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry );
 
 
+/// @brief Start a who-list capture if one is not already active.
+///
+/// @param ptrPtrWhoEntryWrite Current entry write pointer.
+/// @param ptrNew Tracks whether any new entries have been seen.
+/// @param ptrFriendColumn Tracks the printed friend column count.
+/// @param aryWhoEntry Entry buffer to initialize.
+///
+/// @return This helper does not return a value.
 static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,
                                   int *ptrFriendColumn, unsigned char *aryWhoEntry )
 {
@@ -72,6 +80,12 @@ static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptr
 }
 
 
+/// @brief Duplicate a who-list name or abort if memory allocation fails.
+///
+/// @param ptrName Name to duplicate.
+/// @param ptrErrorText Fatal error text to show on allocation failure.
+///
+/// @return Heap-allocated name copy.
 static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorText )
 {
    char *ptrWhoCopy;
@@ -87,6 +101,11 @@ static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorTex
 }
 
 
+/// @brief Filter one byte of incoming who-list data.
+///
+/// @param inputChar Next input byte from the server.
+///
+/// @return This function does not return a value.
 void filterWhoList( register int inputChar )
 {
    static char new;
@@ -112,6 +131,12 @@ void filterWhoList( register int inputChar )
 }
 
 
+/// @brief Finish the current who-list capture.
+///
+/// @param ptrPtrWhoEntryWrite Entry write pointer to clear.
+/// @param ptrNew New-entry flag to reset.
+///
+/// @return This helper does not return a value.
 static void finishCurrentWhoList( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew )
 {
    *ptrPtrWhoEntryWrite = NULL;
@@ -120,6 +145,14 @@ static void finishCurrentWhoList( unsigned char **ptrPtrWhoEntryWrite, char *ptr
 }
 
 
+/// @brief Format the saved who-list age header text.
+///
+/// @param ptrBuffer Destination buffer.
+/// @param bufferSize Size of the destination buffer.
+/// @param ptrPrefix Header prefix text.
+/// @param elapsedSeconds Age of the saved list in seconds.
+///
+/// @return This helper does not return a value.
 static void formatElapsedWhoHeader( char *ptrBuffer, size_t bufferSize,
                                     const char *ptrPrefix, long elapsedSeconds )
 {
@@ -130,6 +163,13 @@ static void formatElapsedWhoHeader( char *ptrBuffer, size_t bufferSize,
 }
 
 
+/// @brief Format the displayed who-list elapsed time text for one entry.
+///
+/// @param ptrBuffer Destination buffer.
+/// @param bufferSize Size of the destination buffer.
+/// @param elapsedMinutes Elapsed time in minutes.
+///
+/// @return This helper does not return a value.
 static void formatWhoTimeText( char *ptrBuffer, size_t bufferSize, long elapsedMinutes )
 {
    if ( elapsedMinutes >= 1440 )
@@ -148,6 +188,15 @@ static void formatWhoTimeText( char *ptrBuffer, size_t bufferSize, long elapsedM
 }
 
 
+/// @brief Finish one completed who-list entry and update saved state.
+///
+/// @param aryWhoEntry Completed encoded who-list entry.
+/// @param ptrPtrWhoEntryWrite Entry write pointer to reset.
+/// @param ptrFriendColumn Printed friend column count.
+/// @param ptrTimestamp Timestamp for the current who list.
+/// @param ptrExtendedTime Extended time accumulator.
+///
+/// @return This helper does not return a value.
 static void handleCompletedWhoEntry( unsigned char *aryWhoEntry,
                                      unsigned char **ptrPtrWhoEntryWrite,
                                      int *ptrFriendColumn, long *ptrTimestamp,
@@ -213,6 +262,16 @@ static void handleCompletedWhoEntry( unsigned char *aryWhoEntry,
 }
 
 
+/// @brief Handle a NUL terminator while processing who-list data.
+///
+/// @param aryWhoEntry Current encoded who-list entry buffer.
+/// @param ptrPtrWhoEntryWrite Current entry write pointer.
+/// @param ptrNew New-entry flag.
+/// @param ptrFriendColumn Printed friend column count.
+/// @param ptrTimestamp Timestamp for the current who list.
+/// @param ptrExtendedTime Extended time accumulator.
+///
+/// @return This helper does not return a value.
 static void handleWhoListNull( unsigned char *aryWhoEntry,
                                unsigned char **ptrPtrWhoEntryWrite,
                                char *ptrNew, int *ptrFriendColumn,
@@ -241,6 +300,12 @@ static void handleWhoListNull( unsigned char *aryWhoEntry,
 }
 
 
+/// @brief Print the saved who list with refreshed elapsed times.
+///
+/// @param elapsedSeconds Age of the saved list in seconds.
+/// @param ptrFriendColumn Printed friend column count.
+///
+/// @return This helper does not return a value.
 static void printSavedWhoList( long elapsedSeconds, int *ptrFriendColumn )
 {
    char aryTempText[80];
@@ -267,6 +332,12 @@ static void printSavedWhoList( long elapsedSeconds, int *ptrFriendColumn )
 }
 
 
+/// @brief Print the saved who-list summary header.
+///
+/// @param ptrFriendColumn Printed friend column count.
+/// @param timestamp Timestamp of the saved who list.
+///
+/// @return This helper does not return a value.
 static void printSavedWhoSummary( int *ptrFriendColumn, long timestamp )
 {
    static long timer = 0;
@@ -311,6 +382,14 @@ static void printSavedWhoSummary( int *ptrFriendColumn, long timestamp )
 }
 
 
+/// @brief Print one who-list entry using the active theme.
+///
+/// @param ptrName Display name to print.
+/// @param statusMarker Status marker character.
+/// @param ptrTimeText Formatted time text.
+/// @param ptrInfo Associated info text.
+///
+/// @return This helper does not return a value.
 static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
                                      const char *ptrTimeText, const char *ptrInfo )
 {
@@ -340,6 +419,11 @@ static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
 }
 
 
+/// @brief Print a who-list header using the active theme.
+///
+/// @param ptrText Header text to print.
+///
+/// @return This helper does not return a value.
 static void printThemedWhoListHeader( const char *ptrText )
 {
    if ( flagsConfiguration.shouldUseAnsi )
@@ -360,6 +444,9 @@ static void printThemedWhoListHeader( const char *ptrText )
 }
 
 
+/// @brief Rebuild the saved who list from the configured friend list.
+///
+/// @return This helper does not return a value.
 static void refreshSavedWhoList( void )
 {
    unsigned int ui;
@@ -387,6 +474,12 @@ static void refreshSavedWhoList( void )
 }
 
 
+/// @brief Store a newly seen friend entry into the saved who-list cache.
+///
+/// @param aryWhoEntry Encoded who-list entry.
+/// @param ptrFriend Friend record supplying the info text.
+///
+/// @return This helper does not return a value.
 static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
                                  const friend *ptrFriend )
 {
@@ -401,6 +494,11 @@ static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
 }
 
 
+/// @brief Add a who-list entry to the saved-name cache if it is new.
+///
+/// @param aryWhoEntry Encoded who-list entry.
+///
+/// @return This helper does not return a value.
 static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry )
 {
    char aryTempText[80];
@@ -418,4 +516,3 @@ static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry )
       }
    }
 }
-

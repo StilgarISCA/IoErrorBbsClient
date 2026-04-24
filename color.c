@@ -45,6 +45,11 @@ static int transformIncomingAnsiColor( int inputChar );
 static int transformPostHeaderColor( int inputChar, int isFriend );
 
 
+/// @brief Translate a general incoming ANSI color digit to the active theme.
+///
+/// @param inputChar Incoming ANSI color digit.
+///
+/// @return The transformed theme color value.
 int ansiTransform( int inputChar )
 {
    int transformedColor;
@@ -55,6 +60,12 @@ int ansiTransform( int inputChar )
 }
 
 
+/// @brief Recolor an express message line using the active theme.
+///
+/// @param ptrText Express message line to rewrite in place.
+/// @param size Size of the destination buffer.
+///
+/// @return This function does not return a value.
 void ansiTransformExpress( char *ptrText, size_t size )
 {
    char aryTempText[580];
@@ -115,6 +126,12 @@ void ansiTransformExpress( char *ptrText, size_t size )
 }
 
 
+/// @brief Translate a post ANSI color digit to the active post theme color.
+///
+/// @param inputChar Incoming ANSI color digit.
+/// @param isFriend Non-zero when the post belongs to a friend.
+///
+/// @return The transformed theme color value.
 int ansiTransformPost( int inputChar, int isFriend )
 {
    int transformedColor;
@@ -145,6 +162,13 @@ int ansiTransformPost( int inputChar, int isFriend )
 }
 
 
+/// @brief Recolor a rendered post header using the active theme.
+///
+/// @param ptrText Header buffer to rewrite in place.
+/// @param bufferSize Size of the header buffer.
+/// @param isFriend Non-zero when the post belongs to a friend.
+///
+/// @return This function does not return a value.
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 {
    char aryTransformedHeader[320];
@@ -178,6 +202,11 @@ void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 }
 
 
+/// @brief Look up the canonical name for a color value.
+///
+/// @param colorValue Color value to resolve.
+///
+/// @return Matching color name, or `NULL` if the value is unknown.
 const char *colorNameFromValue( int colorValue )
 {
    size_t itemIndex;
@@ -194,6 +223,11 @@ const char *colorNameFromValue( int colorValue )
 }
 
 
+/// @brief Convert a legacy digit color code into its numeric value.
+///
+/// @param inputChar Legacy color digit or raw value.
+///
+/// @return Parsed color value.
 int colorValueFromLegacyDigit( int inputChar )
 {
    if ( inputChar >= '0' && inputChar <= '9' )
@@ -205,6 +239,11 @@ int colorValueFromLegacyDigit( int inputChar )
 }
 
 
+/// @brief Resolve a configured color name to its color value.
+///
+/// @param ptrColorName Color name to look up.
+///
+/// @return Matching color value, or `-1` if the name is unknown.
 int colorValueFromName( const char *ptrColorName )
 {
    size_t itemIndex;
@@ -226,12 +265,26 @@ int colorValueFromName( const char *ptrColorName )
 }
 
 
+/// @brief Convert a color value back to its legacy digit form.
+///
+/// @param colorValue Color value to encode.
+///
+/// @return Legacy digit character value.
 int colorValueToLegacyDigit( int colorValue )
 {
    return colorValue + '0';
 }
 
 
+/// @brief Format a themed ANSI foreground sequence for an incoming color digit.
+///
+/// @param ptrBuffer Destination buffer for the ANSI sequence.
+/// @param bufferSize Size of the destination buffer.
+/// @param inputChar Incoming ANSI color digit.
+/// @param isPostContext Non-zero when post color mapping rules apply.
+/// @param isFriend Non-zero when the post belongs to a friend.
+///
+/// @return Number of characters written by `snprintf`.
 int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
                                              int inputChar, int isPostContext,
                                              int isFriend )
@@ -252,6 +305,12 @@ int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
 }
 
 
+/// @brief Compare two color names case-insensitively.
+///
+/// @param ptrLeft Left-hand color name.
+/// @param ptrRight Right-hand color name.
+///
+/// @return `true` if the names match, otherwise `false`.
 static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
 {
    while ( *ptrLeft && *ptrRight )
@@ -268,6 +327,11 @@ static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
 }
 
 
+/// @brief Translate a general incoming ANSI color digit to the configured palette.
+///
+/// @param inputChar Incoming ANSI color digit.
+///
+/// @return The transformed color value.
 static int transformIncomingAnsiColor( int inputChar )
 {
    switch ( inputChar )
@@ -294,6 +358,12 @@ static int transformIncomingAnsiColor( int inputChar )
 }
 
 
+/// @brief Translate a post header color digit to the configured post header color.
+///
+/// @param inputChar Incoming ANSI color digit.
+/// @param isFriend Non-zero when the post belongs to a friend.
+///
+/// @return The transformed post header color value.
 static int transformPostHeaderColor( int inputChar, int isFriend )
 {
    switch ( inputChar )
@@ -322,4 +392,3 @@ static int transformPostHeaderColor( int inputChar, int isFriend )
          return transformIncomingAnsiColor( inputChar );
    }
 }
-

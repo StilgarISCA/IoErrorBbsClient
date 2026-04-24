@@ -11,10 +11,12 @@
 #include "client.h"
 #include "config_globals.h"
 
-/*
- * Process command line arguments.  argv[1] is an alternate host, if present,
- * and argv[2] is an alternate port, if present, and argv[1] is also present.
- */
+/// @brief Parse optional command-line host, port, and secure-mode overrides.
+///
+/// @param argc Argument count from `main()`.
+/// @param argv Argument vector from `main()`.
+///
+/// @return This function does not return a value.
 void arguments( int argc, char **argv )
 {
    if ( argc > 1 )

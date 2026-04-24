@@ -18,6 +18,9 @@
 static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength );
 
 
+/// @brief Re-emit the standard continued-data color sequence through the data filter.
+///
+/// @return This function does not return a value.
 void continuedDataHelper( void )
 {
    static char aryTempText[] = "\033[32m";
@@ -30,6 +33,14 @@ void continuedDataHelper( void )
 }
 
 
+/// @brief Emit a transformed ANSI escape sequence for normal or post text.
+///
+/// @param ptrAnsiSequence ANSI sequence buffer to emit.
+/// @param sequenceLength Length of the ANSI sequence buffer.
+/// @param isPostContext Non-zero when post color translation rules apply.
+/// @param isFriend Non-zero when the post belongs to a friend.
+///
+/// @return This function does not return a value.
 void emitTransformedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength,
                                   int isPostContext, int isFriend )
 {
@@ -60,6 +71,11 @@ void emitTransformedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLe
 }
 
 
+/// @brief Filter ordinary incoming BBS data outside post and express contexts.
+///
+/// @param inputChar Next input byte from the server.
+///
+/// @return This function does not return a value.
 void filterData( register int inputChar )
 {
    static char aryBufferedAnsiSequence[8];
@@ -166,6 +182,9 @@ void filterData( register int inputChar )
 }
 
 
+/// @brief Reapply the correct color after a more prompt finishes.
+///
+/// @return This function does not return a value.
 void morePromptHelper( void )
 {
    if ( !flagsConfiguration.shouldUseAnsi )
@@ -184,12 +203,21 @@ void morePromptHelper( void )
 }
 
 
+/// @brief Print a buffered ANSI escape sequence verbatim.
+///
+/// @param ptrAnsiSequence ANSI sequence to print.
+/// @param sequenceLength Number of bytes to print.
+///
+/// @return This helper does not return a value.
 static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength )
 {
    stdPrintf( "%.*s", (int)sequenceLength, ptrAnsiSequence );
 }
 
 
+/// @brief Reprint the current filtered line after a local interruption.
+///
+/// @return This function does not return a value.
 void reprintLine( void )
 {
    char aryLine[320];
@@ -203,4 +231,3 @@ void reprintLine( void )
    }
    snprintf( aryFilterLine, sizeof( aryFilterLine ), "%s", aryLine );
 }
-

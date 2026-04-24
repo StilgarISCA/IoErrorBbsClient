@@ -16,6 +16,11 @@
 static int printYesNoResult( int inputChar );
 static int readValidatedInput( const char *allowedChars, bool shouldFoldInput );
 
+/// @brief Track repeated invalid input and flush the terminal if it keeps happening.
+///
+/// @param ptrInvalidCount Counter of consecutive invalid inputs.
+///
+/// @return This function does not return a value.
 void handleInvalidInput( unsigned int *ptrInvalidCount )
 {
    if ( ( *ptrInvalidCount )++ )
@@ -24,6 +29,9 @@ void handleInvalidInput( unsigned int *ptrInvalidCount )
    }
 }
 
+/// @brief Forward validated local keystrokes directly to the BBS.
+///
+/// @return This function does not return a value.
 void looper( void )
 {
    unsigned int invalid = 0;
@@ -57,6 +65,13 @@ void looper( void )
    }
 }
 
+/// @brief Show the pager prompt and read the next pagination choice.
+///
+/// @param line Current pager line counter, updated in place.
+/// @param percentComplete Optional completion percentage, or a negative value
+/// when no percentage should be shown.
+///
+/// @return `0` to continue paging or `-1` when the user quits the pager.
 int more( int *line, int percentComplete )
 {
    char aryPrompt[96];
@@ -103,6 +118,11 @@ int more( int *line, int percentComplete )
    return ( *line < 0 ? -1 : 0 );
 }
 
+/// @brief Print the normalized Yes or No response and return it as a boolean.
+///
+/// @param inputChar Response key that should already be one of the yes/no keys.
+///
+/// @return `1` for yes or `0` for no.
 static int printYesNoResult( int inputChar )
 {
    if ( inputChar == 'y' || inputChar == 'Y' )
@@ -115,6 +135,9 @@ static int printYesNoResult( int inputChar )
    return 0;
 }
 
+/// @brief Read one key and fold alphabetic input to lowercase.
+///
+/// @return The normalized key value.
 int readFoldedKey( void )
 {
    int inputChar;
@@ -127,6 +150,12 @@ int readFoldedKey( void )
    return inputChar;
 }
 
+/// @brief Read input until one of the allowed characters is entered.
+///
+/// @param allowedChars Set of accepted characters.
+/// @param shouldFoldInput Non-zero to lowercase alphabetic input before validation.
+///
+/// @return The accepted key value.
 static int readValidatedInput( const char *allowedChars, bool shouldFoldInput )
 {
    unsigned int invalid = 0;
@@ -151,16 +180,29 @@ static int readValidatedInput( const char *allowedChars, bool shouldFoldInput )
    }
 }
 
+/// @brief Read one key that must match the supplied set exactly.
+///
+/// @param allowedChars Set of accepted characters.
+///
+/// @return The accepted key value.
 int readValidatedKey( const char *allowedChars )
 {
    return readValidatedInput( allowedChars, false );
 }
 
+/// @brief Read a menu key after folding alphabetic input to lowercase.
+///
+/// @param allowedCharsLowercase Lowercase accepted menu characters.
+///
+/// @return The accepted menu key.
 int readValidatedMenuKey( const char *allowedCharsLowercase )
 {
    return readValidatedInput( allowedCharsLowercase, true );
 }
 
+/// @brief Read and print a strict yes-or-no answer.
+///
+/// @return `1` for yes or `0` for no.
 int yesNo( void )
 {
    register int inputChar;
@@ -169,6 +211,11 @@ int yesNo( void )
    return printYesNoResult( inputChar );
 }
 
+/// @brief Read a yes-or-no answer with a default on space or return.
+///
+/// @param defaultAnswer Default boolean value used for space or return.
+///
+/// @return `1` for yes or `0` for no.
 int yesNoDefault( int defaultAnswer )
 {
    register int inputChar;

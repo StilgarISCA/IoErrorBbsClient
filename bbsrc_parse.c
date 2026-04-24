@@ -148,6 +148,11 @@ static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
                                    char ( *aryAwayBuffers )[80] );
 
 
+/// @brief Parse and add one `friend` directive from `.bbsrc`.
+///
+/// @param ptrLine Raw `friend` line from the config file.
+///
+/// @return `true` on success, otherwise `false`.
 static bool addFriendFromLine( const char *ptrLine )
 {
    friend *ptrFriend;
@@ -205,6 +210,9 @@ static bool addFriendFromLine( const char *ptrLine )
 }
 
 
+/// @brief Apply default hotkey values when the config did not define them.
+///
+/// @return This helper does not return a value.
 static void applyBbsRcKeyDefaults( void )
 {
    if ( commandKey == -1 )
@@ -238,11 +246,14 @@ static void applyBbsRcKeyDefaults( void )
 }
 
 
-/*
- * Given a pointer to a string, this function evaluates it to a control
- * character, translating '^z', '^Z', or an actual ctrl-Z to all be ctrl-Z. If
- * the character is not a control character, it is simply returned as is.
- */
+/// @brief Decode a config token into a control-key value.
+///
+/// `^X` spellings and literal control characters are normalized to the same
+/// control-key result.
+///
+/// @param ptrToken Token to decode.
+///
+/// @return Parsed control-key value.
 static int ctrl( const char *ptrToken )
 {
    int parseIndex = *ptrToken;
@@ -266,6 +277,11 @@ static int ctrl( const char *ptrToken )
 }
 
 
+/// @brief Detect which `.bbsrc` command family a raw line belongs to.
+///
+/// @param ptrLine Raw config line.
+///
+/// @return Matching command identifier.
 static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
 {
    static const BbsRcCommandSpec aryCommands[] =
@@ -323,6 +339,9 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
 }
 
 
+/// @brief Ensure there is at least one away-message line configured.
+///
+/// @return This helper does not return a value.
 static void ensureDefaultAwayMessage( void )
 {
    if ( !**aryAwayMessageLines )
@@ -334,6 +353,11 @@ static void ensureDefaultAwayMessage( void )
 }
 
 
+/// @brief Finalize config state after `.bbsrc` parsing completes.
+///
+/// @param ptrState Running read state to finalize.
+///
+/// @return `true` on success, otherwise `false`.
 static bool finalizeBbsRcRead( BbsRcReadState *ptrState )
 {
    char *ptrNameCopy;
@@ -420,6 +444,9 @@ static bool finalizeBbsRcRead( BbsRcReadState *ptrState )
 }
 
 
+/// @brief Initialize default config values before `.bbsrc` parsing begins.
+///
+/// @return This helper does not return a value.
 static void initializeBbsRcDefaults( void )
 {
    int parseIndex;
@@ -489,6 +516,9 @@ static void initializeBbsRcDefaults( void )
 }
 
 
+/// @brief Create the list structures used while reading `.bbsrc`.
+///
+/// @return This helper does not return a value.
 static void initializeBbsRcLists( void )
 {
    if ( !( friendList = slistCreate( 0, fSortCompareVoid ) ) )
@@ -506,6 +536,11 @@ static void initializeBbsRcLists( void )
 }
 
 
+/// @brief Check whether a line is one of the numbered away-message commands.
+///
+/// @param ptrLine Raw config line.
+///
+/// @return `true` if the line is a numbered away-message command, otherwise `false`.
 static bool isNewAwayMessageCommand( const char *ptrLine )
 {
    return ptrLine[0] == 'a' && ptrLine[1] >= '1' &&
@@ -513,6 +548,14 @@ static bool isNewAwayMessageCommand( const char *ptrLine )
 }
 
 
+/// @brief Parse an on/off-style `.bbsrc` setting value.
+///
+/// @param ptrLine Raw config line.
+/// @param prefixLength Length of the directive prefix.
+/// @param ptrSettingName Setting name used in error messages.
+/// @param shouldAllowAnyNonZeroValue Non-zero to treat any non-zero digit as enabled.
+///
+/// @return Parsed setting value enum.
 static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue )
 {
    const char *ptrValue;
@@ -551,6 +594,12 @@ static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t pr
 }
 
 
+/// @brief Parse a full `.bbsrc` color scheme into the color struct layout.
+///
+/// @param ptrLine Raw `color` directive line.
+/// @param ptrColorValues Destination color array.
+///
+/// @return `true` on success, otherwise `false`.
 static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
 {
    if ( strlen( ptrLine ) == 6 + COLOR_FIELD_COUNT )
@@ -572,6 +621,12 @@ static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
 }
 
 
+/// @brief Parse a named-color `.bbsrc` color scheme.
+///
+/// @param ptrColorSpec Color specification text after the directive prefix.
+/// @param ptrColorValues Destination color array.
+///
+/// @return `true` on success, otherwise `false`.
 static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues )
 {
    int colorIndex;
@@ -641,6 +696,12 @@ static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues
 }
 
 
+/// @brief Dispatch one normalized `.bbsrc` line to the correct command handler.
+///
+/// @param ptrLine Normalized config line.
+/// @param ptrState Running `.bbsrc` read state.
+///
+/// @return `true` to continue parsing, otherwise `false`.
 static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
 {
    int parseIndex;
@@ -704,6 +765,13 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
 }
 
 
+/// @brief Handle connection, editor, and site-related `.bbsrc` commands.
+///
+/// @param commandId Parsed command identifier.
+/// @param ptrLine Raw config line.
+/// @param ptrState Running `.bbsrc` read state.
+///
+/// @return `true` if the command was handled, otherwise `false`.
 static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
                                            const char *ptrLine,
                                            BbsRcReadState *ptrState )
@@ -780,6 +848,12 @@ static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
 }
 
 
+/// @brief Handle hotkey-related `.bbsrc` commands.
+///
+/// @param commandId Parsed command identifier.
+/// @param ptrLine Raw config line.
+///
+/// @return `true` if the command was handled, otherwise `false`.
 static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
                                        const char *ptrLine )
 {
@@ -888,6 +962,12 @@ static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
 }
 
 
+/// @brief Handle friend and enemy list `.bbsrc` commands.
+///
+/// @param commandId Parsed command identifier.
+/// @param ptrLine Raw config line.
+///
+/// @return `true` if the command was handled, otherwise `false`.
 static bool processBbsRcListCommand( BbsRcCommandId commandId,
                                      const char *ptrLine )
 {
@@ -939,6 +1019,13 @@ static bool processBbsRcListCommand( BbsRcCommandId commandId,
 }
 
 
+/// @brief Handle macro and away-message `.bbsrc` commands.
+///
+/// @param commandId Parsed command identifier.
+/// @param ptrLine Raw config line.
+/// @param ptrState Running `.bbsrc` read state.
+///
+/// @return `true` if the command was handled, otherwise `false`.
 static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
                                       const char *ptrLine,
                                       BbsRcReadState *ptrState )
@@ -991,6 +1078,13 @@ static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
 }
 
 
+/// @brief Handle boolean and setting-style `.bbsrc` commands.
+///
+/// @param commandId Parsed command identifier.
+/// @param ptrLine Raw config line.
+/// @param ptrState Running `.bbsrc` read state.
+///
+/// @return `true` if the command was handled, otherwise `false`.
 static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
                                         const char *ptrLine,
                                         BbsRcReadState *ptrState )
@@ -1116,9 +1210,9 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
 }
 
 
-/*
- * Parses the bbsrc file and applies the configured settings.
- */
+/// @brief Read `.bbsrc` and apply the configured client settings.
+///
+/// @return This function does not return a value.
 void readBbsRc( void )
 {
    char aryLine[MAX_LINE_LENGTH + 1];
@@ -1145,6 +1239,12 @@ void readBbsRc( void )
 }
 
 
+/// @brief Read legacy `.bbsfriends` entries after `.bbsrc` parsing.
+///
+/// @param ptrLine Reusable line buffer.
+/// @param ptrState Running `.bbsrc` read state.
+///
+/// @return `true` on success, otherwise `false`.
 static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState )
 {
    if ( bbsFriends )
@@ -1167,6 +1267,9 @@ static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState )
 }
 
 
+/// @brief Warn about conflicting `.bbsrc` hotkey and macro definitions.
+///
+/// @return This helper does not return a value.
 static void warnAboutBbsRcConflicts( void )
 {
    if ( quitKey >= 0 && *aryMacro[quitKey] )
@@ -1212,6 +1315,13 @@ static void warnAboutBbsRcConflicts( void )
 }
 
 
+/// @brief Decode a `.bbsrc` escaped text field into its destination buffer.
+///
+/// @param ptrToken Encoded config token to decode.
+/// @param ptrWriteBuffer Destination buffer for decoded text.
+/// @param aryAwayBuffers Optional away-message buffer array for multi-line decoding.
+///
+/// @return This helper does not return a value.
 static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
                                    char ( *aryAwayBuffers )[80] )
 {
@@ -1239,4 +1349,3 @@ static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
       }
    }
 }
-

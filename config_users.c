@@ -33,6 +33,12 @@ static void printUserListMenu( const char *name, UserListKind userListKind );
 static void showEnemyOptions( void );
 static UserListKind userListKindFromName( const char *ptrName );
 
+/// @brief Add a new enemy name to the supplied list.
+///
+/// @param list Enemy list being edited.
+/// @param ptrUserName Name to duplicate and store.
+///
+/// @return This function does not return a value.
 static void addEnemyUser( slist *list, const char *ptrUserName )
 {
    char *ptrEnemyName;
@@ -50,6 +56,12 @@ static void addEnemyUser( slist *list, const char *ptrUserName )
    }
 }
 
+/// @brief Add a new friend record to the supplied list.
+///
+/// @param list Friend list being edited.
+/// @param ptrUserName Friend name to store.
+///
+/// @return This function does not return a value.
 static void addFriendUser( slist *list, const char *ptrUserName )
 {
    char aryInfo[50];
@@ -73,6 +85,12 @@ static void addFriendUser( slist *list, const char *ptrUserName )
    }
 }
 
+/// @brief Edit the info text attached to an existing friend entry.
+///
+/// @param list Friend list being edited.
+/// @param findfn Comparison callback used to locate the target entry.
+///
+/// @return This function does not return a value.
 static void editFriendUser( slist *list, int ( *findfn )( const void *, const void * ) )
 {
    char aryInfo[50];
@@ -119,9 +137,13 @@ static void editFriendUser( slist *list, int ( *findfn )( const void *, const vo
    }
 }
 
-/*
- * Does the editing of the friend and enemy lists.
- */
+/// @brief Run the interactive editor for the friend or enemy list.
+///
+/// @param list List being edited.
+/// @param findfn Comparison callback used to search the list.
+/// @param name Display name for the current list, typically `friend` or `enemy`.
+///
+/// @return This function does not return a value.
 void editUsers( slist *list, int ( *findfn )( const void *, const void * ), const char *name )
 {
    register int inputChar;
@@ -234,6 +256,11 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
    }
 }
 
+/// @brief Print the enemy list in a compact multi-column format.
+///
+/// @param list Enemy list to display.
+///
+/// @return This function does not return a value.
 static void printEnemyList( const slist *list )
 {
    int itemIndex;
@@ -259,6 +286,11 @@ static void printEnemyList( const slist *list )
    }
 }
 
+/// @brief Print the friend list with themed friend metadata.
+///
+/// @param list Friend list to display.
+///
+/// @return This function does not return a value.
 static void printFriendList( const slist *list )
 {
    friend *ptrFriend;
@@ -278,6 +310,11 @@ static void printFriendList( const slist *list )
    }
 }
 
+/// @brief Print one themed friend-list entry.
+///
+/// @param ptrFriend Friend record to display.
+///
+/// @return This function does not return a value.
 static void printThemedFriendListEntry( const friend *ptrFriend )
 {
    if ( flagsConfiguration.shouldUseAnsi )
@@ -301,6 +338,12 @@ static void printThemedFriendListEntry( const friend *ptrFriend )
    stdPrintf( "%-20s %s\r\n", ptrFriend->name, ptrFriend->info );
 }
 
+/// @brief Print the prompt line for the friend or enemy list editor.
+///
+/// @param name Display name for the current list.
+/// @param userListKind Kind of list being edited.
+///
+/// @return This function does not return a value.
 static void printUserListMenu( const char *name, UserListKind userListKind )
 {
    char aryDisplayLine[80];
@@ -322,6 +365,9 @@ static void printUserListMenu( const char *name, UserListKind userListKind )
    printAnsiForegroundColorValue( color.text );
 }
 
+/// @brief Configure whether killed enemy content still generates notifications.
+///
+/// @return This function does not return a value.
 static void showEnemyOptions( void )
 {
    stdPrintf( "Options\r\n\nNotify when an enemy's post is killed? (%s) -> ",
@@ -334,6 +380,11 @@ static void showEnemyOptions( void )
       !yesNoDefault( !flagsConfiguration.shouldSquelchExpress );
 }
 
+/// @brief Map a list name string to its internal list kind.
+///
+/// @param ptrName List name to classify.
+///
+/// @return `USER_LIST_ENEMY` for `enemy`; otherwise `USER_LIST_FRIEND`.
 static UserListKind userListKindFromName( const char *ptrName )
 {
    if ( strcmp( ptrName, "enemy" ) == 0 )

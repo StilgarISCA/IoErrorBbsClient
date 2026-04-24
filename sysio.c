@@ -20,6 +20,12 @@
 static bool shouldFlushImmediately( const char *ptrText );
 
 
+/// @brief Print formatted text to the capture file when capture mode is active.
+///
+/// @param format `printf`-style format string.
+/// @param ... Format arguments.
+///
+/// @return `1` after formatting and capture output handling.
 int capPrintf( const char *format, ... )
 {
    char aryString[BUFSIZ];
@@ -43,6 +49,11 @@ int capPrintf( const char *format, ... )
 }
 
 
+/// @brief Write one character to the capture file while honoring ANSI filtering.
+///
+/// @param inputChar Character to capture.
+///
+/// @return The input character value.
 int capPutChar( int inputChar )
 {
    static int skipansi = 0; /* Counter for avoidance of capturing ANSI */
@@ -80,6 +91,11 @@ int capPutChar( int inputChar )
 }
 
 
+/// @brief Write a string to the capture file after stripping ANSI escapes.
+///
+/// @param ptrText Text to capture.
+///
+/// @return `1` on success, or `1` after reporting a capture error.
 int capPuts( const char *ptrText )
 {
    if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive )
@@ -102,6 +118,12 @@ int capPuts( const char *ptrText )
 }
 
 
+/// @brief Print formatted text to the network output stream.
+///
+/// @param format `printf`-style format string.
+/// @param ... Format arguments.
+///
+/// @return Always returns `1`.
 int netPrintf( const char *format, ... )
 {
    va_list ap;
@@ -122,12 +144,22 @@ int netPrintf( const char *format, ... )
 }
 
 
+/// @brief Write one character to the network output stream.
+///
+/// @param inputChar Character to send.
+///
+/// @return Result from the low-level network put routine.
 int netPutChar( int inputChar )
 {
    return ( netput( inputChar ) );
 }
 
 
+/// @brief Write a string to the network output stream.
+///
+/// @param ptrText Text to send.
+///
+/// @return Always returns `1` on success.
 int netPuts( const char *ptrText )
 {
    size_t textLength;
@@ -148,15 +180,23 @@ int netPuts( const char *ptrText )
 
 char swork[BUFSIZ]; /* temp buffer for color stripping */
 
+/// @brief Check whether capture or standard output should be flushed immediately.
+///
+/// @param ptrText Text that was just written.
+///
+/// @return `true` if an immediate flush should follow, otherwise `false`.
 static bool shouldFlushImmediately( const char *ptrText )
 {
    return strchr( ptrText, '\n' ) == NULL;
 }
 
 
-/* stdPrintf and capPrintf print a formatted aryString to stdout, exactly as
- * libc *printf.
- */
+/// @brief Print formatted text to standard output and capture output.
+///
+/// @param format `printf`-style format string.
+/// @param ... Format arguments.
+///
+/// @return Result from `stdPuts()`.
 int stdPrintf( const char *format, ... )
 {
    /* Know what sucks?  I can't really call capPrintf directly... */
@@ -177,9 +217,11 @@ int stdPrintf( const char *format, ... )
 }
 
 
-/* stdPutChar() and capPutChar() write a single character to stdout and the
- * capture file, respectively.  On error, they terminate the client.
- */
+/// @brief Write one character to standard output and mirror it into capture output.
+///
+/// @param inputChar Character to print.
+///
+/// @return The input character value.
 int stdPutChar( int inputChar )
 {
    if ( putchar( inputChar ) < 0 )
@@ -191,10 +233,11 @@ int stdPutChar( int inputChar )
 }
 
 
-/* stdPuts and capPuts write a aryString to stdout.  They differ from libc *puts
- * in that they do NOT write a trailing \n to the stream.  On error, they
- * terminate the client.
- */
+/// @brief Write a string to standard output without adding a trailing newline.
+///
+/// @param ptrText Text to print.
+///
+/// @return Always returns `1` on success.
 int stdPuts( const char *ptrText )
 {
    if ( fputs( ptrText, stdout ) == EOF )
@@ -210,9 +253,12 @@ int stdPuts( const char *ptrText )
 }
 
 
-/* stripAnsi removes ANSI aryEscape sequences from a aryString.  Limits: aryString
- * buffer space is BUFSIZ bytes, should not overflow this!!
- */
+/// @brief Remove ANSI escape sequences from a string in place.
+///
+/// @param ptrText Text buffer to clean.
+/// @param bufferSize Size of the destination buffer.
+///
+/// @return Pointer to the cleaned text buffer.
 char *stripAnsi( char *ptrText, size_t bufferSize )
 {
    const char *ptrRead;
@@ -243,4 +289,3 @@ char *stripAnsi( char *ptrText, size_t bufferSize )
    }
    return ptrText;
 }
-

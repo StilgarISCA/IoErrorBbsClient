@@ -102,6 +102,12 @@ static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
                                         const char *ptrPort );
 
 
+/// @brief Apply TCP keepalive settings to the active socket.
+///
+/// @param socketFileDescriptor Connected socket file descriptor.
+/// @param isEnabled Non-zero to enable keepalive probing, zero to disable it.
+///
+/// @return This function does not return a value.
 static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 {
    int enabledValue;
@@ -167,12 +173,13 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 }
 
 
-/*
- * Open a socket connection to the bbs.  Defaults to BBS_HOSTNAME with port BBS_PORT_NUMBER
- * (by default a standard telnet to bbs.iscabbs.com) but can be overridden
- * in the bbsrc file if/when the source to the ISCA BBS is released and others
- * start their own on different machines and/or ports.
- */
+/// @brief Resolve the target host and open the main BBS network connection.
+///
+/// The function reports progress for host lookup, socket connect, and optional
+/// TLS setup before handing the connected socket back to the rest of the
+/// client.
+///
+/// @return This function does not return a value.
 void connectBbs( void )
 {
    register int connectResult;
@@ -295,6 +302,13 @@ void connectBbs( void )
 }
 
 
+/// @brief Abort after a host lookup failure with a categorized message.
+///
+/// @param ptrHost Host name that was being resolved.
+/// @param ptrPort Service or port string being resolved.
+/// @param lookupResult `getaddrinfo()` error code.
+///
+/// @return This function does not return to the caller.
 static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
                                      int lookupResult )
 {
@@ -312,6 +326,13 @@ static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
 }
 
 
+/// @brief Abort after a socket connect failure with a categorized message.
+///
+/// @param ptrHost Host name that was being contacted.
+/// @param ptrPort Port string that was being contacted.
+/// @param connectionErrno Saved `errno` from the failed connect attempt.
+///
+/// @return This function does not return to the caller.
 static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort,
                                         int connectionErrno )
 {
@@ -330,6 +351,13 @@ static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort
 #ifdef HAVE_OPENSSL
 static SSL_CTX *ctx;
 
+/// @brief Abort after a TLS setup failure.
+///
+/// @param ptrHost Host name being contacted.
+/// @param ptrPort Port string being contacted.
+/// @param ptrOperation Short description of the TLS step that failed.
+///
+/// @return This function does not return to the caller.
 static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
                                      const char *ptrOperation )
 {
@@ -352,6 +380,14 @@ static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
 #endif /* HAVE_OPENSSL */
 
 
+/// @brief Map a platform error code to one of the client message categories.
+///
+/// @param errorCode Error value to classify.
+/// @param ptrTemplates Mapping table to search.
+/// @param templateCount Number of entries in `ptrTemplates`.
+/// @param defaultMessageKind Fallback category when no mapping matches.
+///
+/// @return The chosen message kind.
 static int findErrorMessageKind( int errorCode,
                                  const ErrorMessageTemplate *ptrTemplates,
                                  size_t templateCount, int defaultMessageKind )
@@ -369,6 +405,15 @@ static int findErrorMessageKind( int errorCode,
 }
 
 
+/// @brief Format a user-facing host lookup error message.
+///
+/// @param ptrBuffer Destination buffer.
+/// @param bufferSize Size of `ptrBuffer`.
+/// @param messageKind Categorized host lookup failure.
+/// @param ptrHost Host name that failed.
+/// @param ptrPort Port string that failed.
+///
+/// @return This function does not return a value.
 static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
                                      int messageKind, const char *ptrHost,
                                      const char *ptrPort )
@@ -398,6 +443,15 @@ static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
 }
 
 
+/// @brief Format a user-facing socket connect error message.
+///
+/// @param ptrBuffer Destination buffer.
+/// @param bufferSize Size of `ptrBuffer`.
+/// @param messageKind Categorized connect failure.
+/// @param ptrHost Host name that failed.
+/// @param ptrPort Port string that failed.
+///
+/// @return This function does not return a value.
 static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
                                         int messageKind, const char *ptrHost,
                                         const char *ptrPort )
@@ -449,6 +503,9 @@ static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
 
 
 #ifdef HAVE_OPENSSL
+/// @brief Initialize the OpenSSL client state for the current connection.
+///
+/// @return Non-zero on success, zero if the SSL object could not be created.
 int initSSL( void )
 {
    SSL_METHOD *meth;
@@ -475,6 +532,9 @@ int initSSL( void )
 }
 
 
+/// @brief Shut down and free the active SSL connection object.
+///
+/// @return This function does not return a value.
 void killSsl( void )
 {
    SSL_shutdown( ssl );
@@ -483,11 +543,12 @@ void killSsl( void )
 
 #endif /* HAVE_OPENSSL */
 
-/*
- * Wait for the next activity from either the aryUser or the network -- we ignore
- * the aryUser while we have a child process running.  Returns 1 for aryUser input
- * pending, 2 for network input pending, 3 for both.
- */
+/// @brief Wait for local or network activity.
+///
+/// While a child process is active, local terminal input is ignored.
+///
+/// @return `1` for local input, `2` for network input, `3` for both, or `-1`
+/// if the `select()` call fails.
 int waitNextEvent( void )
 {
    fd_set fdr;

@@ -25,6 +25,11 @@ static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
                                   const char *ptrSenderName );
 static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSenderName );
 
+/// @brief Reset express-message parsing state at the start of a new message.
+///
+/// @param ptrFlags Express parsing state to initialize.
+///
+/// @return This helper does not return a value.
 static void beginExpressMessage( ExpressFilterFlags *ptrFlags )
 {
    beginUrlDetectionReport();
@@ -36,6 +41,11 @@ static void beginExpressMessage( ExpressFilterFlags *ptrFlags )
    ptrFlags->truncated = 0;
 }
 
+/// @brief Filter one byte of incoming express-message output.
+///
+/// @param inputChar Next input byte from the server, or `-1` for state transitions.
+///
+/// @return This function does not return a value.
 void filterExpress( register int inputChar )
 {
    static char *ptrSenderName; /* comparison pointer */
@@ -96,6 +106,12 @@ void filterExpress( register int inputChar )
    }
 }
 
+/// @brief Finish an express message and emit it with any needed reply handling.
+///
+/// @param ptrFlags Final express parsing state.
+/// @param ptrSenderName Sender name extracted from the express header.
+///
+/// @return This helper does not return a value.
 static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
                                   const char *ptrSenderName )
 {
@@ -136,7 +152,11 @@ static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
    emitUrlDetectionReport();
 }
 
-/* Check for an automatic reply message. Return 1 if this is such a message. */
+/// @brief Check whether an express message is an automatic reply.
+///
+/// @param message Express message text to inspect.
+///
+/// @return Non-zero if the message is an automatic reply, otherwise `0`.
 int isAutomaticReply( const char *message )
 {
    const char *ptrCursor;
@@ -163,6 +183,12 @@ int isAutomaticReply( const char *message )
    return 0;
 }
 
+/// @brief Mark an automatic reply message so it will not trigger a reply.
+///
+/// @param ptrText Express message text to rewrite in place.
+/// @param size Size of the destination buffer.
+///
+/// @return This function does not return a value.
 void notReplyingTransformExpress( char *ptrText, size_t size )
 {
    char aryTempText[580];
@@ -181,6 +207,12 @@ void notReplyingTransformExpress( char *ptrText, size_t size )
    snprintf( ptrText, size, "%s", aryTempText );
 }
 
+/// @brief Process the express header and check whether the sender should be ignored.
+///
+/// @param ptrFlags Express parsing state to update.
+/// @param ptrSenderName Receives the extracted sender name.
+///
+/// @return This helper does not return a value.
 static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSenderName )
 {
    *ptrSenderName = extractNameNoHistory( aryExpressMessageBuffer );
@@ -200,6 +232,12 @@ static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSender
    }
 }
 
+/// @brief Remove the internal automatic-reply prefix from an express message.
+///
+/// @param ptrText Express message text to rewrite in place.
+/// @param size Size of the destination buffer.
+///
+/// @return This function does not return a value.
 void replyCodeTransformExpress( char *ptrText, size_t size )
 {
    char aryTempText[580];

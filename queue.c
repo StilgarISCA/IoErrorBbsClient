@@ -10,9 +10,11 @@
 
 #include "defs.h"
 
-/* Delete a queue and free the memory.  Always deletes the queue and returns
- * 0 on success.
- */
+/// @brief Free a queue object unconditionally.
+///
+/// @param ptrQueue Queue to destroy.
+///
+/// @return Always returns `0`.
 int deleteQueue( queue *ptrQueue )
 {
    free( ptrQueue );
@@ -20,9 +22,12 @@ int deleteQueue( queue *ptrQueue )
 }
 
 
-/* isQueued checks to see if a character string is currently queued.
- * Returns 1 if the string is queued, 0 if not.
- */
+/// @brief Check whether a string is already present in the queue.
+///
+/// @param ptrObject String to search for.
+/// @param ptrQueue Queue to inspect.
+///
+/// @return `1` when the string is queued, otherwise `0`.
 int isQueued( const char *ptrObject, queue *ptrQueue )
 {
    char *ptrQueueEntry; /* Pointer inside queue */
@@ -46,9 +51,12 @@ int isQueued( const char *ptrObject, queue *ptrQueue )
 }
 
 
-/* Make a queue containing itemCount objects of size size.  Return a pointer to
- * the queue or NULL if it could not be created.
- */
+/// @brief Allocate a new queue.
+///
+/// @param size Size of each queued object.
+/// @param itemCount Maximum number of objects the queue can hold.
+///
+/// @return A new queue on success, or `NULL` on allocation failure.
 queue *newQueue( int size, int itemCount )
 {
    queue *ptrQueue;
@@ -69,10 +77,12 @@ queue *newQueue( int size, int itemCount )
 }
 
 
-/* Remove an object from the queue.  q is a pointer to the queue.  The object
- * is copied into the location pointed to by obj.  Returns 0 if the queue is
- * empty, 1 on success.
- */
+/// @brief Remove the next object from the queue.
+///
+/// @param ptrObject Destination buffer that receives the removed object.
+/// @param ptrQueue Queue to pop from.
+///
+/// @return `1` on success, or `0` when the queue is empty.
 int popQueue( char *ptrObject, queue *ptrQueue )
 {
    const char *ptrQueueRead; /* Pointer into the queue */
@@ -99,10 +109,12 @@ int popQueue( char *ptrObject, queue *ptrQueue )
 }
 
 
-/* Insert an object into the queue.  obj is a pointer to the object, and
- * q is a pointer to the queue.  Returns 1 on success, 0 if the queue is
- * full.
- */
+/// @brief Push a new object onto the queue.
+///
+/// @param ptrObject Object to queue.
+/// @param ptrQueue Queue to modify.
+///
+/// @return `1` on success, or `0` when the queue is full.
 int pushQueue( const char *ptrObject, queue *ptrQueue )
 {
    char *ptrQueueWrite; /* Pointer into the queue */
@@ -136,9 +148,11 @@ int pushQueue( const char *ptrObject, queue *ptrQueue )
 }
 
 
-/* Delete a queue and free the memory.  Does not delete the queue if it still
- * contains any objects.  Returns 1 if the queue was deleted and 0 if not.
- */
+/// @brief Free a queue only when it is empty.
+///
+/// @param ptrQueue Queue to destroy.
+///
+/// @return `1` when the queue was freed, or `0` when it still contained items.
 int safeDeleteQueue( queue *ptrQueue )
 {
    if ( ptrQueue->itemCount )
@@ -148,4 +162,3 @@ int safeDeleteQueue( queue *ptrQueue )
    free( ptrQueue );
    return 1;
 }
-

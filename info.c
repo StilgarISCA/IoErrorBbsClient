@@ -13,6 +13,9 @@
 
 static const char *INFO_MENU_KEYS = "clwtq \n";
 
+/// @brief Show the client copyright screen.
+///
+/// @return This function does not return a value.
 void copyright( void )
 {
    stdPrintf( "Copyright\r\n\n" );
@@ -32,6 +35,12 @@ void copyright( void )
 }
 
 
+/// @brief Print a variable list of lines through the built-in pager.
+///
+/// @param startrow Initial row count already consumed on the screen.
+/// @param ... NUL-terminated list of `char *` lines to print.
+///
+/// @return This function does not return a value.
 void feedPager( int startrow, ... )
 {
    int currentRow;
@@ -64,9 +73,9 @@ void feedPager( int startrow, ... )
 }
 
 
-/*
- * information() displays general info about the client
- */
+/// @brief Run the client information submenu.
+///
+/// @return This function does not return a value.
 void information( void )
 {
    stdPrintf( "Information\r\n" );
@@ -104,6 +113,9 @@ void information( void )
 }
 
 
+/// @brief Display the bundled GPL license text.
+///
+/// @return This function does not return a value.
 void license( void )
 {
    stdPrintf( "License\r\n\n" );
@@ -337,6 +349,9 @@ void license( void )
 }
 
 
+/// @brief Display the GPL warranty disclaimer text.
+///
+/// @return This function does not return a value.
 void warranty( void )
 {
    stdPrintf( "Warranty\r\n\n" );
@@ -364,4 +379,3 @@ void warranty( void )
               "POSSIBILITY OF SUCH DAMAGES.\r\n",
               (char *)NULL );
 }
-

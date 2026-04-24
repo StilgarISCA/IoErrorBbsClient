@@ -129,6 +129,9 @@ static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
                                                      void ( *printMenu )( void ) );
 
 
+/// @brief Prompt for a background color selection.
+///
+/// @return Selected background color value.
 int backgroundPicker( void )
 {
    const PickerColorOption *ptrOption;
@@ -150,6 +153,9 @@ int backgroundPicker( void )
 }
 
 
+/// @brief Run the top-level interactive color configuration menu.
+///
+/// @return This function does not return a value.
 void colorConfig( void )
 {
    char aryPromptText[110];
@@ -203,6 +209,9 @@ void colorConfig( void )
 }
 
 
+/// @brief Configure general color-related display options.
+///
+/// @return This function does not return a value.
 void colorOptions( void )
 {
    stdPrintf( "Automatically answer the ANSI terminal question? (%s) -> ",
@@ -218,6 +227,9 @@ void colorOptions( void )
 }
 
 
+/// @brief Prompt for a foreground color selection.
+///
+/// @return Selected foreground color value.
 int colorPicker( void )
 {
    const PickerColorOption *ptrOption;
@@ -236,6 +248,13 @@ int colorPicker( void )
 }
 
 
+/// @brief Configure the text and name colors for express messages.
+///
+/// @param ptrTextColor Express text color to update.
+/// @param ptrNameColor Express sender name color to update.
+/// @param ptrPreviewName Preview name used while showing samples.
+///
+/// @return This helper does not return a value.
 static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
                                     const char *ptrPreviewName )
 {
@@ -262,6 +281,14 @@ static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
 }
 
 
+/// @brief Configure the date, text, and name colors for posts.
+///
+/// @param ptrDateColor Post date color to update.
+/// @param ptrTextColor Post body color to update.
+/// @param ptrNameColor Post author color to update.
+/// @param ptrPreviewName Preview name used while showing samples.
+///
+/// @return This helper does not return a value.
 static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
                                  int *ptrNameColor, const char *ptrPreviewName )
 {
@@ -292,6 +319,9 @@ static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
 }
 
 
+/// @brief Run the express color configuration flow.
+///
+/// @return This function does not return a value.
 void expressColorConfig( void )
 {
    while ( true )
@@ -311,6 +341,9 @@ void expressColorConfig( void )
 }
 
 
+/// @brief Prompt for an express color menu action.
+///
+/// @return Selected express color menu key.
 char expressColorMenu( void )
 {
    int inputChar;
@@ -343,6 +376,9 @@ char expressColorMenu( void )
 }
 
 
+/// @brief Configure express colors for friend messages.
+///
+/// @return This function does not return a value.
 void expressFriendColorConfig( void )
 {
    configureExpressColors( &color.expressFriendText, &color.expressFriendName,
@@ -350,12 +386,22 @@ void expressFriendColorConfig( void )
 }
 
 
+/// @brief Configure express colors for non-friend messages.
+///
+/// @return This function does not return a value.
 void expressUserColorConfig( void )
 {
    configureExpressColors( &color.expressText, &color.expressName, A_USER );
 }
 
 
+/// @brief Find a picker option by its menu key.
+///
+/// @param ptrOptions Picker option table.
+/// @param itemCount Number of picker options.
+/// @param keyChar Menu key to resolve.
+///
+/// @return Matching picker option, or `NULL` if the key is unknown.
 static const PickerColorOption *findPickerColorOption( const PickerColorOption *ptrOptions,
                                                        size_t itemCount,
                                                        int keyChar )
@@ -374,6 +420,9 @@ static const PickerColorOption *findPickerColorOption( const PickerColorOption *
 }
 
 
+/// @brief Configure the general theme colors.
+///
+/// @return This function does not return a value.
 void generalColorConfig( void )
 {
    char aryPromptText[100];
@@ -420,6 +469,9 @@ void generalColorConfig( void )
 }
 
 
+/// @brief Configure input prompt and completion colors.
+///
+/// @return This function does not return a value.
 void inputColorConfig( void )
 {
    char aryPromptText[100];
@@ -454,6 +506,9 @@ void inputColorConfig( void )
 }
 
 
+/// @brief Run the post color configuration flow.
+///
+/// @return This function does not return a value.
 void postColorConfig( void )
 {
    while ( true )
@@ -473,6 +528,9 @@ void postColorConfig( void )
 }
 
 
+/// @brief Prompt for a post color menu action.
+///
+/// @return Selected post color menu key.
 char postColorMenu( void )
 {
    int inputChar;
@@ -508,6 +566,14 @@ char postColorMenu( void )
 }
 
 
+/// @brief Print a preview line for a post color combination.
+///
+/// @param dateColor Preview date color.
+/// @param textColor Preview post body color.
+/// @param nameColor Preview author color.
+/// @param ptrName Preview author name.
+///
+/// @return This helper does not return a value.
 static void postColorPreview( int dateColor, int textColor, int nameColor,
                               const char *ptrName )
 {
@@ -524,6 +590,9 @@ static void postColorPreview( int dateColor, int textColor, int nameColor,
 }
 
 
+/// @brief Configure post colors for friend posts.
+///
+/// @return This function does not return a value.
 void postFriendColorConfig( void )
 {
    configurePostColors( &color.postFriendDate, &color.postFriendText,
@@ -531,6 +600,9 @@ void postFriendColorConfig( void )
 }
 
 
+/// @brief Configure post colors for non-friend posts.
+///
+/// @return This function does not return a value.
 void postUserColorConfig( void )
 {
    configurePostColors( &color.postDate, &color.postText,
@@ -538,6 +610,9 @@ void postUserColorConfig( void )
 }
 
 
+/// @brief Show preset themes and apply the selected preset.
+///
+/// @return This helper does not return a value.
 static void presetColorConfig( void )
 {
    size_t optionIndex;
@@ -583,6 +658,9 @@ static void presetColorConfig( void )
 }
 
 
+/// @brief Print the background picker menu.
+///
+/// @return This helper does not return a value.
 static void printBackgroundPickerMenu( void )
 {
    printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
@@ -595,6 +673,13 @@ static void printBackgroundPickerMenu( void )
 }
 
 
+/// @brief Print an express message preview using the supplied colors.
+///
+/// @param textColor Preview express text color.
+/// @param nameColor Preview express sender name color.
+/// @param ptrName Preview sender name.
+///
+/// @return This helper does not return a value.
 static void printExpressColorPreview( int textColor, int nameColor,
                                       const char *ptrName )
 {
@@ -607,6 +692,9 @@ static void printExpressColorPreview( int textColor, int nameColor,
 }
 
 
+/// @brief Print the foreground picker menu.
+///
+/// @return This helper does not return a value.
 static void printForegroundPickerMenu( void )
 {
    printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
@@ -618,6 +706,9 @@ static void printForegroundPickerMenu( void )
 }
 
 
+/// @brief Print a preview of the general theme colors.
+///
+/// @return This helper does not return a value.
 static void printGeneralColorPreview( void )
 {
    printAnsiDisplayStateValue( color.forum, color.background );
@@ -643,6 +734,9 @@ static void printGeneralColorPreview( void )
 }
 
 
+/// @brief Print a preview of the input and completion colors.
+///
+/// @return This helper does not return a value.
 static void printInputColorPreview( void )
 {
    printAnsiForegroundColorValue( color.text );
@@ -658,6 +752,11 @@ static void printInputColorPreview( void )
 }
 
 
+/// @brief Print one preset theme menu entry.
+///
+/// @param ptrOption Preset option to display.
+///
+/// @return This helper does not return a value.
 static void printPresetMenuItem( const PresetMenuOption *ptrOption )
 {
    stdPrintf( " " );
@@ -669,6 +768,14 @@ static void printPresetMenuItem( const PresetMenuOption *ptrOption )
 }
 
 
+/// @brief Read and resolve one picker selection from a color menu.
+///
+/// @param ptrAllowedKeys Allowed menu key set.
+/// @param ptrOptions Picker option table.
+/// @param itemCount Number of picker options.
+/// @param printMenu Menu printer to call before reading input.
+///
+/// @return Matching picker option, or `NULL` if the selection was not resolved.
 static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
                                                      const PickerColorOption *ptrOptions,
                                                      size_t itemCount,
@@ -683,6 +790,9 @@ static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
 }
 
 
+/// @brief Prompt for whether to configure user or friend preview colors.
+///
+/// @return Selected menu key.
 char userOrFriend( void )
 {
    int inputChar;

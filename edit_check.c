@@ -54,6 +54,14 @@ static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputCh
                                                size_t *ptrReplacementLength );
 
 
+/// @brief Append one validated character to the normalized draft buffer.
+///
+/// @param ptrState Running validation state.
+/// @param ptrNormalizedText Normalized draft buffer.
+/// @param ptrNormalizedLength Current normalized length.
+/// @param inputChar Character to append.
+///
+/// @return `true` if the character was appended successfully, otherwise `false`.
 static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText,
                                size_t *ptrNormalizedLength, int inputChar )
 {
@@ -105,6 +113,13 @@ static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText
 }
 
 
+/// @brief Calculate the displayed width of a normalized line segment.
+///
+/// @param ptrText Text buffer holding the segment.
+/// @param startIndex Inclusive segment start index.
+/// @param endIndex Exclusive segment end index.
+///
+/// @return Display width of the segment.
 static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
                                   size_t endIndex )
 {
@@ -120,13 +135,15 @@ static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
 }
 
 
-/*
- * Checks the file for lines longer than 79 characters, unprintable characters,
- * or the file itself being too long. Supported UTF-8 typographic punctuation
- * is normalized to ASCII in place. Long lines are wrapped automatically at
- * spaces when that can be done safely. Returns 1 if the file still has
- * problems and cannot be saved as is, 0 otherwise.
- */
+/// @brief Validate and normalize a saved draft before it is sent to the BBS.
+///
+/// Supported smart punctuation is rewritten to ASCII, safe long lines are
+/// wrapped automatically, and the normalized draft is written back to the temp
+/// file when cleanup changes the content.
+///
+/// @param ptrMessageFile Draft file to validate.
+///
+/// @return `0` if the draft is valid, or non-zero if the user must fix it first.
 int checkFile( FILE *ptrMessageFile )
 {
    CheckFileState fileState;
@@ -241,6 +258,13 @@ int checkFile( FILE *ptrMessageFile )
 }
 
 
+/// @brief Find the last whitespace wrap point in a normalized line segment.
+///
+/// @param ptrText Text buffer holding the segment.
+/// @param startIndex Inclusive segment start index.
+/// @param endIndex Exclusive segment end index.
+///
+/// @return Index of the last wrap point, or `SIZE_MAX` if none exists.
 static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
                                  size_t endIndex )
 {
@@ -258,6 +282,12 @@ static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
 }
 
 
+/// @brief Compute the next displayed width after appending one character.
+///
+/// @param currentWidth Current line width.
+/// @param inputChar Character being appended.
+///
+/// @return Updated displayed line width.
 static int nextLineWidth( int currentWidth, int inputChar )
 {
    if ( inputChar == TAB )
@@ -269,6 +299,12 @@ static int nextLineWidth( int currentWidth, int inputChar )
 }
 
 
+/// @brief Report that the draft contains an illegal character.
+///
+/// @param ptrNormalizedText Normalized draft buffer to free.
+/// @param lineNumber Line number containing the error.
+///
+/// @return Always returns `1`.
 static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber )
 {
    free( ptrNormalizedText );
@@ -278,6 +314,12 @@ static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber )
 }
 
 
+/// @brief Report that a draft line is too long to save safely.
+///
+/// @param ptrNormalizedText Normalized draft buffer to free.
+/// @param lineNumber Line number containing the error.
+///
+/// @return Always returns `1`.
 static int reportLineTooLong( char *ptrNormalizedText, int lineNumber )
 {
    free( ptrNormalizedText );
@@ -287,6 +329,11 @@ static int reportLineTooLong( char *ptrNormalizedText, int lineNumber )
 }
 
 
+/// @brief Report that the draft exceeds the allowed total size.
+///
+/// @param ptrNormalizedText Normalized draft buffer to free.
+///
+/// @return Always returns `1`.
 static int reportMessageTooLong( char *ptrNormalizedText )
 {
    free( ptrNormalizedText );
@@ -295,6 +342,13 @@ static int reportMessageTooLong( char *ptrNormalizedText )
 }
 
 
+/// @brief Rewrite normalized draft contents back into the temporary file.
+///
+/// @param ptrMessageFile Draft file to rewrite.
+/// @param ptrNormalizedText Normalized draft contents.
+/// @param normalizedLength Number of normalized bytes to write.
+///
+/// @return `0` on success, or non-zero if the rewrite failed.
 static int rewriteNormalizedFile( FILE *ptrMessageFile,
                                   const char *ptrNormalizedText,
                                   size_t normalizedLength )
@@ -318,6 +372,14 @@ static int rewriteNormalizedFile( FILE *ptrMessageFile,
 }
 
 
+/// @brief Normalize supported UTF-8 punctuation and spacing to ASCII replacements.
+///
+/// @param ptrMessageFile Draft file being read.
+/// @param inputChar First byte already consumed from the file.
+/// @param ptrReplacementText Output buffer for replacement text.
+/// @param ptrReplacementLength Number of replacement bytes written.
+///
+/// @return `true` if the sequence was normalized, otherwise `false`.
 static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
                                                char *ptrReplacementText,
                                                size_t *ptrReplacementLength )

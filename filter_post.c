@@ -32,6 +32,11 @@ static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
                          const char *ptrHeader, int postCount );
 
 
+/// @brief Append one character to the current filtered line buffer.
+///
+/// @param inputChar Character to append.
+///
+/// @return This helper does not return a value.
 static void appendFilterLineChar( int inputChar )
 {
    char *ptrCursor = aryFilterLine;
@@ -46,6 +51,14 @@ static void appendFilterLineChar( int inputChar )
 }
 
 
+/// @brief Reset post parsing state at the start of a new post.
+///
+/// @param ptrFlags Post parsing state to initialize.
+/// @param posthdr Buffer used for the post header.
+/// @param ptrPostHeaderCursor Receives the current header write position.
+/// @param ptrIsFriend Receives the initial friend flag.
+///
+/// @return This helper does not return a value.
 static void beginPostMessage( PostFilterFlags *ptrFlags, char *posthdr,
                               char **ptrPostHeaderCursor, int *ptrIsFriend )
 {
@@ -60,6 +73,9 @@ static void beginPostMessage( PostFilterFlags *ptrFlags, char *posthdr,
 }
 
 
+/// @brief Re-emit the standard continued-post color sequence through the post filter.
+///
+/// @return This function does not return a value.
 void continuedPostHelper( void )
 {
    static char aryTempText[] = "\033[32m";
@@ -72,6 +88,11 @@ void continuedPostHelper( void )
 }
 
 
+/// @brief Filter one byte of incoming post output.
+///
+/// @param inputChar Next input byte from the server, or `-1` for state transitions.
+///
+/// @return This function does not return a value.
 void filterPost( register int inputChar )
 {
    static int numposts = 0;  /* count of the # of posts received so far */
@@ -205,6 +226,12 @@ void filterPost( register int inputChar )
 }
 
 
+/// @brief Finish a post and flush any delayed state updates.
+///
+/// @param ptrFlags Final post parsing state.
+/// @param ptrPostCount Running count of posts seen so far.
+///
+/// @return This helper does not return a value.
 static void finishPostMessage( const PostFilterFlags *ptrFlags, int *ptrPostCount )
 {
    if ( ptrFlags->secondN )
@@ -218,6 +245,11 @@ static void finishPostMessage( const PostFilterFlags *ptrFlags, int *ptrPostCoun
 }
 
 
+/// @brief Restore the normal text color after a more prompt inside a post.
+///
+/// @param inputChar Current input character.
+///
+/// @return This helper does not return a value.
 static void maybePrintMorePromptColor( int inputChar )
 {
    if ( !( flagsConfiguration.shouldUseAnsi &&
@@ -238,6 +270,14 @@ static void maybePrintMorePromptColor( int inputChar )
 }
 
 
+/// @brief Check whether the current post should be killed by the enemy list.
+///
+/// @param ptrFlags Post parsing state to update.
+/// @param ptrSenderName Sender name extracted from the header.
+/// @param ptrHeader Raw post header text.
+/// @param postCount Current post count used for protocol bookkeeping.
+///
+/// @return `true` if the post was killed, otherwise `false`.
 static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
                          const char *ptrHeader, int postCount )
 {
@@ -266,4 +306,3 @@ static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
    }
    return true;
 }
-

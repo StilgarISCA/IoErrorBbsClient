@@ -25,6 +25,9 @@ static void writeMacros( void );
 static void writeMiscSettings( void );
 static void writeOptionSettings( void );
 
+/// @brief Write the configured away-message lines to `.bbsrc`.
+///
+/// @return This function does not return a value.
 static void writeAwayMessages( void )
 {
    int itemIndex;
@@ -39,6 +42,9 @@ static void writeAwayMessages( void )
    }
 }
 
+/// @brief Rewrite the current in-memory configuration back to `.bbsrc`.
+///
+/// @return This function does not return a value.
 void writeBbsRc( void )
 {
    deleteFile( aryBbsFriendsName );
@@ -57,6 +63,9 @@ void writeBbsRc( void )
    truncateBbsRc( ftell( ptrBbsRc ) );
 }
 
+/// @brief Write the serialized color configuration line.
+///
+/// @return This function does not return a value.
 static void writeColorSettings( void )
 {
    int itemIndex;
@@ -80,6 +89,9 @@ static void writeColorSettings( void )
    fprintf( ptrBbsRc, "\n" );
 }
 
+/// @brief Write the configured site, port, and editor settings.
+///
+/// @return This function does not return a value.
 static void writeConnectionSettings( void )
 {
    fprintf( ptrBbsRc, "aryEditor %s\n", aryEditor );
@@ -88,6 +100,9 @@ static void writeConnectionSettings( void )
             shouldUseSsl ? " secure" : "" );
 }
 
+/// @brief Write the saved friend and enemy lists.
+///
+/// @return This function does not return a value.
 static void writeFriendAndEnemyLists( void )
 {
    int itemIndex;
@@ -104,6 +119,9 @@ static void writeFriendAndEnemyLists( void )
    }
 }
 
+/// @brief Write any non-default key map overrides.
+///
+/// @return This function does not return a value.
 static void writeKeyMapOverrides( void )
 {
    int itemIndex;
@@ -117,6 +135,9 @@ static void writeKeyMapOverrides( void )
    }
 }
 
+/// @brief Write the configured keyboard macros.
+///
+/// @return This function does not return a value.
 static void writeMacros( void )
 {
    int itemIndex, innerIndex;
@@ -135,6 +156,9 @@ static void writeMacros( void )
    }
 }
 
+/// @brief Write miscellaneous version and legacy behavior flags.
+///
+/// @return This function does not return a value.
 static void writeMiscSettings( void )
 {
    fprintf( ptrBbsRc, "version %d\n", version );
@@ -148,6 +172,9 @@ static void writeMiscSettings( void )
    }
 }
 
+/// @brief Write the general option and hotkey settings.
+///
+/// @return This function does not return a value.
 static void writeOptionSettings( void )
 {
    fprintf( ptrBbsRc, "commandkey %s\n", strCtrl( commandKey ) );

@@ -38,9 +38,12 @@ static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
 static const char *describeKeyForHelp( int inputChar );
 
 
-/*
- * Changes settings in bbsrc file and saves it.
- */
+/// @brief Run the top-level client configuration menu.
+///
+/// The selected submenus update the in-memory configuration, and quitting the
+/// menu writes the changes back to `.bbsrc` when the file is writable.
+///
+/// @return This function does not return a value.
 void configBbsRc( void )
 {
    flagsConfiguration.isConfigMode = 1;
@@ -116,6 +119,12 @@ void configBbsRc( void )
 }
 
 
+/// @brief Describe a configured key in a user-facing format.
+///
+/// @param inputChar Key value to describe.
+///
+/// @return A printable name for the key, such as `Esc`, `Space`, `Return`, or
+/// the control-key form returned by `strCtrl()`.
 static const char *describeKeyForHelp( int inputChar )
 {
    switch ( inputChar )
@@ -139,13 +148,15 @@ static const char *describeKeyForHelp( int inputChar )
 }
 
 
-/*
- * First time setup borrowed from Client 9 with permission.
- */
-
-/*
- * Performs first time setup for new features.
- */
+/// @brief Perform version-gated setup prompts and initialize new defaults.
+///
+/// This setup flow carries forward the legacy first-run and upgrade prompts
+/// borrowed from Client 9 with permission, then writes the resulting
+/// configuration back to disk.
+///
+/// @param newVersion Previously stored client configuration version.
+///
+/// @return This function does not return a value.
 void setup( int newVersion )
 {
    setTerm();
@@ -214,4 +225,3 @@ void setup( int newVersion )
    resetTerm();
    return;
 }
-

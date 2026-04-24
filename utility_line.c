@@ -10,6 +10,16 @@
 #include "defs.h"
 #include "utility.h"
 
+/// @brief Read the next non-overlong line and trim trailing whitespace.
+///
+/// @param ptrFileHandle Source file stream.
+/// @param ptrLine Destination buffer.
+/// @param lineSize Size of `ptrLine`.
+/// @param ptrLineNumber Running line counter updated in place.
+/// @param ptrReadCount Running read counter updated in place.
+/// @param ptrSourceName Name of the source file for warnings.
+///
+/// @return `1` when a normalized line was read, or `0` on end of file.
 int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
                         int *ptrLineNumber, int *ptrReadCount,
                         const char *ptrSourceName )
@@ -39,6 +49,11 @@ int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
    return 0;
 }
 
+/// @brief Trim trailing spaces, tabs, carriage returns, and newlines from a line.
+///
+/// @param ptrLine Line buffer to modify in place.
+///
+/// @return This function does not return a value.
 void trimTrailingWhitespace( char *ptrLine )
 {
    size_t lineLength = strlen( ptrLine );

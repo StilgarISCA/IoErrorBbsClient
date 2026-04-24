@@ -13,11 +13,10 @@
 #include "config_globals.h"
 #include "utility.h"
 
-/*
- * Opens the bbsfriends file, warning the user if it can't be opened or can't
- * be opened for write, returning the file pointer if it was opened
- * successfully.
- */
+/// @brief Open the legacy friends file if it exists.
+///
+/// @return A readable stream for `aryBbsFriendsName`, or `NULL` if the file
+/// could not be opened.
 FILE *openBbsFriends( void )
 {
    FILE *ptrFileHandle;
@@ -27,10 +26,13 @@ FILE *openBbsFriends( void )
 }
 
 
-/*
- * Opens the bbsrc file, warning the user if it can't be opened or can't be
- * opened for write, returning the file pointer if it was opened successfully.
- */
+/// @brief Open the main client configuration file.
+///
+/// The function first tries read-write access, then creates the file if needed,
+/// and finally falls back to read-only access with a warning.
+///
+/// @return A stream for `aryBbsRcName`, or `NULL` if the file could not be
+/// opened at all.
 FILE *openBbsRc( void )
 {
    FILE *ptrFileHandle;
@@ -58,4 +60,3 @@ FILE *openBbsRc( void )
    }
    return ( ptrFileHandle );
 }
-

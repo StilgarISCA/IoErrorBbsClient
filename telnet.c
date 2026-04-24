@@ -4,30 +4,6 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-/*
- * This handles the information flowing into the client from the BBS.  It
- * basically understands a very limited subset of the telnet protocol (enough
- * to "fake it" with the BBS) with some extensions to allow the extra features
- * the client provides.  The telnet stuff is unimportant, but it'll confuse the
- * BBS if you alter it.
- *
- * The client tells the BBS it is a client rather a telnet program when it first
- * connects, after that the BBS acts differently, letting the client know when
- * something in particular is being done (entering an X message, posting, etc.)
- * to allow the client to handle that however it wants, as well as providing
- * extra protocol for the start/end of messages/X'aryString and the special who list.
- *
- * This is made more complex by the fact that the client doesn't know it should
- * handle (for example) an X message differently until it receives word from
- * the BBS that an X message should be entered -- but by this time the client
- * may have already sent some of the X message over the network instead of
- * gathering it up locally.  So when the BBS tells the client to go into the
- * local X message mode it also tells the client how many bytes have been
- * passed to it (they count them in the same manner) and throws isAway the excess
- * on its side.  The client has buffered this excess on its side and therefore
- * make it available locally instead of having it lost forever.  Boy, that was
- * a pisser when I realized I'd have to do that!
- */
 #include "defs.h"
 #include "browser.h"
 #include "client.h"
@@ -62,6 +38,12 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
 static int handleTelnetVoidState( int inputByte, int *ptrState );
 
 
+/// @brief Handle normal telnet data bytes outside IAC command parsing.
+///
+/// @param inputByte Incoming protocol byte.
+/// @param ptrState Current telnet parser state.
+///
+/// @return `0` after dispatching the byte.
 static int handleTelnetDataState( int inputByte, int *ptrState )
 {
    if ( inputByte == IAC )
@@ -90,6 +72,11 @@ static int handleTelnetDataState( int inputByte, int *ptrState )
 }
 
 
+/// @brief Execute a completed telnet GET command from the protocol buffer.
+///
+/// @param aryTelnetBuffer Completed GET command buffer.
+///
+/// @return `0` on success, or `-1` when the caller should abort the current path.
 static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer )
 {
    int outputIndex;
@@ -144,6 +131,14 @@ static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer )
 }
 
 
+/// @brief Collect and finish a multi-byte telnet GET command.
+///
+/// @param inputByte Incoming protocol byte.
+/// @param ptrState Current telnet parser state.
+/// @param aryTelnetBuffer Shared telnet command buffer.
+/// @param ptrTelnetBufferPos Current write position in the command buffer.
+///
+/// @return `0` on success, or the result from the completed GET command.
 static int handleTelnetGetState( int inputByte, int *ptrState,
                                  unsigned char *aryTelnetBuffer,
                                  int *ptrTelnetBufferPos )
@@ -171,6 +166,14 @@ static int handleTelnetGetState( int inputByte, int *ptrState,
 }
 
 
+/// @brief Handle an IAC-prefixed telnet command byte.
+///
+/// @param inputByte Incoming protocol byte.
+/// @param ptrState Current telnet parser state.
+/// @param aryTelnetBuffer Shared telnet command buffer.
+/// @param ptrTelnetBufferPos Current write position in the command buffer.
+///
+/// @return `0` after handling the command.
 static int handleTelnetIacState( int inputByte, int *ptrState,
                                  unsigned char *aryTelnetBuffer,
                                  int *ptrTelnetBufferPos )
@@ -268,6 +271,12 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
 }
 
 
+/// @brief Reject a telnet option negotiation we do not support.
+///
+/// @param inputByte Incoming telnet option byte.
+/// @param ptrState Current telnet parser state.
+///
+/// @return `0` after sending the refusal.
 static int handleTelnetVoidState( int inputByte, int *ptrState )
 {
    netPutChar( IAC );
@@ -278,12 +287,9 @@ static int handleTelnetVoidState( int inputByte, int *ptrState )
 }
 
 
-/*
- * Send signal that block of data follows -- this is a signal to the bbs that
- * it should stop ignoring what we send it, since it begins ignoring and
- * throwing isAway everything it receives from the time it sends an IAC G_*
- * command until the time it receives an IAC BLOCK command.
- */
+/// @brief Tell the BBS that a client-side input block is about to follow.
+///
+/// @return This function does not return a value.
 void sendBlock( void )
 {
    netPutChar( IAC );
@@ -291,9 +297,9 @@ void sendBlock( void )
 }
 
 
-/*
- * Send a NAWS command to the bbs to tell it what our window size is.
- */
+/// @brief Send an updated NAWS window-size record to the BBS.
+///
+/// @return This function does not return a value.
 void sendNaws( void )
 {
    if ( oldRows != getWindowSize() )
@@ -319,12 +325,9 @@ void sendNaws( void )
 }
 
 
-/*
- * Initialize telnet negotations with the bbs -- we don't really do the
- * negotations, we just tell the bbs what it needs to hear, since we don't need
- * to negotiate because we know the correct state to put the terminal in. The
- * BBS queue daemon also expects the IAC CLIENT command.
- */
+/// @brief Send the initial telnet and client-identification sequence to the BBS.
+///
+/// @return This function does not return a value.
 void telInit( void )
 {
    netPutChar( IAC );
@@ -344,6 +347,11 @@ void telInit( void )
 }
 
 
+/// @brief Feed one incoming byte through the telnet protocol state machine.
+///
+/// @param inputByte Incoming protocol byte.
+///
+/// @return `0` on success, or a negative value if the caller should abort.
 int telReceive( int inputByte )
 {
    static int state = TS_DATA;               /* Current state of telnet state machine */
@@ -372,4 +380,3 @@ int telReceive( int inputByte )
    }
    return ( 0 );
 }
-
