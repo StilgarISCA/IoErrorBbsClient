@@ -93,37 +93,6 @@ static bool finalizeBbsRcRead( BbsRcReadState *ptrState );
 static void initializeBbsRcDefaults( void );
 static void initializeBbsRcLists( void );
 static bool isNewAwayMessageCommand( const char *ptrLine );
-static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
-                                           const char *ptrLine,
-                                           BbsRcReadState *ptrState );
-static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
-                                       const char *ptrLine );
-static bool processBbsRcListCommand( BbsRcCommandId commandId,
-                                     const char *ptrLine );
-static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
-                                      const char *ptrLine,
-                                      BbsRcReadState *ptrState );
-static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
-                                        const char *ptrLine,
-                                        BbsRcReadState *ptrState );
-static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue );
-static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
-static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
-static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState );
-static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState );
-static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
-                                   char ( *aryAwayBuffers )[80] );
-static void warnAboutBbsRcConflicts( void );
-
-static bool addFriendFromLine( const char *ptrLine );
-static void applyBbsRcKeyDefaults( void );
-static int ctrl( const char *ptrToken );
-static BbsRcCommandId detectBbsRcCommand( const char *ptrLine );
-static void ensureDefaultAwayMessage( void );
-static bool finalizeBbsRcRead( BbsRcReadState *ptrState );
-static void initializeBbsRcDefaults( void );
-static void initializeBbsRcLists( void );
-static bool isNewAwayMessageCommand( const char *ptrLine );
 static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue );
 static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
 static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
@@ -142,9 +111,9 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
                                         const char *ptrLine,
                                         BbsRcReadState *ptrState );
 static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState );
-static void warnAboutBbsRcConflicts( void );
 static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
                                    char ( *aryAwayBuffers )[80] );
+static void warnAboutBbsRcConflicts( void );
 
 
 /// @brief Parse and add one `friend` directive from `.bbsrc`.

@@ -17,11 +17,10 @@ void filterData( int inputChar );
 void filterExpress( int inputChar );
 void filterPost( int inputChar );
 void filterWhoList( int inputChar );
+int isAutomaticReply( const char *message );
 void morePromptHelper( void );
 void notReplyingTransformExpress( char *ptrText, size_t size );
 void replyCodeTransformExpress( char *ptrText, size_t size );
 void reprintLine( void );
-
-int isAutomaticReply( const char *message );
 
 #endif /* FILTER_H_INCLUDED */

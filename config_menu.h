@@ -18,13 +18,10 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ),
                 const char *name );
 void expressConfig( void );
 void newAwayMessage( void );
+int newKey( int oldkey );
+void newMacro( int which );
 void promptForScreenReaderModeIfUnset( void );
 void setup( int newVersion );
-
-int newKey( int oldkey );
-
-void newMacro( int which );
-
 char *strCtrl( int inputChar );
 
 #endif /* CONFIG_MENU_H_INCLUDED */

@@ -15,10 +15,6 @@ static void printAnsiColorValue( int colorValue, bool isBackground );
 static void printAnsiSequence( const char *ptrSequence );
 static bool tryPrintLegacyAtColor( int inputChar );
 
-static void printAnsiColorValue( int colorValue, bool isBackground );
-static void printAnsiSequence( const char *ptrSequence );
-static bool tryPrintLegacyAtColor( int inputChar );
-
 
 /// @brief Expand the legacy `@` color markup into ANSI output.
 ///

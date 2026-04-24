@@ -26,16 +26,6 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
                                  int *ptrTelnetBufferPos );
 static int handleTelnetVoidState( int inputByte, int *ptrState );
 
-static int handleTelnetDataState( int inputByte, int *ptrState );
-static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer );
-static int handleTelnetGetState( int inputByte, int *ptrState,
-                                 unsigned char *aryTelnetBuffer,
-                                 int *ptrTelnetBufferPos );
-static int handleTelnetIacState( int inputByte, int *ptrState,
-                                 unsigned char *aryTelnetBuffer,
-                                 int *ptrTelnetBufferPos );
-static int handleTelnetVoidState( int inputByte, int *ptrState );
-
 
 /// @brief Handle normal telnet data bytes outside IAC command parsing.
 ///

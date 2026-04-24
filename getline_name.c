@@ -21,13 +21,6 @@ static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
                                     int *ptrSmart );
 static void rewindTypedName( char **ptrCursor, const char *ptrBuffer );
 
-static void clearSmartCompletion( const char *ptrCursor, int *ptrSmart );
-static void moveCursorToBufferEnd( char **ptrCursor, char *ptrBuffer );
-static void recallNextLastName( char *ptrBuffer, char **ptrCursor, int *ptrSmart );
-static void recallPreviousLastName( char *ptrBuffer, char **ptrCursor,
-                                    int *ptrSmart );
-static void rewindTypedName( char **ptrCursor, const char *ptrBuffer );
-
 
 /// @brief Clear any active name-autocomplete suffix from the display.
 ///

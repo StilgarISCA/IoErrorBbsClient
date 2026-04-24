@@ -15,8 +15,6 @@ typedef struct
    int colorValue;
 } NamedColorSpec;
 
-static int transformIncomingAnsiColor( int inputChar );
-
 static const NamedColorSpec aryNamedColors[] =
    {
       { "brightblack", 8 },

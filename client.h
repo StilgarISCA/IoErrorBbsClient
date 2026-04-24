@@ -9,44 +9,41 @@
 
 #include "defs.h"
 #include <stdnoreturn.h>
-noreturn void fatalExit( const char *message, const char *heading );
-noreturn void fatalPerror( const char *error, const char *heading );
-noreturn void myExit( void );
-
 void arguments( int argc, char **argv );
+RETSIGTYPE bye( int signalNumber );
 void connectBbs( void );
 void copyright( void );
 void deinitialize( void );
+noreturn void fatalExit( const char *message, const char *heading );
+noreturn void fatalPerror( const char *error, const char *heading );
 void feedPager( int startrow, ... );
 void findHome( void );
 void flushInput( unsigned int invalid );
+int getWindowSize( void );
 void information( void );
 void initialize( void );
 void killSsl( void );
 void license( void );
 void moveIfNeeded( const char *oldpath, const char *newpath );
+noreturn void myExit( void );
 void mySleep( unsigned int sec );
+RETSIGTYPE naws( int signalNumber );
 void noTitleBar( void );
 void openTmpFile( void );
+RETSIGTYPE reapChild( int signalNumber );
 void resetTerm( void );
 void run( const char *aryCommand, const char *arg );
-void setTerm( void );
 void sError( const char *message, const char *heading );
+void setTerm( void );
 void sigInit( void );
 void sigOff( void );
 void sInfo( const char *info, const char *heading );
+int sPrompt( const char *info, const char *question, int def );
 void suspend( void );
 void techInfo( void );
 void telInit( void );
 void titleBar( void );
-void warranty( void );
-
-int getWindowSize( void );
-int sPrompt( const char *info, const char *question, int def );
 int waitNextEvent( void );
-
-RETSIGTYPE bye( int signalNumber );
-RETSIGTYPE naws( int signalNumber );
-RETSIGTYPE reapChild( int signalNumber );
+void warranty( void );
 
 #endif /* CLIENT_H_INCLUDED */

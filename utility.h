@@ -14,7 +14,12 @@ int capPutChar( int inputChar );
 int capPuts( const char *ptrText );
 int deleteFile( const char *pathname );
 int deleteQueue( queue *ptrQueue );
+char *duplicateString( const char *ptrSource );
+char *extractName( const char *header );
+char *extractNameNoHistory( const char *header );
 int extractNumber( const char *header );
+char *findChar( const char *ptrString, int targetChar );
+char *findSubstring( const char *ptrString, const char *ptrSubstring );
 int fSortCompare( const friend *const *ptrLeft, const friend *const *ptrRight );
 int fSortCompareVoid( const void *ptrLeft, const void *ptrRight );
 int fStrCompare( const char *ptrName, const friend *ptrFriend );
@@ -28,51 +33,41 @@ int more( int *line, int percentComplete );
 int netPrintf( const char *format, ... );
 int netPutChar( int inputChar );
 int netPuts( const char *ptrText );
+queue *newQueue( int size, int itemCount );
 int popQueue( char *ptrObject, queue *ptrQueue );
 int pushQueue( const char *ptrObject, queue *ptrQueue );
 int readFoldedKey( void );
+int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
+                        int *ptrLineNumber, int *ptrReadCount,
+                        const char *ptrSourceName );
 int readValidatedKey( const char *allowedChars );
 int readValidatedMenuKey( const char *allowedCharsLowercase );
-int safeDeleteQueue( queue *ptrQueue );
-int slistAddItem( slist *list, void *item, int deferSort );
-int slistFind( slist *list, void *toFind,
-               int ( *findfn )( const void *, const void * ) );
-int slistRemoveItem( slist *list, int item );
-int sortCompare( char **ptrLeft, char **ptrRight );
-int sortCompareVoid( const void *ptrLeft, const void *ptrRight );
-int strCompareVoid( const void *ptrLeft, const void *ptrRight );
-int stdPrintf( const char *format, ... );
-int stdPutChar( int inputChar );
-int stdPuts( const char *ptrText );
-int yesNo( void );
-int yesNoDefault( int defaultAnswer );
-
 void replyMessage( void );
+int safeDeleteQueue( queue *ptrQueue );
 void sendAnX( void );
 void sendTrackedBuffer( const char *ptrBuffer, size_t length );
 void sendTrackedChar( int inputChar );
 void sendTrackedNewline( void );
+int slistAddItem( slist *list, void *item, int deferSort );
+slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), ... );
 void slistDestroy( slist *list );
 void slistDestroyItems( slist *list );
+int slistFind( slist *list, void *toFind,
+               int ( *findfn )( const void *, const void * ) );
+slist *slistIntersection( const slist *list1, const slist *list2 );
+int slistRemoveItem( slist *list, int item );
 void slistSort( slist *list );
+int sortCompare( char **ptrLeft, char **ptrRight );
+int sortCompareVoid( const void *ptrLeft, const void *ptrRight );
 void sPerror( const char *message, const char *heading );
+int stdPrintf( const char *format, ... );
+int stdPutChar( int inputChar );
+int stdPuts( const char *ptrText );
+int strCompareVoid( const void *ptrLeft, const void *ptrRight );
+char *stripAnsi( char *ptrText, size_t bufferSize );
 void tempFileError( void );
 void trimTrailingWhitespace( char *ptrLine );
-
-char *duplicateString( const char *ptrSource );
-char *extractName( const char *header );
-char *extractNameNoHistory( const char *header );
-char *findChar( const char *ptrString, int targetChar );
-char *findSubstring( const char *ptrString, const char *ptrSubstring );
-char *stripAnsi( char *ptrText, size_t bufferSize );
-
-int readNormalizedLine( FILE *ptrFileHandle, char *ptrLine, size_t lineSize,
-                        int *ptrLineNumber, int *ptrReadCount,
-                        const char *ptrSourceName );
-
-queue *newQueue( int size, int itemCount );
-
-slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), ... );
-slist *slistIntersection( const slist *list1, const slist *list2 );
+int yesNo( void );
+int yesNoDefault( int defaultAnswer );
 
 #endif /* UTILITY_H_INCLUDED */

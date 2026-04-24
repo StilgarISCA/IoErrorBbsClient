@@ -10,12 +10,10 @@
 #include "defs.h"
 
 void getFiveLines( int which );
+char *getName( int quitPriv );
 void getString( int length, char *result, int line );
 void smartErase( const char *ptrEnd );
-void smartPrint( const char *ptrBuffer, const char *ptrEnd );
-
 int smartName( char *ptrBuffer, char *ptrEnd );
-
-char *getName( int quitPriv );
+void smartPrint( const char *ptrBuffer, const char *ptrEnd );
 
 #endif /* GETLINE_INPUT_H_INCLUDED */

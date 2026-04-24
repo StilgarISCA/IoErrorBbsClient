@@ -15,9 +15,6 @@
 static void reopenTempFileForShutdown( void );
 static void waitForChildShutdown( void );
 
-static void reopenTempFileForShutdown( void );
-static void waitForChildShutdown( void );
-
 
 /// @brief Print a fatal error heading and message, then terminate the client.
 ///

@@ -28,23 +28,6 @@ static int nextLineWidth( int currentWidth, int inputChar );
 static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber );
 static int reportLineTooLong( char *ptrNormalizedText, int lineNumber );
 static int reportMessageTooLong( char *ptrNormalizedText );
-static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
-                                               char *ptrReplacementText,
-                                               size_t *ptrReplacementLength );
-static int rewriteNormalizedFile( FILE *ptrMessageFile,
-                                  const char *ptrNormalizedText,
-                                  size_t normalizedLength );
-
-static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText,
-                               size_t *ptrNormalizedLength, int inputChar );
-static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
-                                  size_t endIndex );
-static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
-                                 size_t endIndex );
-static int nextLineWidth( int currentWidth, int inputChar );
-static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber );
-static int reportLineTooLong( char *ptrNormalizedText, int lineNumber );
-static int reportMessageTooLong( char *ptrNormalizedText );
 static int rewriteNormalizedFile( FILE *ptrMessageFile,
                                   const char *ptrNormalizedText,
                                   size_t normalizedLength );

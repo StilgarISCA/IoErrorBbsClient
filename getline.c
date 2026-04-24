@@ -28,19 +28,6 @@ typedef struct
 
 static char aryWrap[80];
 
-static void applyWrapSeed( int length, int line, char *result, char **ptrCursor );
-static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
-                                 const GetStringState *ptrState );
-static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor );
-static bool handleCtrlWEdit( char *result, char **ptrCursor );
-static bool handleGetStringOverflow( int inputChar, int line, char *result,
-                                     char **ptrCursor );
-static bool maybeUseSavedPassword( char *result, GetStringState *ptrState );
-static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState );
-static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState );
-static void saveHiddenPasswordIfNeeded( const char *ptrResult,
-                                        const GetStringState *ptrState );
-
 static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
                                  const GetStringState *ptrState );
 static void applyWrapSeed( int length, int line, char *result, char **ptrCursor );

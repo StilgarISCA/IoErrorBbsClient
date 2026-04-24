@@ -12,8 +12,6 @@
 #include "utility.h"
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );
 
-static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );
-
 
 /// @brief Duplicate a NUL-terminated string with heap storage.
 ///

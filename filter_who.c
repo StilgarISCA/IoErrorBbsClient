@@ -11,25 +11,6 @@
 #include "filter.h"
 #include "filter_globals.h"
 #include "utility.h"
-static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
-                                     const char *ptrTimeText, const char *ptrInfo );
-static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,
-                                  int *ptrFriendColumn, unsigned char *aryWhoEntry );
-static void finishCurrentWhoList( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew );
-static void handleCompletedWhoEntry( unsigned char *aryWhoEntry,
-                                     unsigned char **ptrPtrWhoEntryWrite,
-                                     int *ptrFriendColumn, long *ptrTimestamp,
-                                     long *ptrExtendedTime );
-static void handleWhoListNull( unsigned char *aryWhoEntry,
-                               unsigned char **ptrPtrWhoEntryWrite,
-                               char *ptrNew, int *ptrFriendColumn,
-                               long *ptrTimestamp, long *ptrExtendedTime );
-static void printSavedWhoSummary( int *ptrFriendColumn, long timestamp );
-static void refreshSavedWhoList( void );
-static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
-                                 const friend *ptrFriend );
-static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry );
-
 static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,
                                   int *ptrFriendColumn, unsigned char *aryWhoEntry );
 static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorText );

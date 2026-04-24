@@ -19,11 +19,6 @@ static void continueAfterExternalEdit( FILE **ptrMessageFile );
 static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath );
 static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
                                       int commandChar );
-
-static void continueAfterExternalEdit( FILE **ptrMessageFile );
-static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath );
-static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
-                                      int commandChar );
 static void printEditorCommandPrompt( void );
 static const char *resolveEditorCommand( void );
 static void sendEditorCommand( int inputChar );

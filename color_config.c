@@ -105,28 +105,6 @@ static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
                                                      size_t itemCount,
                                                      void ( *printMenu )( void ) );
 
-static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
-                                    const char *ptrPreviewName );
-static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
-                                 int *ptrNameColor, const char *ptrPreviewName );
-static const PickerColorOption *findPickerColorOption( const PickerColorOption *ptrOptions,
-                                                       size_t itemCount,
-                                                       int keyChar );
-static void postColorPreview( int dateColor, int textColor, int nameColor,
-                              const char *ptrName );
-static void presetColorConfig( void );
-static void printBackgroundPickerMenu( void );
-static void printExpressColorPreview( int textColor, int nameColor,
-                                      const char *ptrName );
-static void printForegroundPickerMenu( void );
-static void printGeneralColorPreview( void );
-static void printInputColorPreview( void );
-static void printPresetMenuItem( const PresetMenuOption *ptrOption );
-static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
-                                                     const PickerColorOption *ptrOptions,
-                                                     size_t itemCount,
-                                                     void ( *printMenu )( void ) );
-
 
 /// @brief Prompt for a background color selection.
 ///

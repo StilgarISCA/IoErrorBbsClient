@@ -9,10 +9,10 @@
 
 #include "defs.h"
 
-FILE *findBbsRc( void );
 FILE *findBbsFriends( void );
-FILE *openBbsRc( void );
+FILE *findBbsRc( void );
 FILE *openBbsFriends( void );
+FILE *openBbsRc( void );
 
 void readBbsRc( void );
 void truncateBbsRc( long userNameLength );

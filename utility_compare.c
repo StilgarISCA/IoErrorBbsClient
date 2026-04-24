@@ -12,9 +12,6 @@
 static int compareFriendNames( const friend *ptrLeft, const friend *ptrRight );
 static int compareStringPointers( const char *const *ptrLeft, const char *const *ptrRight );
 
-static int compareFriendNames( const friend *ptrLeft, const friend *ptrRight );
-static int compareStringPointers( const char *const *ptrLeft, const char *const *ptrRight );
-
 
 /// @brief Compare two friend records by their stored names.
 ///

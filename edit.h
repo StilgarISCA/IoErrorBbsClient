@@ -10,8 +10,7 @@
 #include "defs.h"
 
 int checkFile( FILE *ptrMessageFile );
-int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar );
-
 void makeMessage( int upload );
+int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar );
 
 #endif /* EDIT_H_INCLUDED */

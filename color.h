@@ -9,20 +9,35 @@
 
 #include "defs.h"
 
+int ansiTransform( int inputChar );
 void ansiTransformExpress( char *ptrText, size_t size );
+int ansiTransformPost( int inputChar, int isFriend );
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend );
+int backgroundPicker( void );
 void brilliantColors( void );
-void colorConfig( void );
-void colorOptions( void );
 void colorblindColors( void );
+void colorConfig( void );
+int colorize( const char *str );
+const char *colorNameFromValue( int colorValue );
+void colorOptions( void );
+int colorPicker( void );
+int colorValueFromLegacyDigit( int inputChar );
+int colorValueFromName( const char *ptrColorName );
+int colorValueToLegacyDigit( int colorValue );
 void defaultColors( int clearall );
 void expressColorConfig( void );
+char expressColorMenu( void );
 void expressFriendColorConfig( void );
 void expressUserColorConfig( void );
-void hotDogColors( void );
+int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                            int inputChar, int isPostContext,
+                                            int isFriend );
 void generalColorConfig( void );
+char generalColorMenu( void );
+void hotDogColors( void );
 void inputColorConfig( void );
 void postColorConfig( void );
+char postColorMenu( void );
 void postFriendColorConfig( void );
 void postUserColorConfig( void );
 void printAnsiBackgroundColorValue( int colorValue );
@@ -30,24 +45,6 @@ void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor );
 void printAnsiForegroundColorValue( int colorValue );
 void printAnsiResetValue( void );
 void printThemedMnemonicText( const char *ptrText, int defaultColor );
-
-int ansiTransform( int inputChar );
-int ansiTransformPost( int inputChar, int isFriend );
-int backgroundPicker( void );
-int colorize( const char *str );
-int colorPicker( void );
-int colorValueFromLegacyDigit( int inputChar );
-int colorValueFromName( const char *ptrColorName );
-int colorValueToLegacyDigit( int colorValue );
-int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
-                                            int inputChar, int isPostContext,
-                                            int isFriend );
-
-const char *colorNameFromValue( int colorValue );
-
-char expressColorMenu( void );
-char generalColorMenu( void );
-char postColorMenu( void );
 char userOrFriend( void );
 
 #endif /* COLOR_H_INCLUDED */
