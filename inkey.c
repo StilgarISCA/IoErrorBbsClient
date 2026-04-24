@@ -42,6 +42,23 @@ typedef struct
    int inputChar;
 } GetKeyResult;
 
+static const char *currentConnectionHost( void );
+static noreturn void failNetworkRead( int readErrno );
+static void flushPendingOutput( void );
+static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
+                                              int *ptrMacroPosition,
+                                              int *ptrPendingInputChar,
+                                              int *ptrIsMacroNext,
+                                              int *ptrWasUndefinedCommand );
+static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
+                                           int *ptrMacroPosition,
+                                           int *ptrIsMacroNext,
+                                           int *ptrWasUndefinedCommand );
+static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
+                                     int *ptrPendingInputChar );
+static bool tryReplaySavedByte( int *ptrInputChar );
+
+
 static const char *currentConnectionHost( void )
 {
    if ( *aryCommandLineHost )
@@ -55,6 +72,7 @@ static const char *currentConnectionHost( void )
 
    return BBS_HOSTNAME;
 }
+
 
 static noreturn void failNetworkRead( int readErrno )
 {
@@ -116,19 +134,6 @@ static noreturn void failNetworkRead( int readErrno )
    fatalExit( aryMessage, "Network error" );
 }
 
-static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
-                                              int *ptrMacroPosition,
-                                              int *ptrPendingInputChar,
-                                              int *ptrIsMacroNext,
-                                              int *ptrWasUndefinedCommand );
-static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
-                                           int *ptrMacroPosition,
-                                           int *ptrIsMacroNext,
-                                           int *ptrWasUndefinedCommand );
-static void flushPendingOutput( void );
-static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
-                                     int *ptrPendingInputChar );
-static bool tryReplaySavedByte( int *ptrInputChar );
 
 static void flushPendingOutput( void )
 {
@@ -143,6 +148,72 @@ static void flushPendingOutput( void )
       fatalPerror( "write", "Local error" );
    }
 }
+
+
+int getKey( void )
+{
+   static int macroKey = 0;
+   static int macroPosition = 0;       /* pointer into the aryMacro array */
+   static int isMacroNext = 0;         /* aryMacro key was hit, aryMacro is next */
+   static int wasUndefinedCommand = 0; /* to remove the blurb about undefined aryMacro */
+   int inputChar = -1;
+   int pendingInputChar = -1;
+   GetKeyResult result;
+
+   /*
+    * Throughout this function, if we are currently running with a child
+    * process we don't want to do anything with standard input, we are
+    * only * concerned with passing along anything that might be coming
+    * over the net during this time (connection going down, broadcast
+    * message from wizards, etc.)  That's the reason for all the
+    * references to '!childPid' The same is true when 'check' is set, it
+    * is used when entering the edit menu (abort, arySavedBytes, etc.) to check
+    * back with the BBS for any X messages that may have arrived -- it is
+    * added purely to make things compatible between the BBS and the
+    * client.
+    */
+
+   while ( true )
+   {
+      if ( tryReplaySavedByte( &inputChar ) )
+      {
+         return inputChar;
+      }
+
+      result = handleBufferedLocalInput( &macroKey, &macroPosition,
+                                         &pendingInputChar,
+                                         &isMacroNext, &wasUndefinedCommand );
+      if ( result.kind == GETKEY_RESULT_RETURN )
+      {
+         return result.inputChar;
+      }
+      if ( result.kind == GETKEY_RESULT_CONTINUE )
+      {
+         continue;
+      }
+
+      /* Handle any incoming traffic in the network input buffer */
+      if ( isNetworkInputAvailable() )
+      {
+         while ( isNetworkInputAvailable() )
+         {
+            if ( telReceive( netget() ) < 0 )
+            {
+               return ( -1 );
+            }
+         }
+         continue;
+      }
+
+      flushPendingOutput();
+      result = handleWaitEvent( &macroPosition, &pendingInputChar );
+      if ( result.kind == GETKEY_RESULT_RETURN )
+      {
+         return result.inputChar;
+      }
+   }
+}
+
 
 static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
                                               int *ptrMacroPosition,
@@ -215,6 +286,7 @@ static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
 
    return result;
 }
+
 
 static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
                                            int *ptrMacroPosition,
@@ -326,6 +398,7 @@ static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
    return result;
 }
 
+
 static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
                                      int *ptrPendingInputChar )
 {
@@ -384,29 +457,6 @@ static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
    return result;
 }
 
-static bool tryReplaySavedByte( int *ptrInputChar )
-{
-   if ( !targetByte || childPid || flagsConfiguration.shouldCheckExpress )
-   {
-      return false;
-   }
-   if ( bytePosition == targetByte )
-   {
-      targetByte = 0;
-      return false;
-   }
-   if ( bytePosition > targetByte )
-   {
-      stdPrintf( "[Internal error: byte synch lost!  %s > %s]\r\n",
-                 bytePosition, targetByte );
-      exit( 1 );
-   }
-
-   lastCarriageReturn = 0;
-   *ptrInputChar = arySavedBytes[(size_t)( bytePosition % (long)sizeof arySavedBytes )];
-   bytePosition++;
-   return true;
-}
 
 /*
  * The functionality of the former inKey() has been renamed to getKey(), so
@@ -444,66 +494,28 @@ int inKey( void )
    return ( inputChar );
 }
 
-int getKey( void )
+
+static bool tryReplaySavedByte( int *ptrInputChar )
 {
-   static int macroKey = 0;
-   static int macroPosition = 0;       /* pointer into the aryMacro array */
-   static int isMacroNext = 0;         /* aryMacro key was hit, aryMacro is next */
-   static int wasUndefinedCommand = 0; /* to remove the blurb about undefined aryMacro */
-   int inputChar = -1;
-   int pendingInputChar = -1;
-   GetKeyResult result;
-
-   /*
-    * Throughout this function, if we are currently running with a child
-    * process we don't want to do anything with standard input, we are
-    * only * concerned with passing along anything that might be coming
-    * over the net during this time (connection going down, broadcast
-    * message from wizards, etc.)  That's the reason for all the
-    * references to '!childPid' The same is true when 'check' is set, it
-    * is used when entering the edit menu (abort, arySavedBytes, etc.) to check
-    * back with the BBS for any X messages that may have arrived -- it is
-    * added purely to make things compatible between the BBS and the
-    * client.
-    */
-
-   while ( true )
+   if ( !targetByte || childPid || flagsConfiguration.shouldCheckExpress )
    {
-      if ( tryReplaySavedByte( &inputChar ) )
-      {
-         return inputChar;
-      }
-
-      result = handleBufferedLocalInput( &macroKey, &macroPosition,
-                                         &pendingInputChar,
-                                         &isMacroNext, &wasUndefinedCommand );
-      if ( result.kind == GETKEY_RESULT_RETURN )
-      {
-         return result.inputChar;
-      }
-      if ( result.kind == GETKEY_RESULT_CONTINUE )
-      {
-         continue;
-      }
-
-      /* Handle any incoming traffic in the network input buffer */
-      if ( isNetworkInputAvailable() )
-      {
-         while ( isNetworkInputAvailable() )
-         {
-            if ( telReceive( netget() ) < 0 )
-            {
-               return ( -1 );
-            }
-         }
-         continue;
-      }
-
-      flushPendingOutput();
-      result = handleWaitEvent( &macroPosition, &pendingInputChar );
-      if ( result.kind == GETKEY_RESULT_RETURN )
-      {
-         return result.inputChar;
-      }
+      return false;
    }
+   if ( bytePosition == targetByte )
+   {
+      targetByte = 0;
+      return false;
+   }
+   if ( bytePosition > targetByte )
+   {
+      stdPrintf( "[Internal error: byte synch lost!  %s > %s]\r\n",
+                 bytePosition, targetByte );
+      exit( 1 );
+   }
+
+   lastCarriageReturn = 0;
+   *ptrInputChar = arySavedBytes[(size_t)( bytePosition % (long)sizeof arySavedBytes )];
+   bytePosition++;
+   return true;
 }
+

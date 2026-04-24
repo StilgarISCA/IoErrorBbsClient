@@ -51,6 +51,17 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
                                  int *ptrTelnetBufferPos );
 static int handleTelnetVoidState( int inputByte, int *ptrState );
 
+static int handleTelnetDataState( int inputByte, int *ptrState );
+static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer );
+static int handleTelnetGetState( int inputByte, int *ptrState,
+                                 unsigned char *aryTelnetBuffer,
+                                 int *ptrTelnetBufferPos );
+static int handleTelnetIacState( int inputByte, int *ptrState,
+                                 unsigned char *aryTelnetBuffer,
+                                 int *ptrTelnetBufferPos );
+static int handleTelnetVoidState( int inputByte, int *ptrState );
+
+
 static int handleTelnetDataState( int inputByte, int *ptrState )
 {
    if ( inputByte == IAC )
@@ -77,6 +88,7 @@ static int handleTelnetDataState( int inputByte, int *ptrState )
 
    return 0;
 }
+
 
 static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer )
 {
@@ -131,6 +143,7 @@ static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer )
    return 0;
 }
 
+
 static int handleTelnetGetState( int inputByte, int *ptrState,
                                  unsigned char *aryTelnetBuffer,
                                  int *ptrTelnetBufferPos )
@@ -156,6 +169,7 @@ static int handleTelnetGetState( int inputByte, int *ptrState,
    *ptrTelnetBufferPos = 0;
    return handleTelnetGetCommand( aryTelnetBuffer );
 }
+
 
 static int handleTelnetIacState( int inputByte, int *ptrState,
                                  unsigned char *aryTelnetBuffer,
@@ -253,6 +267,7 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
    return 0;
 }
 
+
 static int handleTelnetVoidState( int inputByte, int *ptrState )
 {
    netPutChar( IAC );
@@ -261,6 +276,73 @@ static int handleTelnetVoidState( int inputByte, int *ptrState )
    *ptrState = TS_DATA;
    return 0;
 }
+
+
+/*
+ * Send signal that block of data follows -- this is a signal to the bbs that
+ * it should stop ignoring what we send it, since it begins ignoring and
+ * throwing isAway everything it receives from the time it sends an IAC G_*
+ * command until the time it receives an IAC BLOCK command.
+ */
+void sendBlock( void )
+{
+   netPutChar( IAC );
+   netPutChar( BLOCK );
+}
+
+
+/*
+ * Send a NAWS command to the bbs to tell it what our window size is.
+ */
+void sendNaws( void )
+{
+   if ( oldRows != getWindowSize() )
+   {
+      char aryString[10];
+      register int outputIndex;
+
+      /* Old window max was 70 */
+      if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
+      {
+         rows = WINDOW_ROWS_DEFAULT;
+      }
+      else
+      {
+         oldRows = rows;
+      }
+      snprintf( aryString, sizeof( aryString ), "%c%c%c%c%c%c%c%c%c", IAC, SB, TELOPT_NAWS, 0, 0, 0, rows, IAC, SE );
+      for ( outputIndex = 0; outputIndex < 9; outputIndex++ )
+      {
+         netPutChar( aryString[outputIndex] );
+      }
+   }
+}
+
+
+/*
+ * Initialize telnet negotations with the bbs -- we don't really do the
+ * negotations, we just tell the bbs what it needs to hear, since we don't need
+ * to negotiate because we know the correct state to put the terminal in. The
+ * BBS queue daemon also expects the IAC CLIENT command.
+ */
+void telInit( void )
+{
+   netPutChar( IAC );
+   netPutChar( CLIENT2 );
+   netPutChar( IAC );
+   netPutChar( SB );
+   netPutChar( TELOPT_ENVIRON );
+   netPutChar( 0 );
+   netPutChar( 1 );
+   netPutChar( 0 );
+   netPuts( "USER" );
+   netPutChar( 0 );
+   netPuts( aryUser );
+   netPutChar( IAC );
+   netPutChar( SE );
+   sendNaws();
+}
+
 
 int telReceive( int inputByte )
 {
@@ -291,65 +373,3 @@ int telReceive( int inputByte )
    return ( 0 );
 }
 
-/*
- * Send signal that block of data follows -- this is a signal to the bbs that
- * it should stop ignoring what we send it, since it begins ignoring and
- * throwing isAway everything it receives from the time it sends an IAC G_*
- * command until the time it receives an IAC BLOCK command.
- */
-void sendBlock( void )
-{
-   netPutChar( IAC );
-   netPutChar( BLOCK );
-}
-
-/*
- * Send a NAWS command to the bbs to tell it what our window size is.
- */
-void sendNaws( void )
-{
-   if ( oldRows != getWindowSize() )
-   {
-      char aryString[10];
-      register int outputIndex;
-
-      /* Old window max was 70 */
-      if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
-      {
-         rows = WINDOW_ROWS_DEFAULT;
-      }
-      else
-      {
-         oldRows = rows;
-      }
-      snprintf( aryString, sizeof( aryString ), "%c%c%c%c%c%c%c%c%c", IAC, SB, TELOPT_NAWS, 0, 0, 0, rows, IAC, SE );
-      for ( outputIndex = 0; outputIndex < 9; outputIndex++ )
-      {
-         netPutChar( aryString[outputIndex] );
-      }
-   }
-}
-
-/*
- * Initialize telnet negotations with the bbs -- we don't really do the
- * negotations, we just tell the bbs what it needs to hear, since we don't need
- * to negotiate because we know the correct state to put the terminal in. The
- * BBS queue daemon also expects the IAC CLIENT command.
- */
-void telInit( void )
-{
-   netPutChar( IAC );
-   netPutChar( CLIENT2 );
-   netPutChar( IAC );
-   netPutChar( SB );
-   netPutChar( TELOPT_ENVIRON );
-   netPutChar( 0 );
-   netPutChar( 1 );
-   netPutChar( 0 );
-   netPuts( "USER" );
-   netPutChar( 0 );
-   netPuts( aryUser );
-   netPutChar( IAC );
-   netPutChar( SE );
-   sendNaws();
-}

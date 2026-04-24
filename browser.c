@@ -21,253 +21,58 @@
 
 extern char **environ;
 
-static bool isUrlTerminator( int inputChar )
-{
-   if ( inputChar == 0 || isspace( inputChar ) )
-   {
-      return true;
-   }
-   return false;
-}
-
-static bool isUrlBodyChar( int inputChar )
-{
-   static const char *ptrAllowedPunctuation = "-._~:/?#[]@!$&'()*+,;=%";
-
-   if ( isalnum( inputChar ) )
-   {
-      return true;
-   }
-   return findChar( ptrAllowedPunctuation, inputChar ) != NULL;
-}
-
-static char *findUrlStart( char *ptrText )
-{
-   char *ptrHttps;
-   char *ptrWww;
-   char *ptrEarliest;
-
-   ptrHttps = strstr( ptrText, "https://" );
-   ptrWww = strstr( ptrText, "www." );
-
-   ptrEarliest = ptrHttps;
-   if ( ptrWww != NULL && ( ptrEarliest == NULL || ptrWww < ptrEarliest ) )
-   {
-      ptrEarliest = ptrWww;
-   }
-
-   if ( ptrWww != NULL && ptrEarliest == ptrWww )
-   {
-      if ( ptrWww != ptrText && !isspace( (unsigned char)ptrWww[-1] ) && ptrWww[-1] != '(' &&
-           ptrWww[-1] != '<' && ptrWww[-1] != '"' && ptrWww[-1] != '\'' )
-      {
-         ptrEarliest = NULL;
-      }
-   }
-
-   return ptrEarliest;
-}
-
-static const char *findUrlStartConst( const char *ptrText )
-{
-   const char *ptrHttps;
-   const char *ptrWww;
-   const char *ptrEarliest;
-
-   ptrHttps = strstr( ptrText, "https://" );
-   ptrWww = strstr( ptrText, "www." );
-
-   ptrEarliest = ptrHttps;
-   if ( ptrWww != NULL && ( ptrEarliest == NULL || ptrWww < ptrEarliest ) )
-   {
-      ptrEarliest = ptrWww;
-   }
-
-   if ( ptrWww != NULL && ptrEarliest == ptrWww )
-   {
-      if ( ptrWww != ptrText && !isspace( (unsigned char)ptrWww[-1] ) && ptrWww[-1] != '(' &&
-           ptrWww[-1] != '<' && ptrWww[-1] != '"' && ptrWww[-1] != '\'' )
-      {
-         ptrEarliest = NULL;
-      }
-   }
-
-   return ptrEarliest;
-}
-
-static void trimUrlTailPunctuation( char *ptrUrlStart )
-{
-   size_t urlLength;
-
-   urlLength = strlen( ptrUrlStart );
-   while ( urlLength > 0 )
-   {
-      char tailCharacter;
-
-      tailCharacter = ptrUrlStart[urlLength - 1];
-      if ( tailCharacter == '.' || tailCharacter == ',' || tailCharacter == ';' ||
-           tailCharacter == ':' || tailCharacter == '!' || tailCharacter == '?' ||
-           tailCharacter == ')' || tailCharacter == ']' || tailCharacter == '}' ||
-           tailCharacter == '>' || tailCharacter == '"' || tailCharacter == '\'' )
-      {
-         ptrUrlStart[urlLength - 1] = '\0';
-         urlLength--;
-      }
-      else
-      {
-         break;
-      }
-   }
-}
-
-static bool shouldEmitClickableUrls( void )
-{
-   if ( flagsConfiguration.isScreenReaderModeEnabled )
-   {
-      return false;
-   }
-
-   return flagsConfiguration.shouldEnableClickableUrls != 0;
-}
-
-void printWithOsc8Links( const char *ptrText )
-{
-   const char *ptrCursor;
-
-   if ( ptrText == NULL )
-   {
-      return;
-   }
-   if ( !shouldEmitClickableUrls() )
-   {
-      stdPrintf( "%s", ptrText );
-      return;
-   }
-
-   ptrCursor = ptrText;
-   while ( *ptrCursor != '\0' )
-   {
-      const char *ptrUrlStart;
-      const char *ptrUrlEnd;
-      const char *ptrTrimEnd;
-      const char *ptrEndPunctuation;
-      char aryUrlText[1024];
-      char aryUrlTarget[1152];
-      size_t urlLength;
-
-      ptrUrlStart = findUrlStartConst( ptrCursor );
-      if ( ptrUrlStart == NULL )
-      {
-         stdPrintf( "%s", ptrCursor );
-         return;
-      }
-
-      if ( ptrUrlStart > ptrCursor )
-      {
-         stdPrintf( "%.*s", (int)( ptrUrlStart - ptrCursor ), ptrCursor );
-      }
-
-      for ( ptrUrlEnd = ptrUrlStart; *ptrUrlEnd != '\0'; ptrUrlEnd++ )
-      {
-         if ( isUrlTerminator( (unsigned char)*ptrUrlEnd ) ||
-              !isUrlBodyChar( (unsigned char)*ptrUrlEnd ) )
-         {
-            break;
-         }
-      }
-
-      ptrTrimEnd = ptrUrlEnd;
-      while ( ptrTrimEnd > ptrUrlStart )
-      {
-         char tailCharacter;
-
-         tailCharacter = ptrTrimEnd[-1];
-         if ( tailCharacter == '.' || tailCharacter == ',' || tailCharacter == ';' ||
-              tailCharacter == ':' || tailCharacter == '!' || tailCharacter == '?' ||
-              tailCharacter == ')' || tailCharacter == ']' || tailCharacter == '}' ||
-              tailCharacter == '>' || tailCharacter == '"' || tailCharacter == '\'' )
-         {
-            ptrTrimEnd--;
-         }
-         else
-         {
-            break;
-         }
-      }
-
-      if ( ptrTrimEnd == ptrUrlStart )
-      {
-         stdPrintf( "%.*s", (int)( ptrUrlEnd - ptrUrlStart ), ptrUrlStart );
-         ptrCursor = ptrUrlEnd;
-         continue;
-      }
-
-      urlLength = (size_t)( ptrTrimEnd - ptrUrlStart );
-      if ( urlLength >= sizeof( aryUrlText ) )
-      {
-         urlLength = sizeof( aryUrlText ) - 1;
-      }
-      memcpy( aryUrlText, ptrUrlStart, urlLength );
-      aryUrlText[urlLength] = '\0';
-
-      if ( strncmp( aryUrlText, "www.", 4 ) == 0 )
-      {
-         snprintf( aryUrlTarget, sizeof( aryUrlTarget ), "https://%s", aryUrlText );
-      }
-      else
-      {
-         snprintf( aryUrlTarget, sizeof( aryUrlTarget ), "%s", aryUrlText );
-      }
-
-      stdPrintf( "\033]8;;%s\033\\", aryUrlTarget );
-      stdPrintf( "%s", aryUrlText );
-      stdPrintf( "\033]8;;\033\\" );
-
-      ptrEndPunctuation = ptrTrimEnd;
-      if ( ptrUrlEnd > ptrEndPunctuation )
-      {
-         stdPrintf( "%.*s", (int)( ptrUrlEnd - ptrEndPunctuation ), ptrEndPunctuation );
-      }
-
-      ptrCursor = ptrUrlEnd;
-   }
-}
-
-static bool launchBrowserUrl( const char *ptrUrl )
-{
-   char *aryArguments[3];
-   pid_t browserProcessId;
-   int spawnResult;
-
-   if ( ptrUrl == NULL || !*ptrUrl )
-   {
-      return false;
-   }
-   aryArguments[0] = "open";
-   aryArguments[1] = (char *)ptrUrl;
-   aryArguments[2] = NULL;
-
-   spawnResult = posix_spawnp( &browserProcessId, aryArguments[0], NULL, NULL, aryArguments, environ );
-   if ( spawnResult != 0 )
-   {
-      stdPrintf( "Unable to launch macOS browser handler.\r\n" );
-      return false;
-   }
-
-   return true;
-}
+static void applyVisibleUrlReportColor( int foregroundColor );
+static void beginVisibleUrlReportBodyColor( void );
+static void beginVisibleUrlReportHeaderColor( void );
+static void clearDetectedUrlQueue( void );
+static void endVisibleUrlReportColor( void );
+static bool ensureDetectedUrlQueue( void );
+static void finalizePendingUrl( char *aryPendingUrl, size_t pendingUrlSize, bool *ptrHasPendingUrl );
+static char *findUrlStart( char *ptrText );
+static const char *findUrlStartConst( const char *ptrText );
+static bool isUrlBodyChar( int inputChar );
+static bool isUrlTerminator( int inputChar );
+static bool launchBrowserUrl( const char *ptrUrl );
+static void queueUrlForReport( const char *ptrUrl );
+static void queueUrlIfNew( const char *ptrUrl );
+static bool shouldEmitClickableUrls( void );
+static void trimUrlTailPunctuation( char *ptrUrlStart );
 
 static queue *ptrDetectedUrlQueue;
 
-static bool ensureDetectedUrlQueue( void )
+
+static void applyVisibleUrlReportColor( int foregroundColor )
 {
-   if ( ptrDetectedUrlQueue != NULL )
+   if ( !flagsConfiguration.shouldUseAnsi )
    {
-      return true;
+      return;
    }
-   ptrDetectedUrlQueue = newQueue( 1024, 64 );
-   return ptrDetectedUrlQueue != NULL;
+   printAnsiDisplayStateValue( foregroundColor, color.background );
+   lastColor = foregroundColor;
 }
+
+
+void beginUrlDetectionReport( void )
+{
+   if ( !ensureDetectedUrlQueue() )
+   {
+      return;
+   }
+   clearDetectedUrlQueue();
+}
+
+
+static void beginVisibleUrlReportBodyColor( void )
+{
+   applyVisibleUrlReportColor( color.text );
+}
+
+
+static void beginVisibleUrlReportHeaderColor( void )
+{
+   applyVisibleUrlReportColor( color.number );
+}
+
 
 static void clearDetectedUrlQueue( void )
 {
@@ -283,39 +88,6 @@ static void clearDetectedUrlQueue( void )
    }
 }
 
-static void applyVisibleUrlReportColor( int foregroundColor )
-{
-   if ( !flagsConfiguration.shouldUseAnsi )
-   {
-      return;
-   }
-   printAnsiDisplayStateValue( foregroundColor, color.background );
-   lastColor = foregroundColor;
-}
-
-static void beginVisibleUrlReportHeaderColor( void )
-{
-   applyVisibleUrlReportColor( color.number );
-}
-
-static void beginVisibleUrlReportBodyColor( void )
-{
-   applyVisibleUrlReportColor( color.text );
-}
-
-static void endVisibleUrlReportColor( void )
-{
-   applyVisibleUrlReportColor( color.text );
-}
-
-void beginUrlDetectionReport( void )
-{
-   if ( !ensureDetectedUrlQueue() )
-   {
-      return;
-   }
-   clearDetectedUrlQueue();
-}
 
 void emitUrlDetectionReport( void )
 {
@@ -343,54 +115,23 @@ void emitUrlDetectionReport( void )
    endVisibleUrlReportColor();
 }
 
-static void queueUrlForReport( const char *ptrUrl )
-{
-   char aryTempText[1024];
 
-   if ( ptrUrl == NULL || !*ptrUrl || !ensureDetectedUrlQueue() )
-   {
-      return;
-   }
-   if ( isQueued( ptrUrl, ptrDetectedUrlQueue ) )
-   {
-      return;
-   }
-   while ( !pushQueue( ptrUrl, ptrDetectedUrlQueue ) )
-   {
-      popQueue( aryTempText, ptrDetectedUrlQueue );
-   }
+static void endVisibleUrlReportColor( void )
+{
+   applyVisibleUrlReportColor( color.text );
 }
 
-static void queueUrlIfNew( const char *ptrUrl )
-{
-   char aryTempText[1024];
 
-   if ( ptrUrl == NULL || !*ptrUrl )
+static bool ensureDetectedUrlQueue( void )
+{
+   if ( ptrDetectedUrlQueue != NULL )
    {
-      return;
+      return true;
    }
-   queueUrlForReport( ptrUrl );
-   if ( isQueued( ptrUrl, urlQueue ) )
-   {
-      return;
-   }
-   while ( !pushQueue( ptrUrl, urlQueue ) )
-   {
-      popQueue( aryTempText, urlQueue );
-   }
+   ptrDetectedUrlQueue = newQueue( 1024, 64 );
+   return ptrDetectedUrlQueue != NULL;
 }
 
-static void finalizePendingUrl( char *aryPendingUrl, size_t pendingUrlSize, bool *ptrHasPendingUrl )
-{
-   (void)pendingUrlSize;
-   trimUrlTailPunctuation( aryPendingUrl );
-   if ( *aryPendingUrl )
-   {
-      queueUrlIfNew( aryPendingUrl );
-   }
-   aryPendingUrl[0] = '\0';
-   *ptrHasPendingUrl = false;
-}
 
 void filterUrl( const char *ptrLine )
 {
@@ -506,6 +247,123 @@ void filterUrl( const char *ptrLine )
    }
 }
 
+
+static void finalizePendingUrl( char *aryPendingUrl, size_t pendingUrlSize, bool *ptrHasPendingUrl )
+{
+   (void)pendingUrlSize;
+   trimUrlTailPunctuation( aryPendingUrl );
+   if ( *aryPendingUrl )
+   {
+      queueUrlIfNew( aryPendingUrl );
+   }
+   aryPendingUrl[0] = '\0';
+   *ptrHasPendingUrl = false;
+}
+
+
+static char *findUrlStart( char *ptrText )
+{
+   char *ptrHttps;
+   char *ptrWww;
+   char *ptrEarliest;
+
+   ptrHttps = strstr( ptrText, "https://" );
+   ptrWww = strstr( ptrText, "www." );
+
+   ptrEarliest = ptrHttps;
+   if ( ptrWww != NULL && ( ptrEarliest == NULL || ptrWww < ptrEarliest ) )
+   {
+      ptrEarliest = ptrWww;
+   }
+
+   if ( ptrWww != NULL && ptrEarliest == ptrWww )
+   {
+      if ( ptrWww != ptrText && !isspace( (unsigned char)ptrWww[-1] ) && ptrWww[-1] != '(' &&
+           ptrWww[-1] != '<' && ptrWww[-1] != '"' && ptrWww[-1] != '\'' )
+      {
+         ptrEarliest = NULL;
+      }
+   }
+
+   return ptrEarliest;
+}
+
+
+static const char *findUrlStartConst( const char *ptrText )
+{
+   const char *ptrHttps;
+   const char *ptrWww;
+   const char *ptrEarliest;
+
+   ptrHttps = strstr( ptrText, "https://" );
+   ptrWww = strstr( ptrText, "www." );
+
+   ptrEarliest = ptrHttps;
+   if ( ptrWww != NULL && ( ptrEarliest == NULL || ptrWww < ptrEarliest ) )
+   {
+      ptrEarliest = ptrWww;
+   }
+
+   if ( ptrWww != NULL && ptrEarliest == ptrWww )
+   {
+      if ( ptrWww != ptrText && !isspace( (unsigned char)ptrWww[-1] ) && ptrWww[-1] != '(' &&
+           ptrWww[-1] != '<' && ptrWww[-1] != '"' && ptrWww[-1] != '\'' )
+      {
+         ptrEarliest = NULL;
+      }
+   }
+
+   return ptrEarliest;
+}
+
+
+static bool isUrlBodyChar( int inputChar )
+{
+   static const char *ptrAllowedPunctuation = "-._~:/?#[]@!$&'()*+,;=%";
+
+   if ( isalnum( inputChar ) )
+   {
+      return true;
+   }
+   return findChar( ptrAllowedPunctuation, inputChar ) != NULL;
+}
+
+
+static bool isUrlTerminator( int inputChar )
+{
+   if ( inputChar == 0 || isspace( inputChar ) )
+   {
+      return true;
+   }
+   return false;
+}
+
+
+static bool launchBrowserUrl( const char *ptrUrl )
+{
+   char *aryArguments[3];
+   pid_t browserProcessId;
+   int spawnResult;
+
+   if ( ptrUrl == NULL || !*ptrUrl )
+   {
+      return false;
+   }
+   aryArguments[0] = "open";
+   aryArguments[1] = (char *)ptrUrl;
+   aryArguments[2] = NULL;
+
+   spawnResult = posix_spawnp( &browserProcessId, aryArguments[0], NULL, NULL, aryArguments, environ );
+   if ( spawnResult != 0 )
+   {
+      stdPrintf( "Unable to launch macOS browser handler.\r\n" );
+      return false;
+   }
+
+   return true;
+}
+
+
 void openBrowser( void )
 {
    int inputIndex;
@@ -573,4 +431,184 @@ void openBrowser( void )
    shouldIgnoreNetwork = 0;
    reprintLine();
    capture = originalCaptureState;
+}
+
+
+void printWithOsc8Links( const char *ptrText )
+{
+   const char *ptrCursor;
+
+   if ( ptrText == NULL )
+   {
+      return;
+   }
+   if ( !shouldEmitClickableUrls() )
+   {
+      stdPrintf( "%s", ptrText );
+      return;
+   }
+
+   ptrCursor = ptrText;
+   while ( *ptrCursor != '\0' )
+   {
+      const char *ptrUrlStart;
+      const char *ptrUrlEnd;
+      const char *ptrTrimEnd;
+      const char *ptrEndPunctuation;
+      char aryUrlText[1024];
+      char aryUrlTarget[1152];
+      size_t urlLength;
+
+      ptrUrlStart = findUrlStartConst( ptrCursor );
+      if ( ptrUrlStart == NULL )
+      {
+         stdPrintf( "%s", ptrCursor );
+         return;
+      }
+
+      if ( ptrUrlStart > ptrCursor )
+      {
+         stdPrintf( "%.*s", (int)( ptrUrlStart - ptrCursor ), ptrCursor );
+      }
+
+      for ( ptrUrlEnd = ptrUrlStart; *ptrUrlEnd != '\0'; ptrUrlEnd++ )
+      {
+         if ( isUrlTerminator( (unsigned char)*ptrUrlEnd ) ||
+              !isUrlBodyChar( (unsigned char)*ptrUrlEnd ) )
+         {
+            break;
+         }
+      }
+
+      ptrTrimEnd = ptrUrlEnd;
+      while ( ptrTrimEnd > ptrUrlStart )
+      {
+         char tailCharacter;
+
+         tailCharacter = ptrTrimEnd[-1];
+         if ( tailCharacter == '.' || tailCharacter == ',' || tailCharacter == ';' ||
+              tailCharacter == ':' || tailCharacter == '!' || tailCharacter == '?' ||
+              tailCharacter == ')' || tailCharacter == ']' || tailCharacter == '}' ||
+              tailCharacter == '>' || tailCharacter == '"' || tailCharacter == '\'' )
+         {
+            ptrTrimEnd--;
+         }
+         else
+         {
+            break;
+         }
+      }
+
+      if ( ptrTrimEnd == ptrUrlStart )
+      {
+         stdPrintf( "%.*s", (int)( ptrUrlEnd - ptrUrlStart ), ptrUrlStart );
+         ptrCursor = ptrUrlEnd;
+         continue;
+      }
+
+      urlLength = (size_t)( ptrTrimEnd - ptrUrlStart );
+      if ( urlLength >= sizeof( aryUrlText ) )
+      {
+         urlLength = sizeof( aryUrlText ) - 1;
+      }
+      memcpy( aryUrlText, ptrUrlStart, urlLength );
+      aryUrlText[urlLength] = '\0';
+
+      if ( strncmp( aryUrlText, "www.", 4 ) == 0 )
+      {
+         snprintf( aryUrlTarget, sizeof( aryUrlTarget ), "https://%s", aryUrlText );
+      }
+      else
+      {
+         snprintf( aryUrlTarget, sizeof( aryUrlTarget ), "%s", aryUrlText );
+      }
+
+      stdPrintf( "\033]8;;%s\033\\", aryUrlTarget );
+      stdPrintf( "%s", aryUrlText );
+      stdPrintf( "\033]8;;\033\\" );
+
+      ptrEndPunctuation = ptrTrimEnd;
+      if ( ptrUrlEnd > ptrEndPunctuation )
+      {
+         stdPrintf( "%.*s", (int)( ptrUrlEnd - ptrEndPunctuation ), ptrEndPunctuation );
+      }
+
+      ptrCursor = ptrUrlEnd;
+   }
+}
+
+
+static void queueUrlForReport( const char *ptrUrl )
+{
+   char aryTempText[1024];
+
+   if ( ptrUrl == NULL || !*ptrUrl || !ensureDetectedUrlQueue() )
+   {
+      return;
+   }
+   if ( isQueued( ptrUrl, ptrDetectedUrlQueue ) )
+   {
+      return;
+   }
+   while ( !pushQueue( ptrUrl, ptrDetectedUrlQueue ) )
+   {
+      popQueue( aryTempText, ptrDetectedUrlQueue );
+   }
+}
+
+
+static void queueUrlIfNew( const char *ptrUrl )
+{
+   char aryTempText[1024];
+
+   if ( ptrUrl == NULL || !*ptrUrl )
+   {
+      return;
+   }
+   queueUrlForReport( ptrUrl );
+   if ( isQueued( ptrUrl, urlQueue ) )
+   {
+      return;
+   }
+   while ( !pushQueue( ptrUrl, urlQueue ) )
+   {
+      popQueue( aryTempText, urlQueue );
+   }
+}
+
+
+static bool shouldEmitClickableUrls( void )
+{
+   if ( flagsConfiguration.isScreenReaderModeEnabled )
+   {
+      return false;
+   }
+
+   return flagsConfiguration.shouldEnableClickableUrls != 0;
+}
+
+
+static void trimUrlTailPunctuation( char *ptrUrlStart )
+{
+   size_t urlLength;
+
+   urlLength = strlen( ptrUrlStart );
+   while ( urlLength > 0 )
+   {
+      char tailCharacter;
+
+      tailCharacter = ptrUrlStart[urlLength - 1];
+      if ( tailCharacter == '.' || tailCharacter == ',' || tailCharacter == ';' ||
+           tailCharacter == ':' || tailCharacter == '!' || tailCharacter == '?' ||
+           tailCharacter == ')' || tailCharacter == ']' || tailCharacter == '}' ||
+           tailCharacter == '>' || tailCharacter == '"' || tailCharacter == '\'' )
+      {
+         ptrUrlStart[urlLength - 1] = '\0';
+         urlLength--;
+      }
+      else
+      {
+         break;
+      }
+   }
 }

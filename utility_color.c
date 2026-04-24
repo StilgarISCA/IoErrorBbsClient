@@ -16,6 +16,11 @@ static void printAnsiColorValue( int colorValue, bool isBackground );
 static void printAnsiSequence( const char *ptrSequence );
 static bool tryPrintLegacyAtColor( int inputChar );
 
+static void printAnsiColorValue( int colorValue, bool isBackground );
+static void printAnsiSequence( const char *ptrSequence );
+static bool tryPrintLegacyAtColor( int inputChar );
+
+
 int colorize( const char *str )
 {
    const char *ptrText;
@@ -44,6 +49,13 @@ int colorize( const char *str )
    return 1;
 }
 
+
+void printAnsiBackgroundColorValue( int colorValue )
+{
+   printAnsiColorValue( colorValue, true );
+}
+
+
 static void printAnsiColorValue( int colorValue, bool isBackground )
 {
    char aryAnsiSequence[32];
@@ -64,15 +76,6 @@ static void printAnsiColorValue( int colorValue, bool isBackground )
    printAnsiSequence( aryAnsiSequence );
 }
 
-static void printAnsiSequence( const char *ptrSequence )
-{
-   stdPrintf( "%s", ptrSequence );
-}
-
-void printAnsiBackgroundColorValue( int colorValue )
-{
-   printAnsiColorValue( colorValue, true );
-}
 
 void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
 {
@@ -89,10 +92,12 @@ void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
    printAnsiSequence( aryAnsiSequence );
 }
 
+
 void printAnsiForegroundColorValue( int colorValue )
 {
    printAnsiColorValue( colorValue, false );
 }
+
 
 void printAnsiResetValue( void )
 {
@@ -106,6 +111,13 @@ void printAnsiResetValue( void )
    formatAnsiResetSequence( aryAnsiSequence, sizeof( aryAnsiSequence ) );
    printAnsiSequence( aryAnsiSequence );
 }
+
+
+static void printAnsiSequence( const char *ptrSequence )
+{
+   stdPrintf( "%s", ptrSequence );
+}
+
 
 void printThemedMnemonicText( const char *ptrText, int defaultColor )
 {
@@ -139,6 +151,7 @@ void printThemedMnemonicText( const char *ptrText, int defaultColor )
       ptrScan++;
    }
 }
+
 
 static bool tryPrintLegacyAtColor( int inputChar )
 {

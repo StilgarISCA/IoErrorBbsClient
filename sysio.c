@@ -17,25 +17,31 @@
 #include "utility.h"
 #include <stdarg.h>
 
-char swork[BUFSIZ]; /* temp buffer for color stripping */
+static bool shouldFlushImmediately( const char *ptrText );
 
-static bool shouldFlushImmediately( const char *ptrText )
-{
-   return strchr( ptrText, '\n' ) == NULL;
-}
 
-/* stdPutChar() and capPutChar() write a single character to stdout and the
- * capture file, respectively.  On error, they terminate the client.
- */
-int stdPutChar( int inputChar )
+int capPrintf( const char *format, ... )
 {
-   if ( putchar( inputChar ) < 0 )
+   char aryString[BUFSIZ];
+   va_list ap;
+
+   if ( capture )
    {
-      fatalPerror( "stdPutChar", "Local error" );
+      va_start( ap, format );
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+      (void)vsnprintf( aryString, sizeof( aryString ), format, ap );
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
+      va_end( ap );
+      return capPuts( aryString );
    }
-   capPutChar( inputChar );
-   return inputChar;
+   return 1;
 }
+
 
 int capPutChar( int inputChar )
 {
@@ -73,10 +79,136 @@ int capPutChar( int inputChar )
    return inputChar;
 }
 
+
+int capPuts( const char *ptrText )
+{
+   if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive )
+   {
+      char aryBuffer[BUFSIZ];
+
+      snprintf( aryBuffer, sizeof( aryBuffer ), "%s", ptrText );
+      stripAnsi( aryBuffer, sizeof( aryBuffer ) );
+      if ( fputs( aryBuffer, tempFile ) == EOF )
+      {
+         tempFileError();
+         return 1;
+      }
+      if ( shouldFlushImmediately( aryBuffer ) )
+      {
+         fflush( tempFile );
+      }
+   }
+   return 1;
+}
+
+
+int netPrintf( const char *format, ... )
+{
+   va_list ap;
+   static char work[BUFSIZ];
+
+   va_start( ap, format );
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+   (void)vsnprintf( work, sizeof( work ), format, ap );
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
+   va_end( ap );
+   netPuts( work );
+   return 1;
+}
+
+
 int netPutChar( int inputChar )
 {
    return ( netput( inputChar ) );
 }
+
+
+int netPuts( const char *ptrText )
+{
+   size_t textLength;
+
+   textLength = strlen( ptrText );
+   if ( textLength == 0 )
+   {
+      return 1;
+   }
+   if ( fwrite( ptrText, sizeof( char ), textLength, netOutputFile ) != textLength )
+   {
+      fatalPerror( "netPuts", "Network error" );
+   }
+
+   return 1;
+}
+
+
+char swork[BUFSIZ]; /* temp buffer for color stripping */
+
+static bool shouldFlushImmediately( const char *ptrText )
+{
+   return strchr( ptrText, '\n' ) == NULL;
+}
+
+
+/* stdPrintf and capPrintf print a formatted aryString to stdout, exactly as
+ * libc *printf.
+ */
+int stdPrintf( const char *format, ... )
+{
+   /* Know what sucks?  I can't really call capPrintf directly... */
+   char aryString[BUFSIZ];
+   va_list ap;
+
+   va_start( ap, format );
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+   (void)vsnprintf( aryString, sizeof( aryString ), format, ap );
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
+   va_end( ap );
+   return stdPuts( aryString );
+}
+
+
+/* stdPutChar() and capPutChar() write a single character to stdout and the
+ * capture file, respectively.  On error, they terminate the client.
+ */
+int stdPutChar( int inputChar )
+{
+   if ( putchar( inputChar ) < 0 )
+   {
+      fatalPerror( "stdPutChar", "Local error" );
+   }
+   capPutChar( inputChar );
+   return inputChar;
+}
+
+
+/* stdPuts and capPuts write a aryString to stdout.  They differ from libc *puts
+ * in that they do NOT write a trailing \n to the stream.  On error, they
+ * terminate the client.
+ */
+int stdPuts( const char *ptrText )
+{
+   if ( fputs( ptrText, stdout ) == EOF )
+   {
+      fatalPerror( "stdPuts", "Local error" );
+   }
+   if ( shouldFlushImmediately( ptrText ) )
+   {
+      fflush( stdout );
+   }
+   capPuts( ptrText );
+   return 1;
+}
+
 
 /* stripAnsi removes ANSI aryEscape sequences from a aryString.  Limits: aryString
  * buffer space is BUFSIZ bytes, should not overflow this!!
@@ -112,121 +244,3 @@ char *stripAnsi( char *ptrText, size_t bufferSize )
    return ptrText;
 }
 
-/* stdPuts and capPuts write a aryString to stdout.  They differ from libc *puts
- * in that they do NOT write a trailing \n to the stream.  On error, they
- * terminate the client.
- */
-int stdPuts( const char *ptrText )
-{
-   if ( fputs( ptrText, stdout ) == EOF )
-   {
-      fatalPerror( "stdPuts", "Local error" );
-   }
-   if ( shouldFlushImmediately( ptrText ) )
-   {
-      fflush( stdout );
-   }
-   capPuts( ptrText );
-   return 1;
-}
-
-int capPuts( const char *ptrText )
-{
-   if ( capture > 0 && !flagsConfiguration.isPosting && !flagsConfiguration.isMorePromptActive )
-   {
-      char aryBuffer[BUFSIZ];
-
-      snprintf( aryBuffer, sizeof( aryBuffer ), "%s", ptrText );
-      stripAnsi( aryBuffer, sizeof( aryBuffer ) );
-      if ( fputs( aryBuffer, tempFile ) == EOF )
-      {
-         tempFileError();
-         return 1;
-      }
-      if ( shouldFlushImmediately( aryBuffer ) )
-      {
-         fflush( tempFile );
-      }
-   }
-   return 1;
-}
-
-int netPuts( const char *ptrText )
-{
-   size_t textLength;
-
-   textLength = strlen( ptrText );
-   if ( textLength == 0 )
-   {
-      return 1;
-   }
-   if ( fwrite( ptrText, sizeof( char ), textLength, netOutputFile ) != textLength )
-   {
-      fatalPerror( "netPuts", "Network error" );
-   }
-
-   return 1;
-}
-
-/* stdPrintf and capPrintf print a formatted aryString to stdout, exactly as
- * libc *printf.
- */
-int stdPrintf( const char *format, ... )
-{
-   /* Know what sucks?  I can't really call capPrintf directly... */
-   char aryString[BUFSIZ];
-   va_list ap;
-
-   va_start( ap, format );
-#if defined( __clang__ )
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-   (void)vsnprintf( aryString, sizeof( aryString ), format, ap );
-#if defined( __clang__ )
-#pragma clang diagnostic pop
-#endif
-   va_end( ap );
-   return stdPuts( aryString );
-}
-
-int capPrintf( const char *format, ... )
-{
-   char aryString[BUFSIZ];
-   va_list ap;
-
-   if ( capture )
-   {
-      va_start( ap, format );
-#if defined( __clang__ )
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-      (void)vsnprintf( aryString, sizeof( aryString ), format, ap );
-#if defined( __clang__ )
-#pragma clang diagnostic pop
-#endif
-      va_end( ap );
-      return capPuts( aryString );
-   }
-   return 1;
-}
-
-int netPrintf( const char *format, ... )
-{
-   va_list ap;
-   static char work[BUFSIZ];
-
-   va_start( ap, format );
-#if defined( __clang__ )
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-   (void)vsnprintf( work, sizeof( work ), format, ap );
-#if defined( __clang__ )
-#pragma clang diagnostic pop
-#endif
-   va_end( ap );
-   netPuts( work );
-   return 1;
-}

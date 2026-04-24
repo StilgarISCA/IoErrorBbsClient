@@ -15,60 +15,88 @@
 #include "unix.h"
 #include "utility.h"
 
-static bool terminalSupportsTitleBarUpdates( void )
+static bool shouldUpdateTitleBar( void );
+static bool terminalSupportsTitleBarUpdates( void );
+
+static int isTerminalStateSaved = 0;
+#ifdef HAVE_TERMIO_H
+static struct termio saveterm;
+#else
+static struct sgttyb saveterm;
+static struct tchars savetchars;
+static struct ltchars savedLocalTermChars;
+static int savelocalmode;
+#endif
+
+
+/*
+ * This function flushes the input buffer in the same manner as the BBS does.
+ * By doing it on the client end we arySavedBytes the BBS the trouble of doing it, but
+ * in general the same thing will happen on one end or the other, so you won't
+ * speed things up at all by changing this, the sleep is there for your
+ * protection to insure a cut and paste gone awry or aryLine noise doesn't cause
+ * you too much hassle of posting random garbage, changing your profile or
+ * configuration or whatever.
+ */
+void flushInput( unsigned int invalid )
 {
-   const char *ptrTerm;
-   const char *ptrTermProgram;
+#if defined( FIONREAD ) || defined( TCFLSH )
+   int pendingInputBytes;
+#endif
 
-   ptrTerm = getenv( "TERM" );
-   ptrTermProgram = getenv( "TERM_PROGRAM" );
-
-   if ( ptrTermProgram != NULL &&
-        ( strcmp( ptrTermProgram, "Apple_Terminal" ) == 0 ||
-          strcmp( ptrTermProgram, "iTerm.app" ) == 0 ) )
+   if ( invalid / 2 )
    {
-      return true;
+      mySleep( invalid / 2 < 3 ? invalid / 2 : 3 );
    }
-   if ( ptrTerm == NULL )
+#ifdef FIONREAD
+   while ( isPtyInputAvailable() || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
    {
-      return false;
+      (void)ptyget();
    }
-   if ( strncmp( ptrTerm, "xterm", 5 ) == 0 ||
-        strncmp( ptrTerm, "screen", 6 ) == 0 ||
-        strncmp( ptrTerm, "tmux", 4 ) == 0 )
+#else
+#ifdef TCFLSH
+   pendingInputBytes = 0;
+   ioctl( 0, TCFLSH, &pendingInputBytes );
+#endif
+   while ( isPtyInputAvailable() )
    {
-      return true;
+      (void)ptyget();
    }
-
-   return false;
+#endif
 }
 
-static bool shouldUpdateTitleBar( void )
-{
-   if ( !flagsConfiguration.shouldEnableTitleBar ||
-        flagsConfiguration.isScreenReaderModeEnabled )
-   {
-      return false;
-   }
 
-   return terminalSupportsTitleBarUpdates();
+/*
+ * Get the current window size.
+ */
+int getWindowSize( void )
+{
+#ifdef TIOCGWINSZ
+   struct winsize ws;
+
+   if ( ioctl( 0, TIOCGWINSZ, (char *)&ws ) < 0 )
+   {
+      return ( rows = WINDOW_ROWS_DEFAULT );
+   }
+   else if ( ( rows = ws.ws_row ) < WINDOW_ROWS_MIN || rows > WINDOW_ROWS_MAX )
+   {
+      return ( rows = WINDOW_ROWS_DEFAULT );
+   }
+   else
+   {
+      return ( rows );
+   }
+#else
+   return ( rows = WINDOW_ROWS_DEFAULT );
+#endif
 }
 
-void titleBar( void )
+
+void mySleep( unsigned int sec )
 {
-   char aryTitle[80];
-
-   if ( !shouldUpdateTitleBar() )
-   {
-      return;
-   }
-
-   snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
-             aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
-             BUILD_VERSION, "Unix" );
-   printf( "\033]0;%s\007", aryTitle );
-   fflush( stdout );
+   sleep( sec );
 }
+
 
 void noTitleBar( void )
 {
@@ -81,37 +109,31 @@ void noTitleBar( void )
    fflush( stdout );
 }
 
+
 /*
- * Suspend the client.  Restores terminal to previous state before suspending,
- * puts it back in proper mode when client restarts, and checks if the window
- * size was changed while we were isAway.
+ * Reset the terminal to the previous state it was in when we started.
  */
-void suspend( void )
+void resetTerm( void )
 {
-   noTitleBar();
-   resetTerm();
-   kill( 0, SIGSTOP );
-   setTerm();
-   titleBar();
-   printf( "\r\n[Continue]\r\n" );
-   if ( oldRows != getWindowSize() && oldRows != -1 )
+   if ( flagsConfiguration.shouldUseAnsi )
    {
-      sendNaws();
+      printAnsiResetValue();
+      fflush( stdout );
    }
+   if ( !isTerminalStateSaved )
+   {
+      return;
+   }
+#ifdef HAVE_TERMIO_H
+   ioctl( 0, TCSETA, &saveterm );
+#else
+   ioctl( 0, TIOCSETN, (char *)&saveterm );
+   ioctl( 0, TIOCSETC, (char *)&savetchars );
+   ioctl( 0, TIOCSLTC, (char *)&savedLocalTermChars );
+   ioctl( 0, TIOCLSET, (char *)&savelocalmode );
+#endif
 }
 
-static int isTerminalStateSaved = 0;
-
-#ifdef HAVE_TERMIO_H
-static struct termio saveterm;
-
-#else
-static struct sgttyb saveterm;
-static struct tchars savetchars;
-static struct ltchars savedLocalTermChars;
-static int savelocalmode;
-
-#endif
 
 /*
  * Set terminal state to proper modes for running the client/bbs
@@ -191,92 +213,80 @@ void setTerm( void )
    isTerminalStateSaved = 1;
 }
 
-/*
- * Reset the terminal to the previous state it was in when we started.
- */
-void resetTerm( void )
+
+static bool shouldUpdateTitleBar( void )
 {
-   if ( flagsConfiguration.shouldUseAnsi )
+   if ( !flagsConfiguration.shouldEnableTitleBar ||
+        flagsConfiguration.isScreenReaderModeEnabled )
    {
-      printAnsiResetValue();
-      fflush( stdout );
+      return false;
    }
-   if ( !isTerminalStateSaved )
+
+   return terminalSupportsTitleBarUpdates();
+}
+
+
+/*
+ * Suspend the client.  Restores terminal to previous state before suspending,
+ * puts it back in proper mode when client restarts, and checks if the window
+ * size was changed while we were isAway.
+ */
+void suspend( void )
+{
+   noTitleBar();
+   resetTerm();
+   kill( 0, SIGSTOP );
+   setTerm();
+   titleBar();
+   printf( "\r\n[Continue]\r\n" );
+   if ( oldRows != getWindowSize() && oldRows != -1 )
+   {
+      sendNaws();
+   }
+}
+
+
+static bool terminalSupportsTitleBarUpdates( void )
+{
+   const char *ptrTerm;
+   const char *ptrTermProgram;
+
+   ptrTerm = getenv( "TERM" );
+   ptrTermProgram = getenv( "TERM_PROGRAM" );
+
+   if ( ptrTermProgram != NULL &&
+        ( strcmp( ptrTermProgram, "Apple_Terminal" ) == 0 ||
+          strcmp( ptrTermProgram, "iTerm.app" ) == 0 ) )
+   {
+      return true;
+   }
+   if ( ptrTerm == NULL )
+   {
+      return false;
+   }
+   if ( strncmp( ptrTerm, "xterm", 5 ) == 0 ||
+        strncmp( ptrTerm, "screen", 6 ) == 0 ||
+        strncmp( ptrTerm, "tmux", 4 ) == 0 )
+   {
+      return true;
+   }
+
+   return false;
+}
+
+
+void titleBar( void )
+{
+   char aryTitle[80];
+
+   if ( !shouldUpdateTitleBar() )
    {
       return;
    }
-#ifdef HAVE_TERMIO_H
-   ioctl( 0, TCSETA, &saveterm );
-#else
-   ioctl( 0, TIOCSETN, (char *)&saveterm );
-   ioctl( 0, TIOCSETC, (char *)&savetchars );
-   ioctl( 0, TIOCSLTC, (char *)&savedLocalTermChars );
-   ioctl( 0, TIOCLSET, (char *)&savelocalmode );
-#endif
-}
 
-/*
- * Get the current window size.
- */
-int getWindowSize( void )
-{
-#ifdef TIOCGWINSZ
-   struct winsize ws;
-
-   if ( ioctl( 0, TIOCGWINSZ, (char *)&ws ) < 0 )
-   {
-      return ( rows = WINDOW_ROWS_DEFAULT );
-   }
-   else if ( ( rows = ws.ws_row ) < WINDOW_ROWS_MIN || rows > WINDOW_ROWS_MAX )
-   {
-      return ( rows = WINDOW_ROWS_DEFAULT );
-   }
-   else
-   {
-      return ( rows );
-   }
-#else
-   return ( rows = WINDOW_ROWS_DEFAULT );
-#endif
-}
-
-void mySleep( unsigned int sec )
-{
-   sleep( sec );
-}
-
-/*
- * This function flushes the input buffer in the same manner as the BBS does.
- * By doing it on the client end we arySavedBytes the BBS the trouble of doing it, but
- * in general the same thing will happen on one end or the other, so you won't
- * speed things up at all by changing this, the sleep is there for your
- * protection to insure a cut and paste gone awry or aryLine noise doesn't cause
- * you too much hassle of posting random garbage, changing your profile or
- * configuration or whatever.
- */
-void flushInput( unsigned int invalid )
-{
-#if defined( FIONREAD ) || defined( TCFLSH )
-   int pendingInputBytes;
-#endif
-
-   if ( invalid / 2 )
-   {
-      mySleep( invalid / 2 < 3 ? invalid / 2 : 3 );
-   }
-#ifdef FIONREAD
-   while ( isPtyInputAvailable() || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
-   {
-      (void)ptyget();
-   }
-#else
-#ifdef TCFLSH
-   pendingInputBytes = 0;
-   ioctl( 0, TCFLSH, &pendingInputBytes );
-#endif
-   while ( isPtyInputAvailable() )
-   {
-      (void)ptyget();
-   }
-#endif
+   snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
+             aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
+             BUILD_VERSION, "Unix" );
+   printf( "\033]0;%s\007", aryTitle );
+   fflush( stdout );
 }

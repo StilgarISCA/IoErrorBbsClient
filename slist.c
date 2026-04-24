@@ -14,6 +14,28 @@
 #include <stdarg.h>
 
 /*
+ * slistAddItem adds an item to the list.
+ */
+int slistAddItem( slist *list, void *item, int deferSort )
+{
+   void **ptrItems;
+
+   list->nitems++;
+   if ( !( ptrItems = (void *)realloc( list->items, list->nitems * sizeof( void * ) ) ) )
+   {
+      return 0;
+   }
+   list->items = ptrItems;
+   list->items[list->nitems - 1] = item;
+   if ( !deferSort )
+   {
+      slistSort( list );
+   }
+   return 1;
+}
+
+
+/*
  * slistCreate creates a list with the given number of items already
  * allocated.  If the number of items is >0, the pointers must be
  * passed as arguments.
@@ -55,6 +77,7 @@ slist *slistCreate( int nitems, int ( *sortfn )( const void *, const void * ), .
    return ptrList;
 }
 
+
 /*
  * slistDestroy destroys a list.  It does not destroy the data items
  * in the list.
@@ -65,6 +88,7 @@ void slistDestroy( slist *list )
    list->items = NULL;
    free( list );
 }
+
 
 /*
  * slistDestroyItems destroys the data items in a list.
@@ -80,59 +104,6 @@ void slistDestroyItems( slist *list )
    }
 }
 
-/*
- * slistAddItem adds an item to the list.
- */
-int slistAddItem( slist *list, void *item, int deferSort )
-{
-   void **ptrItems;
-
-   list->nitems++;
-   if ( !( ptrItems = (void *)realloc( list->items, list->nitems * sizeof( void * ) ) ) )
-   {
-      return 0;
-   }
-   list->items = ptrItems;
-   list->items[list->nitems - 1] = item;
-   if ( !deferSort )
-   {
-      slistSort( list );
-   }
-   return 1;
-}
-
-/*
- * slistRemoveItem removes an item from the list.  It does not free the
- * object being pointed to.
- */
-int slistRemoveItem( slist *list, int item )
-{
-   void **ptrItems;
-
-   assert( list );
-   assert( item >= 0 );
-   assert( (unsigned int)item < list->nitems );
-
-   printf( "slistRemoveItem(list, %d): nitems=%u\r\n", item, list->nitems );
-   list->items[item] = NULL;
-   if ( (unsigned int)item < --list->nitems )
-   {
-      unsigned int itemIndex;
-
-      for ( itemIndex = (unsigned int)item; itemIndex < list->nitems; itemIndex++ )
-      {
-         list->items[itemIndex] = list->items[itemIndex + 1];
-      }
-   }
-   ptrItems = (void *)realloc( list->items, list->nitems * sizeof( void * ) );
-   if ( !ptrItems && list->nitems )
-   { /* request failed */
-      return 0;
-   }
-
-   list->items = ptrItems;
-   return 1;
-}
 
 /*
  * slistFind locates an item based on the results of the search function.
@@ -181,16 +152,6 @@ int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const v
    return -1;
 }
 
-/*
- * slistSort sorts the list using qsort. qsort may not be the best choice,
- * but it's good-enough for the BBS client.
- */
-void slistSort( slist *list )
-{
-   assert( list );
-
-   qsort( list->items, list->nitems, sizeof( void * ), list->sortfn );
-}
 
 /*
  * slistIntersection creates the intersection of two slists, that is, the
@@ -261,3 +222,50 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
    slistSort( ptrResultList );
    return ptrResultList;
 }
+
+
+/*
+ * slistRemoveItem removes an item from the list.  It does not free the
+ * object being pointed to.
+ */
+int slistRemoveItem( slist *list, int item )
+{
+   void **ptrItems;
+
+   assert( list );
+   assert( item >= 0 );
+   assert( (unsigned int)item < list->nitems );
+
+   printf( "slistRemoveItem(list, %d): nitems=%u\r\n", item, list->nitems );
+   list->items[item] = NULL;
+   if ( (unsigned int)item < --list->nitems )
+   {
+      unsigned int itemIndex;
+
+      for ( itemIndex = (unsigned int)item; itemIndex < list->nitems; itemIndex++ )
+      {
+         list->items[itemIndex] = list->items[itemIndex + 1];
+      }
+   }
+   ptrItems = (void *)realloc( list->items, list->nitems * sizeof( void * ) );
+   if ( !ptrItems && list->nitems )
+   { /* request failed */
+      return 0;
+   }
+
+   list->items = ptrItems;
+   return 1;
+}
+
+
+/*
+ * slistSort sorts the list using qsort. qsort may not be the best choice,
+ * but it's good-enough for the BBS client.
+ */
+void slistSort( slist *list )
+{
+   assert( list );
+
+   qsort( list->items, list->nitems, sizeof( void * ), list->sortfn );
+}
+

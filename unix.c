@@ -25,32 +25,91 @@
 
 static struct passwd *pw;
 
+static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg );
+
+
 /*
- * Find the aryUser's home directory (needed for .bbsrc and .bbstmp)
+ * Quits gracefully when we are given a HUP or STOP signal.
  */
-void findHome( void )
+RETSIGTYPE bye( int signalNumber )
 {
-   if ( ( pw = getpwuid( getuid() ) ) )
+   (void)signalNumber;
+   myExit();
+}
+
+
+static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg )
+{
+   wordexp_t parsedCommand;
+   char **aryArguments;
+   size_t argumentCount;
+   int parseResult;
+
+   parseResult = wordexp( ptrCommand, &parsedCommand, WRDE_NOCMD );
+   if ( parseResult != 0 || parsedCommand.we_wordc == 0 )
    {
-      snprintf( aryUser, sizeof( aryUser ), "%s", pw->pw_name );
+      fprintf( stderr, "\r\n[Unable to parse command: %s]\r\n", ptrCommand );
+      _exit( 1 );
    }
-   else if ( getenv( "USER" ) )
+
+   argumentCount = parsedCommand.we_wordc + ( ptrArg ? 1U : 0U );
+   aryArguments = calloc( argumentCount + 1, sizeof( char * ) );
+   if ( aryArguments != NULL )
    {
-      snprintf( aryUser, sizeof( aryUser ), "%s", getenv( "USER" ) );
+      for ( size_t argumentIndex = 0; argumentIndex < parsedCommand.we_wordc; argumentIndex++ )
+      {
+         aryArguments[argumentIndex] = parsedCommand.we_wordv[argumentIndex];
+      }
+      if ( ptrArg )
+      {
+         aryArguments[parsedCommand.we_wordc] = (char *)ptrArg;
+      }
+
+      execvp( aryArguments[0], aryArguments );
+      fprintf( stderr, "\r\n" );
+      sPerror( "exec", "Local error" );
+      free( aryArguments );
+      wordfree( &parsedCommand );
+      _exit( 1 );
+   }
+
+   fprintf( stderr, "\r\n" );
+   sPerror( "calloc", "Local error" );
+   wordfree( &parsedCommand );
+   _exit( 1 );
+}
+
+
+/* Locate .bbsfriends and keep permissions restricted when the file exists. */
+FILE *findBbsFriends( void )
+{
+   if ( isLoginShell )
+   {
+      snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "/tmp/bbsfriends.%d", getpid() );
    }
    else
    {
-      fatalExit( "findHome: You don't exist, go away.", "Local error" );
-   }
-   if ( isLoginShell )
-   {
-      size_t userNameLength = strlen( aryUser );
-      if ( userNameLength < sizeof( aryUser ) - 1 )
+      if ( getenv( "BBSFRIENDS" ) )
       {
-         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login shell)" );
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s", getenv( "BBSFRIENDS" ) );
+      }
+      else if ( pw )
+      {
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", pw->pw_dir );
+      }
+      else if ( getenv( "HOME" ) )
+      {
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", getenv( "HOME" ) );
+      }
+      else
+      {
+         fatalExit( "findBbsFriends: You don't exist, go away.", "Local error" );
       }
    }
+   chmod( aryBbsFriendsName, 0600 );
+   return ( openBbsFriends() );
 }
+
 
 /*
  * Locate the bbsrc file.  Usually is ~/.bbsrc, can be overriden by providing
@@ -96,46 +155,50 @@ FILE *findBbsRc( void )
    return ( openBbsRc() );
 }
 
-/* Locate .bbsfriends and keep permissions restricted when the file exists. */
-FILE *findBbsFriends( void )
+
+/*
+ * Find the aryUser's home directory (needed for .bbsrc and .bbstmp)
+ */
+void findHome( void )
 {
-   if ( isLoginShell )
+   if ( ( pw = getpwuid( getuid() ) ) )
    {
-      snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "/tmp/bbsfriends.%d", getpid() );
+      snprintf( aryUser, sizeof( aryUser ), "%s", pw->pw_name );
+   }
+   else if ( getenv( "USER" ) )
+   {
+      snprintf( aryUser, sizeof( aryUser ), "%s", getenv( "USER" ) );
    }
    else
    {
-      if ( getenv( "BBSFRIENDS" ) )
+      fatalExit( "findHome: You don't exist, go away.", "Local error" );
+   }
+   if ( isLoginShell )
+   {
+      size_t userNameLength = strlen( aryUser );
+      if ( userNameLength < sizeof( aryUser ) - 1 )
       {
-         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s", getenv( "BBSFRIENDS" ) );
-      }
-      else if ( pw )
-      {
-         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", pw->pw_dir );
-      }
-      else if ( getenv( "HOME" ) )
-      {
-         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", getenv( "HOME" ) );
-      }
-      else
-      {
-         fatalExit( "findBbsFriends: You don't exist, go away.", "Local error" );
+         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login shell)" );
       }
    }
-   chmod( aryBbsFriendsName, 0600 );
-   return ( openBbsFriends() );
 }
 
+
 /*
- * Truncates bbsrc file to the specified length.
+ * Handles a WINCH signal given when the window is resized
  */
-void truncateBbsRc( long userNameLength )
+RETSIGTYPE naws( int signalNumber )
 {
-   if ( ftruncate( fileno( ptrBbsRc ), userNameLength ) < 0 )
+   (void)signalNumber;
+   if ( oldRows != -1 )
    {
-      fatalExit( "ftruncate", "Local error" );
+      sendNaws();
    }
+#ifdef SIGWINCH
+   signal( SIGWINCH, naws );
+#endif
 }
+
 
 /*
  * Opens the temp file, ~/.bbstmp.  If the BBSTMP environment variable is set,
@@ -176,29 +239,6 @@ void openTmpFile( void )
    }
 }
 
-/*
- * Quits gracefully when we are given a HUP or STOP signal.
- */
-RETSIGTYPE bye( int signalNumber )
-{
-   (void)signalNumber;
-   myExit();
-}
-
-/*
- * Handles a WINCH signal given when the window is resized
- */
-RETSIGTYPE naws( int signalNumber )
-{
-   (void)signalNumber;
-   if ( oldRows != -1 )
-   {
-      sendNaws();
-   }
-#ifdef SIGWINCH
-   signal( SIGWINCH, naws );
-#endif
-}
 
 /*
  * Handles the death of the child by doing a longjmp back to the function that
@@ -224,82 +264,6 @@ RETSIGTYPE reapChild( int signalNumber )
    }
 }
 
-/*
- * Initialize necessary signals
- */
-void sigInit( void )
-{
-   oldRows = -1;
-
-   signal( SIGINT, SIG_IGN );
-   signal( SIGQUIT, SIG_IGN );
-   signal( SIGPIPE, SIG_IGN );
-#ifdef SIGTSTP
-   signal( SIGTSTP, SIG_IGN );
-#endif
-#ifdef SIGTTOU
-   signal( SIGTTOU, SIG_IGN );
-#endif
-   signal( SIGHUP, bye );
-   signal( SIGTERM, bye );
-#ifdef SIGWINCH
-   signal( SIGWINCH, naws );
-#endif
-}
-
-/*
- * Turn off signals now that we are ready to terminate
- */
-void sigOff( void )
-{
-   signal( SIGALRM, SIG_IGN );
-#ifdef SIGWINCH
-   signal( SIGWINCH, SIG_IGN );
-#endif
-   signal( SIGHUP, SIG_IGN );
-   signal( SIGTERM, SIG_IGN );
-}
-
-static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg )
-{
-   wordexp_t parsedCommand;
-   char **aryArguments;
-   size_t argumentCount;
-   int parseResult;
-
-   parseResult = wordexp( ptrCommand, &parsedCommand, WRDE_NOCMD );
-   if ( parseResult != 0 || parsedCommand.we_wordc == 0 )
-   {
-      fprintf( stderr, "\r\n[Unable to parse command: %s]\r\n", ptrCommand );
-      _exit( 1 );
-   }
-
-   argumentCount = parsedCommand.we_wordc + ( ptrArg ? 1U : 0U );
-   aryArguments = calloc( argumentCount + 1, sizeof( char * ) );
-   if ( aryArguments != NULL )
-   {
-      for ( size_t argumentIndex = 0; argumentIndex < parsedCommand.we_wordc; argumentIndex++ )
-      {
-         aryArguments[argumentIndex] = parsedCommand.we_wordv[argumentIndex];
-      }
-      if ( ptrArg )
-      {
-         aryArguments[parsedCommand.we_wordc] = (char *)ptrArg;
-      }
-
-      execvp( aryArguments[0], aryArguments );
-      fprintf( stderr, "\r\n" );
-      sPerror( "exec", "Local error" );
-      free( aryArguments );
-      wordfree( &parsedCommand );
-      _exit( 1 );
-   }
-
-   fprintf( stderr, "\r\n" );
-   sPerror( "calloc", "Local error" );
-   wordfree( &parsedCommand );
-   _exit( 1 );
-}
 
 /*
  * Launch aryCommand with an optional trailing argument. Used for the external
@@ -561,3 +525,54 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
    unlink( oldpath );
    return;
 }
+
+
+/*
+ * Initialize necessary signals
+ */
+void sigInit( void )
+{
+   oldRows = -1;
+
+   signal( SIGINT, SIG_IGN );
+   signal( SIGQUIT, SIG_IGN );
+   signal( SIGPIPE, SIG_IGN );
+#ifdef SIGTSTP
+   signal( SIGTSTP, SIG_IGN );
+#endif
+#ifdef SIGTTOU
+   signal( SIGTTOU, SIG_IGN );
+#endif
+   signal( SIGHUP, bye );
+   signal( SIGTERM, bye );
+#ifdef SIGWINCH
+   signal( SIGWINCH, naws );
+#endif
+}
+
+
+/*
+ * Turn off signals now that we are ready to terminate
+ */
+void sigOff( void )
+{
+   signal( SIGALRM, SIG_IGN );
+#ifdef SIGWINCH
+   signal( SIGWINCH, SIG_IGN );
+#endif
+   signal( SIGHUP, SIG_IGN );
+   signal( SIGTERM, SIG_IGN );
+}
+
+
+/*
+ * Truncates bbsrc file to the specified length.
+ */
+void truncateBbsRc( long userNameLength )
+{
+   if ( ftruncate( fileno( ptrBbsRc ), userNameLength ) < 0 )
+   {
+      fatalExit( "ftruncate", "Local error" );
+   }
+}
+

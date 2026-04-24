@@ -116,6 +116,38 @@ static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
                                    char ( *aryAwayBuffers )[80] );
 static void warnAboutBbsRcConflicts( void );
 
+static bool addFriendFromLine( const char *ptrLine );
+static void applyBbsRcKeyDefaults( void );
+static int ctrl( const char *ptrToken );
+static BbsRcCommandId detectBbsRcCommand( const char *ptrLine );
+static void ensureDefaultAwayMessage( void );
+static bool finalizeBbsRcRead( BbsRcReadState *ptrState );
+static void initializeBbsRcDefaults( void );
+static void initializeBbsRcLists( void );
+static bool isNewAwayMessageCommand( const char *ptrLine );
+static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue );
+static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
+static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
+static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState );
+static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
+                                           const char *ptrLine,
+                                           BbsRcReadState *ptrState );
+static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
+                                       const char *ptrLine );
+static bool processBbsRcListCommand( BbsRcCommandId commandId,
+                                     const char *ptrLine );
+static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
+                                      const char *ptrLine,
+                                      BbsRcReadState *ptrState );
+static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
+                                        const char *ptrLine,
+                                        BbsRcReadState *ptrState );
+static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState );
+static void warnAboutBbsRcConflicts( void );
+static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
+                                   char ( *aryAwayBuffers )[80] );
+
+
 static bool addFriendFromLine( const char *ptrLine )
 {
    friend *ptrFriend;
@@ -172,6 +204,7 @@ static bool addFriendFromLine( const char *ptrLine )
    return true;
 }
 
+
 static void applyBbsRcKeyDefaults( void )
 {
    if ( commandKey == -1 )
@@ -204,6 +237,7 @@ static void applyBbsRcKeyDefaults( void )
    }
 }
 
+
 /*
  * Given a pointer to a string, this function evaluates it to a control
  * character, translating '^z', '^Z', or an actual ctrl-Z to all be ctrl-Z. If
@@ -230,6 +264,7 @@ static int ctrl( const char *ptrToken )
    }
    return ( parseIndex );
 }
+
 
 static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
 {
@@ -287,6 +322,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
    return BBRC_CMD_UNKNOWN;
 }
 
+
 static void ensureDefaultAwayMessage( void )
 {
    if ( !**aryAwayMessageLines )
@@ -296,6 +332,7 @@ static void ensureDefaultAwayMessage( void )
       *aryAwayMessageLines[1] = 0;
    }
 }
+
 
 static bool finalizeBbsRcRead( BbsRcReadState *ptrState )
 {
@@ -382,6 +419,7 @@ static bool finalizeBbsRcRead( BbsRcReadState *ptrState )
    return true;
 }
 
+
 static void initializeBbsRcDefaults( void )
 {
    int parseIndex;
@@ -450,6 +488,7 @@ static void initializeBbsRcDefaults( void )
    ptrExpressMessageBuffer = aryExpressMessageBuffer;
 }
 
+
 static void initializeBbsRcLists( void )
 {
    if ( !( friendList = slistCreate( 0, fSortCompareVoid ) ) )
@@ -466,11 +505,13 @@ static void initializeBbsRcLists( void )
    }
 }
 
+
 static bool isNewAwayMessageCommand( const char *ptrLine )
 {
    return ptrLine[0] == 'a' && ptrLine[1] >= '1' &&
           ptrLine[1] <= '5' && ptrLine[2] == ' ';
 }
+
 
 static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue )
 {
@@ -509,6 +550,7 @@ static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t pr
    return BBRC_OPTION_INVALID;
 }
 
+
 static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
 {
    if ( strlen( ptrLine ) == 6 + COLOR_FIELD_COUNT )
@@ -528,6 +570,7 @@ static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
 
    return parseNamedColorScheme( ptrLine + 6, ptrColorValues );
 }
+
 
 static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues )
 {
@@ -596,6 +639,357 @@ static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues
 
    return colorIndex == COLOR_FIELD_COUNT;
 }
+
+
+static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+{
+   int parseIndex;
+   const char *ptrToken;
+   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
+   bool isHandled = true;
+
+   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+   if ( processBbsRcConnectionCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+   if ( processBbsRcListCommand( commandId, ptrLine ) )
+   {
+      return true;
+   }
+   if ( processBbsRcHotkeyCommand( commandId, ptrLine ) )
+   {
+      return true;
+   }
+   if ( processBbsRcMacroCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+
+   switch ( commandId )
+   {
+      case BBRC_CMD_REREAD:
+      case BBRC_CMD_XWRAP:
+         break;
+
+      case BBRC_CMD_KEYMAP:
+         parseIndex = *( ptrLine + ( sizeof( "aryKeyMap " ) - 1 ) );
+         ptrToken = ptrLine + sizeof( "aryKeyMap " );
+         if ( *ptrToken++ == ' ' && parseIndex > 32 && parseIndex < 128 )
+         {
+            aryKeyMap[parseIndex] = *ptrToken;
+         }
+         else
+         {
+            stdPrintf( "Invalid value for 'aryKeyMap' ignored.\n" );
+         }
+         break;
+
+      case BBRC_CMD_UNKNOWN:
+      default:
+         isHandled = false;
+         break;
+   }
+
+   if ( !isHandled && *ptrLine != '#' && *ptrLine &&
+        strncmp( ptrLine, "friend ", FRIEND_COMMAND_PREFIX_LEN ) )
+   {
+      stdPrintf( "Syntax error in .bbsrc file in line %d.\n", ptrState->lineNumber );
+   }
+
+   return true;
+}
+
+
+static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
+                                           const char *ptrLine,
+                                           BbsRcReadState *ptrState )
+{
+   switch ( commandId )
+   {
+      case BBRC_CMD_BROWSER:
+         ptrState->shouldShowBrowserMigrationNotice = true;
+         ptrState->shouldRewriteBbsRc = true;
+         return true;
+
+      case BBRC_CMD_EDITOR:
+         if ( *aryEditor )
+         {
+            stdPrintf( "Multiple definition of 'aryEditor' ignored.\n" );
+         }
+         else
+         {
+            strncpy( aryEditor, ptrLine + ( sizeof( "aryEditor " ) - 1 ), 72 );
+         }
+         return true;
+
+      case BBRC_CMD_SITE:
+         if ( *aryBbsHost )
+         {
+            stdPrintf( "Multiple definition of 'site' ignored.\n" );
+         }
+         else
+         {
+            int parseIndex;
+
+            for ( parseIndex = 5;
+                  ( aryBbsHost[parseIndex - 5] = ptrLine[parseIndex] ) &&
+                  ptrLine[parseIndex] != ' ' && parseIndex < 68;
+                  parseIndex++ )
+            {
+               ;
+            }
+            if ( parseIndex == 68 || parseIndex == 5 )
+            {
+               stdPrintf( "Illegal hostname in 'site', using default.\n" );
+               *aryBbsHost = 0;
+            }
+            else
+            {
+               aryBbsHost[parseIndex - 5] = 0;
+               if ( ptrLine[parseIndex] )
+               {
+                  bbsPort = (unsigned short)atoi( ptrLine + parseIndex + 1 );
+               }
+               else
+               {
+                  bbsPort = BBS_PORT_NUMBER;
+               }
+               for ( ; ptrLine[parseIndex] && ptrLine[parseIndex] != ' '; parseIndex++ )
+               {
+                  ;
+               }
+               if ( !strncmp( ptrLine + parseIndex, "secure", 6 ) )
+               {
+                  shouldUseSsl = 1;
+               }
+            }
+            if ( !strcmp( aryBbsHost, "206.217.131.27" ) )
+            {
+               snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
+            }
+         }
+         return true;
+
+      default:
+         return false;
+   }
+}
+
+
+static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
+                                       const char *ptrLine )
+{
+   switch ( commandId )
+   {
+      case BBRC_CMD_COMMANDKEY:
+         if ( commandKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'commandkey' ignored.\n" );
+         }
+         else
+         {
+            if ( !strncmp( ptrLine, "macrokey ", 9 ) )
+            {
+               commandKey = ctrl( ptrLine + 9 );
+            }
+            else
+            {
+               commandKey = ctrl( ptrLine + 11 );
+            }
+            if ( findChar( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f",
+                           commandKey ) || commandKey >= ' ' )
+            {
+               stdPrintf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
+               commandKey = 0x1b;
+            }
+         }
+         return true;
+
+      case BBRC_CMD_AWAYKEY:
+         if ( awayKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'awaykey' ignored.\n" );
+         }
+         else
+         {
+            awayKey = ctrl( ptrLine + 8 );
+         }
+         return true;
+
+      case BBRC_CMD_QUIT:
+         if ( quitKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'quit' ignored.\n" );
+         }
+         else
+         {
+            quitKey = ctrl( ptrLine + 5 );
+         }
+         return true;
+
+      case BBRC_CMD_SUSP:
+         if ( suspKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'susp' ignored.\n" );
+         }
+         else
+         {
+            suspKey = ctrl( ptrLine + 5 );
+         }
+         return true;
+
+      case BBRC_CMD_CAPTURE:
+         if ( captureKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'capture' ignored.\n" );
+         }
+         else
+         {
+            captureKey = ctrl( ptrLine + 8 );
+         }
+         return true;
+
+      case BBRC_CMD_URL:
+         if ( browserKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'url' ignored.\n" );
+         }
+         else
+         {
+            browserKey = ctrl( ptrLine + 4 );
+         }
+         return true;
+
+      case BBRC_CMD_SHELL:
+         if ( shellKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'shellkey' ignored.\n" );
+         }
+         else
+         {
+            if ( !strncmp( ptrLine, "shellkey ", 9 ) )
+            {
+               shellKey = ctrl( ptrLine + 9 );
+            }
+            else
+            {
+               shellKey = ctrl( ptrLine + ( sizeof( "aryShell " ) - 1 ) );
+            }
+         }
+         return true;
+
+      default:
+         return false;
+   }
+}
+
+
+static bool processBbsRcListCommand( BbsRcCommandId commandId,
+                                     const char *ptrLine )
+{
+   switch ( commandId )
+   {
+      case BBRC_CMD_FRIEND:
+         if ( bbsFriends )
+         {
+            char aryScratchLine[MAX_LINE_LENGTH + 1];
+
+            if ( fgets( aryScratchLine, MAX_LINE_LENGTH + 1, bbsFriends ) )
+            {
+               return true;
+            }
+         }
+         return addFriendFromLine( ptrLine );
+
+      case BBRC_CMD_ENEMY:
+         if ( strlen( ptrLine ) == 6 )
+         {
+            stdPrintf( "Empty username in 'enemy'.\n" );
+         }
+         else if ( slistFind( enemyList, (void *)( ptrLine + 6 ), strCompareVoid ) != -1 )
+         {
+            stdPrintf( "Duplicate username in 'enemy'.\n" );
+         }
+         else
+         {
+            char *ptrNameCopy;
+
+            ptrNameCopy = (char *)calloc( 1, strlen( ptrLine + 6 ) + 1 );
+            if ( !ptrNameCopy )
+            {
+               fatalExit( "Out of memory adding 'enemy'!\n", "Fatal error" );
+               return false;
+            }
+            snprintf( ptrNameCopy, strlen( ptrLine + 6 ) + 1, "%s", ptrLine + 6 );
+            if ( !slistAddItem( enemyList, (void *)ptrNameCopy, 1 ) )
+            {
+               fatalExit( "Can't add 'enemy' to list!\n", "Fatal error" );
+               return false;
+            }
+         }
+         return true;
+
+      default:
+         return false;
+   }
+}
+
+
+static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
+                                      const char *ptrLine,
+                                      BbsRcReadState *ptrState )
+{
+   switch ( commandId )
+   {
+      case BBRC_CMD_MACRO:
+         {
+            int macroIndex;
+            const char *ptrToken;
+
+            macroIndex = ctrl( ptrLine + ( sizeof( "aryMacro " ) - 1 ) );
+            ptrToken = ptrLine + sizeof( "aryMacro " ) +
+                       ( ptrLine[sizeof( "aryMacro " ) - 1] == '^' );
+            if ( *ptrToken++ != ' ' )
+            {
+               stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
+               return true;
+            }
+            if ( *aryMacro[macroIndex] )
+            {
+               stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
+               return true;
+            }
+            if ( macroIndex == 'i' && !awayKey && ptrState->tmpVersion < 220 )
+            {
+               awayKey = 'i';
+               writeDecodedBbsRcText( ptrToken, aryAwayMessageLines[0],
+                                      aryAwayMessageLines );
+               return true;
+            }
+
+            writeDecodedBbsRcText( ptrToken, aryMacro[macroIndex], NULL );
+            return true;
+         }
+
+      case BBRC_CMD_OLD_AWAY:
+         writeDecodedBbsRcText( ptrLine + ( sizeof( "aryAwayMessageLines " ) - 1 ),
+                                aryAwayMessageLines[0], aryAwayMessageLines );
+         return true;
+
+      case BBRC_CMD_NEW_AWAY:
+         snprintf( aryAwayMessageLines[ptrLine[1] - '1'],
+                   sizeof( aryAwayMessageLines[0] ), "%s", ptrLine + 3 );
+         return true;
+
+      default:
+         return false;
+   }
+}
+
 
 static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
                                         const char *ptrLine,
@@ -721,378 +1115,35 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
    }
 }
 
-static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
-                                           const char *ptrLine,
-                                           BbsRcReadState *ptrState )
+
+/*
+ * Parses the bbsrc file and applies the configured settings.
+ */
+void readBbsRc( void )
 {
-   switch ( commandId )
+   char aryLine[MAX_LINE_LENGTH + 1];
+   BbsRcReadState state = { 0 };
+
+   initializeBbsRcLists();
+   initializeBbsRcDefaults();
+
+   while ( readNormalizedLine( ptrBbsRc, aryLine, sizeof( aryLine ),
+                               &state.lineNumber, &state.reads, ".bbsrc" ) )
    {
-      case BBRC_CMD_BROWSER:
-         ptrState->shouldShowBrowserMigrationNotice = true;
-         ptrState->shouldRewriteBbsRc = true;
-         return true;
-
-      case BBRC_CMD_EDITOR:
-         if ( *aryEditor )
-         {
-            stdPrintf( "Multiple definition of 'aryEditor' ignored.\n" );
-         }
-         else
-         {
-            strncpy( aryEditor, ptrLine + ( sizeof( "aryEditor " ) - 1 ), 72 );
-         }
-         return true;
-
-      case BBRC_CMD_SITE:
-         if ( *aryBbsHost )
-         {
-            stdPrintf( "Multiple definition of 'site' ignored.\n" );
-         }
-         else
-         {
-            int parseIndex;
-
-            for ( parseIndex = 5;
-                  ( aryBbsHost[parseIndex - 5] = ptrLine[parseIndex] ) &&
-                  ptrLine[parseIndex] != ' ' && parseIndex < 68;
-                  parseIndex++ )
-            {
-               ;
-            }
-            if ( parseIndex == 68 || parseIndex == 5 )
-            {
-               stdPrintf( "Illegal hostname in 'site', using default.\n" );
-               *aryBbsHost = 0;
-            }
-            else
-            {
-               aryBbsHost[parseIndex - 5] = 0;
-               if ( ptrLine[parseIndex] )
-               {
-                  bbsPort = (unsigned short)atoi( ptrLine + parseIndex + 1 );
-               }
-               else
-               {
-                  bbsPort = BBS_PORT_NUMBER;
-               }
-               for ( ; ptrLine[parseIndex] && ptrLine[parseIndex] != ' '; parseIndex++ )
-               {
-                  ;
-               }
-               if ( !strncmp( ptrLine + parseIndex, "secure", 6 ) )
-               {
-                  shouldUseSsl = 1;
-               }
-            }
-            if ( !strcmp( aryBbsHost, "206.217.131.27" ) )
-            {
-               snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
-            }
-         }
-         return true;
-
-      default:
-         return false;
-   }
-}
-
-static bool processBbsRcListCommand( BbsRcCommandId commandId,
-                                     const char *ptrLine )
-{
-   switch ( commandId )
-   {
-      case BBRC_CMD_FRIEND:
-         if ( bbsFriends )
-         {
-            char aryScratchLine[MAX_LINE_LENGTH + 1];
-
-            if ( fgets( aryScratchLine, MAX_LINE_LENGTH + 1, bbsFriends ) )
-            {
-               return true;
-            }
-         }
-         return addFriendFromLine( ptrLine );
-
-      case BBRC_CMD_ENEMY:
-         if ( strlen( ptrLine ) == 6 )
-         {
-            stdPrintf( "Empty username in 'enemy'.\n" );
-         }
-         else if ( slistFind( enemyList, (void *)( ptrLine + 6 ), strCompareVoid ) != -1 )
-         {
-            stdPrintf( "Duplicate username in 'enemy'.\n" );
-         }
-         else
-         {
-            char *ptrNameCopy;
-
-            ptrNameCopy = (char *)calloc( 1, strlen( ptrLine + 6 ) + 1 );
-            if ( !ptrNameCopy )
-            {
-               fatalExit( "Out of memory adding 'enemy'!\n", "Fatal error" );
-               return false;
-            }
-            snprintf( ptrNameCopy, strlen( ptrLine + 6 ) + 1, "%s", ptrLine + 6 );
-            if ( !slistAddItem( enemyList, (void *)ptrNameCopy, 1 ) )
-            {
-               fatalExit( "Can't add 'enemy' to list!\n", "Fatal error" );
-               return false;
-            }
-         }
-         return true;
-
-      default:
-         return false;
-   }
-}
-
-static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
-                                      const char *ptrLine,
-                                      BbsRcReadState *ptrState )
-{
-   switch ( commandId )
-   {
-      case BBRC_CMD_MACRO:
-         {
-            int macroIndex;
-            const char *ptrToken;
-
-            macroIndex = ctrl( ptrLine + ( sizeof( "aryMacro " ) - 1 ) );
-            ptrToken = ptrLine + sizeof( "aryMacro " ) +
-                       ( ptrLine[sizeof( "aryMacro " ) - 1] == '^' );
-            if ( *ptrToken++ != ' ' )
-            {
-               stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
-               return true;
-            }
-            if ( *aryMacro[macroIndex] )
-            {
-               stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
-               return true;
-            }
-            if ( macroIndex == 'i' && !awayKey && ptrState->tmpVersion < 220 )
-            {
-               awayKey = 'i';
-               writeDecodedBbsRcText( ptrToken, aryAwayMessageLines[0],
-                                      aryAwayMessageLines );
-               return true;
-            }
-
-            writeDecodedBbsRcText( ptrToken, aryMacro[macroIndex], NULL );
-            return true;
-         }
-
-      case BBRC_CMD_OLD_AWAY:
-         writeDecodedBbsRcText( ptrLine + ( sizeof( "aryAwayMessageLines " ) - 1 ),
-                                aryAwayMessageLines[0], aryAwayMessageLines );
-         return true;
-
-      case BBRC_CMD_NEW_AWAY:
-         snprintf( aryAwayMessageLines[ptrLine[1] - '1'],
-                   sizeof( aryAwayMessageLines[0] ), "%s", ptrLine + 3 );
-         return true;
-
-      default:
-         return false;
-   }
-}
-
-static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
-                                       const char *ptrLine )
-{
-   switch ( commandId )
-   {
-      case BBRC_CMD_COMMANDKEY:
-         if ( commandKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'commandkey' ignored.\n" );
-         }
-         else
-         {
-            if ( !strncmp( ptrLine, "macrokey ", 9 ) )
-            {
-               commandKey = ctrl( ptrLine + 9 );
-            }
-            else
-            {
-               commandKey = ctrl( ptrLine + 11 );
-            }
-            if ( findChar( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f",
-                           commandKey ) || commandKey >= ' ' )
-            {
-               stdPrintf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
-               commandKey = 0x1b;
-            }
-         }
-         return true;
-
-      case BBRC_CMD_AWAYKEY:
-         if ( awayKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'awaykey' ignored.\n" );
-         }
-         else
-         {
-            awayKey = ctrl( ptrLine + 8 );
-         }
-         return true;
-
-      case BBRC_CMD_QUIT:
-         if ( quitKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'quit' ignored.\n" );
-         }
-         else
-         {
-            quitKey = ctrl( ptrLine + 5 );
-         }
-         return true;
-
-      case BBRC_CMD_SUSP:
-         if ( suspKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'susp' ignored.\n" );
-         }
-         else
-         {
-            suspKey = ctrl( ptrLine + 5 );
-         }
-         return true;
-
-      case BBRC_CMD_CAPTURE:
-         if ( captureKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'capture' ignored.\n" );
-         }
-         else
-         {
-            captureKey = ctrl( ptrLine + 8 );
-         }
-         return true;
-
-      case BBRC_CMD_URL:
-         if ( browserKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'url' ignored.\n" );
-         }
-         else
-         {
-            browserKey = ctrl( ptrLine + 4 );
-         }
-         return true;
-
-      case BBRC_CMD_SHELL:
-         if ( shellKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'shellkey' ignored.\n" );
-         }
-         else
-         {
-            if ( !strncmp( ptrLine, "shellkey ", 9 ) )
-            {
-               shellKey = ctrl( ptrLine + 9 );
-            }
-            else
-            {
-               shellKey = ctrl( ptrLine + ( sizeof( "aryShell " ) - 1 ) );
-            }
-         }
-         return true;
-
-      default:
-         return false;
-   }
-}
-
-static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
-{
-   int parseIndex;
-   const char *ptrToken;
-   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
-   bool isHandled = true;
-
-   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
-   {
-      return true;
-   }
-   if ( processBbsRcConnectionCommand( commandId, ptrLine, ptrState ) )
-   {
-      return true;
-   }
-   if ( processBbsRcListCommand( commandId, ptrLine ) )
-   {
-      return true;
-   }
-   if ( processBbsRcHotkeyCommand( commandId, ptrLine ) )
-   {
-      return true;
-   }
-   if ( processBbsRcMacroCommand( commandId, ptrLine, ptrState ) )
-   {
-      return true;
-   }
-
-   switch ( commandId )
-   {
-      case BBRC_CMD_REREAD:
-      case BBRC_CMD_XWRAP:
-         break;
-
-      case BBRC_CMD_KEYMAP:
-         parseIndex = *( ptrLine + ( sizeof( "aryKeyMap " ) - 1 ) );
-         ptrToken = ptrLine + sizeof( "aryKeyMap " );
-         if ( *ptrToken++ == ' ' && parseIndex > 32 && parseIndex < 128 )
-         {
-            aryKeyMap[parseIndex] = *ptrToken;
-         }
-         else
-         {
-            stdPrintf( "Invalid value for 'aryKeyMap' ignored.\n" );
-         }
-         break;
-
-      case BBRC_CMD_UNKNOWN:
-      default:
-         isHandled = false;
-         break;
-   }
-
-   if ( !isHandled && *ptrLine != '#' && *ptrLine &&
-        strncmp( ptrLine, "friend ", FRIEND_COMMAND_PREFIX_LEN ) )
-   {
-      stdPrintf( "Syntax error in .bbsrc file in line %d.\n", ptrState->lineNumber );
-   }
-
-   return true;
-}
-
-static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
-                                   char ( *aryAwayBuffers )[80] )
-{
-   int parseIndex;
-   int messageLineIndex;
-
-   messageLineIndex = 0;
-   while ( ( parseIndex = *ptrToken++ ) )
-   {
-      if ( parseIndex == '^' && *ptrToken != '^' )
+      if ( !processBbsRcCommandLine( aryLine, &state ) )
       {
-         parseIndex = ctrl( ptrToken++ - 1 );
-      }
-      if ( parseIndex == '\r' )
-      {
-         parseIndex = '\n';
-      }
-      if ( parseIndex == '\n' && aryAwayBuffers != NULL )
-      {
-         ptrWriteBuffer = aryAwayBuffers[++messageLineIndex];
-      }
-      else if ( !iscntrl( parseIndex ) )
-      {
-         *ptrWriteBuffer++ = (char)parseIndex;
+         return;
       }
    }
+
+   if ( !readLegacyBbsFriends( aryLine, &state ) )
+   {
+      return;
+   }
+
+   finalizeBbsRcRead( &state );
 }
+
 
 static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState )
 {
@@ -1114,6 +1165,7 @@ static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState )
 
    return true;
 }
+
 
 static void warnAboutBbsRcConflicts( void )
 {
@@ -1159,30 +1211,32 @@ static void warnAboutBbsRcConflicts( void )
    }
 }
 
-/*
- * Parses the bbsrc file and applies the configured settings.
- */
-void readBbsRc( void )
+
+static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
+                                   char ( *aryAwayBuffers )[80] )
 {
-   char aryLine[MAX_LINE_LENGTH + 1];
-   BbsRcReadState state = { 0 };
+   int parseIndex;
+   int messageLineIndex;
 
-   initializeBbsRcLists();
-   initializeBbsRcDefaults();
-
-   while ( readNormalizedLine( ptrBbsRc, aryLine, sizeof( aryLine ),
-                               &state.lineNumber, &state.reads, ".bbsrc" ) )
+   messageLineIndex = 0;
+   while ( ( parseIndex = *ptrToken++ ) )
    {
-      if ( !processBbsRcCommandLine( aryLine, &state ) )
+      if ( parseIndex == '^' && *ptrToken != '^' )
       {
-         return;
+         parseIndex = ctrl( ptrToken++ - 1 );
+      }
+      if ( parseIndex == '\r' )
+      {
+         parseIndex = '\n';
+      }
+      if ( parseIndex == '\n' && aryAwayBuffers != NULL )
+      {
+         ptrWriteBuffer = aryAwayBuffers[++messageLineIndex];
+      }
+      else if ( !iscntrl( parseIndex ) )
+      {
+         *ptrWriteBuffer++ = (char)parseIndex;
       }
    }
-
-   if ( !readLegacyBbsFriends( aryLine, &state ) )
-   {
-      return;
-   }
-
-   finalizeBbsRcRead( &state );
 }
+

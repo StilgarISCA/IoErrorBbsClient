@@ -106,6 +106,29 @@ static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
                                                      size_t itemCount,
                                                      void ( *printMenu )( void ) );
 
+static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
+                                    const char *ptrPreviewName );
+static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
+                                 int *ptrNameColor, const char *ptrPreviewName );
+static const PickerColorOption *findPickerColorOption( const PickerColorOption *ptrOptions,
+                                                       size_t itemCount,
+                                                       int keyChar );
+static void postColorPreview( int dateColor, int textColor, int nameColor,
+                              const char *ptrName );
+static void presetColorConfig( void );
+static void printBackgroundPickerMenu( void );
+static void printExpressColorPreview( int textColor, int nameColor,
+                                      const char *ptrName );
+static void printForegroundPickerMenu( void );
+static void printGeneralColorPreview( void );
+static void printInputColorPreview( void );
+static void printPresetMenuItem( const PresetMenuOption *ptrOption );
+static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
+                                                     const PickerColorOption *ptrOptions,
+                                                     size_t itemCount,
+                                                     void ( *printMenu )( void ) );
+
+
 int backgroundPicker( void )
 {
    const PickerColorOption *ptrOption;
@@ -125,6 +148,7 @@ int backgroundPicker( void )
 
    return ptrOption->colorValue;
 }
+
 
 void colorConfig( void )
 {
@@ -178,6 +202,7 @@ void colorConfig( void )
    }
 }
 
+
 void colorOptions( void )
 {
    stdPrintf( "Automatically answer the ANSI terminal question? (%s) -> ",
@@ -191,6 +216,7 @@ void colorOptions( void )
       printAnsiDisplayStateValue( lastColor, color.background );
    }
 }
+
 
 int colorPicker( void )
 {
@@ -209,6 +235,63 @@ int colorPicker( void )
    return ptrOption->colorValue;
 }
 
+
+static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
+                                    const char *ptrPreviewName )
+{
+   while ( true )
+   {
+      printExpressColorPreview( *ptrTextColor, *ptrNameColor, ptrPreviewName );
+
+      switch ( expressColorMenu() )
+      {
+         case 'q':
+         case ' ':
+         case '\n':
+            return;
+         case 'n':
+            *ptrNameColor = colorPicker();
+            break;
+         case 't':
+            *ptrTextColor = colorPicker();
+            break;
+         default:
+            break;
+      }
+   }
+}
+
+
+static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
+                                 int *ptrNameColor, const char *ptrPreviewName )
+{
+   while ( true )
+   {
+      postColorPreview( *ptrDateColor, *ptrTextColor, *ptrNameColor,
+                        ptrPreviewName );
+
+      switch ( postColorMenu() )
+      {
+         case 'q':
+         case ' ':
+         case '\n':
+            return;
+         case 'd':
+            *ptrDateColor = colorPicker();
+            break;
+         case 'n':
+            *ptrNameColor = colorPicker();
+            break;
+         case 't':
+            *ptrTextColor = colorPicker();
+            break;
+         default:
+            break;
+      }
+   }
+}
+
+
 void expressColorConfig( void )
 {
    while ( true )
@@ -226,6 +309,7 @@ void expressColorConfig( void )
       }
    }
 }
+
 
 char expressColorMenu( void )
 {
@@ -258,70 +342,19 @@ char expressColorMenu( void )
    return (char)inputChar;
 }
 
+
 void expressFriendColorConfig( void )
 {
    configureExpressColors( &color.expressFriendText, &color.expressFriendName,
                            A_FRIEND );
 }
 
+
 void expressUserColorConfig( void )
 {
    configureExpressColors( &color.expressText, &color.expressName, A_USER );
 }
 
-static void configureExpressColors( int *ptrTextColor, int *ptrNameColor,
-                                    const char *ptrPreviewName )
-{
-   while ( true )
-   {
-      printExpressColorPreview( *ptrTextColor, *ptrNameColor, ptrPreviewName );
-
-      switch ( expressColorMenu() )
-      {
-         case 'q':
-         case ' ':
-         case '\n':
-            return;
-         case 'n':
-            *ptrNameColor = colorPicker();
-            break;
-         case 't':
-            *ptrTextColor = colorPicker();
-            break;
-         default:
-            break;
-      }
-   }
-}
-
-static void configurePostColors( int *ptrDateColor, int *ptrTextColor,
-                                 int *ptrNameColor, const char *ptrPreviewName )
-{
-   while ( true )
-   {
-      postColorPreview( *ptrDateColor, *ptrTextColor, *ptrNameColor,
-                        ptrPreviewName );
-
-      switch ( postColorMenu() )
-      {
-         case 'q':
-         case ' ':
-         case '\n':
-            return;
-         case 'd':
-            *ptrDateColor = colorPicker();
-            break;
-         case 'n':
-            *ptrNameColor = colorPicker();
-            break;
-         case 't':
-            *ptrTextColor = colorPicker();
-            break;
-         default:
-            break;
-      }
-   }
-}
 
 static const PickerColorOption *findPickerColorOption( const PickerColorOption *ptrOptions,
                                                        size_t itemCount,
@@ -339,6 +372,7 @@ static const PickerColorOption *findPickerColorOption( const PickerColorOption *
 
    return NULL;
 }
+
 
 void generalColorConfig( void )
 {
@@ -385,6 +419,7 @@ void generalColorConfig( void )
    }
 }
 
+
 void inputColorConfig( void )
 {
    char aryPromptText[100];
@@ -418,6 +453,7 @@ void inputColorConfig( void )
    }
 }
 
+
 void postColorConfig( void )
 {
    while ( true )
@@ -435,6 +471,7 @@ void postColorConfig( void )
       }
    }
 }
+
 
 char postColorMenu( void )
 {
@@ -470,17 +507,6 @@ char postColorMenu( void )
    return (char)inputChar;
 }
 
-void postFriendColorConfig( void )
-{
-   configurePostColors( &color.postFriendDate, &color.postFriendText,
-                        &color.postFriendName, A_FRIEND );
-}
-
-void postUserColorConfig( void )
-{
-   configurePostColors( &color.postDate, &color.postText,
-                        &color.postName, A_USER );
-}
 
 static void postColorPreview( int dateColor, int textColor, int nameColor,
                               const char *ptrName )
@@ -496,6 +522,21 @@ static void postColorPreview( int dateColor, int textColor, int nameColor,
    printAnsiForegroundColorValue( color.forum );
    stdPrintf( "[Lobby> msg #1]\r\n" );
 }
+
+
+void postFriendColorConfig( void )
+{
+   configurePostColors( &color.postFriendDate, &color.postFriendText,
+                        &color.postFriendName, A_FRIEND );
+}
+
+
+void postUserColorConfig( void )
+{
+   configurePostColors( &color.postDate, &color.postText,
+                        &color.postName, A_USER );
+}
+
 
 static void presetColorConfig( void )
 {
@@ -541,6 +582,7 @@ static void presetColorConfig( void )
    }
 }
 
+
 static void printBackgroundPickerMenu( void )
 {
    printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
@@ -551,6 +593,7 @@ static void printBackgroundPickerMenu( void )
    printThemedMnemonicText( "Select background -> ", color.forum );
    printAnsiForegroundColorValue( color.text );
 }
+
 
 static void printExpressColorPreview( int textColor, int nameColor,
                                       const char *ptrName )
@@ -563,6 +606,7 @@ static void printExpressColorPreview( int textColor, int nameColor,
    stdPrintf( " at 11:01 ***\r\n>Hi there!\r\n" );
 }
 
+
 static void printForegroundPickerMenu( void )
 {
    printThemedMnemonicText( "\r\n[<K>] Black           [<R>] Red             [<G>] Green           [<Y>] Yellow\r\n", color.number );
@@ -572,6 +616,7 @@ static void printForegroundPickerMenu( void )
    printThemedMnemonicText( "Select color -> ", color.forum );
    printAnsiForegroundColorValue( color.text );
 }
+
 
 static void printGeneralColorPreview( void )
 {
@@ -597,6 +642,7 @@ static void printGeneralColorPreview( void )
    stdPrintf( " new\r\n" );
 }
 
+
 static void printInputColorPreview( void )
 {
    printAnsiForegroundColorValue( color.text );
@@ -611,6 +657,7 @@ static void printInputColorPreview( void )
    stdPrintf( "Message received by Example User.\r\n" );
 }
 
+
 static void printPresetMenuItem( const PresetMenuOption *ptrOption )
 {
    stdPrintf( " " );
@@ -620,6 +667,7 @@ static void printPresetMenuItem( const PresetMenuOption *ptrOption )
    printAnsiForegroundColorValue( ptrOption->textColor );
    stdPrintf( "%s\r\n", ptrOption->ptrLabel + 1 );
 }
+
 
 static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
                                                      const PickerColorOption *ptrOptions,
@@ -633,6 +681,7 @@ static const PickerColorOption *readPickerSelection( const char *ptrAllowedKeys,
 
    return findPickerColorOption( ptrOptions, itemCount, inputChar );
 }
+
 
 char userOrFriend( void )
 {

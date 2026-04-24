@@ -14,6 +14,20 @@
 #include "utility.h"
 
 /*
+ * Opens the bbsfriends file, warning the user if it can't be opened or can't
+ * be opened for write, returning the file pointer if it was opened
+ * successfully.
+ */
+FILE *openBbsFriends( void )
+{
+   FILE *ptrFileHandle;
+
+   ptrFileHandle = fopen( aryBbsFriendsName, "r" );
+   return ( ptrFileHandle );
+}
+
+
+/*
  * Opens the bbsrc file, warning the user if it can't be opened or can't be
  * opened for write, returning the file pointer if it was opened successfully.
  */
@@ -45,15 +59,3 @@ FILE *openBbsRc( void )
    return ( ptrFileHandle );
 }
 
-/*
- * Opens the bbsfriends file, warning the user if it can't be opened or can't
- * be opened for write, returning the file pointer if it was opened
- * successfully.
- */
-FILE *openBbsFriends( void )
-{
-   FILE *ptrFileHandle;
-
-   ptrFileHandle = fopen( aryBbsFriendsName, "r" );
-   return ( ptrFileHandle );
-}

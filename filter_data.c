@@ -15,10 +15,20 @@
 #include "telnet.h"
 #include "utility.h"
 
-static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength )
+static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength );
+
+
+void continuedDataHelper( void )
 {
-   stdPrintf( "%.*s", (int)sequenceLength, ptrAnsiSequence );
+   static char aryTempText[] = "\033[32m";
+   char *ptrText;
+
+   for ( ptrText = aryTempText; *ptrText; ptrText++ )
+   {
+      filterData( *ptrText );
+   }
 }
+
 
 void emitTransformedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength,
                                   int isPostContext, int isFriend )
@@ -48,6 +58,7 @@ void emitTransformedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLe
 
    printBufferedAnsiSequence( ptrAnsiSequence, sequenceLength );
 }
+
 
 void filterData( register int inputChar )
 {
@@ -154,19 +165,6 @@ void filterData( register int inputChar )
    }
 }
 
-void reprintLine( void )
-{
-   char aryLine[320];
-   char *ptrCursor;
-
-   snprintf( aryLine, sizeof( aryLine ), "%s", aryFilterLine );
-   stdPutChar( '\r' );
-   for ( ptrCursor = aryLine; *ptrCursor; ptrCursor++ )
-   {
-      filterData( *ptrCursor );
-   }
-   snprintf( aryFilterLine, sizeof( aryFilterLine ), "%s", aryLine );
-}
 
 void morePromptHelper( void )
 {
@@ -185,13 +183,24 @@ void morePromptHelper( void )
    }
 }
 
-void continuedDataHelper( void )
-{
-   static char aryTempText[] = "\033[32m";
-   char *ptrText;
 
-   for ( ptrText = aryTempText; *ptrText; ptrText++ )
-   {
-      filterData( *ptrText );
-   }
+static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength )
+{
+   stdPrintf( "%.*s", (int)sequenceLength, ptrAnsiSequence );
 }
+
+
+void reprintLine( void )
+{
+   char aryLine[320];
+   char *ptrCursor;
+
+   snprintf( aryLine, sizeof( aryLine ), "%s", aryFilterLine );
+   stdPutChar( '\r' );
+   for ( ptrCursor = aryLine; *ptrCursor; ptrCursor++ )
+   {
+      filterData( *ptrCursor );
+   }
+   snprintf( aryFilterLine, sizeof( aryFilterLine ), "%s", aryLine );
+}
+

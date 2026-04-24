@@ -20,6 +20,11 @@ typedef struct
    unsigned int truncated : 1; /* X message exceeded buffer */
 } ExpressFilterFlags;
 
+static void beginExpressMessage( ExpressFilterFlags *ptrFlags );
+static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
+                                  const char *ptrSenderName );
+static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSenderName );
+
 static void beginExpressMessage( ExpressFilterFlags *ptrFlags )
 {
    beginUrlDetectionReport();
@@ -29,65 +34,6 @@ static void beginExpressMessage( ExpressFilterFlags *ptrFlags )
    ptrFlags->crlf = 0;
    ptrFlags->prochdr = 1;
    ptrFlags->truncated = 0;
-}
-
-static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
-                                  const char *ptrSenderName )
-{
-   int itemIndex;
-   int isAutoReply;
-
-   itemIndex = extractNumber( aryExpressMessageBuffer );
-   isAutoReply = isAutomaticReply( aryExpressMessageBuffer );
-
-   if ( ( isAway || isXland ) && ptrSenderName &&
-        !isQueued( ptrSenderName, xlandQueue ) &&
-        itemIndex > highestExpressMessageId && !isAutoReply )
-   {
-      pushQueue( ptrSenderName, xlandQueue );
-      shouldSendExpressMessage = 1;
-   }
-   else if ( isAutoReply && itemIndex > highestExpressMessageId )
-   {
-      notReplyingTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-   }
-
-   if ( itemIndex > highestExpressMessageId )
-   {
-      highestExpressMessageId = itemIndex;
-   }
-
-   replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-   ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
-   if ( ptrFlags->crlf )
-   {
-      stdPrintf( "\r\n" );
-   }
-   printWithOsc8Links( aryExpressMessageBuffer );
-   if ( ptrFlags->truncated )
-   {
-      stdPrintf( "\r\n[X message truncated]\r\n" );
-   }
-   emitUrlDetectionReport();
-}
-
-static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSenderName )
-{
-   *ptrSenderName = extractNameNoHistory( aryExpressMessageBuffer );
-   if ( *ptrSenderName &&
-        slistFind( enemyList, *ptrSenderName, strCompareVoid ) != -1 )
-   {
-      if ( !flagsConfiguration.shouldSquelchExpress )
-      {
-         stdPrintf( "\r\n[X message by %s killed]\r\n", *ptrSenderName );
-      }
-      ptrFlags->ignore = 1;
-      return;
-   }
-   if ( *ptrSenderName )
-   {
-      *ptrSenderName = extractName( aryExpressMessageBuffer );
-   }
 }
 
 void filterExpress( register int inputChar )
@@ -150,6 +96,46 @@ void filterExpress( register int inputChar )
    }
 }
 
+static void finishExpressMessage( const ExpressFilterFlags *ptrFlags,
+                                  const char *ptrSenderName )
+{
+   int itemIndex;
+   int isAutoReply;
+
+   itemIndex = extractNumber( aryExpressMessageBuffer );
+   isAutoReply = isAutomaticReply( aryExpressMessageBuffer );
+
+   if ( ( isAway || isXland ) && ptrSenderName &&
+        !isQueued( ptrSenderName, xlandQueue ) &&
+        itemIndex > highestExpressMessageId && !isAutoReply )
+   {
+      pushQueue( ptrSenderName, xlandQueue );
+      shouldSendExpressMessage = 1;
+   }
+   else if ( isAutoReply && itemIndex > highestExpressMessageId )
+   {
+      notReplyingTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+   }
+
+   if ( itemIndex > highestExpressMessageId )
+   {
+      highestExpressMessageId = itemIndex;
+   }
+
+   replyCodeTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+   ansiTransformExpress( aryExpressMessageBuffer, sizeof( aryExpressMessageBuffer ) );
+   if ( ptrFlags->crlf )
+   {
+      stdPrintf( "\r\n" );
+   }
+   printWithOsc8Links( aryExpressMessageBuffer );
+   if ( ptrFlags->truncated )
+   {
+      stdPrintf( "\r\n[X message truncated]\r\n" );
+   }
+   emitUrlDetectionReport();
+}
+
 /* Check for an automatic reply message. Return 1 if this is such a message. */
 int isAutomaticReply( const char *message )
 {
@@ -193,6 +179,25 @@ void notReplyingTransformExpress( char *ptrText, size_t size )
 
    snprintf( aryTempText, sizeof( aryTempText ), "%s (not replying) %s", ptrText, ptrMessageStart );
    snprintf( ptrText, size, "%s", aryTempText );
+}
+
+static void processExpressHeader( ExpressFilterFlags *ptrFlags, char **ptrSenderName )
+{
+   *ptrSenderName = extractNameNoHistory( aryExpressMessageBuffer );
+   if ( *ptrSenderName &&
+        slistFind( enemyList, *ptrSenderName, strCompareVoid ) != -1 )
+   {
+      if ( !flagsConfiguration.shouldSquelchExpress )
+      {
+         stdPrintf( "\r\n[X message by %s killed]\r\n", *ptrSenderName );
+      }
+      ptrFlags->ignore = 1;
+      return;
+   }
+   if ( *ptrSenderName )
+   {
+      *ptrSenderName = extractName( aryExpressMessageBuffer );
+   }
 }
 
 void replyCodeTransformExpress( char *ptrText, size_t size )

@@ -31,6 +31,47 @@ static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
                                  const friend *ptrFriend );
 static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry );
 
+static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,
+                                  int *ptrFriendColumn, unsigned char *aryWhoEntry );
+static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorText );
+static void finishCurrentWhoList( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew );
+static void formatElapsedWhoHeader( char *ptrBuffer, size_t bufferSize,
+                                    const char *ptrPrefix, long elapsedSeconds );
+static void formatWhoTimeText( char *ptrBuffer, size_t bufferSize, long elapsedMinutes );
+static void handleCompletedWhoEntry( unsigned char *aryWhoEntry,
+                                     unsigned char **ptrPtrWhoEntryWrite,
+                                     int *ptrFriendColumn, long *ptrTimestamp,
+                                     long *ptrExtendedTime );
+static void handleWhoListNull( unsigned char *aryWhoEntry,
+                               unsigned char **ptrPtrWhoEntryWrite,
+                               char *ptrNew, int *ptrFriendColumn,
+                               long *ptrTimestamp, long *ptrExtendedTime );
+static void printSavedWhoList( long elapsedSeconds, int *ptrFriendColumn );
+static void printSavedWhoSummary( int *ptrFriendColumn, long timestamp );
+static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
+                                     const char *ptrTimeText, const char *ptrInfo );
+static void printThemedWhoListHeader( const char *ptrText );
+static void refreshSavedWhoList( void );
+static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
+                                 const friend *ptrFriend );
+static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry );
+
+
+static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,
+                                  int *ptrFriendColumn, unsigned char *aryWhoEntry )
+{
+   if ( *ptrPtrWhoEntryWrite )
+   {
+      return;
+   }
+
+   *ptrPtrWhoEntryWrite = aryWhoEntry;
+   *aryWhoEntry = 0;
+   *ptrNew = 0;
+   *ptrFriendColumn = 0;
+}
+
+
 static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorText )
 {
    char *ptrWhoCopy;
@@ -45,6 +86,40 @@ static char *duplicateWhoNameOrDie( const char *ptrName, const char *ptrErrorTex
    return ptrWhoCopy;
 }
 
+
+void filterWhoList( register int inputChar )
+{
+   static char new;
+   static int friendColumn;
+   static unsigned char aryWhoEntry[21]; /* Buffer for current name in aryWhoEntry list */
+   static unsigned char *ptrWhoEntryWrite = NULL;
+   static long timestamp = 0; /* Friend list timestamp */
+   static long extime = 0;    /* Extended time decoder */
+
+   beginWhoListIfNeeded( &ptrWhoEntryWrite, &new, &friendColumn, aryWhoEntry );
+
+   if ( inputChar )
+   {
+      new = 1;
+      *ptrWhoEntryWrite++ = (unsigned char)inputChar;
+      *ptrWhoEntryWrite = 0;
+   }
+   else
+   {
+      handleWhoListNull( aryWhoEntry, &ptrWhoEntryWrite, &new,
+                         &friendColumn, &timestamp, &extime );
+   }
+}
+
+
+static void finishCurrentWhoList( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew )
+{
+   *ptrPtrWhoEntryWrite = NULL;
+   *ptrNew = 0;
+   whoListProgress = 0;
+}
+
+
 static void formatElapsedWhoHeader( char *ptrBuffer, size_t bufferSize,
                                     const char *ptrPrefix, long elapsedSeconds )
 {
@@ -53,6 +128,7 @@ static void formatElapsedWhoHeader( char *ptrBuffer, size_t bufferSize,
              (int)( elapsedSeconds % 60 ),
              strstr( ptrPrefix, "Your friends online" ) ? "\r\n\n" : "" );
 }
+
 
 static void formatWhoTimeText( char *ptrBuffer, size_t bufferSize, long elapsedMinutes )
 {
@@ -71,79 +147,6 @@ static void formatWhoTimeText( char *ptrBuffer, size_t bufferSize, long elapsedM
    }
 }
 
-static void printSavedWhoList( long elapsedSeconds, int *ptrFriendColumn )
-{
-   char aryTempText[80];
-
-   for ( ; ( *ptrFriendColumn )++ < savedWhoCount; )
-   {
-      char aryTimeText[16];
-
-      snprintf( aryTempText, sizeof( aryTempText ), "%s",
-                (char *)arySavedWhoNames[*ptrFriendColumn - 1] + 1 );
-      snprintf( aryTimeText, sizeof( aryTimeText ), "   %2d:%02d",
-                ( *arySavedWhoNames[*ptrFriendColumn - 1] +
-                  (int)( elapsedSeconds / 60 ) ) /
-                   60,
-                ( *arySavedWhoNames[*ptrFriendColumn - 1] +
-                  (int)( elapsedSeconds / 60 ) ) %
-                   60 );
-      printThemedWhoListEntry( aryTempText + 1,
-                               *aryTempText & 0x80 ? '*' : ' ',
-                               aryTimeText,
-                               (char *)arySavedWhoInfo[*ptrFriendColumn - 1] );
-   }
-   ( *ptrFriendColumn )--;
-}
-
-static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
-                                     const char *ptrTimeText, const char *ptrInfo )
-{
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postFriendName );
-      stdPrintf( "%s", aryAnsiSequence );
-      stdPrintf( "%-19s%c ", ptrName, statusMarker );
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postFriendDate );
-      stdPrintf( "%s", aryAnsiSequence );
-      stdPrintf( "%s", ptrTimeText );
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postFriendText );
-      stdPrintf( "%s", aryAnsiSequence );
-      stdPrintf( "  %s\r\n", ptrInfo );
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.text );
-      stdPrintf( "%s", aryAnsiSequence );
-      return;
-   }
-
-   stdPrintf( "%-19s%c %s  %s\r\n", ptrName, statusMarker, ptrTimeText, ptrInfo );
-}
-
-static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,
-                                  int *ptrFriendColumn, unsigned char *aryWhoEntry )
-{
-   if ( *ptrPtrWhoEntryWrite )
-   {
-      return;
-   }
-
-   *ptrPtrWhoEntryWrite = aryWhoEntry;
-   *aryWhoEntry = 0;
-   *ptrNew = 0;
-   *ptrFriendColumn = 0;
-}
-
-static void finishCurrentWhoList( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew )
-{
-   *ptrPtrWhoEntryWrite = NULL;
-   *ptrNew = 0;
-   whoListProgress = 0;
-}
 
 static void handleCompletedWhoEntry( unsigned char *aryWhoEntry,
                                      unsigned char **ptrPtrWhoEntryWrite,
@@ -209,6 +212,7 @@ static void handleCompletedWhoEntry( unsigned char *aryWhoEntry,
    *ptrExtendedTime = 0;
 }
 
+
 static void handleWhoListNull( unsigned char *aryWhoEntry,
                                unsigned char **ptrPtrWhoEntryWrite,
                                char *ptrNew, int *ptrFriendColumn,
@@ -236,24 +240,32 @@ static void handleWhoListNull( unsigned char *aryWhoEntry,
    *ptrPtrWhoEntryWrite = NULL;
 }
 
-static void printThemedWhoListHeader( const char *ptrText )
+
+static void printSavedWhoList( long elapsedSeconds, int *ptrFriendColumn )
 {
-   if ( flagsConfiguration.shouldUseAnsi )
+   char aryTempText[80];
+
+   for ( ; ( *ptrFriendColumn )++ < savedWhoCount; )
    {
-      char aryAnsiSequence[32];
+      char aryTimeText[16];
 
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.forum );
-      stdPrintf( "%s", aryAnsiSequence );
-      stdPrintf( "%s", ptrText );
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.text );
-      stdPrintf( "%s", aryAnsiSequence );
-      return;
+      snprintf( aryTempText, sizeof( aryTempText ), "%s",
+                (char *)arySavedWhoNames[*ptrFriendColumn - 1] + 1 );
+      snprintf( aryTimeText, sizeof( aryTimeText ), "   %2d:%02d",
+                ( *arySavedWhoNames[*ptrFriendColumn - 1] +
+                  (int)( elapsedSeconds / 60 ) ) /
+                   60,
+                ( *arySavedWhoNames[*ptrFriendColumn - 1] +
+                  (int)( elapsedSeconds / 60 ) ) %
+                   60 );
+      printThemedWhoListEntry( aryTempText + 1,
+                               *aryTempText & 0x80 ? '*' : ' ',
+                               aryTimeText,
+                               (char *)arySavedWhoInfo[*ptrFriendColumn - 1] );
    }
-
-   stdPrintf( "%s", ptrText );
+   ( *ptrFriendColumn )--;
 }
+
 
 static void printSavedWhoSummary( int *ptrFriendColumn, long timestamp )
 {
@@ -298,6 +310,56 @@ static void printSavedWhoSummary( int *ptrFriendColumn, long timestamp )
    }
 }
 
+
+static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
+                                     const char *ptrTimeText, const char *ptrInfo )
+{
+   if ( flagsConfiguration.shouldUseAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendName );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%-19s%c ", ptrName, statusMarker );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendDate );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%s", ptrTimeText );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.postFriendText );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "  %s\r\n", ptrInfo );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.text );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   stdPrintf( "%-19s%c %s  %s\r\n", ptrName, statusMarker, ptrTimeText, ptrInfo );
+}
+
+
+static void printThemedWhoListHeader( const char *ptrText )
+{
+   if ( flagsConfiguration.shouldUseAnsi )
+   {
+      char aryAnsiSequence[32];
+
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.forum );
+      stdPrintf( "%s", aryAnsiSequence );
+      stdPrintf( "%s", ptrText );
+      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                    color.text );
+      stdPrintf( "%s", aryAnsiSequence );
+      return;
+   }
+
+   stdPrintf( "%s", ptrText );
+}
+
+
 static void refreshSavedWhoList( void )
 {
    unsigned int ui;
@@ -324,6 +386,7 @@ static void refreshSavedWhoList( void )
    }
 }
 
+
 static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
                                  const friend *ptrFriend )
 {
@@ -336,6 +399,7 @@ static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
              "%s", ptrFriend->info );
    savedWhoCount++;
 }
+
 
 static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry )
 {
@@ -355,26 +419,3 @@ static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry )
    }
 }
 
-void filterWhoList( register int inputChar )
-{
-   static char new;
-   static int friendColumn;
-   static unsigned char aryWhoEntry[21]; /* Buffer for current name in aryWhoEntry list */
-   static unsigned char *ptrWhoEntryWrite = NULL;
-   static long timestamp = 0; /* Friend list timestamp */
-   static long extime = 0;    /* Extended time decoder */
-
-   beginWhoListIfNeeded( &ptrWhoEntryWrite, &new, &friendColumn, aryWhoEntry );
-
-   if ( inputChar )
-   {
-      new = 1;
-      *ptrWhoEntryWrite++ = (unsigned char)inputChar;
-      *ptrWhoEntryWrite = 0;
-   }
-   else
-   {
-      handleWhoListNull( aryWhoEntry, &ptrWhoEntryWrite, &new,
-                         &friendColumn, &timestamp, &extime );
-   }
-}

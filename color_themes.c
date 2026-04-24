@@ -16,6 +16,64 @@
  * as black.
  */
 #define ifzero( x ) if ( ( x ) < 0 || clearall )
+
+void brilliantColors( void )
+{
+   color.text = 10;
+   color.forum = 11;
+   color.number = 14;
+   color.errorTextColor = 9;
+   color.ansiBlackTextColor = 10;
+   color.ansiBlueTextColor = 12;
+   color.ansiMagentaTextColor = 13;
+   color.postDate = 13;
+   color.postName = 14;
+   color.postText = 10;
+   color.postFriendDate = 13;
+   color.postFriendName = 9;
+   color.postFriendText = 10;
+   color.anonymous = 11;
+   color.morePrompt = 11;
+   color.ansiWhiteTextColor = 15;
+   color.reserved5 = 15;
+   color.background = 0;
+   color.inputText = 10;
+   color.inputHighlight = 14;
+   color.expressText = 10;
+   color.expressName = 10;
+   color.expressFriendName = 10;
+   color.expressFriendText = 10;
+}
+
+
+void colorblindColors( void )
+{
+   color.text = 231;
+   color.forum = 75;
+   color.number = 214;
+   color.errorTextColor = 166;
+   color.ansiBlackTextColor = 146;
+   color.ansiBlueTextColor = 75;
+   color.ansiMagentaTextColor = 175;
+   color.postDate = 75;
+   color.postName = 214;
+   color.postText = 231;
+   color.postFriendDate = 25;
+   color.postFriendName = 175;
+   color.postFriendText = 231;
+   color.anonymous = 221;
+   color.morePrompt = 221;
+   color.ansiWhiteTextColor = 221;
+   color.reserved5 = 231;
+   color.background = 16;
+   color.inputText = 231;
+   color.inputHighlight = 214;
+   color.expressText = 231;
+   color.expressName = 214;
+   color.expressFriendName = 175;
+   color.expressFriendText = 231;
+}
+
 void defaultColors( int clearall )
 {
    ifzero( color.text ) color.text = 2;
@@ -47,61 +105,6 @@ void defaultColors( int clearall )
    ifzero( color.expressFriendText ) color.expressFriendText = 2;
 }
 
-void brilliantColors( void )
-{
-   color.text = 10;
-   color.forum = 11;
-   color.number = 14;
-   color.errorTextColor = 9;
-   color.ansiBlackTextColor = 10;
-   color.ansiBlueTextColor = 12;
-   color.ansiMagentaTextColor = 13;
-   color.postDate = 13;
-   color.postName = 14;
-   color.postText = 10;
-   color.postFriendDate = 13;
-   color.postFriendName = 9;
-   color.postFriendText = 10;
-   color.anonymous = 11;
-   color.morePrompt = 11;
-   color.ansiWhiteTextColor = 15;
-   color.reserved5 = 15;
-   color.background = 0;
-   color.inputText = 10;
-   color.inputHighlight = 14;
-   color.expressText = 10;
-   color.expressName = 10;
-   color.expressFriendName = 10;
-   color.expressFriendText = 10;
-}
-
-void colorblindColors( void )
-{
-   color.text = 231;
-   color.forum = 75;
-   color.number = 214;
-   color.errorTextColor = 166;
-   color.ansiBlackTextColor = 146;
-   color.ansiBlueTextColor = 75;
-   color.ansiMagentaTextColor = 175;
-   color.postDate = 75;
-   color.postName = 214;
-   color.postText = 231;
-   color.postFriendDate = 25;
-   color.postFriendName = 175;
-   color.postFriendText = 231;
-   color.anonymous = 221;
-   color.morePrompt = 221;
-   color.ansiWhiteTextColor = 221;
-   color.reserved5 = 231;
-   color.background = 16;
-   color.inputText = 231;
-   color.inputHighlight = 214;
-   color.expressText = 231;
-   color.expressName = 214;
-   color.expressFriendName = 175;
-   color.expressFriendText = 231;
-}
 
 void hotDogColors( void )
 {

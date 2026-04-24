@@ -13,6 +13,113 @@
 
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );
 
+static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize );
+
+
+char *duplicateString( const char *ptrSource )
+{
+   size_t length;
+   char *ptrCopy;
+
+   length = strlen( ptrSource ) + 2;
+   ptrCopy = (char *)calloc( 1, length );
+   if ( ptrCopy )
+   {
+      snprintf( ptrCopy, length, "%s", ptrSource );
+   }
+   return ptrCopy;
+}
+
+
+char *extractName( const char *header )
+{
+   int charIndex;
+   int existingIndex = -1;
+   const char *ptrExtractedName = extractNameNoHistory( header );
+
+   if ( !ptrExtractedName )
+   {
+      return NULL;
+   }
+   for ( charIndex = 0; charIndex < MAX_USER_NAME_HISTORY_COUNT; charIndex++ )
+   {
+      if ( !strcmp( aryLastName[charIndex], ptrExtractedName ) )
+      {
+         existingIndex = charIndex;
+      }
+   }
+   if ( existingIndex != 0 )
+   {
+      for ( charIndex = ( existingIndex > 0 ) ? existingIndex - 1 : MAX_USER_NAME_HISTORY_COUNT - 2; charIndex >= 0; --charIndex )
+      {
+         snprintf( aryLastName[charIndex + 1], sizeof( aryLastName[charIndex + 1] ), "%s", aryLastName[charIndex] );
+      }
+      snprintf( aryLastName[0], sizeof( aryLastName[0] ), "%s", ptrExtractedName );
+   }
+   return (char *)aryLastName[0];
+}
+
+
+char *extractNameNoHistory( const char *header )
+{
+   static char aryExtractedName[sizeof( aryLastName[0] )];
+
+   if ( !tryParseNameFromHeader( header, aryExtractedName, sizeof( aryExtractedName ) ) )
+   {
+      return NULL;
+   }
+   return aryExtractedName;
+}
+
+
+int extractNumber( const char *header )
+{
+   char *ptrMessageNumber;
+   int number = 0;
+
+   ptrMessageNumber = findSubstring( header, "(#" );
+   if ( !ptrMessageNumber )
+   {
+      return 0;
+   }
+
+   for ( ptrMessageNumber += 2; *ptrMessageNumber != ')'; ptrMessageNumber++ )
+   {
+      number += number * 10 + ( *ptrMessageNumber - '0' );
+   }
+
+   return number;
+}
+
+
+char *findChar( const char *ptrString, int targetChar )
+{
+   const char *ptrSearch;
+
+   ptrSearch = ptrString;
+   while ( *ptrSearch && targetChar != *ptrSearch )
+   {
+      ptrSearch++;
+   }
+   if ( *ptrSearch )
+   {
+#if defined( __clang__ )
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+#endif
+      char *ptrResult = (char *)ptrSearch;
+#if defined( __clang__ )
+#pragma clang diagnostic pop
+#endif
+      return ptrResult;
+   }
+   else
+   {
+      return ( (char *)NULL );
+   }
+}
+
+
 char *findSubstring( const char *ptrString, const char *ptrSubstring )
 {
    const char *ptrSearch;
@@ -42,32 +149,6 @@ char *findSubstring( const char *ptrString, const char *ptrSubstring )
    }
 }
 
-char *findChar( const char *ptrString, int targetChar )
-{
-   const char *ptrSearch;
-
-   ptrSearch = ptrString;
-   while ( *ptrSearch && targetChar != *ptrSearch )
-   {
-      ptrSearch++;
-   }
-   if ( *ptrSearch )
-   {
-#if defined( __clang__ )
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-#endif
-      char *ptrResult = (char *)ptrSearch;
-#if defined( __clang__ )
-#pragma clang diagnostic pop
-#endif
-      return ptrResult;
-   }
-   else
-   {
-      return ( (char *)NULL );
-   }
-}
 
 static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, size_t nameBufferSize )
 {
@@ -126,74 +207,3 @@ static bool tryParseNameFromHeader( const char *header, char *ptrNameBuffer, siz
    return nameLength > 0;
 }
 
-char *extractNameNoHistory( const char *header )
-{
-   static char aryExtractedName[sizeof( aryLastName[0] )];
-
-   if ( !tryParseNameFromHeader( header, aryExtractedName, sizeof( aryExtractedName ) ) )
-   {
-      return NULL;
-   }
-   return aryExtractedName;
-}
-
-char *extractName( const char *header )
-{
-   int charIndex;
-   int existingIndex = -1;
-   const char *ptrExtractedName = extractNameNoHistory( header );
-
-   if ( !ptrExtractedName )
-   {
-      return NULL;
-   }
-   for ( charIndex = 0; charIndex < MAX_USER_NAME_HISTORY_COUNT; charIndex++ )
-   {
-      if ( !strcmp( aryLastName[charIndex], ptrExtractedName ) )
-      {
-         existingIndex = charIndex;
-      }
-   }
-   if ( existingIndex != 0 )
-   {
-      for ( charIndex = ( existingIndex > 0 ) ? existingIndex - 1 : MAX_USER_NAME_HISTORY_COUNT - 2; charIndex >= 0; --charIndex )
-      {
-         snprintf( aryLastName[charIndex + 1], sizeof( aryLastName[charIndex + 1] ), "%s", aryLastName[charIndex] );
-      }
-      snprintf( aryLastName[0], sizeof( aryLastName[0] ), "%s", ptrExtractedName );
-   }
-   return (char *)aryLastName[0];
-}
-
-int extractNumber( const char *header )
-{
-   char *ptrMessageNumber;
-   int number = 0;
-
-   ptrMessageNumber = findSubstring( header, "(#" );
-   if ( !ptrMessageNumber )
-   {
-      return 0;
-   }
-
-   for ( ptrMessageNumber += 2; *ptrMessageNumber != ')'; ptrMessageNumber++ )
-   {
-      number += number * 10 + ( *ptrMessageNumber - '0' );
-   }
-
-   return number;
-}
-
-char *duplicateString( const char *ptrSource )
-{
-   size_t length;
-   char *ptrCopy;
-
-   length = strlen( ptrSource ) + 2;
-   ptrCopy = (char *)calloc( 1, length );
-   if ( ptrCopy )
-   {
-      snprintf( ptrCopy, length, "%s", ptrSource );
-   }
-   return ptrCopy;
-}

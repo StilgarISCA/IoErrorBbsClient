@@ -35,103 +35,8 @@ static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
 
-static const char *describeKeyForHelp( int inputChar )
-{
-   switch ( inputChar )
-   {
-      case ESC:
-         return "Esc";
+static const char *describeKeyForHelp( int inputChar );
 
-      case ' ':
-         return "Space";
-
-      case '\n':
-      case '\r':
-         return "Return";
-
-      case '\t':
-         return "Tab";
-
-      default:
-         return strCtrl( inputChar );
-   }
-}
-
-/*
- * First time setup borrowed from Client 9 with permission.
- */
-
-/*
- * Performs first time setup for new features.
- */
-void setup( int newVersion )
-{
-   setTerm();
-   if ( newVersion < 1 )
-   {
-      stdPrintf( GREETING );
-   }
-   else if ( newVersion > INT_VERSION )
-   {
-      if ( !sPrompt( DOWNGRADE, "Continue running this client?", 0 ) )
-      {
-         myExit();
-      }
-   }
-   else
-   {
-      sInfo( UPGRADE, "Upgrade" );
-   }
-   fflush( stdout );
-
-   /* bbsrc file */
-   if ( newVersion < 5 )
-   {
-      if ( !sPrompt( BBSRC_INFO, "Continue running this client?", 1 ) )
-      {
-         myExit();
-      }
-   }
-   if ( newVersion < 220 )
-   {
-      if ( sPrompt( ENEMY_INFO, "Notify when posts and express messages from enemies are killed?", 1 ) )
-      {
-         flagsConfiguration.shouldSquelchPost = 0;
-         flagsConfiguration.shouldSquelchExpress = 0;
-      }
-      else
-      {
-         flagsConfiguration.shouldSquelchPost = 1;
-         flagsConfiguration.shouldSquelchExpress = 1;
-      }
-
-      fflush( stdout );
-      sInfo( COLOR_INFO, "Colors" );
-   }
-   if ( newVersion < 237 )
-   {
-      char aryUrlInfo[512];
-
-      snprintf( aryUrlInfo,
-                sizeof( aryUrlInfo ),
-                "You can go directly to a website address you see in a post or express\r\nmessage by pressing <%s> then <%s>.  You can also change these keys in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links.",
-                describeKeyForHelp( commandKey ),
-                describeKeyForHelp( browserKey ) );
-      sInfo( aryUrlInfo, "Websites" );
-   }
-   promptForScreenReaderModeIfUnset();
-   defaultNameAutocompleteIfUnset();
-   if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
-   {
-      configBbsRc();
-   }
-   else
-   {
-      writeBbsRc();
-   }
-   resetTerm();
-   return;
-}
 
 /*
  * Changes settings in bbsrc file and saves it.
@@ -209,3 +114,104 @@ void configBbsRc( void )
       }
    }
 }
+
+
+static const char *describeKeyForHelp( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case ESC:
+         return "Esc";
+
+      case ' ':
+         return "Space";
+
+      case '\n':
+      case '\r':
+         return "Return";
+
+      case '\t':
+         return "Tab";
+
+      default:
+         return strCtrl( inputChar );
+   }
+}
+
+
+/*
+ * First time setup borrowed from Client 9 with permission.
+ */
+
+/*
+ * Performs first time setup for new features.
+ */
+void setup( int newVersion )
+{
+   setTerm();
+   if ( newVersion < 1 )
+   {
+      stdPrintf( GREETING );
+   }
+   else if ( newVersion > INT_VERSION )
+   {
+      if ( !sPrompt( DOWNGRADE, "Continue running this client?", 0 ) )
+      {
+         myExit();
+      }
+   }
+   else
+   {
+      sInfo( UPGRADE, "Upgrade" );
+   }
+   fflush( stdout );
+
+   /* bbsrc file */
+   if ( newVersion < 5 )
+   {
+      if ( !sPrompt( BBSRC_INFO, "Continue running this client?", 1 ) )
+      {
+         myExit();
+      }
+   }
+   if ( newVersion < 220 )
+   {
+      if ( sPrompt( ENEMY_INFO, "Notify when posts and express messages from enemies are killed?", 1 ) )
+      {
+         flagsConfiguration.shouldSquelchPost = 0;
+         flagsConfiguration.shouldSquelchExpress = 0;
+      }
+      else
+      {
+         flagsConfiguration.shouldSquelchPost = 1;
+         flagsConfiguration.shouldSquelchExpress = 1;
+      }
+
+      fflush( stdout );
+      sInfo( COLOR_INFO, "Colors" );
+   }
+   if ( newVersion < 237 )
+   {
+      char aryUrlInfo[512];
+
+      snprintf( aryUrlInfo,
+                sizeof( aryUrlInfo ),
+                "You can go directly to a website address you see in a post or express\r\nmessage by pressing <%s> then <%s>.  You can also change these keys in\r\nthe client configuration.  Clickable URLs are also emitted directly to modern\r\nmacOS terminals using OSC 8 links.",
+                describeKeyForHelp( commandKey ),
+                describeKeyForHelp( browserKey ) );
+      sInfo( aryUrlInfo, "Websites" );
+   }
+   promptForScreenReaderModeIfUnset();
+   defaultNameAutocompleteIfUnset();
+   if ( sPrompt( ADVANCED_OPTIONS, "Configure the client now?", 0 ) )
+   {
+      configBbsRc();
+   }
+   else
+   {
+      writeBbsRc();
+   }
+   resetTerm();
+   return;
+}
+

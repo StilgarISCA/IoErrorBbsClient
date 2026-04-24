@@ -23,6 +23,15 @@ typedef struct
    unsigned int secondN : 1; /* send a second n */
 } PostFilterFlags;
 
+static void appendFilterLineChar( int inputChar );
+static void beginPostMessage( PostFilterFlags *ptrFlags, char *posthdr,
+                              char **ptrPostHeaderCursor, int *ptrIsFriend );
+static void finishPostMessage( const PostFilterFlags *ptrFlags, int *ptrPostCount );
+static void maybePrintMorePromptColor( int inputChar );
+static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
+                         const char *ptrHeader, int postCount );
+
+
 static void appendFilterLineChar( int inputChar )
 {
    char *ptrCursor = aryFilterLine;
@@ -35,6 +44,7 @@ static void appendFilterLineChar( int inputChar )
    *ptrCursor++ = (char)inputChar;
    *ptrCursor = 0;
 }
+
 
 static void beginPostMessage( PostFilterFlags *ptrFlags, char *posthdr,
                               char **ptrPostHeaderCursor, int *ptrIsFriend )
@@ -49,65 +59,18 @@ static void beginPostMessage( PostFilterFlags *ptrFlags, char *posthdr,
    ptrFlags->secondN = 0;
 }
 
-static void finishPostMessage( const PostFilterFlags *ptrFlags, int *ptrPostCount )
+
+void continuedPostHelper( void )
 {
-   if ( ptrFlags->secondN )
-   {
-      netPutChar( 'n' );
-      byte++;
-   }
-   filterUrl( " " );
-   ( *ptrPostCount )++;
-   emitUrlDetectionReport();
-}
+   static char aryTempText[] = "\033[32m";
+   char *ptrText;
 
-static void maybePrintMorePromptColor( int inputChar )
-{
-   if ( !( flagsConfiguration.shouldUseAnsi &&
-           flagsConfiguration.isMorePromptActive && inputChar == ' ' ) )
+   for ( ptrText = aryTempText; *ptrText; ptrText++ )
    {
-      return;
-   }
-
-   {
-      char aryMorePromptSequence[32];
-
-      lastColor = color.text;
-      formatAnsiForegroundSequence( aryMorePromptSequence,
-                                    sizeof( aryMorePromptSequence ),
-                                    lastColor );
-      stdPrintf( "%s", aryMorePromptSequence );
+      filterPost( *ptrText );
    }
 }
 
-static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
-                         const char *ptrHeader, int postCount )
-{
-   if ( !ptrSenderName ||
-        slistFind( enemyList, (void *)ptrSenderName, strCompareVoid ) == -1 )
-   {
-      return false;
-   }
-
-   ptrFlags->ignore = 1;
-   postHeaderActive = -1;
-   postProgressState = -1;
-   netPrintf( "%c%c%c%c", IAC, POST_K, postCount & 0xFF, 17 );
-   netflush();
-   if ( !flagsConfiguration.shouldSquelchPost )
-   {
-      stdPrintf( "%s[Post by %s killed]\r\n",
-                 *ptrHeader == '\n' ? "\r\n" : "", ptrSenderName );
-   }
-   else
-   {
-      pendingLinesToEat = ( ptrFlags->crlf ? 1 : 2 );
-      netPutChar( 'n' );
-      netflush();
-      byte++;
-   }
-   return true;
-}
 
 void filterPost( register int inputChar )
 {
@@ -241,13 +204,66 @@ void filterPost( register int inputChar )
    }
 }
 
-void continuedPostHelper( void )
-{
-   static char aryTempText[] = "\033[32m";
-   char *ptrText;
 
-   for ( ptrText = aryTempText; *ptrText; ptrText++ )
+static void finishPostMessage( const PostFilterFlags *ptrFlags, int *ptrPostCount )
+{
+   if ( ptrFlags->secondN )
    {
-      filterPost( *ptrText );
+      netPutChar( 'n' );
+      byte++;
+   }
+   filterUrl( " " );
+   ( *ptrPostCount )++;
+   emitUrlDetectionReport();
+}
+
+
+static void maybePrintMorePromptColor( int inputChar )
+{
+   if ( !( flagsConfiguration.shouldUseAnsi &&
+           flagsConfiguration.isMorePromptActive && inputChar == ' ' ) )
+   {
+      return;
+   }
+
+   {
+      char aryMorePromptSequence[32];
+
+      lastColor = color.text;
+      formatAnsiForegroundSequence( aryMorePromptSequence,
+                                    sizeof( aryMorePromptSequence ),
+                                    lastColor );
+      stdPrintf( "%s", aryMorePromptSequence );
    }
 }
+
+
+static bool tryKillPost( PostFilterFlags *ptrFlags, const char *ptrSenderName,
+                         const char *ptrHeader, int postCount )
+{
+   if ( !ptrSenderName ||
+        slistFind( enemyList, (void *)ptrSenderName, strCompareVoid ) == -1 )
+   {
+      return false;
+   }
+
+   ptrFlags->ignore = 1;
+   postHeaderActive = -1;
+   postProgressState = -1;
+   netPrintf( "%c%c%c%c", IAC, POST_K, postCount & 0xFF, 17 );
+   netflush();
+   if ( !flagsConfiguration.shouldSquelchPost )
+   {
+      stdPrintf( "%s[Post by %s killed]\r\n",
+                 *ptrHeader == '\n' ? "\r\n" : "", ptrSenderName );
+   }
+   else
+   {
+      pendingLinesToEat = ( ptrFlags->crlf ? 1 : 2 );
+      netPutChar( 'n' );
+      netflush();
+      byte++;
+   }
+   return true;
+}
+

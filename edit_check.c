@@ -37,6 +37,24 @@ static int rewriteNormalizedFile( FILE *ptrMessageFile,
                                   size_t normalizedLength );
 
 static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText,
+                               size_t *ptrNormalizedLength, int inputChar );
+static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
+                                  size_t endIndex );
+static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
+                                 size_t endIndex );
+static int nextLineWidth( int currentWidth, int inputChar );
+static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber );
+static int reportLineTooLong( char *ptrNormalizedText, int lineNumber );
+static int reportMessageTooLong( char *ptrNormalizedText );
+static int rewriteNormalizedFile( FILE *ptrMessageFile,
+                                  const char *ptrNormalizedText,
+                                  size_t normalizedLength );
+static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
+                                               char *ptrReplacementText,
+                                               size_t *ptrReplacementLength );
+
+
+static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText,
                                size_t *ptrNormalizedLength, int inputChar )
 {
    int updatedWidth;
@@ -86,6 +104,7 @@ static bool appendCheckedChar( CheckFileState *ptrState, char *ptrNormalizedText
    return ptrState->lineWidth <= 79;
 }
 
+
 static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
                                   size_t endIndex )
 {
@@ -100,28 +119,6 @@ static int calculateDisplayWidth( const char *ptrText, size_t startIndex,
    return lineWidth;
 }
 
-static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber )
-{
-   free( ptrNormalizedText );
-   printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n",
-           lineNumber );
-   return 1;
-}
-
-static int reportLineTooLong( char *ptrNormalizedText, int lineNumber )
-{
-   free( ptrNormalizedText );
-   printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
-           lineNumber );
-   return 1;
-}
-
-static int reportMessageTooLong( char *ptrNormalizedText )
-{
-   free( ptrNormalizedText );
-   printf( "\r\n[Warning:  message too long, edit file before saving]\r\n\n" );
-   return 1;
-}
 
 /*
  * Checks the file for lines longer than 79 characters, unprintable characters,
@@ -243,6 +240,7 @@ int checkFile( FILE *ptrMessageFile )
    return 0;
 }
 
+
 static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
                                  size_t endIndex )
 {
@@ -259,6 +257,7 @@ static size_t findLastWrapIndex( const char *ptrText, size_t startIndex,
    return SIZE_MAX;
 }
 
+
 static int nextLineWidth( int currentWidth, int inputChar )
 {
    if ( inputChar == TAB )
@@ -268,6 +267,33 @@ static int nextLineWidth( int currentWidth, int inputChar )
 
    return currentWidth + 1;
 }
+
+
+static int reportIllegalCharacter( char *ptrNormalizedText, int lineNumber )
+{
+   free( ptrNormalizedText );
+   printf( "\r\n[Warning:  illegal character in line %d, edit file before saving]\r\n\n",
+           lineNumber );
+   return 1;
+}
+
+
+static int reportLineTooLong( char *ptrNormalizedText, int lineNumber )
+{
+   free( ptrNormalizedText );
+   printf( "\r\n[Warning:  line %d too long, edit file before saving]\r\n\n",
+           lineNumber );
+   return 1;
+}
+
+
+static int reportMessageTooLong( char *ptrNormalizedText )
+{
+   free( ptrNormalizedText );
+   printf( "\r\n[Warning:  message too long, edit file before saving]\r\n\n" );
+   return 1;
+}
+
 
 static int rewriteNormalizedFile( FILE *ptrMessageFile,
                                   const char *ptrNormalizedText,
@@ -290,6 +316,7 @@ static int rewriteNormalizedFile( FILE *ptrMessageFile,
 
    return 0;
 }
+
 
 static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputChar,
                                                char *ptrReplacementText,

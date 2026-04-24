@@ -40,118 +40,10 @@ static const NamedColorSpec aryNamedColors[] =
       { "white", 231 },
       { "default", COLOR_VALUE_DEFAULT } };
 
-static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
-{
-   while ( *ptrLeft && *ptrRight )
-   {
-      if ( tolower( (unsigned char)*ptrLeft ) != tolower( (unsigned char)*ptrRight ) )
-      {
-         return false;
-      }
-      ptrLeft++;
-      ptrRight++;
-   }
+static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight );
+static int transformIncomingAnsiColor( int inputChar );
+static int transformPostHeaderColor( int inputChar, int isFriend );
 
-   return *ptrLeft == '\0' && *ptrRight == '\0';
-}
-
-int colorValueFromLegacyDigit( int inputChar )
-{
-   if ( inputChar >= '0' && inputChar <= '9' )
-   {
-      return inputChar - '0';
-   }
-
-   return inputChar;
-}
-
-int colorValueToLegacyDigit( int colorValue )
-{
-   return colorValue + '0';
-}
-
-int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
-                                             int inputChar, int isPostContext,
-                                             int isFriend )
-{
-   int transformedColor;
-
-   if ( isPostContext )
-   {
-      transformedColor = ansiTransformPost( inputChar, isFriend );
-   }
-   else
-   {
-      transformedColor = ansiTransform( inputChar );
-   }
-
-   lastColor = transformedColor;
-   return formatAnsiForegroundSequence( ptrBuffer, bufferSize, transformedColor );
-}
-
-int colorValueFromName( const char *ptrColorName )
-{
-   size_t itemIndex;
-
-   if ( ptrColorName == NULL || *ptrColorName == '\0' )
-   {
-      return -1;
-   }
-
-   for ( itemIndex = 0; itemIndex < sizeof( aryNamedColors ) / sizeof( aryNamedColors[0] ); itemIndex++ )
-   {
-      if ( isColorNameMatch( ptrColorName, aryNamedColors[itemIndex].ptrName ) )
-      {
-         return aryNamedColors[itemIndex].colorValue;
-      }
-   }
-
-   return -1;
-}
-
-const char *colorNameFromValue( int colorValue )
-{
-   size_t itemIndex;
-
-   for ( itemIndex = 0; itemIndex < sizeof( aryNamedColors ) / sizeof( aryNamedColors[0] ); itemIndex++ )
-   {
-      if ( aryNamedColors[itemIndex].colorValue == colorValue )
-      {
-         return aryNamedColors[itemIndex].ptrName;
-      }
-   }
-
-   return NULL;
-}
-
-static int transformPostHeaderColor( int inputChar, int isFriend )
-{
-   switch ( inputChar )
-   {
-      case '6':
-         if ( isFriend )
-         {
-            return color.postFriendName;
-         }
-         return color.postName;
-      case '5':
-         if ( isFriend )
-         {
-            return color.postFriendDate;
-         }
-         return color.postDate;
-      case '3':
-         return color.anonymous;
-      case '2':
-         if ( isFriend )
-         {
-            return color.postFriendText;
-         }
-         return color.postText;
-      default:
-         return transformIncomingAnsiColor( inputChar );
-   }
-}
 
 int ansiTransform( int inputChar )
 {
@@ -161,6 +53,7 @@ int ansiTransform( int inputChar )
 
    return transformedColor;
 }
+
 
 void ansiTransformExpress( char *ptrText, size_t size )
 {
@@ -221,6 +114,7 @@ void ansiTransformExpress( char *ptrText, size_t size )
    snprintf( ptrText, size, "%s", aryTempText );
 }
 
+
 int ansiTransformPost( int inputChar, int isFriend )
 {
    int transformedColor;
@@ -250,30 +144,6 @@ int ansiTransformPost( int inputChar, int isFriend )
    return transformedColor;
 }
 
-static int transformIncomingAnsiColor( int inputChar )
-{
-   switch ( inputChar )
-   {
-      case '0':
-         return color.ansiBlackTextColor;
-      case '1':
-         return color.errorTextColor;
-      case '2':
-         return color.text;
-      case '3':
-         return color.forum;
-      case '4':
-         return color.ansiBlueTextColor;
-      case '5':
-         return color.ansiMagentaTextColor;
-      case '6':
-         return color.number;
-      case '7':
-         return color.ansiWhiteTextColor;
-      default:
-         return colorValueFromLegacyDigit( inputChar );
-   }
-}
 
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 {
@@ -306,3 +176,150 @@ void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
    aryTransformedHeader[writeOffset] = '\0';
    snprintf( ptrText, bufferSize, "%s", aryTransformedHeader );
 }
+
+
+const char *colorNameFromValue( int colorValue )
+{
+   size_t itemIndex;
+
+   for ( itemIndex = 0; itemIndex < sizeof( aryNamedColors ) / sizeof( aryNamedColors[0] ); itemIndex++ )
+   {
+      if ( aryNamedColors[itemIndex].colorValue == colorValue )
+      {
+         return aryNamedColors[itemIndex].ptrName;
+      }
+   }
+
+   return NULL;
+}
+
+
+int colorValueFromLegacyDigit( int inputChar )
+{
+   if ( inputChar >= '0' && inputChar <= '9' )
+   {
+      return inputChar - '0';
+   }
+
+   return inputChar;
+}
+
+
+int colorValueFromName( const char *ptrColorName )
+{
+   size_t itemIndex;
+
+   if ( ptrColorName == NULL || *ptrColorName == '\0' )
+   {
+      return -1;
+   }
+
+   for ( itemIndex = 0; itemIndex < sizeof( aryNamedColors ) / sizeof( aryNamedColors[0] ); itemIndex++ )
+   {
+      if ( isColorNameMatch( ptrColorName, aryNamedColors[itemIndex].ptrName ) )
+      {
+         return aryNamedColors[itemIndex].colorValue;
+      }
+   }
+
+   return -1;
+}
+
+
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
+}
+
+
+int formatTransformedAnsiForegroundSequence( char *ptrBuffer, size_t bufferSize,
+                                             int inputChar, int isPostContext,
+                                             int isFriend )
+{
+   int transformedColor;
+
+   if ( isPostContext )
+   {
+      transformedColor = ansiTransformPost( inputChar, isFriend );
+   }
+   else
+   {
+      transformedColor = ansiTransform( inputChar );
+   }
+
+   lastColor = transformedColor;
+   return formatAnsiForegroundSequence( ptrBuffer, bufferSize, transformedColor );
+}
+
+
+static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
+{
+   while ( *ptrLeft && *ptrRight )
+   {
+      if ( tolower( (unsigned char)*ptrLeft ) != tolower( (unsigned char)*ptrRight ) )
+      {
+         return false;
+      }
+      ptrLeft++;
+      ptrRight++;
+   }
+
+   return *ptrLeft == '\0' && *ptrRight == '\0';
+}
+
+
+static int transformIncomingAnsiColor( int inputChar )
+{
+   switch ( inputChar )
+   {
+      case '0':
+         return color.ansiBlackTextColor;
+      case '1':
+         return color.errorTextColor;
+      case '2':
+         return color.text;
+      case '3':
+         return color.forum;
+      case '4':
+         return color.ansiBlueTextColor;
+      case '5':
+         return color.ansiMagentaTextColor;
+      case '6':
+         return color.number;
+      case '7':
+         return color.ansiWhiteTextColor;
+      default:
+         return colorValueFromLegacyDigit( inputChar );
+   }
+}
+
+
+static int transformPostHeaderColor( int inputChar, int isFriend )
+{
+   switch ( inputChar )
+   {
+      case '6':
+         if ( isFriend )
+         {
+            return color.postFriendName;
+         }
+         return color.postName;
+      case '5':
+         if ( isFriend )
+         {
+            return color.postFriendDate;
+         }
+         return color.postDate;
+      case '3':
+         return color.anonymous;
+      case '2':
+         if ( isFriend )
+         {
+            return color.postFriendText;
+         }
+         return color.postText;
+      default:
+         return transformIncomingAnsiColor( inputChar );
+   }
+}
+
