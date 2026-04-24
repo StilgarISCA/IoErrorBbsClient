@@ -7,12 +7,11 @@
 /*
  * This file opens .bbsrc and legacy friends files.
  */
-#include "defs.h"
 #include "bbsrc.h"
 #include "client.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "utility.h"
-
 /// @brief Open the legacy friends file if it exists.
 ///
 /// @return A readable stream for `aryBbsFriendsName`, or `NULL` if the file

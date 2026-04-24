@@ -4,17 +4,16 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "browser.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
+#include "defs.h"
+#include "filter.h"
 #include "filter_globals.h"
 #include "network_globals.h"
-#include "filter.h"
 #include "telnet.h"
 #include "utility.h"
-
 static void printBufferedAnsiSequence( const char *ptrAnsiSequence, size_t sequenceLength );
 
 

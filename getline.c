@@ -13,13 +13,12 @@
  * them.  Again, this is basically code from the actual BBS with slight
  * modification to work here.
  */
-#include "defs.h"
 #include "client_globals.h"
 #include "color.h"
+#include "defs.h"
 #include "getline_input.h"
 #include "telnet.h"
 #include "utility.h"
-
 typedef struct
 {
    unsigned int invalid;

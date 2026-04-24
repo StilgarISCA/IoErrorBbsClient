@@ -9,7 +9,6 @@
 
 #include "defs.h"
 #include <stdnoreturn.h>
-
 noreturn void fatalExit( const char *message, const char *heading );
 noreturn void fatalPerror( const char *error, const char *heading );
 noreturn void myExit( void );

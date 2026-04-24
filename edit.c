@@ -9,14 +9,13 @@
  * it?  You don't need to mess with this unless you have a lot of time to waste
  * on a lost cause.  Use a real editor, that is what '.edit' is for!
  */
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "edit.h"
 #include "utility.h"
-
 /// @brief Run the interactive local message editor.
 ///
 /// This editor flow is derived from the original BBS-side editor and keeps the

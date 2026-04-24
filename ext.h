@@ -16,5 +16,4 @@
 #include "config_globals.h"
 #include "filter_globals.h"
 #include "network_globals.h"
-
 #endif /* EXT_H_INCLUDED */

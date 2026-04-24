@@ -22,5 +22,4 @@
 #include "getline_input.h"
 #include "telnet.h"
 #include "utility.h"
-
 #endif /* PROTO_H_INCLUDED */

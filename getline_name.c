@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "bbsrc.h"
 #include "client_globals.h"
 #include "color.h"
+#include "defs.h"
 #include "filter_globals.h"
 #include "getline_input.h"
 #include "utility.h"
-
 #define MAX_ALIAS_INPUT_LENGTH 19
 #define MAX_USER_NAME_INPUT_LENGTH 40
 

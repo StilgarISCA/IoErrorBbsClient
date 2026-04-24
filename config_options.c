@@ -7,14 +7,13 @@
 /*
  * This file handles setup defaults and options-menu configuration.
  */
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "config_globals.h"
 #include "config_menu.h"
+#include "defs.h"
 #include "getline_input.h"
 #include "utility.h"
-
 #define SCREEN_READER_INFO \
    "Screen reader friendly mode keeps this client easier for VoiceOver and other\r\nscreen readers to follow.  You can change this later from the Options menu."
 

@@ -4,18 +4,17 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "browser.h"
 #include "client.h"
 #include "client_globals.h"
-#include "config_menu.h"
 #include "config_globals.h"
-#include "network_globals.h"
+#include "config_menu.h"
+#include "defs.h"
 #include "edit.h"
+#include "network_globals.h"
+#include "sysio.h"
 #include "telnet.h"
 #include "utility.h"
-#include "sysio.h"
-
 static int lastCarriageReturn = 0;
 
 typedef enum

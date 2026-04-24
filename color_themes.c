@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "client_globals.h"
 #include "color.h"
-
+#include "defs.h"
 #define ifzero( x ) if ( ( x ) < 0 || clearall )
 
 /// @brief Apply the bright theme palette to the current color settings.

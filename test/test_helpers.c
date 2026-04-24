@@ -6,10 +6,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
 #include "test_helpers.h"
-
+#include <unistd.h>
 int compareStringItem( const void *ptrNeedle, const void *ptrItem )
 {
    const char *ptrSearch;

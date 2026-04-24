@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "network_globals.h"
 #include "unix.h"
 #include "utility.h"
-
 typedef struct
 {
    int errorCode;

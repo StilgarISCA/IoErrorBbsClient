@@ -8,14 +8,13 @@
  * This file handles editing and displaying the friend and enemy lists from
  * the client configuration menu.
  */
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
 #include "config_menu.h"
+#include "defs.h"
 #include "getline_input.h"
 #include "utility.h"
-
 typedef enum
 {
    USER_LIST_FRIEND,

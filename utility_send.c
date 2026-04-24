@@ -7,14 +7,13 @@
 /*
  * This file handles tracked output to the BBS and automatic away replies.
  */
-#include "defs.h"
 #include "client_globals.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "getline_input.h"
 #include "network_globals.h"
 #include "telnet.h"
 #include "utility.h"
-
 static const char replymsg[] = "+!R ";
 static void sendTrackedCString( const char *ptrText );
 

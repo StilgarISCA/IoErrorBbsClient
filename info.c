@@ -4,13 +4,12 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
-#include "utility.h"
+#include "defs.h"
 #include <stdarg.h>
-
+#include "utility.h"
 static const char *INFO_MENU_KEYS = "clwtq \n";
 
 /// @brief Show the client copyright screen.

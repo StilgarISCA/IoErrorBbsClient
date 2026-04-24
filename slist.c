@@ -10,9 +10,8 @@
  */
 
 #include "defs.h"
-#include "utility.h"
 #include <stdarg.h>
-
+#include "utility.h"
 /// @brief Append an item to a sorted list.
 ///
 /// @param list List to modify.

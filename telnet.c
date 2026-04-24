@@ -4,19 +4,18 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "browser.h"
 #include "client.h"
 #include "client_globals.h"
 #include "config_menu.h"
+#include "defs.h"
 #include "edit.h"
 #include "filter.h"
 #include "filter_globals.h"
 #include "getline_input.h"
 #include "network_globals.h"
-#include "utility.h"
 #include "telnet.h"
-
+#include "utility.h"
 static int handleTelnetDataState( int inputByte, int *ptrState );
 static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer );
 static int handleTelnetGetState( int inputByte, int *ptrState,

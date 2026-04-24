@@ -3,23 +3,21 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
 #include "bbsrc.h"
 #include "browser.h"
 #include "client.h"
+#include <cmocka.h>
 #include "color.h"
 #include "config_menu.h"
+#include "defs.h"
 #include "edit.h"
 #include "filter.h"
 #include "getline_input.h"
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include "telnet.h"
 #include "utility.h"
-
 typedef struct
 {
    queue *ptrQueue;

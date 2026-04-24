@@ -4,11 +4,10 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "client.h"
+#include "defs.h"
 #include "edit.h"
 #include "utility.h"
-
 typedef struct
 {
    size_t lineStartIndex;

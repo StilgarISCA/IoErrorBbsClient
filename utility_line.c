@@ -9,7 +9,6 @@
  */
 #include "defs.h"
 #include "utility.h"
-
 /// @brief Read the next non-overlong line and trim trailing whitespace.
 ///
 /// @param ptrFileHandle Source file stream.

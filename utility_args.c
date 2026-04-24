@@ -7,10 +7,9 @@
 /*
  * This file handles command-line argument parsing.
  */
-#include "defs.h"
 #include "client.h"
 #include "config_globals.h"
-
+#include "defs.h"
 /// @brief Parse optional command-line host, port, and secure-mode overrides.
 ///
 /// @param argc Argument count from `main()`.

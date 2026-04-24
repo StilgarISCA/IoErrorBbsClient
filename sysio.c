@@ -7,16 +7,15 @@
 /* System I/O routines.
  */
 
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "network_globals.h"
+#include <stdarg.h>
 #include "sysio.h"
 #include "utility.h"
-#include <stdarg.h>
-
 static bool shouldFlushImmediately( const char *ptrText );
 
 

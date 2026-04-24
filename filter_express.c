@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "browser.h"
 #include "client_globals.h"
 #include "color.h"
-#include "filter_globals.h"
+#include "defs.h"
 #include "filter.h"
+#include "filter_globals.h"
 #include "utility.h"
-
 typedef struct
 {
    unsigned int crlf : 1;      /* Needs initial CR/LF */

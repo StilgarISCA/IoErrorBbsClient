@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
-#include "filter_globals.h"
+#include "defs.h"
 #include "filter.h"
+#include "filter_globals.h"
 #include "utility.h"
-
 static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
                                      const char *ptrTimeText, const char *ptrInfo );
 static void beginWhoListIfNeeded( unsigned char **ptrPtrWhoEntryWrite, char *ptrNew,

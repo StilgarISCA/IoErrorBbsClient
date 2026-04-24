@@ -8,14 +8,13 @@
  * This file handles express and away-message configuration from the client
  * configuration menu.
  */
-#include "defs.h"
 #include "client_globals.h"
 #include "color.h"
 #include "config_globals.h"
 #include "config_menu.h"
+#include "defs.h"
 #include "getline_input.h"
 #include "utility.h"
-
 static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 
 /// @brief Clear every stored away-message line.

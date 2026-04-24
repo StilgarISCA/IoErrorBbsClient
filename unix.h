@@ -8,17 +8,16 @@
  * This is where all the system-specific #include files go, and all the #ifdefs
  * for portability to different Unix systems belong here and in unix.c.
  */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <pwd.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

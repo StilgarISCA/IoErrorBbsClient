@@ -7,11 +7,10 @@
 /*
  * This file handles ANSI color output helpers.
  */
-#include "defs.h"
 #include "client_globals.h"
 #include "color.h"
+#include "defs.h"
 #include "utility.h"
-
 static void printAnsiColorValue( int colorValue, bool isBackground );
 static void printAnsiSequence( const char *ptrSequence );
 static bool tryPrintLegacyAtColor( int inputChar );

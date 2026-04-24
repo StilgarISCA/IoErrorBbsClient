@@ -35,15 +35,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
+#include <assert.h>
 #include <ctype.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
-#include <assert.h>
-#include <limits.h>
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #ifndef RETSIGTYPE
 #define RETSIGTYPE void
 #endif

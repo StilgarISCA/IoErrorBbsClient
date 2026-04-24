@@ -7,12 +7,11 @@
 /*
  * Program entry point.
  */
-#include "defs.h"
 #include "bbsrc.h"
 #include "client.h"
 #include "client_globals.h"
+#include "defs.h"
 #include "utility.h"
-
 /// @brief Entry point for the BBS client.
 ///
 /// @param argc Argument count.

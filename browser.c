@@ -4,21 +4,18 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "defs.h"
+#include "browser.h"
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "filter.h"
 #include "filter_globals.h"
 #include "getline_input.h"
 #include "network_globals.h"
-#include "utility.h"
-
-#include "browser.h"
-
 #include <spawn.h>
-
+#include "utility.h"
 extern char **environ;
 
 static void applyVisibleUrlReportColor( int foregroundColor );

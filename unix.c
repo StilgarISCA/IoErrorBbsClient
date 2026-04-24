@@ -12,17 +12,16 @@
  * This file covers Unix/macOS builds.
  */
 #define _IN_UNIX_C
-#include "defs.h"
 #include "bbsrc.h"
 #include "client.h"
 #include "client_globals.h"
 #include "config_globals.h"
+#include "defs.h"
 #include "network_globals.h"
 #include "telnet.h"
 #include "unix.h"
 #include "utility.h"
 #include <wordexp.h>
-
 static struct passwd *pw;
 
 static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg );
