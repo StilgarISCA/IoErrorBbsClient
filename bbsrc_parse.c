@@ -94,6 +94,9 @@ static bool finalizeBbsRcRead( BbsRcReadState *ptrState );
 static void initializeBbsRcDefaults( void );
 static void initializeBbsRcLists( void );
 static bool isNewAwayMessageCommand( const char *ptrLine );
+static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
+                                           const char *ptrLine,
+                                           BbsRcReadState *ptrState );
 static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
                                         const char *ptrLine,
                                         BbsRcReadState *ptrState );
@@ -709,29 +712,16 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
    }
 }
 
-static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
+                                           const char *ptrLine,
+                                           BbsRcReadState *ptrState )
 {
-   char aryScratchLine[MAX_LINE_LENGTH + 1];
-   int parseIndex;
-   const char *ptrToken;
-   char *ptrMacroWrite, *ptrNameCopy;
-   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
-   bool isHandled = true;
-
-   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
-   {
-      return true;
-   }
-
    switch ( commandId )
    {
-      case BBRC_CMD_REREAD:
-      case BBRC_CMD_XWRAP:
-         break;
       case BBRC_CMD_BROWSER:
          ptrState->shouldShowBrowserMigrationNotice = true;
          ptrState->shouldRewriteBbsRc = true;
-         break;
+         return true;
 
       case BBRC_CMD_EDITOR:
          if ( *aryEditor )
@@ -742,7 +732,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             strncpy( aryEditor, ptrLine + ( sizeof( "aryEditor " ) - 1 ), 72 );
          }
-         break;
+         return true;
 
       case BBRC_CMD_SITE:
          if ( *aryBbsHost )
@@ -751,8 +741,12 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          }
          else
          {
-            for ( parseIndex = 5; ( aryBbsHost[parseIndex - 5] = ptrLine[parseIndex] ) &&
-                                  ptrLine[parseIndex] != ' ' && parseIndex < 68; parseIndex++ )
+            int parseIndex;
+
+            for ( parseIndex = 5;
+                  ( aryBbsHost[parseIndex - 5] = ptrLine[parseIndex] ) &&
+                  ptrLine[parseIndex] != ' ' && parseIndex < 68;
+                  parseIndex++ )
             {
                ;
             }
@@ -786,6 +780,35 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
                snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
             }
          }
+         return true;
+
+      default:
+         return false;
+   }
+}
+
+static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+{
+   char aryScratchLine[MAX_LINE_LENGTH + 1];
+   int parseIndex;
+   const char *ptrToken;
+   char *ptrMacroWrite, *ptrNameCopy;
+   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
+   bool isHandled = true;
+
+   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+   if ( processBbsRcConnectionCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+
+   switch ( commandId )
+   {
+      case BBRC_CMD_REREAD:
+      case BBRC_CMD_XWRAP:
          break;
 
       case BBRC_CMD_FRIEND:
