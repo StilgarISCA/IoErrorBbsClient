@@ -97,6 +97,8 @@ static bool isNewAwayMessageCommand( const char *ptrLine );
 static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
                                            const char *ptrLine,
                                            BbsRcReadState *ptrState );
+static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
+                                       const char *ptrLine );
 static bool processBbsRcListCommand( BbsRcCommandId commandId,
                                      const char *ptrLine );
 static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
@@ -839,33 +841,11 @@ static bool processBbsRcListCommand( BbsRcCommandId commandId,
    }
 }
 
-static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
+                                       const char *ptrLine )
 {
-   int parseIndex;
-   const char *ptrToken;
-   char *ptrMacroWrite;
-   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
-   bool isHandled = true;
-
-   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
-   {
-      return true;
-   }
-   if ( processBbsRcConnectionCommand( commandId, ptrLine, ptrState ) )
-   {
-      return true;
-   }
-   if ( processBbsRcListCommand( commandId, ptrLine ) )
-   {
-      return true;
-   }
-
    switch ( commandId )
    {
-      case BBRC_CMD_REREAD:
-      case BBRC_CMD_XWRAP:
-         break;
-
       case BBRC_CMD_COMMANDKEY:
          if ( commandKey >= 0 )
          {
@@ -888,7 +868,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
                commandKey = 0x1b;
             }
          }
-         break;
+         return true;
 
       case BBRC_CMD_AWAYKEY:
          if ( awayKey >= 0 )
@@ -899,7 +879,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             awayKey = ctrl( ptrLine + 8 );
          }
-         break;
+         return true;
 
       case BBRC_CMD_QUIT:
          if ( quitKey >= 0 )
@@ -910,7 +890,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             quitKey = ctrl( ptrLine + 5 );
          }
-         break;
+         return true;
 
       case BBRC_CMD_SUSP:
          if ( suspKey >= 0 )
@@ -921,7 +901,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             suspKey = ctrl( ptrLine + 5 );
          }
-         break;
+         return true;
 
       case BBRC_CMD_CAPTURE:
          if ( captureKey >= 0 )
@@ -932,6 +912,71 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             captureKey = ctrl( ptrLine + 8 );
          }
+         return true;
+
+      case BBRC_CMD_URL:
+         if ( browserKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'url' ignored.\n" );
+         }
+         else
+         {
+            browserKey = ctrl( ptrLine + 4 );
+         }
+         return true;
+
+      case BBRC_CMD_SHELL:
+         if ( shellKey >= 0 )
+         {
+            stdPrintf( "Additional definition for 'shellkey' ignored.\n" );
+         }
+         else
+         {
+            if ( !strncmp( ptrLine, "shellkey ", 9 ) )
+            {
+               shellKey = ctrl( ptrLine + 9 );
+            }
+            else
+            {
+               shellKey = ctrl( ptrLine + ( sizeof( "aryShell " ) - 1 ) );
+            }
+         }
+         return true;
+
+      default:
+         return false;
+   }
+}
+
+static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+{
+   int parseIndex;
+   const char *ptrToken;
+   char *ptrMacroWrite;
+   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
+   bool isHandled = true;
+
+   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+   if ( processBbsRcConnectionCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+   if ( processBbsRcListCommand( commandId, ptrLine ) )
+   {
+      return true;
+   }
+   if ( processBbsRcHotkeyCommand( commandId, ptrLine ) )
+   {
+      return true;
+   }
+
+   switch ( commandId )
+   {
+      case BBRC_CMD_REREAD:
+      case BBRC_CMD_XWRAP:
          break;
 
       case BBRC_CMD_KEYMAP:
@@ -944,17 +989,6 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          else
          {
             stdPrintf( "Invalid value for 'aryKeyMap' ignored.\n" );
-         }
-         break;
-
-      case BBRC_CMD_URL:
-         if ( browserKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'url' ignored.\n" );
-         }
-         else
-         {
-            browserKey = ctrl( ptrLine + 4 );
          }
          break;
 
@@ -1048,24 +1082,6 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
       case BBRC_CMD_NEW_AWAY:
          snprintf( aryAwayMessageLines[ptrLine[1] - '1'],
                    sizeof( aryAwayMessageLines[0] ), "%s", ptrLine + 3 );
-         break;
-
-      case BBRC_CMD_SHELL:
-         if ( shellKey >= 0 )
-         {
-            stdPrintf( "Additional definition for 'shellkey' ignored.\n" );
-         }
-         else
-         {
-            if ( !strncmp( ptrLine, "shellkey ", 9 ) )
-            {
-               shellKey = ctrl( ptrLine + 9 );
-            }
-            else
-            {
-               shellKey = ctrl( ptrLine + ( sizeof( "aryShell " ) - 1 ) );
-            }
-         }
          break;
 
       case BBRC_CMD_UNKNOWN:
