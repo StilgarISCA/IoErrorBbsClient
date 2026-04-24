@@ -101,6 +101,9 @@ static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
                                        const char *ptrLine );
 static bool processBbsRcListCommand( BbsRcCommandId commandId,
                                      const char *ptrLine );
+static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
+                                      const char *ptrLine,
+                                      BbsRcReadState *ptrState );
 static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
                                         const char *ptrLine,
                                         BbsRcReadState *ptrState );
@@ -109,6 +112,8 @@ static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
 static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
 static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState );
 static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState );
+static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
+                                   char ( *aryAwayBuffers )[80] );
 static void warnAboutBbsRcConflicts( void );
 
 static bool addFriendFromLine( const char *ptrLine )
@@ -841,6 +846,57 @@ static bool processBbsRcListCommand( BbsRcCommandId commandId,
    }
 }
 
+static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
+                                      const char *ptrLine,
+                                      BbsRcReadState *ptrState )
+{
+   switch ( commandId )
+   {
+      case BBRC_CMD_MACRO:
+         {
+            int macroIndex;
+            const char *ptrToken;
+
+            macroIndex = ctrl( ptrLine + ( sizeof( "aryMacro " ) - 1 ) );
+            ptrToken = ptrLine + sizeof( "aryMacro " ) +
+                       ( ptrLine[sizeof( "aryMacro " ) - 1] == '^' );
+            if ( *ptrToken++ != ' ' )
+            {
+               stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
+               return true;
+            }
+            if ( *aryMacro[macroIndex] )
+            {
+               stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
+               return true;
+            }
+            if ( macroIndex == 'i' && !awayKey && ptrState->tmpVersion < 220 )
+            {
+               awayKey = 'i';
+               writeDecodedBbsRcText( ptrToken, aryAwayMessageLines[0],
+                                      aryAwayMessageLines );
+               return true;
+            }
+
+            writeDecodedBbsRcText( ptrToken, aryMacro[macroIndex], NULL );
+            return true;
+         }
+
+      case BBRC_CMD_OLD_AWAY:
+         writeDecodedBbsRcText( ptrLine + ( sizeof( "aryAwayMessageLines " ) - 1 ),
+                                aryAwayMessageLines[0], aryAwayMessageLines );
+         return true;
+
+      case BBRC_CMD_NEW_AWAY:
+         snprintf( aryAwayMessageLines[ptrLine[1] - '1'],
+                   sizeof( aryAwayMessageLines[0] ), "%s", ptrLine + 3 );
+         return true;
+
+      default:
+         return false;
+   }
+}
+
 static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
                                        const char *ptrLine )
 {
@@ -952,7 +1008,6 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
 {
    int parseIndex;
    const char *ptrToken;
-   char *ptrMacroWrite;
    BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
    bool isHandled = true;
 
@@ -969,6 +1024,10 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
       return true;
    }
    if ( processBbsRcHotkeyCommand( commandId, ptrLine ) )
+   {
+      return true;
+   }
+   if ( processBbsRcMacroCommand( commandId, ptrLine, ptrState ) )
    {
       return true;
    }
@@ -992,98 +1051,6 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          }
          break;
 
-      case BBRC_CMD_MACRO:
-         parseIndex = ctrl( ptrLine + ( sizeof( "aryMacro " ) - 1 ) );
-         ptrToken = ptrLine + sizeof( "aryMacro " ) +
-                    ( ptrLine[sizeof( "aryMacro " ) - 1] == '^' );
-         if ( *ptrToken++ == ' ' )
-         {
-            if ( *aryMacro[parseIndex] )
-            {
-               stdPrintf( "Additional definition of same 'aryMacro' value ignored.\n" );
-            }
-            else if ( parseIndex == 'i' && !awayKey && ptrState->tmpVersion < 220 )
-            {
-               int messageLineIndex = 0;
-
-               ptrMacroWrite = aryAwayMessageLines[0];
-               awayKey = 'i';
-               while ( ( parseIndex = *ptrToken++ ) )
-               {
-                  if ( parseIndex == '^' && *ptrToken != '^' )
-                  {
-                     parseIndex = ctrl( ptrToken++ - 1 );
-                  }
-                  if ( parseIndex == '\r' )
-                  {
-                     parseIndex = '\n';
-                  }
-                  if ( parseIndex == '\n' )
-                  {
-                     ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
-                  }
-                  else if ( !iscntrl( parseIndex ) )
-                  {
-                     *ptrMacroWrite++ = (char)parseIndex;
-                  }
-               }
-            }
-            else
-            {
-               ptrMacroWrite = aryMacro[parseIndex];
-               while ( ( parseIndex = *ptrToken++ ) )
-               {
-                  if ( parseIndex == '^' && *ptrToken != '^' )
-                  {
-                     parseIndex = ctrl( ptrToken++ - 1 );
-                  }
-                  if ( parseIndex == '\r' )
-                  {
-                     parseIndex = '\n';
-                  }
-                  *ptrMacroWrite++ = (char)parseIndex;
-               }
-            }
-         }
-         else
-         {
-            stdPrintf( "Syntax error in 'aryMacro', ignored.\n" );
-         }
-         break;
-
-      case BBRC_CMD_OLD_AWAY:
-         {
-            int messageLineIndex = 0;
-
-            ptrMacroWrite = aryAwayMessageLines[messageLineIndex];
-            ptrToken = ptrLine + ( sizeof( "aryAwayMessageLines " ) - 1 );
-            while ( ( parseIndex = *ptrToken++ ) )
-            {
-               if ( parseIndex == '^' && *ptrToken != '^' )
-               {
-                  parseIndex = ctrl( ptrToken++ - 1 );
-               }
-               if ( parseIndex == '\r' )
-               {
-                  parseIndex = '\n';
-               }
-               if ( parseIndex == '\n' )
-               {
-                  ptrMacroWrite = aryAwayMessageLines[++messageLineIndex];
-               }
-               else if ( !iscntrl( parseIndex ) )
-               {
-                  *ptrMacroWrite++ = (char)parseIndex;
-               }
-            }
-            break;
-         }
-
-      case BBRC_CMD_NEW_AWAY:
-         snprintf( aryAwayMessageLines[ptrLine[1] - '1'],
-                   sizeof( aryAwayMessageLines[0] ), "%s", ptrLine + 3 );
-         break;
-
       case BBRC_CMD_UNKNOWN:
       default:
          isHandled = false;
@@ -1097,6 +1064,34 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
    }
 
    return true;
+}
+
+static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
+                                   char ( *aryAwayBuffers )[80] )
+{
+   int parseIndex;
+   int messageLineIndex;
+
+   messageLineIndex = 0;
+   while ( ( parseIndex = *ptrToken++ ) )
+   {
+      if ( parseIndex == '^' && *ptrToken != '^' )
+      {
+         parseIndex = ctrl( ptrToken++ - 1 );
+      }
+      if ( parseIndex == '\r' )
+      {
+         parseIndex = '\n';
+      }
+      if ( parseIndex == '\n' && aryAwayBuffers != NULL )
+      {
+         ptrWriteBuffer = aryAwayBuffers[++messageLineIndex];
+      }
+      else if ( !iscntrl( parseIndex ) )
+      {
+         *ptrWriteBuffer++ = (char)parseIndex;
+      }
+   }
 }
 
 static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState )
