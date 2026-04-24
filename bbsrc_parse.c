@@ -94,6 +94,9 @@ static bool finalizeBbsRcRead( BbsRcReadState *ptrState );
 static void initializeBbsRcDefaults( void );
 static void initializeBbsRcLists( void );
 static bool isNewAwayMessageCommand( const char *ptrLine );
+static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
+                                        const char *ptrLine,
+                                        BbsRcReadState *ptrState );
 static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue );
 static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
 static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
@@ -582,33 +585,25 @@ static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues
    return colorIndex == COLOR_FIELD_COUNT;
 }
 
-static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
+                                        const char *ptrLine,
+                                        BbsRcReadState *ptrState )
 {
-   char aryScratchLine[MAX_LINE_LENGTH + 1];
-   int parseIndex;
-   const char *ptrToken;
-   char *ptrMacroWrite, *ptrNameCopy;
    BbsRcOptionValue optionValue;
-   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
-   bool isHandled = true;
 
    switch ( commandId )
    {
-      case BBRC_CMD_REREAD:
-      case BBRC_CMD_XWRAP:
-         break;
-
       case BBRC_CMD_BOLD:
          flagsConfiguration.shouldUseBold = 1;
-         break;
+         return true;
 
       case BBRC_CMD_XLAND:
          isXland = 0;
-         break;
+         return true;
 
       case BBRC_CMD_VERSION:
          ptrState->tmpVersion = atoi( ptrLine + 8 );
-         break;
+         return true;
 
       case BBRC_CMD_SQUELCH:
          switch ( atoi( ptrLine + 8 ) )
@@ -626,7 +621,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
             default:
                break;
          }
-         break;
+         return true;
 
       case BBRC_CMD_TCP_KEEPALIVE:
          optionValue = parseBooleanSettingValue( ptrLine, 9, "'keepalive'", true );
@@ -634,7 +629,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)optionValue;
          }
-         break;
+         return true;
 
       case BBRC_CMD_CLICKABLE_URLS:
          optionValue = parseBooleanSettingValue( ptrLine, strlen( "clickableurls" ),
@@ -643,7 +638,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
          {
             flagsConfiguration.shouldEnableClickableUrls = (unsigned int)optionValue;
          }
-         break;
+         return true;
 
       case BBRC_CMD_TITLEBAR:
          optionValue = parseBooleanSettingValue( ptrLine, strlen( "titlebar" ),
@@ -653,7 +648,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
             flagsConfiguration.shouldEnableTitleBar = (unsigned int)optionValue;
             flagsConfiguration.hasTitleBarSetting = 1;
          }
-         break;
+         return true;
 
       case BBRC_CMD_SCREENREADER:
          optionValue = parseBooleanSettingValue( ptrLine, strlen( "screenreader" ),
@@ -663,7 +658,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
             flagsConfiguration.isScreenReaderModeEnabled = (unsigned int)optionValue;
             flagsConfiguration.hasScreenReaderModeSetting = 1;
          }
-         break;
+         return true;
 
       case BBRC_CMD_AUTOCOMPLETE:
          optionValue = parseBooleanSettingValue( ptrLine, strlen( "autocomplete" ),
@@ -673,7 +668,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
             flagsConfiguration.shouldEnableNameAutocomplete = (unsigned int)optionValue;
             flagsConfiguration.hasNameAutocompleteSetting = 1;
          }
-         break;
+         return true;
 
       case BBRC_CMD_COLOR:
          {
@@ -686,7 +681,7 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
                           ptrState->lineNumber );
             }
          }
-         break;
+         return true;
 
       case BBRC_CMD_AUTONAME:
          if ( strncmp( ptrLine + ( sizeof( "aryAutoName " ) - 1 ), "Guest", 5 ) )
@@ -694,21 +689,45 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
             strncpy( aryAutoName, ptrLine + ( sizeof( "aryAutoName " ) - 1 ), 21 );
             aryAutoName[20] = 0;
          }
-         break;
+         return true;
 
       case BBRC_CMD_AUTOANSI:
          if ( strlen( ptrLine ) <= 9 || ptrLine[9] != 'N' )
          {
             flagsConfiguration.shouldAutoAnswerAnsiPrompt = 1;
          }
-         break;
+         return true;
 
 #ifdef ENABLE_SAVE_PASSWORD
       case BBRC_CMD_AUTOPASS:
          strncpy( aryAutoPassword, ptrLine + 9, 21 );
          aryAutoPassword[20] = 0;
-         break;
+         return true;
 #endif
+      default:
+         return false;
+   }
+}
+
+static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState )
+{
+   char aryScratchLine[MAX_LINE_LENGTH + 1];
+   int parseIndex;
+   const char *ptrToken;
+   char *ptrMacroWrite, *ptrNameCopy;
+   BbsRcCommandId commandId = detectBbsRcCommand( ptrLine );
+   bool isHandled = true;
+
+   if ( processBbsRcSettingCommand( commandId, ptrLine, ptrState ) )
+   {
+      return true;
+   }
+
+   switch ( commandId )
+   {
+      case BBRC_CMD_REREAD:
+      case BBRC_CMD_XWRAP:
+         break;
       case BBRC_CMD_BROWSER:
          ptrState->shouldShowBrowserMigrationNotice = true;
          ptrState->shouldRewriteBbsRc = true;
