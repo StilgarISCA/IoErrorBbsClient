@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT([IoErrorBbsClient],[2.3.10-Stilgar])
-AC_CONFIG_SRCDIR([filter.c])
+AC_CONFIG_SRCDIR([main.c])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CANONICAL_HOST
 
