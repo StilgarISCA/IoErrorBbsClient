@@ -91,11 +91,11 @@ void configureMacros( void )
 /// @return This function does not return a value.
 static void editConfiguredMacros( void )
 {
-   int inputChar;
-
    stdPrintf( "Edit\r\n" );
    while ( true )
    {
+      int inputChar;
+
       stdPrintf( "\r\nMacro to edit (%s to end) -> ", strCtrl( commandKey ) );
       inputChar = newKey( -1 );
       if ( inputChar == commandKey || inputChar == ' ' || inputChar == '\n' ||

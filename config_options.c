@@ -75,11 +75,7 @@ void configureOptionsMenu( void )
 	      }
 #endif
    shouldUseSsl = 0;
-   if ( ( !bbsPort || bbsPort == BBS_PORT_NUMBER ) && shouldUseSsl )
-   {
-      bbsPort = SSL_PORT_NUMBER;
-   }
-   else if ( ( !bbsPort || bbsPort == SSL_PORT_NUMBER ) && !shouldUseSsl )
+   if ( !bbsPort || bbsPort == SSL_PORT_NUMBER || bbsPort == BBS_PORT_NUMBER )
    {
       bbsPort = BBS_PORT_NUMBER;
    }
@@ -91,14 +87,7 @@ void configureOptionsMenu( void )
    }
    if ( !bbsPort )
    {
-      if ( shouldUseSsl )
-      {
-         bbsPort = SSL_PORT_NUMBER;
-      }
-      else
-      {
-         bbsPort = BBS_PORT_NUMBER;
-      }
+      bbsPort = BBS_PORT_NUMBER;
    }
    stdPrintf( "Try to keep idle connections alive with TCP probes? (%s) -> ",
               flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );

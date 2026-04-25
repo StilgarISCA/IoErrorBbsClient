@@ -28,9 +28,9 @@ static char aryWrap[80];
 static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
                                  const GetStringState *ptrState );
 static void applyWrapSeed( int length, int line, char *result, char **ptrCursor );
-static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor );
-static bool handleCtrlWEdit( char *result, char **ptrCursor );
-static bool handleGetStringOverflow( int inputChar, int line, char *result,
+static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCursor );
+static bool handleCtrlWEdit( const char *result, char **ptrCursor );
+static bool handleGetStringOverflow( int inputChar, int line, const char *result,
                                      char **ptrCursor );
 static bool maybeUseSavedPassword( char *result, GetStringState *ptrState );
 static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState );
@@ -94,7 +94,6 @@ void getFiveLines( int which )
 {
    register int lineIndex;
    register int sendLineIndex;
-   register int sendCharIndex;
    char arySendString[21][80];
    int override = 0;
    int local = 0;
@@ -160,6 +159,8 @@ void getFiveLines( int which )
    }
    for ( sendLineIndex = 0; sendLineIndex < lineIndex; sendLineIndex++ )
    {
+      int sendCharIndex;
+
       sendCharIndex = (int)strlen( arySendString[sendLineIndex] );
       sendTrackedBuffer( arySendString[sendLineIndex], (size_t)sendCharIndex );
       sendTrackedNewline();
@@ -187,7 +188,6 @@ void getString( int length, char *result, int line )
 {
    GetStringState state;
    char *ptrCursor = result;
-   register int inputChar;
 
    normalizeGetStringMode( &length, &state );
    applyWrapSeed( length, line, result, &ptrCursor );
@@ -198,6 +198,8 @@ void getString( int length, char *result, int line )
 
    while ( true )
    {
+      int inputChar;
+
       inputChar = inKey();
       if ( inputChar == ' ' && length == 29 && ptrCursor == result )
       {
@@ -253,7 +255,7 @@ void getString( int length, char *result, int line )
 /// @param ptrCursor Current cursor position.
 ///
 /// @return `true` if the input was handled as backspace editing, otherwise `false`.
-static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor )
+static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCursor )
 {
    if ( inputChar != '\b' && inputChar != CTRL_X )
    {
@@ -279,10 +281,10 @@ static bool handleBackspaceEdit( int inputChar, char *result, char **ptrCursor )
 /// @param ptrCursor Current cursor position.
 ///
 /// @return Always returns `true`.
-static bool handleCtrlWEdit( char *result, char **ptrCursor )
+static bool handleCtrlWEdit( const char *result, char **ptrCursor )
 {
-   char *ptrWordStart;
    int foundWord;
+   const char *ptrWordStart;
 
    for ( ptrWordStart = result; ptrWordStart < *ptrCursor; ptrWordStart++ )
    {
@@ -315,11 +317,10 @@ static bool handleCtrlWEdit( char *result, char **ptrCursor )
 /// @param ptrCursor Current cursor position.
 ///
 /// @return `true` if input should continue on the current line, otherwise `false`.
-static bool handleGetStringOverflow( int inputChar, int line, char *result,
+static bool handleGetStringOverflow( int inputChar, int line, const char *result,
                                      char **ptrCursor )
 {
    char *ptrWordStart;
-   char *rest;
 
    if ( line < 0 || line == 19 )
    {
@@ -337,6 +338,8 @@ static bool handleGetStringOverflow( int inputChar, int line, char *result,
    }
    if ( ptrWordStart > result )
    {
+      char *rest;
+
       *ptrWordStart = 0;
       for ( rest = aryWrap, ptrWordStart++; ptrWordStart < *ptrCursor;
             printf( "\b \b" ) )

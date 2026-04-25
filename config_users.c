@@ -40,15 +40,18 @@ static UserListKind userListKindFromName( const char *ptrName );
 /// @return This function does not return a value.
 static void addEnemyUser( slist *list, const char *ptrUserName )
 {
+   size_t enemyNameLength;
    char *ptrEnemyName;
 
-   ptrEnemyName = (char *)calloc( 1, strlen( ptrUserName ) + 1 );
+   enemyNameLength = strlen( ptrUserName ) + 1;
+   ptrEnemyName = (char *)calloc( 1, enemyNameLength );
    if ( !ptrEnemyName )
    {
       fatalExit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
+      return;
    }
 
-   snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName );
+   snprintf( ptrEnemyName, enemyNameLength, "%s", ptrUserName );
    if ( !slistAddItem( list, ptrEnemyName, 0 ) )
    {
       fatalExit( "Can't add 'enemy'!\r\n", "Fatal error" );
@@ -70,6 +73,7 @@ static void addFriendUser( slist *list, const char *ptrUserName )
    if ( !ptrFriend )
    {
       fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
+      return;
    }
 
    snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrUserName );
@@ -145,8 +149,6 @@ static void editFriendUser( slist *list, int ( *findfn )( const void *, const vo
 /// @return This function does not return a value.
 void editUsers( slist *list, int ( *findfn )( const void *, const void * ), const char *name )
 {
-   register int inputChar;
-   register int itemIndex = 0;
    unsigned int invalid = 0;
    char *ptrUserName;
    UserListKind userListKind;
@@ -155,6 +157,8 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
 
    while ( true )
    {
+      int inputChar;
+
       printUserListMenu( name, userListKind );
 
       inputChar = inKey();
@@ -192,6 +196,8 @@ void editUsers( slist *list, int ( *findfn )( const void *, const void * ), cons
             ptrUserName = getName( -999 );
             if ( *ptrUserName )
             {
+               int itemIndex;
+
                itemIndex = slistFind( list, ptrUserName, findfn );
                if ( itemIndex != -1 )
                {
@@ -292,14 +298,13 @@ static void printEnemyList( const slist *list )
 /// @return This function does not return a value.
 static void printFriendList( const slist *list )
 {
-   friend *ptrFriend;
    int itemIndex;
    int lines;
 
    lines = 1;
    for ( itemIndex = 0; itemIndex < (int)list->nitems; itemIndex++ )
    {
-      ptrFriend = list->items[itemIndex];
+      const friend *ptrFriend = list->items[itemIndex];
       printThemedFriendListEntry( ptrFriend );
       lines++;
       if ( lines == rows - 1 && more( &lines, -1 ) < 0 )

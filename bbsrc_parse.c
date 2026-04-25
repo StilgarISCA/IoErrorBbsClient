@@ -106,7 +106,7 @@ static bool processBbsRcListCommand( BbsRcCommandId commandId,
                                      const char *ptrLine );
 static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
                                       const char *ptrLine,
-                                      BbsRcReadState *ptrState );
+                                      const BbsRcReadState *ptrState );
 static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
                                         const char *ptrLine,
                                         BbsRcReadState *ptrState );
@@ -124,8 +124,6 @@ static void warnAboutBbsRcConflicts( void );
 static bool addFriendFromLine( const char *ptrLine )
 {
    friend *ptrFriend;
-   int nameLength;
-   size_t nameLengthToCopy;
 
    if ( strlen( ptrLine ) == FRIEND_COMMAND_PREFIX_LEN )
    {
@@ -147,6 +145,9 @@ static bool addFriendFromLine( const char *ptrLine )
 
    if ( strlen( ptrLine ) > FRIEND_INFO_OFFSET )
    {
+      int nameLength;
+      size_t nameLengthToCopy;
+
       strncpy( ptrFriend->info, ptrLine + FRIEND_INFO_OFFSET, FRIEND_INFO_COPY_LENGTH );
       nameLengthToCopy = 0;
       for ( nameLength = FRIEND_NAME_PARSE_LENGTH; nameLength > 0; nameLength-- )
@@ -328,18 +329,17 @@ static void ensureDefaultAwayMessage( void )
 /// @return `true` on success, otherwise `false`.
 static bool finalizeBbsRcRead( BbsRcReadState *ptrState )
 {
-   char *ptrNameCopy;
-   friend *ptrFriend = NULL;
-
    applyBbsRcKeyDefaults();
    ensureDefaultAwayMessage();
 
    defaultColors( 0 );
    warnAboutBbsRcConflicts();
 
-   for ( unsigned int zi = 0; zi < friendList->nitems; zi++ )
+   for ( unsigned int friendIndex = 0; friendIndex < friendList->nitems; friendIndex++ )
    {
-      ptrFriend = friendList->items[zi];
+      const friend *ptrFriend = friendList->items[friendIndex];
+      char *ptrNameCopy;
+
       if ( !( ptrNameCopy = (char *)calloc( 1, strlen( ptrFriend->name ) + 1 ) ) )
       {
          fatalExit( "Out of memory for list copy!\r\n", "Fatal error" );
@@ -994,7 +994,7 @@ static bool processBbsRcListCommand( BbsRcCommandId commandId,
 /// @return `true` if the command was handled, otherwise `false`.
 static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
                                       const char *ptrLine,
-                                      BbsRcReadState *ptrState )
+                                      const BbsRcReadState *ptrState )
 {
    switch ( commandId )
    {

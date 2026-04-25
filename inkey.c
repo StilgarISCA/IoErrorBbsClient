@@ -35,7 +35,7 @@ static noreturn void failNetworkRead( int readErrno );
 static void flushPendingOutput( void );
 static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
                                               int *ptrMacroPosition,
-                                              int *ptrPendingInputChar,
+                                              const int *ptrPendingInputChar,
                                               int *ptrIsMacroNext,
                                               int *ptrWasUndefinedCommand );
 static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
@@ -159,7 +159,6 @@ int getKey( void )
    static int macroKey = 0;
    static int macroPosition = 0;       // pointer into the aryMacro array
    int pendingInputChar = -1;
-   GetKeyResult result;
    static int wasUndefinedCommand = 0; // to remove the blurb about undefined aryMacro
 
    // While a child process is running, standard input is ignored and only
@@ -168,6 +167,8 @@ int getKey( void )
 
    while ( true )
    {
+      GetKeyResult result;
+
       if ( tryReplaySavedByte( &inputChar ) )
       {
          return inputChar;
@@ -219,7 +220,7 @@ int getKey( void )
 /// @return Result describing whether input was consumed, should continue, or should return.
 static GetKeyResult handleBufferedLocalInput( int *ptrMacroKey,
                                               int *ptrMacroPosition,
-                                              int *ptrPendingInputChar,
+                                              const int *ptrPendingInputChar,
                                               int *ptrIsMacroNext,
                                               int *ptrWasUndefinedCommand )
 {

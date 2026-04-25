@@ -32,9 +32,9 @@ static void printThemedWhoListEntry( const char *ptrName, char statusMarker,
                                      const char *ptrTimeText, const char *ptrInfo );
 static void printThemedWhoListHeader( const char *ptrText );
 static void refreshSavedWhoList( void );
-static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
+static void storeFriendWhoEntry( const unsigned char *aryWhoEntry,
                                  const friend *ptrFriend );
-static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry );
+static void updateSavedWhoListWithEntry( const unsigned char *aryWhoEntry );
 
 
 /// @brief Start a who-list capture if one is not already active.
@@ -460,7 +460,7 @@ static void refreshSavedWhoList( void )
 /// @param ptrFriend Friend record supplying the info text.
 ///
 /// @return This helper does not return a value.
-static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
+static void storeFriendWhoEntry( const unsigned char *aryWhoEntry,
                                  const friend *ptrFriend )
 {
    *arySavedWhoNames[savedWhoCount] = *aryWhoEntry;
@@ -479,7 +479,7 @@ static void storeFriendWhoEntry( unsigned char *aryWhoEntry,
 /// @param aryWhoEntry Encoded who-list entry.
 ///
 /// @return This helper does not return a value.
-static void updateSavedWhoListWithEntry( unsigned char *aryWhoEntry )
+static void updateSavedWhoListWithEntry( const unsigned char *aryWhoEntry )
 {
    char aryTempText[80];
    char *ptrWhoCopy;

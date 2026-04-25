@@ -47,10 +47,7 @@ char *getName( int quitPriv )
 {
    char *ptrCursor;
    static char aryNameBuffer[MAX_USER_NAME_INPUT_LENGTH + 1];
-   register int inputChar;
    int smart = 0;
-   int shouldUppercase;
-   int isFirstChar;
    unsigned int invalid = 0;
    static char junk[21];
 
@@ -79,11 +76,14 @@ char *getName( int quitPriv )
    sendingXState = SX_NOT;
    while ( true )
    {
-      shouldUppercase = 1;
-      isFirstChar = 1;
+      int shouldUppercase = 1;
+      int isFirstChar = 1;
+
       ptrCursor = aryNameBuffer;
       while ( true )
       {
+         int inputChar;
+
          inputChar = inKey();
          if ( inputChar == '\n' )
          {

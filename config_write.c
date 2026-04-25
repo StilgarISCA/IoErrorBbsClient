@@ -29,11 +29,9 @@ static void writeOptionSettings( void );
 /// @return This function does not return a value.
 static void writeAwayMessages( void )
 {
-   int itemIndex;
-
    if ( **aryAwayMessageLines )
    {
-      for ( itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex];
+      for ( int itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex];
             itemIndex++ )
       {
          fprintf( ptrBbsRc, "a%d %s\n", itemIndex + 1, aryAwayMessageLines[itemIndex] );
@@ -106,11 +104,10 @@ static void writeConnectionSettings( void )
 static void writeFriendAndEnemyLists( void )
 {
    int itemIndex;
-   const friend *ptrFriend;
 
    for ( itemIndex = 0; itemIndex < (int)friendList->nitems; itemIndex++ )
    {
-      ptrFriend = (friend *)friendList->items[itemIndex];
+      const friend *ptrFriend = (friend *)friendList->items[itemIndex];
       fprintf( ptrBbsRc, "friend %-20s   %s\n", ptrFriend->name, ptrFriend->info );
    }
    for ( itemIndex = 0; itemIndex < (int)enemyList->nitems; itemIndex++ )
