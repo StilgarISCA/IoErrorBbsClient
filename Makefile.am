@@ -23,6 +23,7 @@ noinst_HEADERS = \
 
 bbs_SOURCES = \
 	browser.c \
+	browser_urls.c \
 	bbsrc.c \
 	bbsrc_parse.c \
 	color.c \
@@ -85,7 +86,7 @@ test_getline_LDADD = $(CMOCKA_LIBS)
 test_inkey_SOURCES = test/test_inkey.c test/test_helpers.c inkey.c global.c
 test_inkey_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_inkey_LDADD = $(CMOCKA_LIBS)
-test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter_data.c filter_express.c filter_post.c filter_who.c queue.c slist.c global.c
+test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c browser_urls.c filter_data.c filter_express.c filter_post.c filter_who.c queue.c slist.c global.c
 test_filter_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_filter_LDADD = $(CMOCKA_LIBS)
 test_color_SOURCES = test/test_color.c test/test_helpers.c color.c color_config.c color_themes.c slist.c global.c
