@@ -94,12 +94,12 @@ void continuedPostHelper( void )
 /// @return This function does not return a value.
 void filterPost( register int inputChar )
 {
+   static char aryTempText[160];
+   static int isFriend;      // Current post is by a friend
+   static PostFilterFlags needs;
    static int numposts = 0;  // count of the # of posts received so far
    static char posthdr[140]; // store the post header here
    static char *posthdrp;    // pointer into posthdr
-   static PostFilterFlags needs;
-   static char aryTempText[160];
-   static int isFriend; // Current post is by a friend
 
    if ( inputChar == -1 )
    { // control: begin/end of post

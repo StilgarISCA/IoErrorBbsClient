@@ -154,13 +154,13 @@ static void flushPendingOutput( void )
 /// @return Next raw input byte, or `-1` if the connection closed.
 int getKey( void )
 {
+   int inputChar = -1;
+   static int isMacroNext = 0;         // aryMacro key was hit, aryMacro is next
    static int macroKey = 0;
    static int macroPosition = 0;       // pointer into the aryMacro array
-   static int isMacroNext = 0;         // aryMacro key was hit, aryMacro is next
-   static int wasUndefinedCommand = 0; // to remove the blurb about undefined aryMacro
-   int inputChar = -1;
    int pendingInputChar = -1;
    GetKeyResult result;
+   static int wasUndefinedCommand = 0; // to remove the blurb about undefined aryMacro
 
    // While a child process is running, standard input is ignored and only
    // network traffic is processed. The same applies when express-message

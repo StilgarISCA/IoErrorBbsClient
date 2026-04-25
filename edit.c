@@ -26,15 +26,15 @@
 /// @return This function does not return a value.
 void makeMessage( int upload )
 {
-   int inputChar;
-   FILE *ptrMessageFile = tempFile;
-   int itemIndex;
-   int lineLength;          // line length
-   int lastSpacePosition;   // position of last space encountered
-   int cancelspace;         // true when last character is space
    char aryCurrentLine[81]; // array to arySavedBytes current line
-   int previousChar = '\n';
+   int cancelspace;         // true when last character is space
+   int inputChar;
    unsigned int invalid = 0;
+   int itemIndex;
+   int lastSpacePosition; // position of last space encountered
+   int lineLength;        // line length
+   int previousChar = '\n';
+   FILE *ptrMessageFile = tempFile;
    int tabcount = 0;
 
    flagsConfiguration.isPosting = 1;

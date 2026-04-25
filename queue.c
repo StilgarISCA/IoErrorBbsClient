@@ -29,8 +29,8 @@ int deleteQueue( queue *ptrQueue )
 /// @return `1` when the string is queued, otherwise `0`.
 int isQueued( const char *ptrObject, queue *ptrQueue )
 {
-   char *ptrQueueEntry; // Pointer inside queue
    int objectIndex;     // Object counter
+   char *ptrQueueEntry; // Pointer inside queue
 
    // Move to head of queue.
    for ( ptrQueueEntry = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head ), objectIndex = 0; objectIndex < ptrQueue->itemCount; objectIndex++ )

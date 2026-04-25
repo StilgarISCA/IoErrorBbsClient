@@ -181,12 +181,12 @@ static inline int formatAnsiResetSequence( char *ptrBuffer, size_t bufferSize )
 
 typedef struct
 {
-   char *start;   // Pointer to beginning of queue
    int head;      // Index of current head
-   int tail;      // Index of current tail
-   int size;      // Number of objects queue can hold
    int itemCount; // Number of objects queued
    int objsize;   // Size of one object
+   int size;      // Number of objects queue can hold
+   char *start;   // Pointer to beginning of queue
+   int tail;      // Index of current tail
 } queue;
 
 #define CTRL_D 4
@@ -230,39 +230,39 @@ typedef struct
 #define NAWS_ROWS_MAX 110
 typedef struct
 {
-   unsigned int isPosting : 1;                    // true if aryUser is currently posting
-   unsigned int isLastSave : 1;                   // true if last time aryUser edited they saved
-   unsigned int shouldCheckExpress : 1;           // true if waiting to check BBS for X's
+   unsigned int hasNameAutocompleteSetting : 1;   // true if name autocomplete was set in .bbsrc
+   unsigned int hasScreenReaderModeSetting : 1;   // true if screen reader mode was set in .bbsrc
+   unsigned int hasTitleBarSetting : 1;           // true if title bar setting was set in .bbsrc
    unsigned int isConfigMode : 1;                 // true in bbsrc config functions
+   unsigned int isLastSave : 1;                   // true if last time aryUser edited they saved
+   unsigned int isMorePromptActive : 1;           // true inside a MORE prompt
+   unsigned int isPosting : 1;                    // true if aryUser is currently posting
+   unsigned int isScreenReaderModeEnabled : 1;    // true if screen reader friendly mode is enabled
+   unsigned int shouldAutoAnswerAnsiPrompt : 1;   // true when the ANSI prompt should be answered automatically
+   unsigned int shouldCheckExpress : 1;           // true if waiting to check BBS for X's
+   unsigned int shouldDisableBold : 1;            // true when bold ANSI output must be forced off
+   unsigned int shouldEnableClickableUrls : 1;    // true if OSC-8 clickable URL output is enabled
+   unsigned int shouldEnableNameAutocomplete : 1; // true if name-entry autocomplete is enabled
+   unsigned int shouldEnableTitleBar : 1;         // true if terminal title updates are enabled
+   unsigned int shouldSquelchExpress : 1;         // true when enemy express messages should be squelched
+   unsigned int shouldSquelchPost : 1;            // true when enemy posts should be squelched
    unsigned int shouldUseAnsi : 1;                // true if BBS is in ANSI color mode
    unsigned int shouldUseBold : 1;                // true if using bold in ANSI color mode
-   unsigned int shouldDisableBold : 1;            // true when bold ANSI output must be forced off
-   unsigned int isMorePromptActive : 1;           // true inside a MORE prompt
-   unsigned int shouldSquelchPost : 1;            // true when enemy posts should be squelched
-   unsigned int shouldSquelchExpress : 1;         // true when enemy express messages should be squelched
-   unsigned int shouldAutoAnswerAnsiPrompt : 1;   // true when the ANSI prompt should be answered automatically
    unsigned int shouldUseTcpKeepalive : 1;        // true if TCP keepalive probes are enabled
-   unsigned int shouldEnableClickableUrls : 1;    // true if OSC-8 clickable URL output is enabled
-   unsigned int shouldEnableTitleBar : 1;         // true if terminal title updates are enabled
-   unsigned int isScreenReaderModeEnabled : 1;    // true if screen reader friendly mode is enabled
-   unsigned int hasTitleBarSetting : 1;           // true if title bar setting was set in .bbsrc
-   unsigned int hasScreenReaderModeSetting : 1;   // true if screen reader mode was set in .bbsrc
-   unsigned int shouldEnableNameAutocomplete : 1; // true if name-entry autocomplete is enabled
-   unsigned int hasNameAutocompleteSetting : 1;   // true if name autocomplete was set in .bbsrc
 } Flags;
 
 typedef struct
 {
-   int ( *sortfn )( const void *, const void * ); // function to sort list; see slist.c
-   unsigned int nitems;                           // number of items in list
    void **items;                                  // dynamic array containing item pointers
+   unsigned int nitems;                           // number of items in list
+   int ( *sortfn )( const void *, const void * ); // function to sort list; see slist.c
 } slist;
 
 typedef struct
 {
+   char info[54]; // Friend description
    int magic;     // Magic number
    char name[21]; // User name
-   char info[54]; // Friend description
    time_t time;   // Time online
 } friend;         // User list entry
 
