@@ -94,8 +94,8 @@ static void initializeBbsRcDefaults( void );
 static void initializeBbsRcLists( void );
 static bool isNewAwayMessageCommand( const char *ptrLine );
 static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t prefixLength, const char *ptrSettingName, bool shouldAllowAnyNonZeroValue );
-static bool parseColorScheme( const char *ptrLine, int *ptrColorValues );
-static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues );
+static bool parseColorScheme( const char *ptrLine );
+static bool parseNamedColorScheme( const char *ptrColorSpec );
 static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrState );
 static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
                                            const char *ptrLine,
@@ -562,13 +562,12 @@ static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t pr
 }
 
 
-/// @brief Parse a full `.bbsrc` color scheme into the color struct layout.
+/// @brief Parse a full `.bbsrc` color scheme into the active color fields.
 ///
 /// @param ptrLine Raw `color` directive line.
-/// @param ptrColorValues Destination color array.
 ///
 /// @return `true` on success, otherwise `false`.
-static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
+static bool parseColorScheme( const char *ptrLine )
 {
    if ( strlen( ptrLine ) == 6 + COLOR_FIELD_COUNT )
    {
@@ -576,26 +575,25 @@ static bool parseColorScheme( const char *ptrLine, int *ptrColorValues )
 
       for ( colorIndex = 0; colorIndex < COLOR_FIELD_COUNT; colorIndex++ )
       {
-         ptrColorValues[colorIndex] = colorValueFromLegacyDigit( ptrLine[6 + colorIndex] );
+         setColorFieldValue( colorIndex, colorValueFromLegacyDigit( ptrLine[6 + colorIndex] ) );
       }
       if ( ptrLine[6 + COLOR_BACKGROUND_INDEX] == '9' )
       {
-         ptrColorValues[COLOR_BACKGROUND_INDEX] = COLOR_VALUE_DEFAULT;
+         setColorFieldValue( COLOR_BACKGROUND_INDEX, COLOR_VALUE_DEFAULT );
       }
       return true;
    }
 
-   return parseNamedColorScheme( ptrLine + 6, ptrColorValues );
+   return parseNamedColorScheme( ptrLine + 6 );
 }
 
 
 /// @brief Parse a named-color `.bbsrc` color scheme.
 ///
 /// @param ptrColorSpec Color specification text after the directive prefix.
-/// @param ptrColorValues Destination color array.
 ///
 /// @return `true` on success, otherwise `false`.
-static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues )
+static bool parseNamedColorScheme( const char *ptrColorSpec )
 {
    int colorIndex;
 
@@ -657,7 +655,7 @@ static bool parseNamedColorScheme( const char *ptrColorSpec, int *ptrColorValues
          return false;
       }
 
-      ptrColorValues[colorIndex++] = colorValue;
+      setColorFieldValue( colorIndex++, colorValue );
    }
 
    return colorIndex == COLOR_FIELD_COUNT;
@@ -1139,15 +1137,10 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
          return true;
 
       case BBRC_CMD_COLOR:
+         if ( !parseColorScheme( ptrLine ) )
          {
-            int *ptrColorValues;
-
-            ptrColorValues = (int *)&color;
-            if ( !parseColorScheme( ptrLine, ptrColorValues ) )
-            {
-               stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n",
-                          ptrState->lineNumber );
-            }
+            stdPrintf( "Invalid 'color' scheme on line %d, ignored.\n",
+                       ptrState->lineNumber );
          }
          return true;
 

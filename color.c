@@ -15,6 +15,33 @@ typedef struct
    int colorValue;
 } NamedColorSpec;
 
+static int *const aryColorFields[COLOR_FIELD_COUNT] =
+   {
+      &color.text,
+      &color.forum,
+      &color.number,
+      &color.errorTextColor,
+      &color.ansiBlackTextColor,
+      &color.ansiBlueTextColor,
+      &color.ansiMagentaTextColor,
+      &color.postDate,
+      &color.postName,
+      &color.postText,
+      &color.postFriendDate,
+      &color.postFriendName,
+      &color.postFriendText,
+      &color.anonymous,
+      &color.morePrompt,
+      &color.ansiWhiteTextColor,
+      &color.reserved5,
+      &color.background,
+      &color.inputText,
+      &color.inputHighlight,
+      &color.expressText,
+      &color.expressName,
+      &color.expressFriendText,
+      &color.expressFriendName };
+
 static const NamedColorSpec aryNamedColors[] =
    {
       { "brightblack", 8 },
@@ -199,6 +226,20 @@ void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 }
 
 
+/// @brief Return one color field from the legacy `.bbsrc` serialization order.
+///
+/// @param colorIndex Field index in the `.bbsrc` color line.
+///
+/// @return Configured color value at the requested index.
+int colorFieldValue( int colorIndex )
+{
+   assert( colorIndex >= 0 );
+   assert( colorIndex < COLOR_FIELD_COUNT );
+
+   return *aryColorFields[colorIndex];
+}
+
+
 /// @brief Look up the canonical name for a color value.
 ///
 /// @param colorValue Color value to resolve.
@@ -321,6 +362,21 @@ static bool isColorNameMatch( const char *ptrLeft, const char *ptrRight )
    }
 
    return *ptrLeft == '\0' && *ptrRight == '\0';
+}
+
+
+/// @brief Set one color field in the legacy `.bbsrc` serialization order.
+///
+/// @param colorIndex Field index in the `.bbsrc` color line.
+/// @param colorValue New color value.
+///
+/// @return This function does not return a value.
+void setColorFieldValue( int colorIndex, int colorValue )
+{
+   assert( colorIndex >= 0 );
+   assert( colorIndex < COLOR_FIELD_COUNT );
+
+   *aryColorFields[colorIndex] = colorValue;
 }
 
 

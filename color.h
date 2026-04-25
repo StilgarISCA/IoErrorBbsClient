@@ -17,6 +17,7 @@ int backgroundPicker( void );
 void brilliantColors( void );
 void colorblindColors( void );
 void colorConfig( void );
+int colorFieldValue( int colorIndex );
 int colorize( const char *str );
 const char *colorNameFromValue( int colorValue );
 void colorOptions( void );
@@ -45,6 +46,7 @@ void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor );
 void printAnsiForegroundColorValue( int colorValue );
 void printAnsiResetValue( void );
 void printThemedMnemonicText( const char *ptrText, int defaultColor );
+void setColorFieldValue( int colorIndex, int colorValue );
 char userOrFriend( void );
 
 #endif // COLOR_H_INCLUDED

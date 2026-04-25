@@ -68,21 +68,22 @@ void writeBbsRc( void )
 static void writeColorSettings( void )
 {
    int itemIndex;
-   const char *ptrColorName;
-   const int *ptrColorValues;
 
-   ptrColorValues = (const int *)&color;
    fprintf( ptrBbsRc, "color" );
    for ( itemIndex = 0; itemIndex < COLOR_FIELD_COUNT; itemIndex++ )
    {
-      ptrColorName = colorNameFromValue( ptrColorValues[itemIndex] );
+      const char *ptrColorName;
+      int colorValue;
+
+      colorValue = colorFieldValue( itemIndex );
+      ptrColorName = colorNameFromValue( colorValue );
       if ( ptrColorName != NULL )
       {
          fprintf( ptrBbsRc, " %s", ptrColorName );
       }
       else
       {
-         fprintf( ptrBbsRc, " %d", ptrColorValues[itemIndex] );
+         fprintf( ptrBbsRc, " %d", colorValue );
       }
    }
    fprintf( ptrBbsRc, "\n" );
