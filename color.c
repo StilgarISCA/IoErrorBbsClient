@@ -71,13 +71,13 @@ void ansiTransformExpress( char *ptrText, size_t size )
    char aryResetColor[32];
    char *ptrExpressSender, *ptrExpressMarker;
 
-   /* Insert color only when ANSI is being used */
+   // Insert color only when ANSI is being used
    if ( !flagsConfiguration.shouldUseAnsi )
    {
       return;
    }
 
-   /* Verify this is an X message and set up pointers */
+   // Verify this is an X message and set up pointers
    ptrExpressSender = findSubstring( ptrText, ") to " );
    ptrExpressMarker = findSubstring( ptrText, ") from " );
    if ( !ptrExpressSender && !ptrExpressMarker )
@@ -175,7 +175,7 @@ void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )
 
    writeOffset = 0;
 
-   /* Rewrite simple ESC[3xm foreground sequences into full palette-aware ANSI. */
+   // Rewrite simple ESC[3xm foreground sequences into full palette-aware ANSI.
    for ( ptrScan = ptrText; *ptrScan != '\0' && writeOffset < sizeof( aryTransformedHeader ) - 1; )
    {
       if ( ptrScan[0] == '\033' && ptrScan[1] == '[' && ptrScan[2] == '3' &&

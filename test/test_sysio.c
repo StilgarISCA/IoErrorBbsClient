@@ -46,7 +46,7 @@ static void resetState( void )
    }
 }
 
-/* sysio.c dependency stubs. */
+// sysio.c dependency stubs.
 noreturn void fatalPerror( const char *message, const char *heading )
 {
    (void)message;

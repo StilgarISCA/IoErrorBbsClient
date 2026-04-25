@@ -5,8 +5,7 @@
  */
 
 /*
- * This file handles configuration of the bbsrc file.  Its somewhat sloppy but
- * it should do the job.  Someone else can put a nicer interface on it.
+ * This file handles configuration of the bbsrc file.
  */
 #include "bbsrc.h"
 #include "client.h"
@@ -109,7 +108,7 @@ void configBbsRc( void )
             }
             writeBbsRc();
             return;
-            /* NOTREACHED */
+            // NOTREACHED
 
          default:
             break;
@@ -176,7 +175,7 @@ void setup( int newVersion )
    }
    fflush( stdout );
 
-   /* bbsrc file */
+   // bbsrc file
    if ( newVersion < 5 )
    {
       if ( !sPrompt( BBSRC_INFO, "Continue running this client?", 1 ) )

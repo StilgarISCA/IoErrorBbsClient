@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-/* System I/O routines.
+/*
+ * System I/O routines.
  */
-
 #include "client.h"
 #include "client_globals.h"
 #include "color.h"
@@ -55,7 +55,7 @@ int capPrintf( const char *format, ... )
 /// @return The input character value.
 int capPutChar( int inputChar )
 {
-   static int skipansi = 0; /* Counter for avoidance of capturing ANSI */
+   static int skipansi = 0; // Counter for avoidance of capturing ANSI
 
    if ( skipansi )
    {
@@ -63,7 +63,7 @@ int capPutChar( int inputChar )
       if ( skipansi == 1 )
       {
          if ( flagsConfiguration.shouldDisableBold && inputChar == 109 )
-         { /* Keep capture/reset state aligned when bold output is suppressed. */
+         { // Keep capture/reset state aligned when bold output is suppressed.
             printf( "\033[0m" );
             skipansi--;
          }
@@ -177,7 +177,7 @@ int netPuts( const char *ptrText )
 }
 
 
-char swork[BUFSIZ]; /* temp buffer for color stripping */
+char swork[BUFSIZ]; // temp buffer for color stripping
 
 /// @brief Check whether capture or standard output should be flushed immediately.
 ///
@@ -198,7 +198,7 @@ static bool shouldFlushImmediately( const char *ptrText )
 /// @return Result from `stdPuts()`.
 int stdPrintf( const char *format, ... )
 {
-   /* Know what sucks?  I can't really call capPrintf directly... */
+   // capPrintf cannot be called directly from this path.
    char aryString[BUFSIZ];
    va_list ap;
 
@@ -278,7 +278,7 @@ char *stripAnsi( char *ptrText, size_t bufferSize )
       }
    }
    if ( *ptrRead == '\r' )
-   { /* strip ^M too while we're here */
+   { // Strip ^M at the same time.
       ptrWrite--;
    }
    *ptrWrite = '\0';

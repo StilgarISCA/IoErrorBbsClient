@@ -42,7 +42,7 @@ static void setInputSequence( const int *aryKeys, size_t count )
    inputIndex = 0;
 }
 
-/* edit.c dependencies outside checkFile() scope for these tests. */
+// edit.c dependencies outside checkFile() scope for these tests.
 int colorize( const char *ptrText )
 {
    (void)ptrText;

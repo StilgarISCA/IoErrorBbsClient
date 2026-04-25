@@ -112,7 +112,7 @@ static void setStringSequence( const char **aryValues, size_t valueCount )
    stringIndex = 0;
 }
 
-/* config.c dependencies outside this test target's scope. */
+// config.c dependencies outside this test target's scope.
 int capPrintf( const char *format, ... )
 {
    va_list argList;

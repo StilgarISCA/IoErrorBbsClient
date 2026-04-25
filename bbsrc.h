@@ -18,4 +18,4 @@ void readBbsRc( void );
 void truncateBbsRc( long userNameLength );
 void writeBbsRc( void );
 
-#endif /* BBSRC_H_INCLUDED */
+#endif // BBSRC_H_INCLUDED

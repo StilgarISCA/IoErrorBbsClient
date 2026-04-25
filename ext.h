@@ -8,7 +8,6 @@
  * Legacy umbrella header for global state declarations.
  * New code should prefer the narrower globals headers directly.
  */
-
 #ifndef EXT_H_INCLUDED
 #define EXT_H_INCLUDED
 
@@ -16,4 +15,4 @@
 #include "config_globals.h"
 #include "filter_globals.h"
 #include "network_globals.h"
-#endif /* EXT_H_INCLUDED */
+#endif // EXT_H_INCLUDED

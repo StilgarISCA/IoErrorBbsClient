@@ -5,9 +5,8 @@
  */
 
 /*
- * Everything Unix/system specific goes in this file.  If you are looking to
- * port to some system the code currently doesn't work on, most if not all of
- * your problems should restricted to this file.
+ * Everything Unix/system specific lives in this file. Most porting work is
+ * expected to stay here.
  *
  * This file covers Unix/macOS builds.
  */
@@ -269,7 +268,7 @@ RETSIGTYPE reapChild( int signalNumber )
       siglongjmp( jumpEnv, 1 );
 #else
       longjmp( jumpEnv, 1 );
-#endif /* USE_POSIX_SIGSETJMP */
+#endif // USE_POSIX_SIGSETJMP
    }
 }
 
@@ -292,7 +291,7 @@ void run( const char *aryCommand, const char *arg )
 #else
    if ( setjmp( jumpEnv ) )
    {
-#endif /* USE_POSIX_SIGSETJMP */
+#endif // USE_POSIX_SIGSETJMP
       signal( SIGCHLD, SIG_DFL );
       if ( childPid < 0 )
       {
@@ -318,11 +317,8 @@ void run( const char *aryCommand, const char *arg )
       else if ( childPid > 0 )
       {
 
-         /*
-        * Flush out anything in our stdio buffer -- it was copied to the
-        * child process, we don't want it waiting for us when the child
-        * is done.
-        */
+         // Flush any stdio data copied into the child process so it is not
+         // still pending after the child exits.
          flushInput( 0 );
          (void)inKey();
       }
@@ -442,7 +438,7 @@ void deinitialize( void )
    char aryTempFile[PATH_MAX];
 
    noTitleBar();
-   /* Get rid of ~ file emacs always leaves behind */
+   // Remove the backup file Emacs leaves behind.
    snprintf( aryTempFile, sizeof( aryTempFile ), "%s~", aryTempFileName );
    unlink( aryTempFile );
    if ( isLoginShell )
@@ -490,7 +486,7 @@ int sPrompt( const char *info, const char *question, int def )
 void sInfo( const char *info, const char *heading )
 {
    (void)heading;
-   /* Heading ignored for Unix */
+   // Ignore the heading on Unix.
    stdPrintf( "\r\n%s\r\n\n", info );
    return;
 }

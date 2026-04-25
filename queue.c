@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-/* queue.c
- * Fns. for manipulating queue objects
+/*
+ * Queue manipulation helpers.
  */
-
 #include "defs.h"
 
 /// @brief Free a queue object unconditionally.
@@ -30,13 +29,13 @@ int deleteQueue( queue *ptrQueue )
 /// @return `1` when the string is queued, otherwise `0`.
 int isQueued( const char *ptrObject, queue *ptrQueue )
 {
-   char *ptrQueueEntry; /* Pointer inside queue */
-   int objectIndex;     /* Object counter */
+   char *ptrQueueEntry; // Pointer inside queue
+   int objectIndex;     // Object counter
 
-   /* Move to head of queue. */
+   // Move to head of queue.
    for ( ptrQueueEntry = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head ), objectIndex = 0; objectIndex < ptrQueue->itemCount; objectIndex++ )
    {
-      /* Do the comparison. */
+      // Do the comparison.
       if ( !strcmp( ptrQueueEntry, ptrObject ) )
       {
          return 1;
@@ -85,19 +84,19 @@ queue *newQueue( int size, int itemCount )
 /// @return `1` on success, or `0` when the queue is empty.
 int popQueue( char *ptrObject, queue *ptrQueue )
 {
-   const char *ptrQueueRead; /* Pointer into the queue */
+   const char *ptrQueueRead; // Pointer into the queue
 
    if ( ptrQueue->itemCount <= 0 )
    {
-      return ptrQueue->itemCount = 0; /* Queue is empty */
+      return ptrQueue->itemCount = 0; // Queue is empty
    }
 
-   ptrQueue->itemCount--; /* Removing an object... */
+   ptrQueue->itemCount--; // Removing an object...
 
-   /* Find the object within the queue. */
+   // Find the object within the queue.
    ptrQueueRead = ptrQueue->start + ( ptrQueue->objsize * ptrQueue->head );
 
-   /* Copy the object. */
+   // Copy the object.
    memcpy( ptrObject, ptrQueueRead, (size_t)ptrQueue->objsize );
 
    if ( ++ptrQueue->head >= ptrQueue->size )
@@ -117,28 +116,28 @@ int popQueue( char *ptrObject, queue *ptrQueue )
 /// @return `1` on success, or `0` when the queue is full.
 int pushQueue( const char *ptrObject, queue *ptrQueue )
 {
-   char *ptrQueueWrite; /* Pointer into the queue */
+   char *ptrQueueWrite; // Pointer into the queue
 
    if ( ptrQueue->itemCount >= ptrQueue->size )
-   { /* Is the queue full? */
+   { // Is the queue full?
       return 0;
    }
 
    ptrQueue->itemCount++;
 
-   /* Find the target address within the queue to insert object. */
+   // Find the target address within the queue to insert object.
    ptrQueueWrite = ptrQueue->start + ptrQueue->objsize * ptrQueue->tail;
 
-   /* Clear the destination slot so the queued string is always terminated. */
+   // Clear the destination slot so the queued string is always terminated.
    memset( ptrQueueWrite, 0, (size_t)ptrQueue->objsize );
 
-   /* Copy the string into its queue position without reading past the source. */
+   // Copy the string into its queue position without reading past the source.
    if ( ptrQueue->objsize > 0 )
    {
       snprintf( ptrQueueWrite, (size_t)ptrQueue->objsize, "%s", ptrObject );
    }
 
-   /* Wrap around if we've gone past the end of the queue. */
+   // Wrap around after passing the end of the queue.
    if ( ++ptrQueue->tail >= ptrQueue->size )
    {
       ptrQueue->tail = 0;

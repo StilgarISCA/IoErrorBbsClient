@@ -126,10 +126,8 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
       return;
    }
 
-   /*
-    * Keepalive defaults are conservative to avoid noticeable server load while
-    * still preventing common ISP/NAT idle disconnects on long-lived telnet sessions.
-    */
+      // Keepalive defaults are conservative to avoid noticeable server load while
+   // still preventing common ISP/NAT idle disconnects on long-lived telnet sessions.
 #if defined( TCP_KEEPALIVE )
    {
       int keepaliveIdleSeconds = 120;
@@ -243,7 +241,7 @@ void connectBbs( void )
          continue;
       }
 
-      /* Client configuration controls keepalive probes. */
+      // Client configuration controls keepalive probes.
       configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
 
       connectResult = connect( net, ptrAddressInfo->ai_addr, ptrAddressInfo->ai_addrlen );
@@ -290,10 +288,8 @@ void connectBbs( void )
    titleBar();
    fflush( stdout );
 
-   /*
-    * We let the stdio libraries handle buffering issues for us.  Only for
-    * output, there are portability problems with what is needed for input.
-    */
+   // Let the stdio libraries handle output buffering. Input buffering still
+   // relies on the lower-level path for portability.
    if ( !( netOutputFile = fdopen( net, "w" ) ) )
    {
       fatalPerror( "fdopen w", "Local error" );
@@ -376,7 +372,7 @@ static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
              ptrHost, ptrPort, ptrOperation );
    fatalExit( ptrReason, aryMessage );
 }
-#endif /* HAVE_OPENSSL */
+#endif // HAVE_OPENSSL
 
 
 /// @brief Map a platform error code to one of the client message categories.
@@ -540,7 +536,7 @@ void killSsl( void )
    SSL_free( ssl );
 }
 
-#endif /* HAVE_OPENSSL */
+#endif // HAVE_OPENSSL
 
 /// @brief Wait for local or network activity.
 ///

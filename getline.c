@@ -5,13 +5,10 @@
  */
 
 /*
- * This handles getting of short strings or groups of strings of information
- * and sending them off to the BBS.  Even though you might think doing this for
- * an 8 character password is a waste, it does cut down network traffic (and
- * the lag to the end user) to not have to echo back each character
- * individually, and it was easier to do them all rather than only some of
- * them.  Again, this is basically code from the actual BBS with slight
- * modification to work here.
+ * This handles short string input and grouped string input before sending the
+ * result to the BBS. Collecting the full field locally reduces network traffic
+ * and avoids echoing each character individually. The implementation is based
+ * on the original BBS code with client-side adaptations.
  */
 #include "client_globals.h"
 #include "color.h"

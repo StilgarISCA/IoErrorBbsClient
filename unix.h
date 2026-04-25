@@ -36,7 +36,7 @@
 #ifdef HAVE_SGTTY_H
 #include <sgtty.h>
 #endif
-/* If neither is present, punt */
+// If neither is present, punt
 #endif
 
 #ifdef _AIX

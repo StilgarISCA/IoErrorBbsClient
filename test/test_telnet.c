@@ -114,7 +114,7 @@ static void resetState( void )
    morePromptHelperCallCount = 0;
 }
 
-/* telnet.c dependencies outside these tests. */
+// telnet.c dependencies outside these tests.
 void configBbsRc( void )
 {
    configBbsRcCallCount++;

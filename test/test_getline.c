@@ -95,7 +95,7 @@ static void teardownWhoList( void )
    }
 }
 
-/* getline.c dependencies not under test here. */
+// getline.c dependencies not under test here.
 int capPutChar( int inputChar )
 {
    if ( capturedDotCount < sizeof( aryCapturedDots ) - 1 )

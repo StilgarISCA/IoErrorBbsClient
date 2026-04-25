@@ -46,4 +46,4 @@ void titleBar( void );
 int waitNextEvent( void );
 void warranty( void );
 
-#endif /* CLIENT_H_INCLUDED */
+#endif // CLIENT_H_INCLUDED

@@ -81,7 +81,7 @@ static void addFriend( const char *ptrName )
    }
 }
 
-/* color.c dependencies outside the target behavior under test. */
+// color.c dependencies outside the target behavior under test.
 int colorize( const char *ptrText )
 {
    (void)ptrText;

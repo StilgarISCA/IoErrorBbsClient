@@ -23,7 +23,7 @@ static int aryInputQueue[16];
 static size_t inputCount;
 static size_t inputIndex;
 
-/* Stubs for utility.c dependencies that are outside this test target's scope. */
+// Stubs for utility.c dependencies that are outside this test target's scope.
 void deinitialize( void )
 {
 }

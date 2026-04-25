@@ -5,9 +5,8 @@
  */
 
 /*
- * This is just a hacked-up version of the editor from the BBS...ugly, isn't
- * it?  You don't need to mess with this unless you have a lot of time to waste
- * on a lost cause.  Use a real editor, that is what '.edit' is for!
+ * This is a local client adaptation of the original BBS editor. The external
+ * editor path remains the better option for most editing work.
  */
 #include "client.h"
 #include "client_globals.h"
@@ -30,10 +29,10 @@ void makeMessage( int upload )
    int inputChar;
    FILE *ptrMessageFile = tempFile;
    int itemIndex;
-   int lineLength;          /* line length */
-   int lastSpacePosition;   /* position of last space encountered */
-   int cancelspace;         /* true when last character is space */
-   char aryCurrentLine[81]; /* array to arySavedBytes current line */
+   int lineLength;          // line length
+   int lastSpacePosition;   // position of last space encountered
+   int cancelspace;         // true when last character is space
+   char aryCurrentLine[81]; // array to arySavedBytes current line
    int previousChar = '\n';
    unsigned int invalid = 0;
    int tabcount = 0;
@@ -111,7 +110,7 @@ void makeMessage( int upload )
          inputChar = inKey();
          if ( iscntrl( inputChar ) && inputChar == CTRL_D && !upload )
          {
-            inputChar = 1; /* Just a random invalid character */
+            inputChar = 1; // Just a random invalid character
          }
 
          if ( inputChar != CTRL_D && inputChar != TAB &&
@@ -158,7 +157,7 @@ void makeMessage( int upload )
          continue;
       }
       if ( inputChar == CTRL_W )
-      { /* ctrl-W is 'word erase' from Unix */
+      { // ctrl-W is 'word erase' from Unix
          for ( itemIndex = 0; itemIndex < lineLength; itemIndex++ )
          {
             if ( aryCurrentLine[itemIndex + 1] != ' ' )
@@ -188,7 +187,7 @@ void makeMessage( int upload )
          continue;
       }
       if ( inputChar == CTRL_X )
-      { /* ctrl-X works like in normal Unix */
+      { // ctrl-X works like in normal Unix
          for ( ; lineLength; lineLength-- )
          {
             putchar( '\b' );
@@ -199,11 +198,8 @@ void makeMessage( int upload )
          previousChar = '\n';
          continue;
       }
-      /*
-    * Ignore space when the last character typed on a the previous line
-    * and the first character typed on this line are both spaces.  This
-    * makes free flow typing easier and properly formatted.
-    */
+      // Ignore a leading space when the previous wrapped line already ended
+      // with a space. This keeps free-flow typing formatted correctly.
       if ( cancelspace )
       {
          cancelspace = 0;
@@ -230,7 +226,7 @@ void makeMessage( int upload )
       if ( lineLength == 80 )
       {
          if ( lastSpacePosition > ( 80 / 2 ) )
-         { /* don't autowrap past 40th column */
+         { // Do not autowrap past the 40th column.
             for ( itemIndex = 80 - 1; itemIndex && ( itemIndex > lastSpacePosition || aryCurrentLine[itemIndex] == ' ' ); itemIndex-- )
             {
                if ( itemIndex > lastSpacePosition )
@@ -281,11 +277,11 @@ void makeMessage( int upload )
       }
       if ( inputChar != CTRL_D && inputChar != '\n' && previousChar != -1 )
       {
-         putchar( inputChar ); /* echo aryUser's input to screen */
+         putchar( inputChar ); // echo aryUser's input to screen
          aryCurrentLine[lineLength] = (char)inputChar;
       }
       else if ( lineLength && inputChar == CTRL_D )
-      { /* simulate LF */
+      { // simulate LF
          for ( itemIndex = 1; itemIndex <= lineLength; itemIndex++ )
          {
             if ( putc( aryCurrentLine[itemIndex], ptrMessageFile ) < 0 )
@@ -322,12 +318,12 @@ void makeMessage( int upload )
             lastSpacePosition = 0;
             lineLength = 0;
          }
-         continue; /* go back and get next character */
+         continue; // go back and get next character
       }
       else
-      { /* 2 LFs in a rows (or a ctrl-D) */
+      { // 2 LFs in a rows (or a ctrl-D)
          if ( fflush( ptrMessageFile ) < 0 )
-         { /* make sure we've written it all */
+         { // Ensure the full line is written.
             tempFileError();
          }
 

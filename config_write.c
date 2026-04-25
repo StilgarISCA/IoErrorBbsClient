@@ -94,7 +94,7 @@ static void writeColorSettings( void )
 static void writeConnectionSettings( void )
 {
    fprintf( ptrBbsRc, "aryEditor %s\n", aryEditor );
-   /* Change:  site line will always be written */
+   // Change:  site line will always be written
    fprintf( ptrBbsRc, "site %s %d%s\n", aryBbsHost, bbsPort,
             shouldUseSsl ? " secure" : "" );
 }

@@ -37,7 +37,7 @@ int colorize( const char *str )
          {
             if ( !tryPrintLegacyAtColor( *++ptrText ) )
             {
-               /* Ignore unknown @-tokens for compatibility with the legacy formatter. */
+               // Ignore unknown @-tokens for compatibility with the legacy formatter.
             }
          }
       }

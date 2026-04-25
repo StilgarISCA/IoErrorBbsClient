@@ -16,10 +16,10 @@
 #include "utility.h"
 typedef struct
 {
-   unsigned int crlf : 1;    /* need to add a CR/LF */
-   unsigned int prochdr : 1; /* process post header */
-   unsigned int ignore : 1;  /* kill this post */
-   unsigned int secondN : 1; /* send a second n */
+   unsigned int crlf : 1;    // need to add a CR/LF
+   unsigned int prochdr : 1; // process post header
+   unsigned int ignore : 1;  // kill this post
+   unsigned int secondN : 1; // send a second n
 } PostFilterFlags;
 
 static void appendFilterLineChar( int inputChar );
@@ -94,33 +94,33 @@ void continuedPostHelper( void )
 /// @return This function does not return a value.
 void filterPost( register int inputChar )
 {
-   static int numposts = 0;  /* count of the # of posts received so far */
-   static char posthdr[140]; /* store the post header here */
-   static char *posthdrp;    /* pointer into posthdr */
+   static int numposts = 0;  // count of the # of posts received so far
+   static char posthdr[140]; // store the post header here
+   static char *posthdrp;    // pointer into posthdr
    static PostFilterFlags needs;
    static char aryTempText[160];
-   static int isFriend; /* Current post is by a friend */
+   static int isFriend; // Current post is by a friend
 
    if ( inputChar == -1 )
-   { /* control: begin/end of post */
+   { // control: begin/end of post
       if ( postProgressState )
-      { /* beginning of post */
+      { // beginning of post
          beginPostMessage( &needs, posthdr, &posthdrp, &isFriend );
       }
       else
-      { /* end of post */
+      { // end of post
          finishPostMessage( &needs, &numposts );
       }
       return;
    }
-   /* If post is killed, do no further processing. */
+   // If post is killed, do no further processing.
    if ( needs.ignore )
-   { /* ignore our stupid enemies :) */
+   { // Ignore killed enemy posts.
       return;
    }
 
    if ( posthdr == posthdrp )
-   { /* Check for initial CR/LF pair */
+   { // Check for initial CR/LF pair
       if ( inputChar == '\r' || inputChar == '\n' )
       {
          needs.crlf = 1;
@@ -132,15 +132,13 @@ void filterPost( register int inputChar )
       posthdrp = posthdr;
       *posthdr = 0;
    }
-   /* At this point we should either insert the character into the post
-     * buffer, or echo it to the screen.
-     */
+      // Insert the character into the post buffer, or echo it directly.
    if ( !needs.prochdr )
    {
       static char aryAnsiSequence[8];
       static size_t ansiSequenceLength = 0;
 
-      /* Store this line for processing */
+      // Store this line for processing
       if ( inputChar == '\n' )
       {
          filterUrl( aryFilterLine );
@@ -151,7 +149,7 @@ void filterPost( register int inputChar )
          appendFilterLineChar( inputChar );
       }
 
-      /* Process ANSI codes in the middle of a post */
+      // Process ANSI codes in the middle of a post
       if ( ansiSequenceLength > 0 )
       {
          if ( ansiSequenceLength < sizeof( aryAnsiSequence ) )
@@ -166,7 +164,7 @@ void filterPost( register int inputChar )
          return;
       }
       if ( inputChar == '\033' )
-      { /* Escape character */
+      { // Escape character
          ansiSequenceLength = 0;
          aryAnsiSequence[ansiSequenceLength++] = (char)inputChar;
          if ( !flagsConfiguration.shouldUseAnsi )
@@ -179,25 +177,25 @@ void filterPost( register int inputChar )
          }
          return;
       }
-      /* Change color for end of more prompt */
+      // Change color for end of more prompt
       maybePrintMorePromptColor( inputChar );
 
-      /* Output character */
+      // Output character
       stdPutChar( inputChar );
    }
    else
    {
-      *posthdrp++ = (char)inputChar; /* store character in buffer */
+      *posthdrp++ = (char)inputChar; // store character in buffer
       *posthdrp = 0;
 
-      /* If reached a \r it's time to do header processing */
+      // If reached a \r it's time to do header processing
       if ( inputChar == '\r' )
       {
          const char *ptrSenderNameForChecks;
 
          needs.prochdr = 0;
 
-         /* Process for enemy list kill file */
+         // Process for enemy list kill file
          char *ptrSenderName;
 
          snprintf( aryTempText, sizeof( aryTempText ), "%s", posthdr );

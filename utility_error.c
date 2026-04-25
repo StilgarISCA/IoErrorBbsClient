@@ -103,7 +103,7 @@ static void waitForChildShutdown( void )
 {
    if ( childPid )
    {
-      /* Wait for child to terminate */
+      // Wait for child to terminate
       sigOff();
       childPid = ( -childPid );
       while ( childPid )

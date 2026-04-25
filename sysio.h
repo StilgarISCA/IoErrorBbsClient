@@ -5,10 +5,9 @@
  */
 
 /*
- * This is the file for I/O defines, different systems do certain things
- * differently, such system-specific stuff should be put here.
+ * This header contains the low-level I/O helpers. System-specific behavior
+ * belongs here.
  */
-
 #ifndef SYSIO_H_INCLUDED
 #define SYSIO_H_INCLUDED
 
@@ -66,4 +65,4 @@ static inline int netflush( void )
    return fflush( netOutputFile );
 }
 
-#endif /* SYSIO_H_INCLUDED */
+#endif // SYSIO_H_INCLUDED

@@ -13,10 +13,10 @@
 #include "utility.h"
 typedef struct
 {
-   unsigned int crlf : 1;      /* Needs initial CR/LF */
-   unsigned int prochdr : 1;   /* Needs killfile processing */
-   unsigned int ignore : 1;    /* Ignore the remainder of the X */
-   unsigned int truncated : 1; /* X message exceeded buffer */
+   unsigned int crlf : 1;      // Needs initial CR/LF
+   unsigned int prochdr : 1;   // Needs killfile processing
+   unsigned int ignore : 1;    // Ignore the remainder of the X
+   unsigned int truncated : 1; // X message exceeded buffer
 } ExpressFilterFlags;
 
 static void beginExpressMessage( ExpressFilterFlags *ptrFlags );
@@ -47,24 +47,24 @@ static void beginExpressMessage( ExpressFilterFlags *ptrFlags )
 /// @return This function does not return a value.
 void filterExpress( register int inputChar )
 {
-   static char *ptrSenderName; /* comparison pointer */
+   static char *ptrSenderName; // comparison pointer
    static ExpressFilterFlags needs;
 
    if ( inputChar == -1 )
-   { /* signal from IAC to begin/end X */
+   { // Signal from IAC to begin or end an X message.
       if ( isExpressMessageInProgress )
-      { /* Need to re-init for new X */
+      { // Reinitialize for a new X message.
          beginExpressMessage( &needs );
          return;
       }
       else if ( !needs.ignore )
-      { /* Finished this X, dump it out */
+      { // Finish the X message and emit it.
          finishExpressMessage( &needs, ptrSenderName );
          return;
       }
       emitUrlDetectionReport();
    }
-   /* If the message is killed, don't bother doing anything. */
+   // Stop when the message has already been killed.
    if ( needs.ignore )
    {
       return;
@@ -75,14 +75,14 @@ void filterExpress( register int inputChar )
    }
 
    if ( aryExpressMessageBuffer == ptrExpressMessageBuffer )
-   { /* Check for initial CR/LF pair */
+   { // Check for initial CR/LF pair
       if ( inputChar == '\r' || inputChar == '\n' )
       {
          needs.crlf = 1;
          return;
       }
    }
-   /* Insert character into the buffer (drop excess to avoid overflow) */
+   // Insert character into the buffer (drop excess to avoid overflow)
    if ( ptrExpressMessageBuffer >= aryExpressMessageBuffer + sizeof( aryExpressMessageBuffer ) - 1 )
    {
       needs.truncated = 1;
@@ -91,13 +91,13 @@ void filterExpress( register int inputChar )
    *ptrExpressMessageBuffer++ = (char)inputChar;
    *ptrExpressMessageBuffer = 0;
 
-   /* Extract URLs if any */
+   // Extract URLs if any
    if ( !needs.prochdr && inputChar == '\r' )
    {
       filterUrl( ptrExpressMessageBuffer );
    }
 
-   /* If reached a \r it's time to do header processing */
+   // If reached a \r it's time to do header processing
    if ( needs.prochdr && inputChar == '\r' )
    {
       needs.prochdr = 0;
@@ -160,17 +160,17 @@ int isAutomaticReply( const char *message )
 {
    const char *ptrCursor;
 
-   /* Find first aryLine */
+   // Find first aryLine
    ptrCursor = findSubstring( message, ">" );
 
-   /* Wasn't a first aryLine? - move past '>' */
+   // Wasn't a first aryLine? - move past '>'
    if ( !ptrCursor )
    {
       return 0;
    }
    ptrCursor++;
 
-   /* Check for valid automatic reply messages */
+   // Check for valid automatic reply messages
    if ( !strncmp( ptrCursor, "+!R", 3 ) ||
         !strncmp( ptrCursor, "This message was automatically generated", 40 ) ||
         !strncmp( ptrCursor, "*** ISCA Windows Client", 23 ) )
@@ -178,7 +178,7 @@ int isAutomaticReply( const char *message )
       return 1;
    }
 
-   /* Looks normal to me... */
+   // Treat the message as a normal express message.
    return 0;
 }
 
@@ -193,7 +193,7 @@ void notReplyingTransformExpress( char *ptrText, size_t size )
    char aryTempText[580];
    char *ptrMessageStart;
 
-   /* Verify this is an X message and set up pointers */
+   // Verify that this is an X message and set up the rewrite pointers.
    ptrMessageStart = findSubstring( ptrText, " at " );
    if ( !ptrMessageStart )
    {
@@ -242,7 +242,7 @@ void replyCodeTransformExpress( char *ptrText, size_t size )
    char aryTempText[580];
    char *ptrMessageStart;
 
-   /* Verify this is an auto reply and set up pointers */
+   // Verify that this is an automatic reply and set up the rewrite pointers.
    ptrMessageStart = findSubstring( ptrText, ">" );
    if ( !ptrMessageStart || strncmp( ptrMessageStart, ">+!R ", 5 ) )
    {

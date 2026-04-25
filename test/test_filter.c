@@ -115,7 +115,7 @@ static void addFriend( const char *ptrName, const char *ptrInfo )
    }
 }
 
-/* filter.c dependencies not under direct test in this file. */
+// filter.c dependencies not under direct test in this file.
 int ansiTransform( int inputChar )
 {
    return inputChar;

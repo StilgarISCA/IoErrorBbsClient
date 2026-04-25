@@ -47,4 +47,4 @@ void printAnsiResetValue( void );
 void printThemedMnemonicText( const char *ptrText, int defaultColor );
 char userOrFriend( void );
 
-#endif /* COLOR_H_INCLUDED */
+#endif // COLOR_H_INCLUDED

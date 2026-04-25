@@ -211,7 +211,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             fflush( stdout );
          }
          itemIndex = 0;
-         /* Make 'x' work at this prompt for isXland function */
+         // Make 'x' work at this prompt for isXland function
          if ( !( isXland && xlandQueue->itemCount ) )
          {
             while ( true )
@@ -238,7 +238,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             {
                continue;
             }
-            /* Flush repeated keystrokes before returning to edit mode. */
+            // Flush repeated keystrokes before returning to edit mode.
             flushInput( (unsigned)itemIndex );
             printf( "\r\n" );
             continue;
@@ -352,7 +352,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
                   {
                      continue;
                   }
-                  /* We have to close and reopen the tempFile due to locking */
+                  // We have to close and reopen the tempFile due to locking
                   fclose( tempFile );
                   run( ptrEditorCommand, aryTempFileName );
                   if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )

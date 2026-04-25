@@ -155,25 +155,16 @@ static void flushPendingOutput( void )
 int getKey( void )
 {
    static int macroKey = 0;
-   static int macroPosition = 0;       /* pointer into the aryMacro array */
-   static int isMacroNext = 0;         /* aryMacro key was hit, aryMacro is next */
-   static int wasUndefinedCommand = 0; /* to remove the blurb about undefined aryMacro */
+   static int macroPosition = 0;       // pointer into the aryMacro array
+   static int isMacroNext = 0;         // aryMacro key was hit, aryMacro is next
+   static int wasUndefinedCommand = 0; // to remove the blurb about undefined aryMacro
    int inputChar = -1;
    int pendingInputChar = -1;
    GetKeyResult result;
 
-   /*
-    * Throughout this function, if we are currently running with a child
-    * process we don't want to do anything with standard input, we are
-    * only * concerned with passing along anything that might be coming
-    * over the net during this time (connection going down, broadcast
-    * message from wizards, etc.)  That's the reason for all the
-    * references to '!childPid' The same is true when 'check' is set, it
-    * is used when entering the edit menu (abort, arySavedBytes, etc.) to check
-    * back with the BBS for any X messages that may have arrived -- it is
-    * added purely to make things compatible between the BBS and the
-    * client.
-    */
+   // While a child process is running, standard input is ignored and only
+   // network traffic is processed. The same applies when express-message
+   // checks are pending so editor entry remains compatible with the BBS.
 
    while ( true )
    {
@@ -194,7 +185,7 @@ int getKey( void )
          continue;
       }
 
-      /* Handle any incoming traffic in the network input buffer */
+      // Handle any incoming traffic in the network input buffer
       if ( isNetworkInputAvailable() )
       {
          while ( isNetworkInputAvailable() )

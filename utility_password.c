@@ -23,8 +23,8 @@
 /// @return `ptrDestination`.
 char *jhpdecode( char *ptrDestination, const char *src, size_t seedLength )
 {
-   char *ptrDestIterator; /* dest iterator */
-   char inputChar;        /* a single character */
+   char *ptrDestIterator; // dest iterator
+   char inputChar;        // a single character
 
    ptrDestIterator = ptrDestination;
    while ( ( inputChar = *src++ ) != 0 )
@@ -49,8 +49,8 @@ char *jhpdecode( char *ptrDestination, const char *src, size_t seedLength )
 /// @return `ptrDestination`.
 char *jhpencode( char *ptrDestination, const char *src, size_t seedLength )
 {
-   char *ptrDestIterator; /* dest iterator */
-   char inputChar;        /* a single character */
+   char *ptrDestIterator; // dest iterator
+   char inputChar;        // a single character
 
    ptrDestIterator = ptrDestination;
    while ( ( inputChar = *src++ ) != 0 )

@@ -13,4 +13,4 @@ int checkFile( FILE *ptrMessageFile );
 void makeMessage( int upload );
 int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar );
 
-#endif /* EDIT_H_INCLUDED */
+#endif // EDIT_H_INCLUDED

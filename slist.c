@@ -8,7 +8,6 @@
  * slist.c - Functions which maintain a sorted (non-linked) list of
  * arbitrary data.
  */
-
 #include "defs.h"
 #include <stdarg.h>
 #include "utility.h"
@@ -128,7 +127,7 @@ int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const v
    assert( findfn );
 
    if ( !toFind )
-   { /* Fail if nothing to find */
+   { // Fail if nothing to find
       return -1;
    }
    if ( list->nitems == 0 )
@@ -169,9 +168,9 @@ int slistFind( slist *list, void *toFind, int ( *findfn )( const void *, const v
 /// @return A new list containing the shared items, or `NULL` on error.
 slist *slistIntersection( const slist *list1, const slist *list2 )
 {
-   int leftIndex;        /* Count of items processed */
-   int rightIndex;       /* Count of items processed */
-   slist *ptrResultList; /* The list being created */
+   int leftIndex;        // Count of items processed
+   int rightIndex;       // Count of items processed
+   slist *ptrResultList; // The list being created
 
    if ( !list1 || !list2 || list1->sortfn != list2->sortfn )
    {
@@ -191,29 +190,26 @@ slist *slistIntersection( const slist *list1, const slist *list2 )
 
    for ( leftIndex = 0; leftIndex < (int)list1->nitems; leftIndex++ )
    {
-      /*
-   	 * Now run through list2 until we find either a matching
-   	 * item, or an item that is greater than the one in list1
-   	 * that we are currently looking at.
-   	 */
-      /* First item in n2 not less than current item n1 */
+      // Run through list2 until a matching item is found, or an item
+      // greater than the current item in list1 is found.
+      // First item in n2 not less than current item n1.
       while ( ptrResultList->sortfn( list1->items[leftIndex], list2->items[rightIndex] ) < 0 )
       {
          rightIndex++;
-         /* If this happens, we're done */
+         // Stop when the end of list2 is reached.
          if ( rightIndex > (int)list2->nitems )
          {
             break;
          }
       }
 
-      /* If this happens, we're done; nothing else will match */
+      // Stop when no later item can match.
       if ( rightIndex > (int)list2->nitems )
       {
          break;
       }
 
-      /* If item is not less than and not greater than, it's equal */
+      // Items are equal when neither comparison reports a smaller value.
       if ( !( ptrResultList->sortfn( list2->items[rightIndex], list1->items[leftIndex] ) < 0 ) )
       {
          if ( !slistAddItem( ptrResultList, list1->items[leftIndex], 1 ) )
@@ -255,7 +251,7 @@ int slistRemoveItem( slist *list, int item )
    }
    ptrItems = (void *)realloc( list->items, list->nitems * sizeof( void * ) );
    if ( !ptrItems && list->nitems )
-   { /* request failed */
+   { // request failed
       return 0;
    }
 

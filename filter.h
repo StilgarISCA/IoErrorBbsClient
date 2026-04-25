@@ -23,4 +23,4 @@ void notReplyingTransformExpress( char *ptrText, size_t size );
 void replyCodeTransformExpress( char *ptrText, size_t size );
 void reprintLine( void );
 
-#endif /* FILTER_H_INCLUDED */
+#endif // FILTER_H_INCLUDED

@@ -104,7 +104,7 @@ void information( void )
          case '\n':
             stdPrintf( "Quit\r\n" );
             return;
-            /* NOTREACHED */
+            // NOTREACHED
          default:
             break;
       }

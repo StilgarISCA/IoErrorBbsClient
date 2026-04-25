@@ -80,7 +80,7 @@ void filterData( register int inputChar )
    static char aryBufferedAnsiSequence[8];
    static size_t bufferedAnsiSequenceLength = 0;
 
-   /* Copy the current line (or what we have so far) */
+   // Copy the current line (or what we have so far)
    if ( inputChar == '\n' )
    {
       filterUrl( aryFilterLine );
@@ -92,7 +92,7 @@ void filterData( register int inputChar )
    }
    else
    {
-      /* This is faster than calling strcat() */
+      // This is faster than calling strcat()
       char *ptrCursor = aryFilterLine;
 
       while ( *ptrCursor )

@@ -24,4 +24,4 @@ void promptForScreenReaderModeIfUnset( void );
 void setup( int newVersion );
 char *strCtrl( int inputChar );
 
-#endif /* CONFIG_MENU_H_INCLUDED */
+#endif // CONFIG_MENU_H_INCLUDED

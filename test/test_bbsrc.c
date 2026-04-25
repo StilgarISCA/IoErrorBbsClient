@@ -87,7 +87,7 @@ static void cleanupReadState( void )
    }
 }
 
-/* bbsrc.c dependencies that are not under test here. */
+// bbsrc.c dependencies that are not under test here.
 void configBbsRc( void )
 {
 }

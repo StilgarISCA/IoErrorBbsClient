@@ -8,7 +8,6 @@
  * Legacy umbrella header for global function declarations.
  * New code should prefer the narrower subsystem headers directly.
  */
-
 #ifndef PROTO_H_INCLUDED
 #define PROTO_H_INCLUDED
 
@@ -22,4 +21,4 @@
 #include "getline_input.h"
 #include "telnet.h"
 #include "utility.h"
-#endif /* PROTO_H_INCLUDED */
+#endif // PROTO_H_INCLUDED

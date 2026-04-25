@@ -70,4 +70,4 @@ void trimTrailingWhitespace( char *ptrLine );
 int yesNo( void );
 int yesNoDefault( int defaultAnswer );
 
-#endif /* UTILITY_H_INCLUDED */
+#endif // UTILITY_H_INCLUDED

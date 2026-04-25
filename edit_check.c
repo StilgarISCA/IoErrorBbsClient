@@ -379,17 +379,17 @@ static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputCh
 
       switch ( secondByte )
       {
-         case 0xa0: /* non-breaking space */
+         case 0xa0: // non-breaking space
             ptrReplacementText[0] = ' ';
             *ptrReplacementLength = 1;
             return true;
 
-         case 0xad: /* soft hyphen */
+         case 0xad: // soft hyphen
             *ptrReplacementLength = 0;
             return true;
 
-         case 0xab: /* left-pointing double angle quotation mark */
-         case 0xbb: /* right-pointing double angle quotation mark */
+         case 0xab: // left-pointing double angle quotation mark
+         case 0xbb: // right-pointing double angle quotation mark
             ptrReplacementText[0] = '"';
             *ptrReplacementLength = 1;
             return true;
@@ -402,7 +402,7 @@ static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputCh
    {
       secondByte = getc( ptrMessageFile );
       thirdByte = getc( ptrMessageFile );
-      if ( secondByte == 0xbb && thirdByte == 0xbf ) /* byte order mark */
+      if ( secondByte == 0xbb && thirdByte == 0xbf ) // byte order mark
       {
          *ptrReplacementLength = 0;
          return true;
@@ -426,33 +426,33 @@ static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputCh
    {
       switch ( thirdByte )
       {
-         case 0x98: /* left single quotation mark */
-         case 0x99: /* right single quotation mark */
+         case 0x98: // left single quotation mark
+         case 0x99: // right single quotation mark
             ptrReplacementText[0] = '\'';
             *ptrReplacementLength = 1;
             return true;
 
-         case 0x9c: /* left double quotation mark */
-         case 0x9d: /* right double quotation mark */
+         case 0x9c: // left double quotation mark
+         case 0x9d: // right double quotation mark
             ptrReplacementText[0] = '"';
             *ptrReplacementLength = 1;
             return true;
 
-         case 0x92: /* figure dash */
-         case 0x93: /* en dash */
-         case 0x94: /* em dash */
-         case 0x95: /* horizontal bar */
+         case 0x92: // figure dash
+         case 0x93: // en dash
+         case 0x94: // em dash
+         case 0x95: // horizontal bar
             ptrReplacementText[0] = '-';
             *ptrReplacementLength = 1;
             return true;
 
-         case 0x8b: /* zero width space */
-         case 0x8c: /* zero width non-joiner */
-         case 0x8d: /* zero width joiner */
+         case 0x8b: // zero width space
+         case 0x8c: // zero width non-joiner
+         case 0x8d: // zero width joiner
             *ptrReplacementLength = 0;
             return true;
 
-         case 0xa6: /* ellipsis */
+         case 0xa6: // ellipsis
             ptrReplacementText[0] = '.';
             ptrReplacementText[1] = '.';
             ptrReplacementText[2] = '.';
@@ -460,7 +460,7 @@ static bool tryNormalizeSupportedUtf8Sequence( FILE *ptrMessageFile, int inputCh
             return true;
       }
    }
-   else if ( secondByte == 0x88 && thirdByte == 0x92 ) /* minus sign */
+   else if ( secondByte == 0x88 && thirdByte == 0x92 ) // minus sign
    {
       ptrReplacementText[0] = '-';
       *ptrReplacementLength = 1;

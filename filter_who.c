@@ -90,10 +90,10 @@ void filterWhoList( register int inputChar )
 {
    static char new;
    static int friendColumn;
-   static unsigned char aryWhoEntry[21]; /* Buffer for current name in aryWhoEntry list */
+   static unsigned char aryWhoEntry[21]; // Buffer for current name in aryWhoEntry list
    static unsigned char *ptrWhoEntryWrite = NULL;
-   static long timestamp = 0; /* Friend list timestamp */
-   static long extime = 0;    /* Extended time decoder */
+   static long timestamp = 0; // Friend list timestamp
+   static long extime = 0;    // Extended time decoder
 
    beginWhoListIfNeeded( &ptrWhoEntryWrite, &new, &friendColumn, aryWhoEntry );
 

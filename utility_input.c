@@ -43,7 +43,7 @@ void looper( void )
       {
          return;
       }
-      /* Don't bother sending stuff to the bbs it won't use anyway */
+      // Skip input the BBS cannot use.
       if ( ( inputChar >= ASCII_PRINTABLE_MIN &&
              inputChar <= ASCII_PRINTABLE_MAX ) ||
            findChar( ALLOWED_INPUT_CONTROL_CHARS, inputChar ) )

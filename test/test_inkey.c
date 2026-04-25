@@ -83,7 +83,7 @@ static void setPtyInput( const int *aryInput, size_t inputCount )
    ptrPtyInput = aryPtyInputBuffer;
 }
 
-/* inkey.c dependencies outside this test scope. */
+// inkey.c dependencies outside this test scope.
 noreturn void fatalPerror( const char *message, const char *heading )
 {
    (void)message;

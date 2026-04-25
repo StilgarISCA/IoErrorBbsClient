@@ -260,7 +260,7 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
 }
 
 
-/// @brief Reject a telnet option negotiation we do not support.
+/// @brief Reject a telnet option negotiation that is not supported.
 ///
 /// @param inputByte Incoming telnet option byte.
 /// @param ptrState Current telnet parser state.
@@ -296,7 +296,7 @@ void sendNaws( void )
       char aryString[10];
       register int outputIndex;
 
-      /* Old window max was 70 */
+      // Old window max was 70
       if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
       {
          rows = WINDOW_ROWS_DEFAULT;
@@ -343,9 +343,9 @@ void telInit( void )
 /// @return `0` on success, or a negative value if the caller should abort.
 int telReceive( int inputByte )
 {
-   static int state = TS_DATA;               /* Current state of telnet state machine */
-   static unsigned char aryTelnetBuffer[80]; /* Generic buffer */
-   static int telnetBufferPos = 0;           /* Pointer into generic buffer */
+   static int state = TS_DATA;               // Current state of telnet state machine
+   static unsigned char aryTelnetBuffer[80]; // Generic buffer
+   static int telnetBufferPos = 0;           // Pointer into generic buffer
 
    switch ( state )
    {

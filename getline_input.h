@@ -16,4 +16,4 @@ void smartErase( const char *ptrEnd );
 int smartName( char *ptrBuffer, char *ptrEnd );
 void smartPrint( const char *ptrBuffer, const char *ptrEnd );
 
-#endif /* GETLINE_INPUT_H_INCLUDED */
+#endif // GETLINE_INPUT_H_INCLUDED
