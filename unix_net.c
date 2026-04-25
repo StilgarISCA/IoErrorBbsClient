@@ -88,8 +88,10 @@ static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
                                      int lookupResult );
 static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort,
                                         int connectionErrno );
+#ifdef HAVE_OPENSSL
 static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
                                      const char *ptrOperation );
+#endif // HAVE_OPENSSL
 static int findErrorMessageKind( int errorCode,
                                  const ErrorMessageTemplate *ptrTemplates,
                                  size_t templateCount, int defaultMessageKind );
