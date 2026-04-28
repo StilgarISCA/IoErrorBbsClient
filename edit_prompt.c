@@ -332,12 +332,14 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             {
                continue;
             }
+            sendBlock();
             rewind( ptrMessageFile );
             while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
                sendTrackedCharWithoutReplay( inputChar );
             }
-            sendEditorCommand( 's' );
+            sendTrackedCharWithoutReplay( CTRL_D );
+            sendTrackedCharWithoutReplay( 's' );
             flagsConfiguration.isLastSave = 1;
             flagsConfiguration.isPosting = 0;
             resetEditorReplayState();

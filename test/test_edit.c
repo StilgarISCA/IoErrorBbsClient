@@ -171,6 +171,14 @@ void run( const char *ptrCommand, const char *ptrArg )
 
 void sendBlock( void )
 {
+   if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
+   {
+      arySentChars[sentCharCount++] = IAC;
+   }
+   if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
+   {
+      arySentChars[sentCharCount++] = BLOCK;
+   }
 }
 
 void tempFileError( void )
@@ -469,6 +477,11 @@ static void checkFile_WhenSupportedUtf8PunctuationPresent_NormalizesToAsciiAndRe
 static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state )
 {
    // Arrange
+   static const int aryExpectedSaveSuffix[] = {
+      IAC, BLOCK,
+      'B', 'r', 'e', 'a', 'k', 'i', 'n', 'g', ' ', 'N', 'e', 'w', 's', '\n',
+      CTRL_D, 's'
+   };
    FILE *ptrMessageFile;
    int result;
    int previousChar;
@@ -522,15 +535,19 @@ static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state
                 targetByte, bytePosition, byte );
       return;
    }
-   if ( sentCharCount < 3 ||
-        arySentChars[sentCharCount - 2] != CTRL_D ||
-        arySentChars[sentCharCount - 1] != 's' )
+   if ( sentCharCount < sizeof( aryExpectedSaveSuffix ) / sizeof( aryExpectedSaveSuffix[0] ) )
    {
       fclose( ptrMessageFile );
-      fail_msg( "prompt save path should send CTRL_D followed by 's'; sent count=%zu last=%d second_last=%d",
-                sentCharCount,
-                sentCharCount > 0 ? arySentChars[sentCharCount - 1] : -1,
-                sentCharCount > 1 ? arySentChars[sentCharCount - 2] : -1 );
+      fail_msg( "prompt save path should send the full save payload; sent count=%zu",
+                sentCharCount );
+      return;
+   }
+   if ( memcmp( arySentChars + sentCharCount -
+                ( sizeof( aryExpectedSaveSuffix ) / sizeof( aryExpectedSaveSuffix[0] ) ),
+                aryExpectedSaveSuffix, sizeof( aryExpectedSaveSuffix ) ) != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should send BLOCK, message text, CTRL_D, and 's' in order" );
       return;
    }
 
