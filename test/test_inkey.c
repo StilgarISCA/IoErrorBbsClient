@@ -41,7 +41,6 @@ static void resetState( void )
    targetByte = 0;
    byte = 0;
    bytePosition = 0;
-   wasLastInputReplayed = false;
    childPid = 0;
    isAway = 0;
    isLoginShell = 0;
@@ -210,7 +209,6 @@ static void getKey_WhenLocalInputArrivesDuringNetworkDrain_ReturnsLocalInput( vo
    (void)state;
 
    resetState();
-   wasLastInputReplayed = true;
    aryNetInputBuffer[0] = 'A';
    aryNetInputBuffer[1] = 'B';
    netInputLength = 2;
@@ -227,10 +225,6 @@ static void getKey_WhenLocalInputArrivesDuringNetworkDrain_ReturnsLocalInput( vo
    {
       fail_msg( "getKey should stop draining network bytes once local input is buffered; got %d network bytes",
                 telReceiveCallCount );
-   }
-   if ( wasLastInputReplayed )
-   {
-      fail_msg( "getKey should clear replay state when returning local input" );
    }
 }
 
@@ -260,10 +254,6 @@ static void getKey_WhenTargetByteActive_ReturnsSavedByteAndAdvancesPosition( voi
    if ( bytePosition != 1 )
    {
       fail_msg( "getKey should advance bytePosition when replaying saved byte; got %ld", bytePosition );
-   }
-   if ( !wasLastInputReplayed )
-   {
-      fail_msg( "getKey should remember that the returned byte was replayed" );
    }
 }
 
@@ -300,10 +290,6 @@ static void getKey_WhenTargetByteIncludesNonReplayableBytes_SkipsToReplayableByt
    if ( byte != 1 )
    {
       fail_msg( "getKey should count skipped non-replayable bytes before replaying; got %ld", byte );
-   }
-   if ( !wasLastInputReplayed )
-   {
-      fail_msg( "getKey should remember that the returned byte was replayed" );
    }
 }
 

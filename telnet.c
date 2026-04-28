@@ -26,6 +26,7 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
                                  int *ptrTelnetBufferPos );
 static int handleTelnetVoidState( int inputByte, int *ptrState );
 static void markPromptTriggerNonReplayable( unsigned char commandType );
+static void markReplayByteNonReplayable( long replayPosition );
 
 
 /// @brief Handle normal telnet data bytes outside IAC command parsing.
@@ -325,28 +326,38 @@ static void markPromptTriggerNonReplayable( unsigned char commandType )
 {
    long replayPosition;
 
-   if ( commandType != G_POST && commandType != G_NAME && commandType != G_STR )
-   {
-      return;
-   }
    if ( commandType == G_NAME || commandType == G_STR )
    {
-      suppressedPromptInputChar = lastInteractiveInputChar;
+      if ( lastInteractiveInputByte >= bytePosition &&
+           lastInteractiveInputByte < targetByte )
+      {
+         markReplayByteNonReplayable( lastInteractiveInputByte );
+      }
+      return;
+   }
+   if ( commandType != G_POST )
+   {
+      return;
    }
 
    for ( replayPosition = bytePosition; replayPosition < targetByte; replayPosition++ )
    {
-      size_t index = (size_t)( replayPosition % (long)sizeof arySavedBytes );
-
-      if ( arySavedByteCanReplay[index] )
+      if ( arySavedByteCanReplay[(size_t)( replayPosition % (long)sizeof arySavedBytes )] )
       {
-         arySavedByteCanReplay[index] = false;
-         if ( commandType != G_POST )
-         {
-            return;
-         }
+         markReplayByteNonReplayable( replayPosition );
       }
    }
+}
+
+
+/// @brief Mark one saved replay byte position as non-replayable.
+///
+/// @param replayPosition Saved-byte position to update.
+///
+/// @return This helper does not return a value.
+static void markReplayByteNonReplayable( long replayPosition )
+{
+   arySavedByteCanReplay[(size_t)( replayPosition % (long)sizeof arySavedBytes )] = false;
 }
 
 

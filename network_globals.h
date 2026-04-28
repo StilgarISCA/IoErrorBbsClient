@@ -19,7 +19,7 @@ extern unsigned char arySavedBytes[1000];     // buffer to arySavedBytes past ar
 
 extern long byte;                     // current byte (remotely synched with bbs)
 extern long bytePosition;             // where the client is
-extern int lastInteractiveInputChar;  // last interactive character sent to BBS
+extern long lastInteractiveInputByte; // saved-byte position of the last interactive input
 extern int net;                       // file descriptor of network socket
 extern ssize_t netInputLength;        // length of current input buffer from net
 extern FILE *netOutputFile;           // file pointer for output to net
@@ -27,8 +27,6 @@ extern unsigned char *ptrNetInput;    // buffer pointer for input from net
 extern unsigned char *ptrPtyInput;    // buffer pointer for input from pty
 extern ssize_t ptyInputLength;        // length of current input buffer from pty
 extern bool shouldIgnoreNetwork;      // Temporarily skip network input checks
-extern int suppressedPromptInputChar; // replayed prompt input character to ignore
 extern long targetByte;               // where the client wants to get
-extern bool wasLastInputReplayed;     // true if the last input came from replay
 
 #endif // NETWORK_GLOBALS_H_INCLUDED

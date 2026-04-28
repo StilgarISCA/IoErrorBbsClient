@@ -172,7 +172,6 @@ int getKey( void )
 
       if ( tryReplaySavedByte( &inputChar ) )
       {
-         wasLastInputReplayed = true;
          return inputChar;
       }
 
@@ -181,7 +180,6 @@ int getKey( void )
                                          &isMacroNext, &wasUndefinedCommand );
       if ( result.kind == GETKEY_RESULT_RETURN )
       {
-         wasLastInputReplayed = false;
          return result.inputChar;
       }
       if ( result.kind == GETKEY_RESULT_CONTINUE )
@@ -208,7 +206,6 @@ int getKey( void )
                result = handleWaitEvent( &macroPosition, &pendingInputChar );
                if ( result.kind == GETKEY_RESULT_RETURN )
                {
-                  wasLastInputReplayed = false;
                   return result.inputChar;
                }
                break;
@@ -221,7 +218,6 @@ int getKey( void )
       result = handleWaitEvent( &macroPosition, &pendingInputChar );
       if ( result.kind == GETKEY_RESULT_RETURN )
       {
-         wasLastInputReplayed = false;
          return result.inputChar;
       }
    }

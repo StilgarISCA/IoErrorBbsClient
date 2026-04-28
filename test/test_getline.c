@@ -42,10 +42,8 @@ static void resetTracking( void )
    inputCount = 0;
    inputIndex = 0;
    flushCount = 0;
+   lastInteractiveInputByte = -1;
    lastFlushValue = 0;
-   lastInteractiveInputChar = 0;
-   suppressedPromptInputChar = 0;
-   wasLastInputReplayed = false;
    aryCapturedString[0] = '\0';
    capPutsCallCount = 0;
    aryCapturedDots[0] = '\0';
@@ -279,72 +277,6 @@ static void getString_WhenSimpleInputProvided_ReturnsTypedString( void **state )
    }
 }
 
-/// @brief Verify that a replayed prompt trigger is not added to collected input.
-///
-/// @param state CMocka test state.
-///
-/// @return This test does not return a value.
-static void getString_WhenSuppressedPromptInputIsReplayed_SkipsTriggerByte( void **state )
-{
-   // Arrange
-   char aryResult[64];
-   const int aryKeys[] = { 'J', 'M', 'a', 'i', 'l', '\n' };
-
-   (void)state;
-
-   resetTracking();
-   suppressedPromptInputChar = 'J';
-   wasLastInputReplayed = true;
-   setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
-
-   // Act
-   getString( 20, aryResult, 0 );
-
-   // Assert
-   if ( strcmp( aryResult, "Mail" ) != 0 )
-   {
-      fail_msg( "getString should skip replayed prompt trigger; got '%s'",
-                aryResult );
-   }
-   if ( suppressedPromptInputChar != 0 )
-   {
-      fail_msg( "getString should clear the suppressed prompt input after consuming it" );
-   }
-}
-
-/// @brief Verify that a matching fresh input byte is kept as normal prompt input.
-///
-/// @param state CMocka test state.
-///
-/// @return This test does not return a value.
-static void getString_WhenSuppressedPromptInputIsFresh_KeepsTypedByte( void **state )
-{
-   // Arrange
-   char aryResult[64];
-   const int aryKeys[] = { 'J', 'o', 'k', 'e', 's', '\n' };
-
-   (void)state;
-
-   resetTracking();
-   suppressedPromptInputChar = 'J';
-   wasLastInputReplayed = false;
-   setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
-
-   // Act
-   getString( 20, aryResult, 0 );
-
-   // Assert
-   if ( strcmp( aryResult, "Jokes" ) != 0 )
-   {
-      fail_msg( "getString should keep fresh input even when it matches suppression; got '%s'",
-                aryResult );
-   }
-   if ( suppressedPromptInputChar != 0 )
-   {
-      fail_msg( "getString should clear stale prompt suppression when fresh input starts" );
-   }
-}
-
 static void getString_WhenCtrlWUsed_RemovesPreviousWord( void **state )
 {
    // Arrange
@@ -502,8 +434,6 @@ int main( void )
       cmocka_unit_test( smartName_WhenUniquePrefix_ExpandsToFullName ),
       cmocka_unit_test( smartName_WhenPrefixIsAmbiguous_ReturnsNoMatchAndRestoresTail ),
       cmocka_unit_test( getString_WhenSimpleInputProvided_ReturnsTypedString ),
-      cmocka_unit_test( getString_WhenSuppressedPromptInputIsReplayed_SkipsTriggerByte ),
-      cmocka_unit_test( getString_WhenSuppressedPromptInputIsFresh_KeepsTypedByte ),
       cmocka_unit_test( getString_WhenCtrlWUsed_RemovesPreviousWord ),
       cmocka_unit_test( getString_WhenHiddenInputUsed_CapturesDotsInsteadOfPlainText ),
       cmocka_unit_test( getString_WhenRepeatedInvalidControlInputReceived_FlushesInput ),

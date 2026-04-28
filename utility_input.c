@@ -56,7 +56,7 @@ void looper( void )
          }
          if ( byte )
          {
-            lastInteractiveInputChar = inputChar;
+            lastInteractiveInputByte = byte;
             trackReplayableSentChar( inputChar );
          }
       }

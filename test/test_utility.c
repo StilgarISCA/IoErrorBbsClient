@@ -124,10 +124,8 @@ static void looper_WhenValidInputIsForwarded_FlushesImmediately( void **state )
    (void)state;
 
    byte = 1;
-   lastInteractiveInputChar = 0;
+   lastInteractiveInputByte = -1;
    lastNetPutChar = 0;
-   suppressedPromptInputChar = 0;
-   wasLastInputReplayed = false;
    setInputSequence( arySequence, sizeof( arySequence ) / sizeof( arySequence[0] ) );
 
    looper();
@@ -147,10 +145,10 @@ static void looper_WhenValidInputIsForwarded_FlushesImmediately( void **state )
       fail_msg( "looper should track the original input byte after sending; tracked=%d byte=%ld",
                 arySavedBytes[1], byte );
    }
-   if ( lastInteractiveInputChar != 'J' )
+   if ( lastInteractiveInputByte != 1 )
    {
-      fail_msg( "looper should remember the last interactive input byte; got %d",
-                lastInteractiveInputChar );
+      fail_msg( "looper should remember the saved-byte position of the last interactive input; got %ld",
+                lastInteractiveInputByte );
    }
    if ( !arySavedByteCanReplay[1] )
    {

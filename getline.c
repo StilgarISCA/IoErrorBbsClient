@@ -14,7 +14,6 @@
 #include "color.h"
 #include "defs.h"
 #include "getline_input.h"
-#include "network_globals.h"
 #include "telnet.h"
 #include "utility.h"
 typedef struct
@@ -29,7 +28,6 @@ static char aryWrap[80];
 static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
                                  const GetStringState *ptrState );
 static void applyWrapSeed( int length, int line, char *result, char **ptrCursor );
-static bool consumeSuppressedPromptInput( int inputChar );
 static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCursor );
 static bool handleCtrlWEdit( const char *result, char **ptrCursor );
 static bool handleGetStringOverflow( int inputChar, int line, const char *result,
@@ -84,32 +82,6 @@ static void applyWrapSeed( int length, int line, char *result, char **ptrCursor 
       *ptrCursor = result + strlen( result );
       *aryWrap = 0;
    }
-}
-
-
-/// @brief Consume a pending command byte before it becomes prompt input.
-///
-/// @param inputChar Input character read by `getString()`.
-///
-/// @return `true` if the input was consumed, otherwise `false`.
-static bool consumeSuppressedPromptInput( int inputChar )
-{
-   if ( !suppressedPromptInputChar )
-   {
-      return false;
-   }
-   if ( !wasLastInputReplayed )
-   {
-      suppressedPromptInputChar = 0;
-      return false;
-   }
-   if ( inputChar != suppressedPromptInputChar )
-   {
-      return false;
-   }
-
-   suppressedPromptInputChar = 0;
-   return true;
 }
 
 
@@ -229,10 +201,6 @@ void getString( int length, char *result, int line )
       int inputChar;
 
       inputChar = inKey();
-      if ( consumeSuppressedPromptInput( inputChar ) )
-      {
-         continue;
-      }
       if ( inputChar == ' ' && length == 29 && ptrCursor == result )
       {
          break;

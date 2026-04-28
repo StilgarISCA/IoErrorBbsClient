@@ -70,9 +70,7 @@ static void resetState( void )
    byte = 0;
    targetByte = 0;
    bytePosition = 0;
-   lastInteractiveInputChar = 0;
-   suppressedPromptInputChar = 0;
-   wasLastInputReplayed = false;
+   lastInteractiveInputByte = -1;
    whoListProgress = 0;
    isExpressMessageInProgress = 0;
    isExpressMessageHeaderActive = 0;
@@ -354,12 +352,12 @@ static void telReceive_WhenGetNameCommandArrives_SendsNameResponse( void **state
    }
 }
 
-/// @brief Verify that prompted string input marks the command that opened the prompt.
+/// @brief Verify that prompted string input marks the exact command byte that opened the prompt.
 ///
 /// @param state CMocka test state.
 ///
 /// @return This test does not return a value.
-static void telReceive_WhenGetStringCommandArrives_MarksPromptTriggerNonReplayable( void **state )
+static void telReceive_WhenGetStringCommandArrives_MarksExactPromptTriggerByteNonReplayable( void **state )
 {
    int result;
 
@@ -367,8 +365,12 @@ static void telReceive_WhenGetStringCommandArrives_MarksPromptTriggerNonReplayab
 
    resetState();
    byte = 11;
-   lastInteractiveInputChar = 'J';
+   lastInteractiveInputByte = 10;
+   arySavedBytes[8] = 'x';
+   arySavedBytes[9] = 'y';
    arySavedBytes[10] = 'J';
+   arySavedByteCanReplay[8] = true;
+   arySavedByteCanReplay[9] = true;
    arySavedByteCanReplay[10] = true;
    snprintf( aryStringResponse, sizeof( aryStringResponse ), "%s", "Forum" );
 
@@ -377,7 +379,7 @@ static void telReceive_WhenGetStringCommandArrives_MarksPromptTriggerNonReplayab
    (void)telReceive( 20 );
    (void)telReceive( 0 );
    (void)telReceive( 0 );
-   result = telReceive( 10 );
+   result = telReceive( 8 );
 
    if ( result != 0 )
    {
@@ -387,12 +389,11 @@ static void telReceive_WhenGetStringCommandArrives_MarksPromptTriggerNonReplayab
    {
       fail_msg( "G_STR flow should mark the prompt trigger byte as non-replayable" );
    }
-   if ( suppressedPromptInputChar != 'J' )
+   if ( !arySavedByteCanReplay[8] || !arySavedByteCanReplay[9] )
    {
-      fail_msg( "G_STR flow should suppress the prompt trigger byte if it replays; got %d",
-                suppressedPromptInputChar );
+      fail_msg( "G_STR flow should leave earlier replayable bytes untouched when the trigger byte is later" );
    }
-   if ( byte != 16 )
+   if ( byte != 14 )
    {
       fail_msg( "G_STR flow should count response and newline bytes from parsed position; got %ld", byte );
    }
@@ -507,7 +508,7 @@ int main( void )
       cmocka_unit_test( sendNaws_WhenWindowSizeChanged_SendsNawsPayload ),
       cmocka_unit_test( telReceive_WhenClientProbeReceived_RespondsWithClientAck ),
       cmocka_unit_test( telReceive_WhenGetNameCommandArrives_SendsNameResponse ),
-      cmocka_unit_test( telReceive_WhenGetStringCommandArrives_MarksPromptTriggerNonReplayable ),
+      cmocka_unit_test( telReceive_WhenGetStringCommandArrives_MarksExactPromptTriggerByteNonReplayable ),
       cmocka_unit_test( telReceive_WhenPostCommandArrives_MarksReplayWindowNonReplayable ),
       cmocka_unit_test( telReceive_WhenXMessageEndsAndPendingSend_TriggersSendAnX ),
       cmocka_unit_test( telReceive_WhenDataByteReceived_RoutesToCorrectFilter ),
