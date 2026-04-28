@@ -28,9 +28,12 @@ static size_t sentCharCount;
 
 static void resetState( void )
 {
+   byte = 0;
+   bytePosition = 0;
    inputCount = 0;
    inputIndex = 0;
    sentCharCount = 0;
+   targetByte = 0;
    flagsConfiguration.isLastSave = 0;
    flagsConfiguration.isPosting = 0;
 }
@@ -148,6 +151,16 @@ void sendTrackedChar( int inputChar )
    }
    netPutChar( inputChar );
    byte++;
+}
+
+/// @brief Send a test byte without replay tracking.
+///
+/// @param inputChar Character to send.
+///
+/// @return This stub does not return a value.
+void sendTrackedCharWithoutReplay( int inputChar )
+{
+   sendTrackedChar( inputChar );
 }
 
 void run( const char *ptrCommand, const char *ptrArg )
@@ -465,8 +478,11 @@ static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state
 
    resetState();
    setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
+   byte = 3;
+   bytePosition = 8;
    flagsConfiguration.isPosting = 1;
    previousChar = 0;
+   targetByte = 12;
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
    {
@@ -491,6 +507,19 @@ static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state
       fclose( ptrMessageFile );
       fail_msg( "prompt should mark the post saved and clear posting state; got isLastSave=%u isPosting=%u",
                 flagsConfiguration.isLastSave, flagsConfiguration.isPosting );
+      return;
+   }
+   if ( flagsConfiguration.shouldCheckExpress )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should clear shouldCheckExpress before returning" );
+      return;
+   }
+   if ( targetByte != 0 || bytePosition != byte )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should clear editor replay state; got targetByte=%ld bytePosition=%ld byte=%ld",
+                targetByte, bytePosition, byte );
       return;
    }
    if ( sentCharCount < 3 ||

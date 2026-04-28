@@ -44,6 +44,7 @@ static GetKeyResult handleCommandKeyInput( int inputChar, int *ptrMacroKey,
                                            int *ptrWasUndefinedCommand );
 static GetKeyResult handleWaitEvent( int *ptrMacroPosition,
                                      int *ptrPendingInputChar );
+static bool isLocalInputDescriptorReady( void );
 static bool tryReplaySavedByte( int *ptrInputChar );
 
 
@@ -171,6 +172,7 @@ int getKey( void )
 
       if ( tryReplaySavedByte( &inputChar ) )
       {
+         wasLastInputReplayed = true;
          return inputChar;
       }
 
@@ -179,6 +181,7 @@ int getKey( void )
                                          &isMacroNext, &wasUndefinedCommand );
       if ( result.kind == GETKEY_RESULT_RETURN )
       {
+         wasLastInputReplayed = false;
          return result.inputChar;
       }
       if ( result.kind == GETKEY_RESULT_CONTINUE )
@@ -195,6 +198,21 @@ int getKey( void )
             {
                return ( -1 );
             }
+            if ( isPtyInputAvailable() )
+            {
+               break;
+            }
+            if ( isLocalInputDescriptorReady() )
+            {
+               flushPendingOutput();
+               result = handleWaitEvent( &macroPosition, &pendingInputChar );
+               if ( result.kind == GETKEY_RESULT_RETURN )
+               {
+                  wasLastInputReplayed = false;
+                  return result.inputChar;
+               }
+               break;
+            }
          }
          continue;
       }
@@ -203,6 +221,7 @@ int getKey( void )
       result = handleWaitEvent( &macroPosition, &pendingInputChar );
       if ( result.kind == GETKEY_RESULT_RETURN )
       {
+         wasLastInputReplayed = false;
          return result.inputChar;
       }
    }
@@ -513,6 +532,30 @@ int inKey( void )
 }
 
 
+/// @brief Check whether unread local terminal input is waiting on standard input.
+///
+/// @return `true` if standard input is readable without blocking, otherwise `false`.
+static bool isLocalInputDescriptorReady( void )
+{
+   fd_set fdr;
+   bool isReady;
+   struct timeval timeout;
+
+   if ( childPid || flagsConfiguration.shouldCheckExpress )
+   {
+      return false;
+   }
+
+   FD_ZERO( &fdr );
+   FD_SET( 0, &fdr );
+   timeout.tv_sec = 0;
+   timeout.tv_usec = 0;
+
+   isReady = select( 1, &fdr, 0, 0, &timeout ) > 0 && FD_ISSET( 0, &fdr );
+   return isReady;
+}
+
+
 /// @brief Replay a saved byte from local buffering when protocol state requires it.
 ///
 /// @param ptrInputChar Receives the replayed byte.
@@ -524,20 +567,30 @@ static bool tryReplaySavedByte( int *ptrInputChar )
    {
       return false;
    }
-   if ( bytePosition == targetByte )
+   while ( bytePosition < targetByte )
    {
-      targetByte = 0;
-      return false;
+      size_t index = (size_t)( bytePosition % (long)sizeof arySavedBytes );
+
+      if ( !arySavedByteCanReplay[index] )
+      {
+         bytePosition++;
+         byte++;
+         continue;
+      }
+
+      lastCarriageReturn = 0;
+      *ptrInputChar = arySavedBytes[index];
+      bytePosition++;
+      return true;
    }
+
    if ( bytePosition > targetByte )
    {
-      stdPrintf( "[Internal error: byte synch lost!  %s > %s]\r\n",
+      stdPrintf( "[Internal error: byte synch lost!  %ld > %ld]\r\n",
                  bytePosition, targetByte );
       exit( 1 );
    }
 
-   lastCarriageReturn = 0;
-   *ptrInputChar = arySavedBytes[(size_t)( bytePosition % (long)sizeof arySavedBytes )];
-   bytePosition++;
-   return true;
+   targetByte = 0;
+   return false;
 }

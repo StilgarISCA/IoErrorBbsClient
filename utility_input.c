@@ -50,11 +50,14 @@ void looper( void )
       {
          invalid = 0;
          netPutChar( aryKeyMap[inputChar] );
+         if ( fflush( netOutputFile ) < 0 )
+         {
+            fatalPerror( "send", "Network error" );
+         }
          if ( byte )
          {
-            size_t index = (size_t)( byte % (long)sizeof arySavedBytes );
-            arySavedBytes[index] = (unsigned char)inputChar;
-            byte++;
+            lastInteractiveInputChar = inputChar;
+            trackReplayableSentChar( inputChar );
          }
       }
       else

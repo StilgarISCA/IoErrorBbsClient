@@ -25,6 +25,7 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
                                  unsigned char *aryTelnetBuffer,
                                  int *ptrTelnetBufferPos );
 static int handleTelnetVoidState( int inputByte, int *ptrState );
+static void markPromptTriggerNonReplayable( unsigned char commandType );
 
 
 /// @brief Handle normal telnet data bytes outside IAC command parsing.
@@ -143,6 +144,7 @@ static int handleTelnetGetState( int inputByte, int *ptrState,
                   ( (long)aryTelnetBuffer[3] << 8 ) +
                   aryTelnetBuffer[4];
    byte = bytePosition;
+   markPromptTriggerNonReplayable( aryTelnetBuffer[0] );
 
    if ( byte < targetByte - (int)( sizeof arySavedBytes ) - 1 )
    {
@@ -309,6 +311,40 @@ void sendNaws( void )
       for ( outputIndex = 0; outputIndex < 9; outputIndex++ )
       {
          netPutChar( aryString[outputIndex] );
+      }
+   }
+}
+
+
+/// @brief Mark command bytes that opened a BBS input request as non-replayable.
+///
+/// @param commandType BBS GET command being handled.
+///
+/// @return This helper does not return a value.
+static void markPromptTriggerNonReplayable( unsigned char commandType )
+{
+   long replayPosition;
+
+   if ( commandType != G_POST && commandType != G_NAME && commandType != G_STR )
+   {
+      return;
+   }
+   if ( commandType == G_NAME || commandType == G_STR )
+   {
+      suppressedPromptInputChar = lastInteractiveInputChar;
+   }
+
+   for ( replayPosition = bytePosition; replayPosition < targetByte; replayPosition++ )
+   {
+      size_t index = (size_t)( replayPosition % (long)sizeof arySavedBytes );
+
+      if ( arySavedByteCanReplay[index] )
+      {
+         arySavedByteCanReplay[index] = false;
+         if ( commandType != G_POST )
+         {
+            return;
+         }
       }
    }
 }

@@ -13,13 +13,17 @@
 #include "filter.h"
 #include "filter_globals.h"
 #include "getline_input.h"
+#include "network_globals.h"
+#include "sysio.h"
 #include "telnet.h"
 #include "utility.h"
 static void continueAfterExternalEdit( FILE **ptrMessageFile );
 static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInputPath );
+static void flushEditorNetworkOutput( void );
 static bool loadNamedFileIntoMessage( FILE **ptrMessageFile, char *ptrInputPath,
                                       int commandChar );
 static void printEditorCommandPrompt( void );
+static void resetEditorReplayState( void );
 static const char *resolveEditorCommand( void );
 static void sendEditorCommand( int inputChar );
 static void showEditorCommandPrompt( void );
@@ -85,6 +89,18 @@ static bool copyNamedFileIntoMessage( FILE *ptrMessageFile, const char *ptrInput
    }
    fclose( ptrCopyFile );
    return true;
+}
+
+
+/// @brief Flush editor commands that were sent to the BBS.
+///
+/// @return This helper does not return a value.
+static void flushEditorNetworkOutput( void )
+{
+   if ( netflush() < 0 )
+   {
+      fatalPerror( "send", "Network error" );
+   }
 }
 
 
@@ -207,6 +223,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             sendEditorCommand( 'c' );
             flagsConfiguration.shouldCheckExpress = 1;
             (void)inKey();
+            flagsConfiguration.shouldCheckExpress = 0;
             showEditorCommandPrompt();
             fflush( stdout );
          }
@@ -249,6 +266,7 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             {
                sendEditorCommand( 'a' );
                flagsConfiguration.isPosting = 0;
+               resetEditorReplayState();
                return ( -1 );
             }
             continue;
@@ -317,11 +335,13 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
             rewind( ptrMessageFile );
             while ( ( inputChar = getc( ptrMessageFile ) ) > 0 )
             {
-               sendTrackedChar( inputChar );
+               sendTrackedCharWithoutReplay( inputChar );
             }
             sendEditorCommand( 's' );
             flagsConfiguration.isLastSave = 1;
             flagsConfiguration.isPosting = 0;
+            resetEditorReplayState();
+            flushEditorNetworkOutput();
             return ( -1 );
 
          case 'q':
@@ -369,6 +389,16 @@ int prompt( FILE *ptrMessageFile, int *previousChar, int commandChar )
 }
 
 
+/// @brief Stop replaying buffered pre-editor input after the editor exits.
+///
+/// @return This helper does not return a value.
+static void resetEditorReplayState( void )
+{
+   targetByte = 0;
+   bytePosition = byte;
+}
+
+
 /// @brief Resolve the configured external editor command for the current session.
 ///
 /// @return Editor command string to execute, or `NULL` if none is available.
@@ -394,8 +424,8 @@ static const char *resolveEditorCommand( void )
 static void sendEditorCommand( int inputChar )
 {
    sendBlock();
-   sendTrackedChar( CTRL_D );
-   sendTrackedChar( inputChar );
+   sendTrackedCharWithoutReplay( CTRL_D );
+   sendTrackedCharWithoutReplay( inputChar );
 }
 
 

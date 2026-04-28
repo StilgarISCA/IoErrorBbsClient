@@ -16,6 +16,7 @@
 #include "utility.h"
 static const char replymsg[] = "+!R ";
 static void sendTrackedCString( const char *ptrText );
+static void trackSentChar( int inputChar, bool canReplay );
 
 /// @brief Send the configured away message as an automatic reply.
 ///
@@ -61,9 +62,8 @@ void sendTrackedBuffer( const char *ptrBuffer, size_t length )
 
    for ( itemIndex = 0; itemIndex < length; itemIndex++ )
    {
-      netPutChar( ptrBuffer[itemIndex] );
+      sendTrackedChar( ptrBuffer[itemIndex] );
    }
-   byte += (long)length;
 }
 
 /// @brief Send one character to the BBS while updating the tracked byte count.
@@ -74,7 +74,18 @@ void sendTrackedBuffer( const char *ptrBuffer, size_t length )
 void sendTrackedChar( int inputChar )
 {
    netPutChar( inputChar );
-   byte++;
+   trackReplayableSentChar( inputChar );
+}
+
+/// @brief Send one character to the BBS without making it eligible for replay.
+///
+/// @param inputChar Character to send.
+///
+/// @return This function does not return a value.
+void sendTrackedCharWithoutReplay( int inputChar )
+{
+   netPutChar( inputChar );
+   trackUnreplayableSentChar( inputChar );
 }
 
 /// @brief Send a NUL-terminated string to the BBS while updating the byte count.
@@ -93,4 +104,42 @@ static void sendTrackedCString( const char *ptrText )
 void sendTrackedNewline( void )
 {
    sendTrackedChar( '\n' );
+}
+
+/// @brief Save one sent byte for protocol replay and advance the byte counter.
+///
+/// @param inputChar Character to save in the replay buffer.
+///
+/// @return This function does not return a value.
+void trackReplayableSentChar( int inputChar )
+{
+   trackSentChar( inputChar, true );
+}
+
+/// @brief Save one sent byte and advance the byte counter.
+///
+/// @param inputChar Character to save in the replay buffer.
+/// @param canReplay `true` if the byte can be replayed after a BBS sync request.
+///
+/// @return This helper does not return a value.
+static void trackSentChar( int inputChar, bool canReplay )
+{
+   if ( byte )
+   {
+      size_t index = (size_t)( byte % (long)sizeof arySavedBytes );
+
+      arySavedBytes[index] = (unsigned char)inputChar;
+      arySavedByteCanReplay[index] = canReplay;
+   }
+   byte++;
+}
+
+/// @brief Save one sent byte without allowing protocol replay and advance the byte counter.
+///
+/// @param inputChar Character to save in the replay buffer.
+///
+/// @return This function does not return a value.
+void trackUnreplayableSentChar( int inputChar )
+{
+   trackSentChar( inputChar, false );
 }
