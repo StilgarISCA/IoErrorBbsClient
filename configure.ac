@@ -263,7 +263,7 @@ solaris*)
    ;;
 esac
 
-if test x$with_ssl = xyes; then
+if test "x$with_ssl" != "xno"; then
 #The big search for OpenSSL
    saved_LIBS="$LIBS"
    saved_LDFLAGS="$LDFLAGS"

@@ -91,6 +91,7 @@ static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort
 #ifdef HAVE_OPENSSL
 static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
                                      const char *ptrOperation );
+static int initSSL( void );
 #endif // HAVE_OPENSSL
 static int findErrorMessageKind( int errorCode,
                                  const ErrorMessageTemplate *ptrTemplates,
@@ -101,7 +102,6 @@ static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
 static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
                                         int messageKind, const char *ptrHost,
                                         const char *ptrPort );
-
 
 /// @brief Apply TCP keepalive settings to the active socket.
 ///
@@ -128,7 +128,7 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
       return;
    }
 
-      // Keepalive defaults are conservative to avoid noticeable server load while
+   // Keepalive defaults are conservative to avoid noticeable server load while
    // still preventing common ISP/NAT idle disconnects on long-lived telnet sessions.
 #if defined( TCP_KEEPALIVE )
    {
@@ -170,7 +170,6 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
    }
 #endif
 }
-
 
 /// @brief Resolve the target host and open the main BBS network connection.
 ///
@@ -276,7 +275,7 @@ void connectBbs( void )
          shutdown( net, 2 );
          failTlsConnect( ptrLookupHost, aryPortString, "TLS socket setup" );
       }
-      if ( ( connectResult = SSL_connect( ssl ) ) != 1 )
+      if ( SSL_connect( ssl ) != 1 )
       {
          stdPrintf( "failed.\n" );
          shutdown( net, 2 );
@@ -297,7 +296,6 @@ void connectBbs( void )
       fatalPerror( "fdopen w", "Local error" );
    }
 }
-
 
 /// @brief Abort after a host lookup failure with a categorized message.
 ///
@@ -321,7 +319,6 @@ static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
 
    fatalExit( ptrReason, aryMessage );
 }
-
 
 /// @brief Abort after a socket connect failure with a categorized message.
 ///
@@ -376,7 +373,6 @@ static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
 }
 #endif // HAVE_OPENSSL
 
-
 /// @brief Map a platform error code to one of the client message categories.
 ///
 /// @param errorCode Error value to classify.
@@ -400,7 +396,6 @@ static int findErrorMessageKind( int errorCode,
    }
    return defaultMessageKind;
 }
-
 
 /// @brief Format a user-facing host lookup error message.
 ///
@@ -438,7 +433,6 @@ static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
          break;
    }
 }
-
 
 /// @brief Format a user-facing socket connect error message.
 ///
@@ -498,19 +492,18 @@ static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
    }
 }
 
-
 #ifdef HAVE_OPENSSL
 /// @brief Initialize the OpenSSL client state for the current connection.
 ///
 /// @return Non-zero on success, zero if the SSL object could not be created.
-int initSSL( void )
+static int initSSL( void )
 {
-   SSL_METHOD *meth;
+   const SSL_METHOD *ptrMethod;
 
    SSL_load_error_strings();
    SSLeay_add_ssl_algorithms();
-   meth = SSLv23_client_method();
-   ctx = SSL_CTX_new( meth );
+   ptrMethod = SSLv23_client_method();
+   ctx = SSL_CTX_new( ptrMethod );
 
    if ( !ctx )
    {
@@ -527,7 +520,6 @@ int initSSL( void )
 
    return 1;
 }
-
 
 /// @brief Shut down and free the active SSL connection object.
 ///

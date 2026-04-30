@@ -35,6 +35,10 @@ void flushInput( unsigned int count )
    (void)count;
 }
 
+void killSsl( void )
+{
+}
+
 int inKey( void )
 {
    if ( inputIndex < inputCount )
