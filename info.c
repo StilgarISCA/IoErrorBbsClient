@@ -4,12 +4,42 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "client.h"
+#include "client_globals.h"
+#include "color.h"
 #include "defs.h"
-#include "ext.h"
 #include <stdarg.h>
-
+#include "utility.h"
 static const char *INFO_MENU_KEYS = "clwtq \n";
 
+/// @brief Show the client copyright screen.
+///
+/// @return This function does not return a value.
+void copyright( void )
+{
+   stdPrintf( "Copyright\r\n\n" );
+
+   feedPager( 3, "Copyright (C)\r\n",
+              "  2024-2026 Stilgar.             (GPL: Updates, fixes)\r\n",
+              "  1995-2003 Michael Hampton.      (GPL: Cool stuff)\r\n",
+              "  1993-1994 Doug Siebert.         (GPL: Client core)\r\n",
+              "Portions Copyright (C)\r\n",
+#ifdef ENABLE_SAVE_PASSWORD
+              "  1995 Jonathan Pickard.          (GPL: Saved-password algorithm)\r\n",
+#endif
+              "  1994 David Bailey.              (GPL: Expanded friend list)\r\n",
+              "  1994 Marc Dionne.               (GPL: Early patches to client core)\r\n",
+              "  Above portions used with permission.\r\n",
+              (char *)NULL );
+}
+
+
+/// @brief Print a variable list of lines through the built-in pager.
+///
+/// @param startrow Initial row count already consumed on the screen.
+/// @param ... NUL-terminated list of `char *` lines to print.
+///
+/// @return This function does not return a value.
 void feedPager( int startrow, ... )
 {
    int currentRow;
@@ -41,24 +71,50 @@ void feedPager( int startrow, ... )
    return;
 }
 
-void copyright( void )
-{
-   stdPrintf( "Copyright\r\n\n" );
 
-   feedPager( 3, "Copyright (C)\r\n",
-              "  2024-2026 Stilgar.             (GPL: Updates, fixes)\r\n",
-              "  1995-2003 Michael Hampton.      (GPL: Cool stuff)\r\n",
-              "  1993-1994 Doug Siebert.         (GPL: Client core)\r\n",
-              "Portions Copyright (C)\r\n",
-#ifdef ENABLE_SAVE_PASSWORD
-              "  1995 Jonathan Pickard.          (GPL: Saved-password algorithm)\r\n",
-#endif
-              "  1994 David Bailey.              (GPL: Expanded friend list)\r\n",
-              "  1994 Marc Dionne.               (GPL: Early patches to client core)\r\n",
-              "  Above portions used with permission.\r\n",
-              (char *)NULL );
+/// @brief Run the client information submenu.
+///
+/// @return This function does not return a value.
+void information( void )
+{
+   stdPrintf( "Information\r\n" );
+
+   while ( true )
+   {
+      printThemedMnemonicText( "\r\n<C>opyright  <L>icense  <W>arranty  <T>echnical  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nClient information -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
+      int inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
+      switch ( inputChar )
+      {
+         case 'c':
+            copyright();
+            break;
+         case 'l':
+            license();
+            break;
+         case 't':
+            techInfo();
+            break;
+         case 'w':
+            warranty();
+            break;
+         case 'q':
+         case ' ':
+         case '\n':
+            stdPrintf( "Quit\r\n" );
+            return;
+            // NOTREACHED
+         default:
+            break;
+      }
+   }
 }
 
+
+/// @brief Display the bundled GPL license text.
+///
+/// @return This function does not return a value.
 void license( void )
 {
    stdPrintf( "License\r\n\n" );
@@ -291,6 +347,10 @@ void license( void )
               (char *)NULL );
 }
 
+
+/// @brief Display the GPL warranty disclaimer text.
+///
+/// @return This function does not return a value.
 void warranty( void )
 {
    stdPrintf( "Warranty\r\n\n" );
@@ -317,43 +377,4 @@ void warranty( void )
               "PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE\r\n",
               "POSSIBILITY OF SUCH DAMAGES.\r\n",
               (char *)NULL );
-}
-
-/*
- * information() displays general info about the client
- */
-void information( void )
-{
-   stdPrintf( "Information\r\n" );
-
-   while ( true )
-   {
-      printThemedMnemonicText( "\r\n<C>opyright  <L>icense  <W>arranty  <T>echnical  <Q>uit", color.number );
-      printThemedMnemonicText( "\r\nClient information -> ", color.forum );
-      printAnsiForegroundColorValue( color.text );
-      int inputChar = readValidatedMenuKey( INFO_MENU_KEYS );
-      switch ( inputChar )
-      {
-         case 'c':
-            copyright();
-            break;
-         case 'l':
-            license();
-            break;
-         case 't':
-            techInfo();
-            break;
-         case 'w':
-            warranty();
-            break;
-         case 'q':
-         case ' ':
-         case '\n':
-            stdPrintf( "Quit\r\n" );
-            return;
-            /* NOTREACHED */
-         default:
-            break;
-      }
-   }
 }

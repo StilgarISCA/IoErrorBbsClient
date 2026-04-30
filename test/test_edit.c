@@ -3,16 +3,23 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
+#include "telnet.h"
 #include "test_helpers.h"
-
+#include "utility.h"
 static int aryInputQueue[16];
 static size_t inputCount;
 static size_t inputIndex;
@@ -21,9 +28,12 @@ static size_t sentCharCount;
 
 static void resetState( void )
 {
+   byte = 0;
+   bytePosition = 0;
    inputCount = 0;
    inputIndex = 0;
    sentCharCount = 0;
+   targetByte = 0;
    flagsConfiguration.isLastSave = 0;
    flagsConfiguration.isPosting = 0;
 }
@@ -35,7 +45,7 @@ static void setInputSequence( const int *aryKeys, size_t count )
    inputIndex = 0;
 }
 
-/* edit.c dependencies outside checkFile() scope for these tests. */
+// edit.c dependencies outside checkFile() scope for these tests.
 int colorize( const char *ptrText )
 {
    (void)ptrText;
@@ -127,6 +137,12 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
+{
+   (void)foregroundColor;
+   (void)backgroundColor;
+}
+
 void sendTrackedChar( int inputChar )
 {
    if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
@@ -137,6 +153,16 @@ void sendTrackedChar( int inputChar )
    byte++;
 }
 
+/// @brief Send a test byte without replay tracking.
+///
+/// @param inputChar Character to send.
+///
+/// @return This stub does not return a value.
+void sendTrackedCharWithoutReplay( int inputChar )
+{
+   sendTrackedChar( inputChar );
+}
+
 void run( const char *ptrCommand, const char *ptrArg )
 {
    (void)ptrCommand;
@@ -145,6 +171,14 @@ void run( const char *ptrCommand, const char *ptrArg )
 
 void sendBlock( void )
 {
+   if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
+   {
+      arySentChars[sentCharCount++] = IAC;
+   }
+   if ( sentCharCount < sizeof( arySentChars ) / sizeof( arySentChars[0] ) )
+   {
+      arySentChars[sentCharCount++] = BLOCK;
+   }
 }
 
 void tempFileError( void )
@@ -443,6 +477,11 @@ static void checkFile_WhenSupportedUtf8PunctuationPresent_NormalizesToAsciiAndRe
 static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state )
 {
    // Arrange
+   static const int aryExpectedSaveSuffix[] = {
+      IAC, BLOCK,
+      'B', 'r', 'e', 'a', 'k', 'i', 'n', 'g', ' ', 'N', 'e', 'w', 's', '\n',
+      CTRL_D, 's'
+   };
    FILE *ptrMessageFile;
    int result;
    int previousChar;
@@ -452,8 +491,11 @@ static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state
 
    resetState();
    setInputSequence( aryKeys, sizeof( aryKeys ) / sizeof( aryKeys[0] ) );
+   byte = 3;
+   bytePosition = 8;
    flagsConfiguration.isPosting = 1;
    previousChar = 0;
+   targetByte = 12;
    ptrMessageFile = tmpfile();
    if ( ptrMessageFile == NULL )
    {
@@ -480,15 +522,32 @@ static void prompt_WhenSaveSelected_SavesMessageAndReturnsMinusOne( void **state
                 flagsConfiguration.isLastSave, flagsConfiguration.isPosting );
       return;
    }
-   if ( sentCharCount < 3 ||
-        arySentChars[sentCharCount - 2] != CTRL_D ||
-        arySentChars[sentCharCount - 1] != 's' )
+   if ( flagsConfiguration.shouldCheckExpress )
    {
       fclose( ptrMessageFile );
-      fail_msg( "prompt save path should send CTRL_D followed by 's'; sent count=%zu last=%d second_last=%d",
-                sentCharCount,
-                sentCharCount > 0 ? arySentChars[sentCharCount - 1] : -1,
-                sentCharCount > 1 ? arySentChars[sentCharCount - 2] : -1 );
+      fail_msg( "prompt save path should clear shouldCheckExpress before returning" );
+      return;
+   }
+   if ( targetByte != 0 || bytePosition != byte )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should clear editor replay state; got targetByte=%ld bytePosition=%ld byte=%ld",
+                targetByte, bytePosition, byte );
+      return;
+   }
+   if ( sentCharCount < sizeof( aryExpectedSaveSuffix ) / sizeof( aryExpectedSaveSuffix[0] ) )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should send the full save payload; sent count=%zu",
+                sentCharCount );
+      return;
+   }
+   if ( memcmp( arySentChars + sentCharCount -
+                ( sizeof( aryExpectedSaveSuffix ) / sizeof( aryExpectedSaveSuffix[0] ) ),
+                aryExpectedSaveSuffix, sizeof( aryExpectedSaveSuffix ) ) != 0 )
+   {
+      fclose( ptrMessageFile );
+      fail_msg( "prompt save path should send BLOCK, message text, CTRL_D, and 's' in order" );
       return;
    }
 

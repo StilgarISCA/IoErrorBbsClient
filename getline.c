@@ -5,30 +5,95 @@
  */
 
 /*
- * This handles getting of short strings or groups of strings of information
- * and sending them off to the BBS.  Even though you might think doing this for
- * an 8 character password is a waste, it does cut down network traffic (and
- * the lag to the end user) to not have to echo back each character
- * individually, and it was easier to do them all rather than only some of
- * them.  Again, this is basically code from the actual BBS with slight
- * modification to work here.
+ * This handles short string input and grouped string input before sending the
+ * result to the BBS. Collecting the full field locally reduces network traffic
+ * and avoids echoing each character individually. The implementation is based
+ * on the original BBS code with client-side adaptations.
  */
+#include "client_globals.h"
+#include "color.h"
 #include "defs.h"
-#include "ext.h"
+#include "getline_input.h"
+#include "telnet.h"
+#include "utility.h"
+typedef struct
+{
+   unsigned int invalid;
+   int hidden;
+   int length;
+} GetStringState;
 
-#define MAX_ALIAS_INPUT_LENGTH 19
-#define MAX_USER_NAME_INPUT_LENGTH 40
+static char aryWrap[80];
 
-/*
- * Used for getting X's and profiles.  'which' tells which of those two we are
- * wanting, to allow the special commands for X's, like PING and ABORT. When
- * we've got what we need, we send it immediately over the net.
- */
+static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
+                                 const GetStringState *ptrState );
+static void applyWrapSeed( int length, int line, char *result, char **ptrCursor );
+static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCursor );
+static bool handleCtrlWEdit( const char *result, char **ptrCursor );
+static bool handleGetStringOverflow( int inputChar, int line, const char *result,
+                                     char **ptrCursor );
+static bool maybeUseSavedPassword( char *result, GetStringState *ptrState );
+static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState );
+static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState );
+static void saveHiddenPasswordIfNeeded( const char *ptrResult,
+                                        const GetStringState *ptrState );
+
+
+static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
+                                 const GetStringState *ptrState )
+{
+   if ( *ptrCursor >= result + ptrState->length || !isprint( inputChar ) )
+   {
+      return false;
+   }
+
+   **ptrCursor = (char)inputChar;
+   ( *ptrCursor )++;
+   putchar( ptrState->hidden ? '.' : inputChar );
+   return true;
+}
+
+
+/// @brief Seed a wrapped input field with leftover text from the previous line.
+///
+/// @param length Maximum input length.
+/// @param line Input line index.
+/// @param result Destination buffer.
+/// @param ptrCursor Receives the updated cursor position.
+///
+/// @return This helper does not return a value.
+static void applyWrapSeed( int length, int line, char *result, char **ptrCursor )
+{
+   if ( line <= 0 )
+   {
+      *aryWrap = 0;
+   }
+   else if ( *aryWrap )
+   {
+      printf( "%s", aryWrap );
+      if ( length > 0 )
+      {
+         snprintf( result, (size_t)length + 1, "%s", aryWrap );
+      }
+      else
+      {
+         *result = 0;
+      }
+      *ptrCursor = result + strlen( result );
+      *aryWrap = 0;
+   }
+}
+
+
+/// @brief Collect and send a five-line input block such as an X or profile entry.
+///
+/// @param which Bitmask controlling the special command handling for this input mode.
+///
+/// @return This function does not return a value.
 void getFiveLines( int which )
 {
    register int lineIndex;
    register int sendLineIndex;
-   register int sendCharIndex;
    char arySendString[21][80];
    int override = 0;
    int local = 0;
@@ -55,7 +120,9 @@ void getFiveLines( int which )
                                     color.inputText );
       stdPrintf( "%s", aryAnsiSequence );
    }
-   for ( lineIndex = 0; lineIndex < ( 20 + override + local ) && ( !lineIndex || *arySendString[lineIndex - 1] ); lineIndex++ )
+   for ( lineIndex = 0; lineIndex < ( 20 + override + local ) &&
+                        ( !lineIndex || *arySendString[lineIndex - 1] );
+         lineIndex++ )
    {
       stdPrintf( ">" );
       getString( 78, arySendString[lineIndex], lineIndex );
@@ -66,17 +133,20 @@ void getFiveLines( int which )
          lineIndex++;
          break;
       }
-      else if ( ( which & 2 ) && !( which & 8 ) && !strcmp( arySendString[lineIndex], "OVERRIDE" ) )
+      else if ( ( which & 2 ) && !( which & 8 ) &&
+                !strcmp( arySendString[lineIndex], "OVERRIDE" ) )
       {
          stdPrintf( "Override on.\r\n" );
          override++;
       }
-      else if ( ( which & 4 ) && !lineIndex && !strcmp( *arySendString, "BEEPS" ) )
+      else if ( ( which & 4 ) && !lineIndex &&
+                !strcmp( *arySendString, "BEEPS" ) )
       {
          lineIndex++;
          break;
       }
-      else if ( ( which & 8 ) && !strcmp( arySendString[lineIndex], "LOCAL" ) )
+      else if ( ( which & 8 ) &&
+                !strcmp( arySendString[lineIndex], "LOCAL" ) )
       {
          stdPrintf( "Only broadcasting to local users.\r\n" );
          local++;
@@ -85,10 +155,12 @@ void getFiveLines( int which )
    sendBlock();
    if ( !strcmp( *arySendString, "PING" ) )
    {
-      arySendString[0][0] = 0; /* please let this go isAway soon */
+      arySendString[0][0] = 0;
    }
    for ( sendLineIndex = 0; sendLineIndex < lineIndex; sendLineIndex++ )
    {
+      int sendCharIndex;
+
       sendCharIndex = (int)strlen( arySendString[sendLineIndex] );
       sendTrackedBuffer( arySendString[sendLineIndex], (size_t)sendCharIndex );
       sendTrackedNewline();
@@ -104,449 +176,30 @@ void getFiveLines( int which )
    }
 }
 
-/*
- * Find a unique matching name to the input entered so far by the user.
- */
-int smartName( char *ptrBuffer, char *ptrEnd )
-{
-   int found = -1;
-   const char *ptrFriend = NULL;
-   char hold = *ptrEnd;
-   slist *listToUse;
 
-   *ptrEnd = 0;
-   listToUse = whoList;
-   {
-      size_t bufferLength = strlen( ptrBuffer );
-      unsigned int itemIndex;
-
-      for ( itemIndex = 0; itemIndex < listToUse->nitems; itemIndex++ )
-      {
-         ptrFriend = listToUse->items[itemIndex];
-         if ( !strncmp( ptrFriend, ptrBuffer, bufferLength ) )
-         { /* Partial match? */
-            /* Partial match unique? */
-            if ( itemIndex + 1 >= listToUse->nitems )
-            {
-               found = (int)itemIndex;
-               break;
-            }
-            else
-            {
-               const char *ptrNextFriend;
-
-               ptrNextFriend = listToUse->items[itemIndex + 1];
-               if ( strncmp( ptrNextFriend, ptrBuffer, bufferLength ) )
-               {
-                  found = (int)itemIndex;
-                  break;
-               }
-               else
-               {
-                  break;
-               }
-            }
-         }
-      }
-   }
-   if ( found == -1 )
-   {
-      *ptrEnd = hold;
-      return 0;
-   }
-   else
-   {
-      snprintf( ptrBuffer, MAX_USER_NAME_INPUT_LENGTH + 1, "%s", ptrFriend );
-   }
-   return 1;
-}
-
-void smartPrint( const char *ptrBuffer, const char *ptrEnd )
-{
-   const char *ptrScan = ptrEnd;
-
-   for ( ; ptrScan > ptrBuffer; ptrScan-- )
-   {
-      putchar( '\b' );
-   }
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.inputText );
-      stdPrintf( "%s", aryAnsiSequence );
-   }
-   for ( ; *ptrScan != 0; ptrScan++ )
-   {
-      if ( ptrScan == ptrEnd && flagsConfiguration.shouldUseAnsi )
-      {
-         char aryAnsiSequence[32];
-
-         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                       color.inputHighlight );
-         stdPrintf( "%s", aryAnsiSequence );
-      }
-      putchar( *ptrScan );
-   }
-   for ( ; ptrScan != ptrEnd; ptrScan-- )
-   {
-      putchar( '\b' );
-   }
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.inputText );
-      stdPrintf( "%s", aryAnsiSequence );
-   }
-}
-
-void smartErase( const char *ptrEnd )
-{
-   const char *ptrScan = ptrEnd;
-
-   for ( ; *ptrScan != 0; ptrScan++ )
-   {
-      putchar( ' ' );
-   }
-   for ( ; ptrScan != ptrEnd; ptrScan-- )
-   {
-      putchar( '\b' );
-   }
-}
-
-/*
- * Used for getting names (user names, room names, etc.)  Capitalizes first
- * letter of word automatically)  Does different things depending on the value
- * of quitPriv (that stuff should be left alone)  The name is then returned to
- * the caller.
- */
-char *getName( int quitPriv )
-{
-   register char *ptrCursor;
-   static char aryNameBuffer[MAX_USER_NAME_INPUT_LENGTH + 1];
-   register int inputChar;
-   int smart = 0;
-   int shouldUppercase;
-   int isFirstChar;
-   unsigned int invalid = 0;
-   static char junk[21];
-
-   lastPtr = 0;
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.inputText );
-      stdPrintf( "%s", aryAnsiSequence );
-   }
-   if ( quitPriv == 1 && *aryAutoName &&
-        strcmp( aryAutoName, "NONE" ) && !isAutoLoggedIn )
-   {
-      isAutoLoggedIn = 1;
-      snprintf( junk, sizeof( junk ), "%s", aryAutoName );
-      stdPrintf( "%s\r\n", junk );
-      return junk;
-   }
-   if ( ( isAway || isXland ) && quitPriv == 2 && sendingXState == SENDING_X_STATE_SENT_COMMAND_X )
-   {
-      sendingXState = SX_SENT_NAME;
-      if ( !popQueue( junk, xlandQueue ) )
-      {
-         stdPrintf( "ACK!  It didn't pop.\r\n" );
-      }
-      if ( flagsConfiguration.shouldUseAnsi )
-      {
-         char aryAnsiSequence[32];
-
-         formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                       lastColor );
-         stdPrintf( "%s", aryAnsiSequence );
-      }
-      stdPrintf( "\rAutomatic reply to %s                     \r\n", junk );
-      return ( junk );
-   }
-   sendingXState = SX_NOT;
-   while ( true )
-   {
-      shouldUppercase = 1;
-      isFirstChar = 1;
-      ptrCursor = aryNameBuffer;
-      while ( true )
-      {
-         inputChar = inKey();
-         if ( inputChar == '\n' )
-         {
-            break;
-         }
-         if ( inputChar == CTRL_D && quitPriv == 1 )
-         {
-            aryNameBuffer[0] = CTRL_D;
-            aryNameBuffer[1] = 0;
-            return ( aryNameBuffer );
-         }
-         if ( inputChar == '_' )
-         {
-            inputChar = ' ';
-         }
-         if ( inputChar == 14 /* CTRL_N */ )
-         {
-            if ( smart )
-            {
-               smartErase( ptrCursor );
-               smart = 0;
-            }
-            for ( ; ptrCursor > aryNameBuffer; --ptrCursor )
-            {
-               printf( "\b \b" );
-            }
-            printf( "%s", aryLastName[lastPtr] );
-            snprintf( aryNameBuffer, sizeof( aryNameBuffer ), "%s", aryLastName[lastPtr] );
-            if ( ++lastPtr == 20 || aryLastName[lastPtr][0] == 0 )
-            {
-               lastPtr = 0;
-            }
-            for ( ptrCursor = aryNameBuffer; *ptrCursor != '\0'; ptrCursor++ )
-            {
-               ;
-            }
-            continue;
-         }
-         if ( inputChar == 16 /* CTRL_P */ )
-         {
-            if ( smart )
-            {
-               smartErase( ptrCursor );
-               smart = 0;
-            }
-            for ( ; ptrCursor > aryNameBuffer; --ptrCursor )
-            {
-               printf( "\b \b" );
-            }
-            if ( --lastPtr < 0 )
-            {
-               for ( lastPtr = 19; lastPtr > 0; --lastPtr )
-               {
-                  if ( aryLastName[lastPtr][0] != 0 )
-                  {
-                     break;
-                  }
-               }
-            }
-            if ( --lastPtr < 0 )
-            {
-               for ( lastPtr = 19; lastPtr > 0; --lastPtr )
-               {
-                  if ( aryLastName[lastPtr][0] != 0 )
-                  {
-                     break;
-                  }
-               }
-            }
-            printf( "%s", aryLastName[lastPtr] );
-            snprintf( aryNameBuffer, sizeof( aryNameBuffer ), "%s", aryLastName[lastPtr] );
-            if ( ++lastPtr == 20 || aryLastName[lastPtr][0] == 0 )
-            {
-               lastPtr = 0;
-            }
-            for ( ptrCursor = aryNameBuffer; *ptrCursor != 0; ptrCursor++ )
-            {
-               ;
-            }
-            continue;
-         }
-         if ( inputChar == ' ' && ( isFirstChar || shouldUppercase ) )
-         {
-            continue;
-         }
-         if ( inputChar == '\b' || inputChar == CTRL_X ||
-              inputChar == CTRL_W || inputChar == ' ' ||
-              isalpha( inputChar ) ||
-              ( isdigit( inputChar ) && quitPriv == 3 ) )
-         {
-            invalid = 0;
-         }
-         else
-         {
-            handleInvalidInput( &invalid );
-            continue;
-         }
-         do
-         {
-            if ( ( inputChar == '\b' || inputChar == CTRL_X ||
-                   inputChar == CTRL_W ) &&
-                 ptrCursor > aryNameBuffer )
-            {
-               printf( "\b \b" );
-               --ptrCursor;
-               if ( smart == 1 )
-               {
-                  smartErase( aryNameBuffer );
-                  smart = 0;
-               }
-               shouldUppercase = ( ptrCursor == aryNameBuffer || *( ptrCursor - 1 ) == ' ' );
-               if ( shouldUppercase && inputChar == CTRL_W )
-               {
-                  break;
-               }
-               if ( ptrCursor == aryNameBuffer )
-               {
-                  isFirstChar = 1;
-               }
-            }
-            else if ( ptrCursor <
-                         &aryNameBuffer[!quitPriv || quitPriv == 3 ? MAX_USER_NAME_INPUT_LENGTH : MAX_ALIAS_INPUT_LENGTH] &&
-                      ( isalpha( inputChar ) || inputChar == ' ' ||
-                        ( isdigit( inputChar ) &&
-                          quitPriv == 3 ) ) )
-            {
-               isFirstChar = 0;
-               if ( shouldUppercase && isupper( inputChar ) )
-               {
-                  --shouldUppercase;
-               }
-               if ( shouldUppercase && islower( inputChar ) )
-               {
-                  inputChar -= 32;
-                  --shouldUppercase;
-               }
-               if ( inputChar == ' ' )
-               {
-                  shouldUppercase = 1;
-               }
-               *ptrCursor++ = (char)inputChar;
-               putchar( inputChar );
-               if ( flagsConfiguration.shouldEnableNameAutocomplete &&
-                    ( quitPriv == 2 || quitPriv == -999 ) )
-               {
-                  if ( smartName( aryNameBuffer, ptrCursor ) )
-                  {
-                     smartPrint( aryNameBuffer, ptrCursor );
-                     smart = 1;
-                  }
-                  else if ( smart == 1 )
-                  {
-                     smartErase( ptrCursor );
-                     smart = 0;
-                  }
-               }
-            }
-         } while ( ( inputChar == CTRL_X || inputChar == CTRL_W ) && ptrCursor > aryNameBuffer );
-      }
-      if ( smart == 0 )
-      {
-         *ptrCursor = 0;
-      }
-      else
-      {
-         if ( flagsConfiguration.shouldUseAnsi )
-         {
-            char aryAnsiSequence[32];
-
-            formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                          color.inputText );
-            stdPrintf( "%s", aryAnsiSequence );
-         }
-         for ( ; *ptrCursor != 0; ptrCursor++ )
-         {
-            putchar( *ptrCursor );
-         }
-      }
-      break;
-   }
-   capPuts( aryNameBuffer );
-   if ( ptrCursor > aryNameBuffer || quitPriv >= 2 )
-   {
-      stdPrintf( "\r\n" );
-   }
-
-   if ( ptrCursor > aryNameBuffer && ptrCursor[-1] == ' ' )
-   {
-      ptrCursor[-1] = 0;
-   }
-
-   if ( quitPriv == 1 && strcmp( aryNameBuffer, "Guest" ) && strcmp( aryAutoName, "NONE" ) )
-   {
-      snprintf( aryAutoName, sizeof( aryAutoName ), "%s", aryNameBuffer );
-      writeBbsRc();
-   }
-   return ( aryNameBuffer );
-}
-
-/*
- * Gets a generic string of length length, puts it in result and returns a a
- * pointer to result.  If the length given is negative, the string is echoed
- * with '.' instead of the character typed (used for passwords)
- */
+/// @brief Read a short input string with local editing and optional hidden echo.
+///
+/// @param length Maximum input length. Negative values request hidden echo.
+/// @param result Destination buffer for the collected string.
+/// @param line Line index used for wrapped multi-line input.
+///
+/// @return This function does not return a value.
 void getString( int length, char *result, int line )
 {
-   static char wrap[80];
-   char *rest;
-   register char *ptrCursor = result;
-   register char *ptrWordStart;
-   register int inputChar;
-   int hidden;
-   unsigned int invalid = 0;
+   GetStringState state;
+   char *ptrCursor = result;
 
-   if ( line <= 0 )
+   normalizeGetStringMode( &length, &state );
+   applyWrapSeed( length, line, result, &ptrCursor );
+   if ( maybeUseSavedPassword( result, &state ) )
    {
-      *wrap = 0;
+      return;
    }
-   else if ( *wrap )
-   {
-      printf( "%s", wrap );
-      {
-         int maxlen = length;
-         if ( maxlen < 0 )
-         {
-            maxlen = -maxlen;
-         }
-         if ( maxlen > 0 )
-         {
-            snprintf( result, (size_t)maxlen + 1, "%s", wrap );
-         }
-         else
-         {
-            *result = 0;
-         }
-      }
-      ptrCursor = result + strlen( result );
-      *wrap = 0;
-   }
-   hidden = 0;
-   if ( length < 0 )
-   {
-      length = 0 - length;
-      hidden = length;
-   }
-   /* Kludge here, since some C compilers too stupid to understand 'signed' */
-   if ( length > 128 )
-   {
-      length = 256 - length;
-      hidden = length;
-   }
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( hidden != 0 && *aryAutoPassword )
-   {
-      if ( !isAutoPasswordSent )
-      {
-         jhpdecode( result, aryAutoPassword, strlen( aryAutoPassword ) );
-         {
-            size_t rlen = strlen( result );
-            for ( size_t charIndex = 0; charIndex < rlen; charIndex++ )
-               stdPutChar( '.' );
-         }
-         stdPrintf( "\r\n" );
-         isAutoPasswordSent = 1;
-         return;
-      }
-   }
-#endif
+
    while ( true )
    {
+      int inputChar;
+
       inputChar = inKey();
       if ( inputChar == ' ' && length == 29 && ptrCursor == result )
       {
@@ -559,112 +212,255 @@ void getString( int length, char *result, int line )
       if ( inputChar < ' ' && inputChar != '\b' &&
            inputChar != CTRL_X && inputChar != CTRL_W )
       {
-         handleInvalidInput( &invalid );
+         handleInvalidInput( &state.invalid );
          continue;
       }
       else
       {
-         invalid = 0;
+         state.invalid = 0;
       }
-      if ( inputChar == '\b' || inputChar == CTRL_X )
-      {
-         if ( ptrCursor == result )
-         {
-            continue;
-         }
-         else
-         {
-            do
-            {
-               printf( "\b \b" );
-               --ptrCursor;
-            } while ( inputChar == CTRL_X && ptrCursor > result );
-         }
-      }
-      else if ( inputChar == CTRL_W )
-      {
-         for ( ptrWordStart = result; ptrWordStart < ptrCursor; ptrWordStart++ )
-         {
-            if ( *ptrWordStart != ' ' )
-            {
-               break;
-            }
-         }
-         inputChar = ( ptrWordStart == ptrCursor );
-         for ( ; ptrCursor > result && ( !inputChar || ptrCursor[-1] != ' ' ); ptrCursor-- )
-         {
-            if ( ptrCursor[-1] != ' ' )
-            {
-               inputChar = 1;
-            }
-            printf( "\b \b" );
-         }
-      }
-      else if ( ptrCursor < result + length && isprint( inputChar ) )
-      {
-         *ptrCursor++ = (char)inputChar;
-         if ( !hidden )
-         {
-            putchar( inputChar );
-         }
-         else
-         {
-            putchar( '.' );
-         }
-      }
-      else if ( line < 0 || line == 19 )
+      if ( handleBackspaceEdit( inputChar, result, &ptrCursor ) )
       {
          continue;
       }
-      else
+      if ( inputChar == CTRL_W )
       {
-         if ( inputChar == ' ' )
-         {
-            break;
-         }
-         for ( ptrWordStart = ptrCursor - 1;
-               ptrWordStart > result && *ptrWordStart != ' ';
-               ptrWordStart-- )
-         {
-            ;
-         }
-         if ( ptrWordStart > result )
-         {
-            *ptrWordStart = 0;
-            for ( rest = wrap, ptrWordStart++; ptrWordStart < ptrCursor; printf( "\b \b" ) )
-            {
-               *rest++ = *ptrWordStart++;
-            }
-            *rest++ = (char)inputChar;
-            *rest = 0;
-         }
-         else
-         {
-            *wrap = (char)inputChar;
-            *( wrap + 1 ) = 0;
-         }
+         handleCtrlWEdit( result, &ptrCursor );
+         continue;
+      }
+      if ( appendPrintableChar( inputChar, result, &ptrCursor, &state ) )
+      {
+         continue;
+      }
+      if ( line < 0 || line == 19 )
+      {
+         continue;
+      }
+      if ( !handleGetStringOverflow( inputChar, line, result, &ptrCursor ) )
+      {
          break;
       }
    }
    *ptrCursor = 0;
-   if ( !hidden )
+   recordCapturedString( result, &state );
+   saveHiddenPasswordIfNeeded( result, &state );
+   stdPrintf( "\r\n" );
+}
+
+
+/// @brief Handle backspace-style editing inside `getString()`.
+///
+/// @param inputChar Input character to process.
+/// @param result Start of the input buffer.
+/// @param ptrCursor Current cursor position.
+///
+/// @return `true` if the input was handled as backspace editing, otherwise `false`.
+static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCursor )
+{
+   if ( inputChar != '\b' && inputChar != CTRL_X )
    {
-      capPuts( result );
+      return false;
+   }
+   if ( *ptrCursor == result )
+   {
+      return true;
+   }
+
+   do
+   {
+      printf( "\b \b" );
+      --( *ptrCursor );
+   } while ( inputChar == CTRL_X && *ptrCursor > result );
+   return true;
+}
+
+
+/// @brief Erase the previous word inside `getString()`.
+///
+/// @param result Start of the input buffer.
+/// @param ptrCursor Current cursor position.
+///
+/// @return Always returns `true`.
+static bool handleCtrlWEdit( const char *result, char **ptrCursor )
+{
+   int foundWord;
+   const char *ptrWordStart;
+
+   for ( ptrWordStart = result; ptrWordStart < *ptrCursor; ptrWordStart++ )
+   {
+      if ( *ptrWordStart != ' ' )
+      {
+         break;
+      }
+   }
+   foundWord = ( ptrWordStart == *ptrCursor );
+   for ( ; *ptrCursor > result &&
+           ( !foundWord || ( *ptrCursor )[-1] != ' ' );
+         ( *ptrCursor )-- )
+   {
+      if ( ( *ptrCursor )[-1] != ' ' )
+      {
+         foundWord = 1;
+      }
+      printf( "\b \b" );
+   }
+
+   return true;
+}
+
+
+/// @brief Move overflow text into the wrap buffer for the next input line.
+///
+/// @param inputChar Character that triggered overflow.
+/// @param line Current line index.
+/// @param result Input buffer.
+/// @param ptrCursor Current cursor position.
+///
+/// @return `true` if input should continue on the current line, otherwise `false`.
+static bool handleGetStringOverflow( int inputChar, int line, const char *result,
+                                     char **ptrCursor )
+{
+   char *ptrWordStart;
+
+   if ( line < 0 || line == 19 )
+   {
+      return true;
+   }
+   if ( inputChar == ' ' )
+   {
+      return false;
+   }
+   for ( ptrWordStart = *ptrCursor - 1;
+         ptrWordStart > result && *ptrWordStart != ' ';
+         ptrWordStart-- )
+   {
+      ;
+   }
+   if ( ptrWordStart > result )
+   {
+      char *rest;
+
+      *ptrWordStart = 0;
+      for ( rest = aryWrap, ptrWordStart++; ptrWordStart < *ptrCursor;
+            printf( "\b \b" ) )
+      {
+         *rest++ = *ptrWordStart++;
+      }
+      *rest++ = (char)inputChar;
+      *rest = 0;
    }
    else
    {
-      size_t rlen = strlen( result );
-      for ( size_t charIndex = 0; charIndex < rlen; charIndex++ )
-      {
-         capPutChar( '.' );
-      }
+      *aryWrap = (char)inputChar;
+      *( aryWrap + 1 ) = 0;
    }
+
+   return false;
+}
+
+
+/// @brief Autofill a saved hidden password when that feature is enabled.
+///
+/// @param result Destination buffer for the decoded password.
+/// @param ptrState Current input mode state.
+///
+/// @return `true` if a saved password was used, otherwise `false`.
+static bool maybeUseSavedPassword( char *result, GetStringState *ptrState )
+{
 #ifdef ENABLE_SAVE_PASSWORD
-   if ( hidden != 0 )
+   if ( ptrState->hidden != 0 && *aryAutoPassword && !isAutoPasswordSent )
    {
-      jhpencode( aryAutoPassword, result, strlen( result ) );
+      size_t charIndex;
+      size_t resultLength;
+
+      jhpdecode( result, aryAutoPassword, strlen( aryAutoPassword ) );
+      resultLength = strlen( result );
+      for ( charIndex = 0; charIndex < resultLength; charIndex++ )
+      {
+         stdPutChar( '.' );
+      }
+      stdPrintf( "\r\n" );
+      isAutoPasswordSent = 1;
+      return true;
+   }
+#else
+   (void)result;
+   (void)ptrState;
+#endif
+
+   return false;
+}
+
+
+/// @brief Normalize the raw `getString()` length into active input mode state.
+///
+/// @param ptrLength Requested input length to normalize in place.
+/// @param ptrState Receives the normalized mode state.
+///
+/// @return This helper does not return a value.
+static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState )
+{
+   ptrState->invalid = 0;
+   ptrState->hidden = 0;
+   ptrState->length = *ptrLength;
+
+   if ( ptrState->length < 0 )
+   {
+      ptrState->length = -ptrState->length;
+      ptrState->hidden = ptrState->length;
+   }
+   if ( ptrState->length > 128 )
+   {
+      ptrState->length = 256 - ptrState->length;
+      ptrState->hidden = ptrState->length;
+   }
+
+   *ptrLength = ptrState->length;
+}
+
+
+/// @brief Record the collected string into the capture log.
+///
+/// @param ptrResult Collected input string.
+/// @param ptrState Current input mode state.
+///
+/// @return This helper does not return a value.
+static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState )
+{
+   size_t charIndex;
+   size_t resultLength;
+
+   if ( !ptrState->hidden )
+   {
+      capPuts( ptrResult );
+      return;
+   }
+
+   resultLength = strlen( ptrResult );
+   for ( charIndex = 0; charIndex < resultLength; charIndex++ )
+   {
+      capPutChar( '.' );
+   }
+}
+
+
+/// @brief Save a hidden password back into the config when enabled.
+///
+/// @param ptrResult Collected hidden input string.
+/// @param ptrState Current input mode state.
+///
+/// @return This helper does not return a value.
+static void saveHiddenPasswordIfNeeded( const char *ptrResult,
+                                        const GetStringState *ptrState )
+{
+#ifdef ENABLE_SAVE_PASSWORD
+   if ( ptrState->hidden != 0 )
+   {
+      jhpencode( aryAutoPassword, ptrResult, strlen( ptrResult ) );
       writeBbsRc();
    }
+#else
+   (void)ptrResult;
+   (void)ptrState;
 #endif
-   stdPrintf( "\r\n" );
 }

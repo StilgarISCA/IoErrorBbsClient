@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
-
 int compareStringItem( const void *ptrNeedle, const void *ptrItem );
 int compareStringPointer( const void *ptrLeft, const void *ptrRight );
 size_t copyIntArray( const int *arySource, size_t sourceCount, int *aryDestination, size_t destinationCount );

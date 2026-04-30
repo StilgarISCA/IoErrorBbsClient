@@ -3,16 +3,23 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
+#include "telnet.h"
 #include "test_helpers.h"
-
+#include "utility.h"
 static int aryInputQueue[256];
 static size_t inputCount;
 static size_t inputIndex;
@@ -31,9 +38,11 @@ static void setInputSequence( const int *aryKeys, size_t count )
 
 static void resetTracking( void )
 {
+   byte = 0;
    inputCount = 0;
    inputIndex = 0;
    flushCount = 0;
+   lastInteractiveInputByte = -1;
    lastFlushValue = 0;
    aryCapturedString[0] = '\0';
    capPutsCallCount = 0;
@@ -88,7 +97,7 @@ static void teardownWhoList( void )
    }
 }
 
-/* getline.c dependencies not under test here. */
+// getline.c dependencies not under test here.
 int capPutChar( int inputChar )
 {
    if ( capturedDotCount < sizeof( aryCapturedDots ) - 1 )
@@ -132,6 +141,11 @@ int inKey( void )
 int netPutChar( int inputChar )
 {
    return inputChar;
+}
+
+void printAnsiForegroundColorValue( int colorValue )
+{
+   (void)colorValue;
 }
 
 void sendTrackedBuffer( const char *ptrBuffer, size_t length )

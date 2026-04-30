@@ -7,10 +7,10 @@
 #ifndef BROWSER_H
 #define BROWSER_H
 
-void filterUrl( const char *ptrLine );
-void openBrowser( void );
 void beginUrlDetectionReport( void );
 void emitUrlDetectionReport( void );
+void filterUrl( const char *ptrLine );
+void openBrowser( void );
 void printWithOsc8Links( const char *ptrText );
 
 #endif

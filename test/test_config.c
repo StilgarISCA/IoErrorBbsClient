@@ -3,16 +3,23 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
+#include "telnet.h"
 #include "test_helpers.h"
-
+#include "utility.h"
 static int aryGetKeyQueue[128];
 static size_t getKeyCount;
 static size_t getKeyIndex;
@@ -105,7 +112,7 @@ static void setStringSequence( const char **aryValues, size_t valueCount )
    stringIndex = 0;
 }
 
-/* config.c dependencies outside this test target's scope. */
+// config.c dependencies outside this test target's scope.
 int capPrintf( const char *format, ... )
 {
    va_list argList;
@@ -132,9 +139,44 @@ void printThemedMnemonicText( const char *ptrText, int defaultColor )
    (void)defaultColor;
 }
 
-int colorValueToLegacyDigit( int colorValue )
+/// @brief Return one test color field in the legacy `.bbsrc` serialization order.
+///
+/// @param colorIndex Field index in the `.bbsrc` color line.
+///
+/// @return Configured test color value at the requested index.
+int colorFieldValue( int colorIndex )
 {
-   return colorValue + '0';
+   int *const aryTestColorFields[COLOR_FIELD_COUNT] =
+      {
+         &color.text,
+         &color.forum,
+         &color.number,
+         &color.errorTextColor,
+         &color.ansiBlackTextColor,
+         &color.ansiBlueTextColor,
+         &color.ansiMagentaTextColor,
+         &color.postDate,
+         &color.postName,
+         &color.postText,
+         &color.postFriendDate,
+         &color.postFriendName,
+         &color.postFriendText,
+         &color.anonymous,
+         &color.morePrompt,
+         &color.ansiWhiteTextColor,
+         &color.reserved5,
+         &color.background,
+         &color.inputText,
+         &color.inputHighlight,
+         &color.expressText,
+         &color.expressName,
+         &color.expressFriendText,
+         &color.expressFriendName };
+
+   assert( colorIndex >= 0 );
+   assert( colorIndex < COLOR_FIELD_COUNT );
+
+   return *aryTestColorFields[colorIndex];
 }
 
 const char *colorNameFromValue( int colorValue )
@@ -178,6 +220,11 @@ const char *colorNameFromValue( int colorValue )
       default:
          return NULL;
    }
+}
+
+int colorValueToLegacyDigit( int colorValue )
+{
+   return colorValue + '0';
 }
 
 int colorConfigCalled;

@@ -3,20 +3,29 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
-
+#include "telnet.h"
+#include "utility.h"
 static int aryInputQueue[16];
 static size_t inputCount;
 static size_t inputIndex;
+static int flushCount;
+static int lastNetPutChar;
 
-/* Stubs for utility.c dependencies that are outside this test target's scope. */
+// Stubs for utility.c dependencies that are outside this test target's scope.
 void deinitialize( void )
 {
 }
@@ -35,8 +44,16 @@ int inKey( void )
    return '\n';
 }
 
+int fflush( FILE *stream )
+{
+   (void)stream;
+   flushCount++;
+   return 0;
+}
+
 int netPutChar( int inputChar )
 {
+   lastNetPutChar = inputChar;
    return inputChar;
 }
 
@@ -82,6 +99,7 @@ static void setInputSequence( const int *arySource, size_t sourceCount )
 {
    size_t itemIndex;
 
+   flushCount = 0;
    inputCount = sourceCount;
    if ( inputCount > sizeof( aryInputQueue ) / sizeof( aryInputQueue[0] ) )
    {
@@ -91,6 +109,129 @@ static void setInputSequence( const int *arySource, size_t sourceCount )
    for ( itemIndex = 0; itemIndex < inputCount; itemIndex++ )
    {
       aryInputQueue[itemIndex] = arySource[itemIndex];
+   }
+}
+
+/// @brief Verify that validated interactive input is sent, flushed, and tracked.
+///
+/// @param state CMocka test state.
+///
+/// @return This test does not return a value.
+static void looper_WhenValidInputIsForwarded_FlushesImmediately( void **state )
+{
+   const int arySequence[] = { 'J', -1 };
+
+   (void)state;
+
+   byte = 1;
+   lastInteractiveInputByte = -1;
+   lastNetPutChar = 0;
+   setInputSequence( arySequence, sizeof( arySequence ) / sizeof( arySequence[0] ) );
+
+   looper();
+
+   if ( lastNetPutChar != aryKeyMap['J'] )
+   {
+      fail_msg( "looper should forward valid input immediately; expected %d got %d",
+                aryKeyMap['J'], lastNetPutChar );
+   }
+   if ( flushCount != 1 )
+   {
+      fail_msg( "looper should flush one forwarded interactive key immediately; got %d flushes",
+                flushCount );
+   }
+   if ( arySavedBytes[1] != 'J' || byte != 2 )
+   {
+      fail_msg( "looper should track the original input byte after sending; tracked=%d byte=%ld",
+                arySavedBytes[1], byte );
+   }
+   if ( lastInteractiveInputByte != 1 )
+   {
+      fail_msg( "looper should remember the saved-byte position of the last interactive input; got %ld",
+                lastInteractiveInputByte );
+   }
+   if ( !arySavedByteCanReplay[1] )
+   {
+      fail_msg( "looper should mark normal typed input as replayable" );
+   }
+}
+
+/// @brief Verify that tracked buffers populate the replay buffer.
+///
+/// @param state CMocka test state.
+///
+/// @return This test does not return a value.
+static void sendTrackedBuffer_WhenBytesSent_PopulatesReplayBuffer( void **state )
+{
+   (void)state;
+
+   byte = 10;
+   arySavedBytes[10] = 0;
+   arySavedBytes[11] = 0;
+   arySavedBytes[12] = 0;
+   arySavedByteCanReplay[10] = false;
+   arySavedByteCanReplay[11] = false;
+   arySavedByteCanReplay[12] = false;
+   lastNetPutChar = 0;
+
+   sendTrackedBuffer( "abc", 3 );
+
+   if ( byte != 13 )
+   {
+      fail_msg( "sendTrackedBuffer should advance byte once per sent char; got %ld", byte );
+   }
+   if ( arySavedBytes[10] != 'a' ||
+        arySavedBytes[11] != 'b' ||
+        arySavedBytes[12] != 'c' )
+   {
+      fail_msg( "sendTrackedBuffer should populate replay bytes; got %d,%d,%d",
+                arySavedBytes[10], arySavedBytes[11], arySavedBytes[12] );
+   }
+   if ( lastNetPutChar != 'c' )
+   {
+      fail_msg( "sendTrackedBuffer should send every byte; last sent=%d", lastNetPutChar );
+   }
+   if ( !arySavedByteCanReplay[10] ||
+        !arySavedByteCanReplay[11] ||
+        !arySavedByteCanReplay[12] )
+   {
+      fail_msg( "sendTrackedBuffer should mark sent bytes as replayable" );
+   }
+}
+
+/// @brief Verify that non-replayable tracked bytes advance the byte counter without replay.
+///
+/// @param state CMocka test state.
+///
+/// @return This test does not return a value.
+static void sendTrackedCharWithoutReplay_WhenByteSent_MarksByteNonReplayable( void **state )
+{
+   (void)state;
+
+   byte = 20;
+   arySavedBytes[20] = 0;
+   arySavedByteCanReplay[20] = true;
+   lastNetPutChar = 0;
+
+   sendTrackedCharWithoutReplay( 'M' );
+
+   if ( byte != 21 )
+   {
+      fail_msg( "sendTrackedCharWithoutReplay should advance byte once; got %ld", byte );
+   }
+   if ( arySavedBytes[20] != 'M' )
+   {
+      fail_msg( "sendTrackedCharWithoutReplay should still save the byte value; got %d",
+                arySavedBytes[20] );
+   }
+   if ( arySavedByteCanReplay[20] )
+   {
+      fail_msg( "sendTrackedCharWithoutReplay should mark the byte as non-replayable" );
+   }
+   if ( lastNetPutChar != 'M' )
+   {
+      fail_msg( "sendTrackedCharWithoutReplay should send the byte; last sent=%d",
+                lastNetPutChar );
    }
 }
 
@@ -363,6 +504,9 @@ int main( void )
       cmocka_unit_test( extractName_WhenHeaderDoesNotContainFrom_ReturnsNull ),
       cmocka_unit_test( extractNumber_WhenHeaderContainsSingleDigit_ReturnsParsedNumber ),
       cmocka_unit_test( extractNumber_WhenHeaderHasNoMarker_ReturnsZero ),
+      cmocka_unit_test( looper_WhenValidInputIsForwarded_FlushesImmediately ),
+      cmocka_unit_test( sendTrackedBuffer_WhenBytesSent_PopulatesReplayBuffer ),
+      cmocka_unit_test( sendTrackedCharWithoutReplay_WhenByteSent_MarksByteNonReplayable ),
    };
 
    return cmocka_run_group_tests( aryTests, NULL, NULL );

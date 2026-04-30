@@ -5,11 +5,9 @@
  */
 
 /*
- * This is where I've put all the #include files, to keep them separate in a
- * single location.  Pure C stuff goes here, the system-specific stuff is kept
- * over in unix.h.
+ * This header gathers the common project includes and shared definitions.
+ * Pure C dependencies live here, and system-specific details live in unix.h.
  */
-
 #ifndef DEFS_H_INCLUDED
 #define DEFS_H_INCLUDED
 
@@ -35,15 +33,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
+#include <assert.h>
 #include <ctype.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
-#include <assert.h>
-#include <limits.h>
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #ifndef RETSIGTYPE
 #define RETSIGTYPE void
 #endif
@@ -58,14 +55,12 @@
 #include <openssl/ssl.h>
 #endif
 
-/*
- * Use sigsetjmp/siglongjmp behavior when available so signal masks are
- * preserved across jump boundaries.
- */
+// Use sigsetjmp/siglongjmp behavior when available so signal masks are
+// preserved across jump boundaries.
 #define USE_POSIX_SIGSETJMP 1
 
 #include <errno.h>
-/* extern int errno; */
+// extern int errno;
 
 #define COLOR_VALUE_DEFAULT 256
 
@@ -186,12 +181,12 @@ static inline int formatAnsiResetSequence( char *ptrBuffer, size_t bufferSize )
 
 typedef struct
 {
-   char *start;   /* Pointer to beginning of queue */
-   int head;      /* Index of current head */
-   int tail;      /* Index of current tail */
-   int size;      /* Number of objects queue can hold */
-   int itemCount; /* Number of objects queued */
-   int objsize;   /* Size of one object */
+   int head;      // Index of current head
+   int itemCount; // Number of objects queued
+   int objsize;   // Size of one object
+   int size;      // Number of objects queue can hold
+   char *start;   // Pointer to beginning of queue
+   int tail;      // Index of current tail
 } queue;
 
 #define CTRL_D 4
@@ -213,7 +208,7 @@ typedef struct
 #define BBS_PORT_NUMBER 23
 #define SSL_PORT_NUMBER 992
 
-/* sendingXState defines */
+// sendingXState defines
 #define SX_WANT_TO 5
 #define SENDING_X_STATE_SENT_COMMAND_X 1
 #define SX_SENT_NAME 2
@@ -221,11 +216,11 @@ typedef struct
 #define SX_SEND_NEXT 8
 #define SX_NOT 0
 
-/* Color transform defines */
+// Color transform defines
 #define CX_NORMAL 0
 #define CX_POST 1
 #define CX_EXPRESS 2
-#define CX_INFO 3 /* not yet used */
+#define CX_INFO 3 // not yet used
 
 #define MAX_USER_NAME_HISTORY_COUNT 20
 #define WINDOW_ROWS_DEFAULT 24
@@ -235,73 +230,71 @@ typedef struct
 #define NAWS_ROWS_MAX 110
 typedef struct
 {
-   unsigned int isPosting : 1;                    /* true if aryUser is currently posting */
-   unsigned int isLastSave : 1;                   /* true if last time aryUser edited they saved */
-   unsigned int shouldCheckExpress : 1;           /* true if waiting to check BBS for X's */
-   unsigned int isConfigMode : 1;                 /* true if we are in bbsrc config funcs */
-   unsigned int shouldUseAnsi : 1;                /* true if BBS is in ANSI color mode */
-   unsigned int shouldUseBold : 1;                /* true if using bold in ANSI color mode */
-   unsigned int shouldDisableBold : 1;            /* true if we need to force bold ANSI off */
-   unsigned int isMorePromptActive : 1;           /* true if we are inside a MORE prompt */
-   unsigned int shouldSquelchPost : 1;            /* true if we should squelch enemy posts */
-   unsigned int shouldSquelchExpress : 1;         /* true if we should squelch enemy express */
-   unsigned int shouldAutoAnswerAnsiPrompt : 1;   /* true if we automatically answer ANSI ? */
-   unsigned int shouldUseTcpKeepalive : 1;        /* true if TCP keepalive probes are enabled */
-   unsigned int shouldEnableClickableUrls : 1;    /* true if OSC-8 clickable URL output is enabled */
-   unsigned int shouldEnableTitleBar : 1;         /* true if terminal title updates are enabled */
-   unsigned int isScreenReaderModeEnabled : 1;    /* true if screen reader friendly mode is enabled */
-   unsigned int hasTitleBarSetting : 1;           /* true if title bar setting was set in .bbsrc */
-   unsigned int hasScreenReaderModeSetting : 1;   /* true if screen reader mode was set in .bbsrc */
-   unsigned int shouldEnableNameAutocomplete : 1; /* true if name-entry autocomplete is enabled */
-   unsigned int hasNameAutocompleteSetting : 1;   /* true if name autocomplete was set in .bbsrc */
+   unsigned int hasNameAutocompleteSetting : 1;   // true if name autocomplete was set in .bbsrc
+   unsigned int hasScreenReaderModeSetting : 1;   // true if screen reader mode was set in .bbsrc
+   unsigned int hasTitleBarSetting : 1;           // true if title bar setting was set in .bbsrc
+   unsigned int isConfigMode : 1;                 // true in bbsrc config functions
+   unsigned int isLastSave : 1;                   // true if last time aryUser edited they saved
+   unsigned int isMorePromptActive : 1;           // true inside a MORE prompt
+   unsigned int isPosting : 1;                    // true if aryUser is currently posting
+   unsigned int isScreenReaderModeEnabled : 1;    // true if screen reader friendly mode is enabled
+   unsigned int shouldAutoAnswerAnsiPrompt : 1;   // true when the ANSI prompt should be answered automatically
+   unsigned int shouldCheckExpress : 1;           // true if waiting to check BBS for X's
+   unsigned int shouldDisableBold : 1;            // true when bold ANSI output must be forced off
+   unsigned int shouldEnableClickableUrls : 1;    // true if OSC-8 clickable URL output is enabled
+   unsigned int shouldEnableNameAutocomplete : 1; // true if name-entry autocomplete is enabled
+   unsigned int shouldEnableTitleBar : 1;         // true if terminal title updates are enabled
+   unsigned int shouldSquelchExpress : 1;         // true when enemy express messages should be squelched
+   unsigned int shouldSquelchPost : 1;            // true when enemy posts should be squelched
+   unsigned int shouldUseAnsi : 1;                // true if BBS is in ANSI color mode
+   unsigned int shouldUseBold : 1;                // true if using bold in ANSI color mode
+   unsigned int shouldUseTcpKeepalive : 1;        // true if TCP keepalive probes are enabled
 } Flags;
 
 typedef struct
 {
-   int ( *sortfn )( const void *, const void * ); /* function to sort list; see slist.c */
-   unsigned int nitems;                           /* number of items in list */
-   void **items;                                  /* dynamic array containing item pointers */
+   void **items;                                  // dynamic array containing item pointers
+   unsigned int nitems;                           // number of items in list
+   int ( *sortfn )( const void *, const void * ); // function to sort list; see slist.c
 } slist;
 
 typedef struct
 {
-   int magic;     /* Magic number */
-   char name[21]; /* User name */
-   char info[54]; /* Friend description */
-   time_t time;   /* Time online */
-} friend;         /* User list entry */
+   char info[54]; // Friend description
+   int magic;     // Magic number
+   char name[21]; // User name
+   time_t time;   // Time online
+} friend;         // User list entry
 
 #define COLOR_FIELD_COUNT 24
 #define COLOR_BACKGROUND_INDEX 17
 
 typedef struct
 {
-   int text;                 /* Plain text color */
-   int forum;                /* Forum prompt color */
-   int number;               /* Numbers and Read cmd prompt color */
-   int errorTextColor;       /* Warning/error messages color */
-   int ansiBlackTextColor;   /* Incoming ANSI black fallback color */
-   int ansiBlueTextColor;    /* Incoming ANSI blue fallback color */
-   int ansiMagentaTextColor; /* Incoming ANSI magenta fallback color */
-   int postDate;             /* Post date stamp color */
-   int postName;             /* Post author name color */
-   int postText;             /* Post text color */
-   int postFriendDate;       /* Post friend date stamp color */
-   int postFriendName;       /* Post friend name color */
-   int postFriendText;       /* Post friend text color */
-   int anonymous;            /* Anonymous post header color */
-   int morePrompt;           /* More prompt color */
-   int ansiWhiteTextColor;   /* Incoming ANSI white fallback color */
+   int text;                 // Plain text color
+   int forum;                // Forum prompt color
+   int number;               // Numbers and Read cmd prompt color
+   int errorTextColor;       // Warning/error messages color
+   int ansiBlackTextColor;   // Incoming ANSI black fallback color
+   int ansiBlueTextColor;    // Incoming ANSI blue fallback color
+   int ansiMagentaTextColor; // Incoming ANSI magenta fallback color
+   int postDate;             // Post date stamp color
+   int postName;             // Post author name color
+   int postText;             // Post text color
+   int postFriendDate;       // Post friend date stamp color
+   int postFriendName;       // Post friend name color
+   int postFriendText;       // Post friend text color
+   int anonymous;            // Anonymous post header color
+   int morePrompt;           // More prompt color
+   int ansiWhiteTextColor;   // Incoming ANSI white fallback color
    int reserved5;
-   int background;        /* Background color */
-   int inputText;         /* Text input fields */
-   int inputHighlight;    /* Text input fields (highlight) */
-   int expressText;       /* X message text color */
-   int expressName;       /* X message name color */
-   int expressFriendText; /* X message from friend text color */
-   int expressFriendName; /* X message from friend name color*/
+   int background;        // Background color
+   int inputText;         // Text input fields
+   int inputHighlight;    // Text input fields (highlight)
+   int expressText;       // X message text color
+   int expressName;       // X message name color
+   int expressFriendText; // X message from friend text color
+   int expressFriendName; // X message from friend name color
 } Color;
 
-#include "proto.h"
-
-#endif /* DEFS_H_INCLUDED */
+#endif // DEFS_H_INCLUDED

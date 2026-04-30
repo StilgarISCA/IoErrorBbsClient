@@ -23,13 +23,27 @@ noinst_HEADERS = \
 
 bbs_SOURCES = \
 	browser.c \
+	browser_urls.c \
 	bbsrc.c \
+	bbsrc_parse.c \
 	color.c \
+	color_config.c \
 	color_themes.c \
 	config.c \
+	config_express.c \
+	config_keys.c \
+	config_options.c \
+	config_write.c \
+	config_users.c \
 	edit.c \
-	filter.c \
+	edit_check.c \
+	edit_prompt.c \
+	filter_data.c \
+	filter_express.c \
+	filter_post.c \
+	filter_who.c \
 	getline.c \
+	getline_name.c \
 	global.c \
 	info.c \
 	inkey.c \
@@ -38,8 +52,18 @@ bbs_SOURCES = \
 	slist.c \
 	sysio.c \
 	telnet.c \
-	utility.c \
-	unix.c
+	utility_args.c \
+	utility_color.c \
+	utility_compare.c \
+	utility_error.c \
+	utility_input.c \
+	utility_line.c \
+	utility_password.c \
+	utility_send.c \
+	utility_string.c \
+	unix.c \
+	unix_net.c \
+	unix_term.c
 
 if HAVE_CMOCKA
 check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey test_filter test_color test_config test_sysio test_edit test_telnet
@@ -50,31 +74,31 @@ test_queue_LDADD = $(CMOCKA_LIBS)
 test_slist_SOURCES = test/test_slist.c test/test_helpers.c slist.c
 test_slist_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_slist_LDADD = $(CMOCKA_LIBS)
-test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility.c global.c
+test_utility_SOURCES = test/test_utility.c test/test_helpers.c utility_error.c utility_input.c utility_send.c utility_string.c global.c
 test_utility_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_utility_LDADD = $(CMOCKA_LIBS)
-test_bbsrc_SOURCES = test/test_bbsrc.c test/test_helpers.c bbsrc.c queue.c slist.c global.c
+test_bbsrc_SOURCES = test/test_bbsrc.c test/test_helpers.c bbsrc.c bbsrc_parse.c queue.c slist.c global.c
 test_bbsrc_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_bbsrc_LDADD = $(CMOCKA_LIBS)
-test_getline_SOURCES = test/test_getline.c test/test_helpers.c getline.c slist.c global.c
+test_getline_SOURCES = test/test_getline.c test/test_helpers.c getline.c getline_name.c slist.c global.c
 test_getline_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_getline_LDADD = $(CMOCKA_LIBS)
 test_inkey_SOURCES = test/test_inkey.c test/test_helpers.c inkey.c global.c
 test_inkey_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_inkey_LDADD = $(CMOCKA_LIBS)
-test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c filter.c queue.c slist.c global.c
+test_filter_SOURCES = test/test_filter.c test/test_helpers.c browser.c browser_urls.c filter_data.c filter_express.c filter_post.c filter_who.c queue.c slist.c global.c
 test_filter_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_filter_LDADD = $(CMOCKA_LIBS)
-test_color_SOURCES = test/test_color.c test/test_helpers.c color.c color_themes.c slist.c global.c
+test_color_SOURCES = test/test_color.c test/test_helpers.c color.c color_config.c color_themes.c slist.c global.c
 test_color_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_color_LDADD = $(CMOCKA_LIBS)
-test_config_SOURCES = test/test_config.c test/test_helpers.c config.c slist.c global.c
+test_config_SOURCES = test/test_config.c test/test_helpers.c config.c config_express.c config_keys.c config_options.c config_write.c config_users.c slist.c global.c
 test_config_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_config_LDADD = $(CMOCKA_LIBS)
 test_sysio_SOURCES = test/test_sysio.c test/test_helpers.c sysio.c global.c
 test_sysio_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_sysio_LDADD = $(CMOCKA_LIBS)
-test_edit_SOURCES = test/test_edit.c test/test_helpers.c edit.c global.c
+test_edit_SOURCES = test/test_edit.c test/test_helpers.c edit.c edit_check.c edit_prompt.c global.c
 test_edit_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_edit_LDADD = $(CMOCKA_LIBS)
 test_telnet_SOURCES = test/test_telnet.c test/test_helpers.c telnet.c queue.c global.c
@@ -114,16 +138,9 @@ cppcheck:
 	@if ! command -v cppcheck >/dev/null 2>&1; then \
 		echo "cppcheck is not installed. Install it with: brew install cppcheck"; \
 		exit 1; \
-	fi
-	@if [ -f compile_commands.json ]; then \
-		cppcheck --project=compile_commands.json \
-			--enable=warning,style,performance,portability \
-			--inconclusive; \
-	else \
-		echo "compile_commands.json not found; analyzing bbs sources directly"; \
-		cppcheck --enable=warning,style,performance,portability \
-			--inconclusive --std=c11 -DHAVE_CONFIG_H -I. $(bbs_SOURCES); \
-	fi
+	fi; \
+	cppcheck --enable=warning,style,performance,portability \
+		--inconclusive --std=c11 -DHAVE_CONFIG_H -I. $(bbs_SOURCES)
 
 scan-build:
 	@SCAN_BUILD_BIN="$$(command -v scan-build 2>/dev/null || true)"; \

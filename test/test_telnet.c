@@ -3,16 +3,22 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
 #include "telnet.h"
-
+#include "utility.h"
 static unsigned char aryNetOutput[4096];
 static size_t netOutputCount;
 static int stubWindowRows;
@@ -55,6 +61,8 @@ static void syncTelnetStateToData( void )
 
 static void resetState( void )
 {
+   int byteIndex;
+
    stubWindowRows = 24;
    snprintf( aryNameResponse, sizeof( aryNameResponse ), "%s", "Dr Strange" );
    aryStringResponse[0] = '\0';
@@ -62,6 +70,7 @@ static void resetState( void )
    byte = 0;
    targetByte = 0;
    bytePosition = 0;
+   lastInteractiveInputByte = -1;
    whoListProgress = 0;
    isExpressMessageInProgress = 0;
    isExpressMessageHeaderActive = 0;
@@ -77,6 +86,11 @@ static void resetState( void )
    aryExpressParsing[0] = '\0';
    aryExpressMessageBuffer[0] = '\0';
    ptrExpressMessageBuffer = aryExpressMessageBuffer;
+   for ( byteIndex = 0; byteIndex < 1000; byteIndex++ )
+   {
+      arySavedByteCanReplay[byteIndex] = false;
+      arySavedBytes[byteIndex] = 0;
+   }
 
    if ( xlandQueue == NULL )
    {
@@ -107,7 +121,7 @@ static void resetState( void )
    morePromptHelperCallCount = 0;
 }
 
-/* telnet.c dependencies outside these tests. */
+// telnet.c dependencies outside these tests.
 void configBbsRc( void )
 {
    configBbsRcCallCount++;
@@ -338,6 +352,96 @@ static void telReceive_WhenGetNameCommandArrives_SendsNameResponse( void **state
    }
 }
 
+/// @brief Verify that prompted string input marks the exact command byte that opened the prompt.
+///
+/// @param state CMocka test state.
+///
+/// @return This test does not return a value.
+static void telReceive_WhenGetStringCommandArrives_MarksExactPromptTriggerByteNonReplayable( void **state )
+{
+   int result;
+
+   (void)state;
+
+   resetState();
+   byte = 11;
+   lastInteractiveInputByte = 10;
+   arySavedBytes[8] = 'x';
+   arySavedBytes[9] = 'y';
+   arySavedBytes[10] = 'J';
+   arySavedByteCanReplay[8] = true;
+   arySavedByteCanReplay[9] = true;
+   arySavedByteCanReplay[10] = true;
+   snprintf( aryStringResponse, sizeof( aryStringResponse ), "%s", "Forum" );
+
+   (void)telReceive( IAC );
+   (void)telReceive( G_STR );
+   (void)telReceive( 20 );
+   (void)telReceive( 0 );
+   (void)telReceive( 0 );
+   result = telReceive( 8 );
+
+   if ( result != 0 )
+   {
+      fail_msg( "telReceive G_STR flow should return 0; got %d", result );
+   }
+   if ( arySavedByteCanReplay[10] )
+   {
+      fail_msg( "G_STR flow should mark the prompt trigger byte as non-replayable" );
+   }
+   if ( !arySavedByteCanReplay[8] || !arySavedByteCanReplay[9] )
+   {
+      fail_msg( "G_STR flow should leave earlier replayable bytes untouched when the trigger byte is later" );
+   }
+   if ( byte != 14 )
+   {
+      fail_msg( "G_STR flow should count response and newline bytes from parsed position; got %ld", byte );
+   }
+}
+
+/// @brief Verify that message entry blocks stale replay bytes from entering the editor.
+///
+/// @param state CMocka test state.
+///
+/// @return This test does not return a value.
+static void telReceive_WhenPostCommandArrives_MarksReplayWindowNonReplayable( void **state )
+{
+   int result;
+
+   (void)state;
+
+   resetState();
+   byte = 22;
+   arySavedBytes[19] = 'x';
+   arySavedBytes[20] = 'y';
+   arySavedBytes[21] = 'E';
+   arySavedByteCanReplay[19] = true;
+   arySavedByteCanReplay[20] = true;
+   arySavedByteCanReplay[21] = true;
+
+   (void)telReceive( IAC );
+   (void)telReceive( G_POST );
+   (void)telReceive( 0 );
+   (void)telReceive( 0 );
+   (void)telReceive( 0 );
+   result = telReceive( 19 );
+
+   if ( result != 0 )
+   {
+      fail_msg( "telReceive G_POST flow should return 0; got %d", result );
+   }
+   if ( makeMessageCallCount != 1 )
+   {
+      fail_msg( "G_POST flow should call makeMessage once; got %d", makeMessageCallCount );
+   }
+   if ( arySavedByteCanReplay[19] ||
+        arySavedByteCanReplay[20] ||
+        arySavedByteCanReplay[21] )
+   {
+      fail_msg( "G_POST flow should mark the current replay window as non-replayable" );
+   }
+}
+
 static void telReceive_WhenXMessageEndsAndPendingSend_TriggersSendAnX( void **state )
 {
    // Arrange
@@ -404,6 +508,8 @@ int main( void )
       cmocka_unit_test( sendNaws_WhenWindowSizeChanged_SendsNawsPayload ),
       cmocka_unit_test( telReceive_WhenClientProbeReceived_RespondsWithClientAck ),
       cmocka_unit_test( telReceive_WhenGetNameCommandArrives_SendsNameResponse ),
+      cmocka_unit_test( telReceive_WhenGetStringCommandArrives_MarksExactPromptTriggerByteNonReplayable ),
+      cmocka_unit_test( telReceive_WhenPostCommandArrives_MarksReplayWindowNonReplayable ),
       cmocka_unit_test( telReceive_WhenXMessageEndsAndPendingSend_TriggersSendAnX ),
       cmocka_unit_test( telReceive_WhenDataByteReceived_RoutesToCorrectFilter ),
    };

@@ -5,15 +5,18 @@
  */
 
 /*
- * This file handles configuration of the bbsrc file.  Its somewhat sloppy but
- * it should do the job.  Someone else can put a nicer interface on it.
+ * This file handles configuration of the bbsrc file.
  */
+#include "bbsrc.h"
+#include "client.h"
+#include "client_globals.h"
+#include "color.h"
+#include "config_globals.h"
+#include "config_menu.h"
 #include "defs.h"
-#include "ext.h"
-
+#include "filter_globals.h"
+#include "utility.h"
 static const char *CONFIG_MAIN_MENU_KEYS = "cefhikmoqx \n";
-static const char *CONFIG_MACRO_MENU_KEYS = "elq \n";
-static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
 
 #define GREETING \
    "\r\nWelcome to IO ERROR's ISCA BBS Client!  Please take a moment to familiarize\r\nyourself with some of our new features.\r\n\n"
@@ -29,9 +32,97 @@ static const char *CONFIG_EXPRESS_MENU_KEYS = "axq \n";
    "You can now turn off the notification of killed posts and express messages\r\nfrom people on your enemy list.\r\n\nSelect Yes to be notified, or No to not be notified."
 #define ADVANCED_OPTIONS \
    "Advanced users may wish to use the configuration menu now to change options\r\nbefore logging in."
-#define SCREEN_READER_INFO \
-   "Screen reader friendly mode keeps this client easier for VoiceOver and other\r\nscreen readers to follow.  You can change this later from the Options menu."
 
+static const char *describeKeyForHelp( int inputChar );
+
+
+/// @brief Run the top-level client configuration menu.
+///
+/// The selected submenus update the in-memory configuration, and quitting the
+/// menu writes the changes back to `.bbsrc` when the file is writable.
+///
+/// @return This function does not return a value.
+void configBbsRc( void )
+{
+   flagsConfiguration.isConfigMode = 1;
+   if ( isBbsRcReadOnly )
+   {
+      stdPrintf( "\r\nConfiguration file is read-only, unable to save configuration for next session.\r\n" );
+   }
+   else if ( !ptrBbsRc )
+   {
+      stdPrintf( "\r\nNo configuration file, unable to save configuration for next session.\r\n" );
+   }
+   while ( true )
+   {
+      int inputChar;
+
+      printThemedMnemonicText( "\r\n<C>olor  <E>nemy list  <F>riend list  <H>otkeys\r\n<I>nfo  <M>acros  <O>ptions  <X>press  <Q>uit", color.number );
+      printThemedMnemonicText( "\r\nClient config -> ", color.forum );
+      printAnsiForegroundColorValue( color.text );
+      inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
+      switch ( inputChar )
+      {
+         case 'c':
+            colorConfig();
+            break;
+
+         case 'x':
+            expressConfig();
+            break;
+
+         case 'i':
+            information();
+            break;
+
+         case 'o':
+            configureOptionsMenu();
+            break;
+
+         case 'h':
+            configureHotkeys();
+            break;
+
+         case 'f':
+            stdPrintf( "Friend list\r\n" );
+            editUsers( friendList, fStrCompareVoid, "friend" );
+            break;
+
+         case 'e':
+            stdPrintf( "Enemy list\r\n" );
+            editUsers( enemyList, strCompareVoid, "enemy" );
+            break;
+
+         case 'm':
+            configureMacros();
+            break;
+
+         case 'q':
+         case ' ':
+         case '\n':
+            stdPrintf( "Quit\r\n" );
+            flagsConfiguration.isConfigMode = 0;
+            if ( isBbsRcReadOnly || !ptrBbsRc )
+            {
+               return;
+            }
+            writeBbsRc();
+            return;
+            // NOTREACHED
+
+         default:
+            break;
+      }
+   }
+}
+
+
+/// @brief Describe a configured key in a user-facing format.
+///
+/// @param inputChar Key value to describe.
+///
+/// @return A printable name for the key, such as `Esc`, `Space`, `Return`, or
+/// the control-key form returned by `strCtrl()`.
 static const char *describeKeyForHelp( int inputChar )
 {
    switch ( inputChar )
@@ -54,79 +145,16 @@ static const char *describeKeyForHelp( int inputChar )
    }
 }
 
-void promptForScreenReaderModeIfUnset( void )
-{
-   if ( flagsConfiguration.hasScreenReaderModeSetting )
-   {
-      return;
-   }
 
-   flagsConfiguration.isScreenReaderModeEnabled =
-      (unsigned int)sPrompt( SCREEN_READER_INFO,
-                             "Use screen reader friendly mode?",
-                             0 );
-   flagsConfiguration.hasScreenReaderModeSetting = 1;
-}
-
-void defaultNameAutocompleteIfUnset( void )
-{
-   if ( flagsConfiguration.hasNameAutocompleteSetting )
-   {
-      return;
-   }
-
-   flagsConfiguration.shouldEnableNameAutocomplete =
-      (unsigned int)!flagsConfiguration.isScreenReaderModeEnabled;
-   flagsConfiguration.hasNameAutocompleteSetting = 1;
-}
-
-static void setKeyDefaultToUppercase( int lowerKey, bool shouldUseUppercaseByDefault )
-{
-   int upperKey;
-
-   upperKey = toupper( lowerKey );
-   if ( shouldUseUppercaseByDefault )
-   {
-      aryKeyMap[lowerKey] = (char)upperKey;
-      aryKeyMap[upperKey] = (char)lowerKey;
-   }
-   else
-   {
-      aryKeyMap[lowerKey] = (char)lowerKey;
-      aryKeyMap[upperKey] = (char)upperKey;
-   }
-}
-
-static void printThemedFriendListEntry( const friend *ptrFriend )
-{
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postFriendName );
-      stdPrintf( "%s", aryAnsiSequence );
-      stdPrintf( "%-20s ", ptrFriend->name );
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.postFriendText );
-      stdPrintf( "%s", aryAnsiSequence );
-      stdPrintf( "%s\r\n", ptrFriend->info );
-      formatAnsiForegroundSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                    color.text );
-      stdPrintf( "%s", aryAnsiSequence );
-      return;
-   }
-
-   stdPrintf( "%-20s %s\r\n", ptrFriend->name, ptrFriend->info );
-}
-
-/*
- * First time setup borrowed from Client 9 with permission.
- */
-
-/*
- * Performs first time setup for new features.
- */
+/// @brief Perform version-gated setup prompts and initialize new defaults.
+///
+/// This setup flow carries forward the legacy first-run and upgrade prompts
+/// borrowed from Client 9 with permission, then writes the resulting
+/// configuration back to disk.
+///
+/// @param newVersion Previously stored client configuration version.
+///
+/// @return This function does not return a value.
 void setup( int newVersion )
 {
    setTerm();
@@ -147,7 +175,7 @@ void setup( int newVersion )
    }
    fflush( stdout );
 
-   /* bbsrc file */
+   // bbsrc file
    if ( newVersion < 5 )
    {
       if ( !sPrompt( BBSRC_INFO, "Continue running this client?", 1 ) )
@@ -194,760 +222,4 @@ void setup( int newVersion )
    }
    resetTerm();
    return;
-}
-
-/*
- * Changes settings in bbsrc file and saves it.
- */
-void configBbsRc( void )
-{
-   char aryMenuLine[80];
-   register int inputChar;
-   register int itemIndex;
-   register int innerIndex;
-   int lines;
-
-   flagsConfiguration.isConfigMode = 1;
-   if ( isBbsRcReadOnly )
-   {
-      stdPrintf( "\r\nConfiguration file is read-only, unable to save configuration for next session.\r\n" );
-   }
-   else if ( !ptrBbsRc )
-   {
-      stdPrintf( "\r\nNo configuration file, unable to save configuration for next session.\r\n" );
-   }
-   while ( true )
-   {
-      printThemedMnemonicText( "\r\n<C>olor  <E>nemy list  <F>riend list  <H>otkeys\r\n<I>nfo  <M>acros  <O>ptions  <X>press  <Q>uit", color.number );
-      printThemedMnemonicText( "\r\nClient config -> ", color.forum );
-      printAnsiForegroundColorValue( color.text );
-      inputChar = readValidatedMenuKey( CONFIG_MAIN_MENU_KEYS );
-      switch ( inputChar )
-      {
-         case 'c':
-            colorConfig();
-            break;
-
-         case 'x':
-            expressConfig();
-            break;
-
-         case 'i':
-            information();
-            break;
-
-         case 'o':
-            stdPrintf( "Options\r\n" );
-            stdPrintf( "Use screen reader friendly mode? (%s) -> ",
-                       flagsConfiguration.isScreenReaderModeEnabled ? "Yes" : "No" );
-            flagsConfiguration.isScreenReaderModeEnabled =
-               (unsigned int)yesNoDefault( flagsConfiguration.isScreenReaderModeEnabled );
-            flagsConfiguration.hasScreenReaderModeSetting = 1;
-            if ( flagsConfiguration.isScreenReaderModeEnabled )
-            {
-               flagsConfiguration.shouldEnableClickableUrls = 0;
-               flagsConfiguration.shouldEnableNameAutocomplete = 0;
-            }
-            if ( !isLoginShell )
-            {
-               stdPrintf( "Enter local editor to use (%s uses shell default) -> ", aryEditor );
-               getString( 72, aryMenuLine, -999 );
-               if ( *aryMenuLine )
-               {
-                  snprintf( aryEditor, sizeof( aryEditor ), "%s", aryMenuLine );
-               }
-            }
-            stdPrintf( "Show long who list by default? (%s) -> ", ( aryKeyMap['w'] == 'w' ) ? "No" : "Yes" );
-            setKeyDefaultToUppercase( 'w', yesNoDefault( ( aryKeyMap['w'] != 'w' ) ? 1 : 0 ) );
-            stdPrintf( "Show full profile by default? (%s) -> ", ( aryKeyMap['p'] == 'p' ) ? "No" : "Yes" );
-            setKeyDefaultToUppercase( 'p', yesNoDefault( ( aryKeyMap['p'] != 'p' ) ? 1 : 0 ) );
-            stdPrintf( "Enter name of site to connect to (%s) -> ", aryBbsHost );
-            getString( 64, aryMenuLine, -999 );
-            if ( *aryMenuLine )
-            {
-               snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", aryMenuLine );
-            }
-#if 0
-	      stdPrintf("Use secure (SSL) connection to this site? (%s) -> ",
-		    shouldUseSsl ? "Yes" : "No");
-	      if ( yesNoDefault( shouldUseSsl ) )
-	      {
-	         shouldUseSsl = 1;
-	      }
-	      else
-	      {
-	         shouldUseSsl = 0;
-	      }
-#endif
-            shouldUseSsl = 0;
-            if ( ( !bbsPort || bbsPort == BBS_PORT_NUMBER ) && shouldUseSsl )
-            {
-               bbsPort = SSL_PORT_NUMBER;
-            }
-            else if ( ( !bbsPort || bbsPort == SSL_PORT_NUMBER ) && !shouldUseSsl )
-            {
-               bbsPort = BBS_PORT_NUMBER;
-            }
-            stdPrintf( "Enter port number to connect to (%d) -> ", bbsPort );
-            getString( 5, aryMenuLine, -999 );
-            if ( *aryMenuLine )
-            {
-               bbsPort = (unsigned short)atoi( aryMenuLine );
-            }
-            if ( !bbsPort )
-            {
-               if ( shouldUseSsl )
-               {
-                  bbsPort = SSL_PORT_NUMBER;
-               }
-               else
-               {
-                  bbsPort = BBS_PORT_NUMBER;
-               }
-            }
-            stdPrintf( "Try to keep idle connections alive with TCP probes? (%s) -> ",
-                       flagsConfiguration.shouldUseTcpKeepalive ? "Yes" : "No" );
-            flagsConfiguration.shouldUseTcpKeepalive = (unsigned int)yesNoDefault( flagsConfiguration.shouldUseTcpKeepalive );
-            flagsConfiguration.hasTitleBarSetting = 1;
-            stdPrintf( "Update terminal title bar? (%s) -> ",
-                       flagsConfiguration.shouldEnableTitleBar ? "Yes" : "No" );
-            flagsConfiguration.shouldEnableTitleBar =
-               (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableTitleBar );
-            stdPrintf( "Append OSC 8 URL summaries to posts & mail? (%s) -> ",
-                       flagsConfiguration.shouldEnableClickableUrls ? "Yes" : "No" );
-            flagsConfiguration.shouldEnableClickableUrls = (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableClickableUrls );
-            stdPrintf( "Autocomplete username in recipient prompts? (%s) -> ",
-                       flagsConfiguration.shouldEnableNameAutocomplete ? "Yes" : "No" );
-            flagsConfiguration.shouldEnableNameAutocomplete =
-               (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableNameAutocomplete );
-            flagsConfiguration.hasNameAutocompleteSetting = 1;
-            break;
-
-         case 'h':
-            stdPrintf( "Hotkeys\r\n\n" );
-            stdPrintf( "Enter command key (%s) -> ", strCtrl( commandKey ) );
-            while ( true )
-            {
-               stdPrintf( "%s\r\n", strCtrl( commandKey = newKey( commandKey ) ) );
-               if ( commandKey < ' ' )
-               {
-                  break;
-               }
-               stdPrintf( "You must use a control character for your command key, try again -> " );
-            }
-            stdPrintf( "Enter key to quit client (%s) -> ", strCtrl( quitKey ) );
-            stdPrintf( "%s\r\n", strCtrl( quitKey = newKey( quitKey ) ) );
-            if ( !isLoginShell )
-            {
-               stdPrintf( "Enter key to suspend client (%s) -> ", strCtrl( suspKey ) );
-               stdPrintf( "%s\r\n", strCtrl( suspKey = newKey( suspKey ) ) );
-               stdPrintf( "Enter key to start a new shell (%s) -> ", strCtrl( shellKey ) );
-               stdPrintf( "%s\r\n", strCtrl( shellKey = newKey( shellKey ) ) );
-            }
-            stdPrintf( "Enter key to toggle capture mode (%s) -> ", strCtrl( captureKey ) );
-            stdPrintf( "%s\r\n", strCtrl( captureKey = newKey( captureKey ) ) );
-            stdPrintf( "Enter key to enable away from keyboard (%s) -> ", strCtrl( awayKey ) );
-            stdPrintf( "%s\r\n", strCtrl( awayKey = newKey( awayKey ) ) );
-            stdPrintf( "Enter key to browse a website (%s) -> ", strCtrl( browserKey ) );
-            stdPrintf( "%s\r\n", strCtrl( browserKey = newKey( browserKey ) ) );
-            break;
-
-         case 'f':
-            stdPrintf( "Friend list\r\n" );
-            editUsers( friendList, fStrCompareVoid, "friend" );
-            break;
-
-         case 'e':
-            stdPrintf( "Enemy list\r\n" );
-            editUsers( enemyList, strCompareVoid, "enemy" );
-            break;
-
-         case 'm':
-            stdPrintf( "Macros\r\n" );
-            for ( ; inputChar != 'q'; )
-            {
-               printThemedMnemonicText( "\r\n<E>dit  <L>ist  <Q>uit", color.number );
-               printThemedMnemonicText( "\r\nMacro config -> ", color.forum );
-               printAnsiForegroundColorValue( color.text );
-               inputChar = readValidatedMenuKey( CONFIG_MACRO_MENU_KEYS );
-               switch ( inputChar )
-               {
-                  case 'e':
-                     stdPrintf( "Edit\r\n" );
-                     while ( true )
-                     {
-                        stdPrintf( "\r\nMacro to edit (%s to end) -> ", strCtrl( commandKey ) );
-                        inputChar = newKey( -1 );
-                        if ( inputChar == commandKey || inputChar == ' ' ||
-                             inputChar == '\n' || inputChar == '\r' )
-                        {
-                           break;
-                        }
-                        stdPrintf( "%s\r\n", strCtrl( inputChar ) );
-                        newMacro( inputChar );
-                     }
-                     stdPrintf( "Done\r\n" );
-                     break;
-
-                  case 'l':
-                     stdPrintf( "List\r\n\n" );
-                     for ( itemIndex = 0, lines = 1; itemIndex < 128; itemIndex++ )
-                     {
-                        if ( *aryMacro[itemIndex] )
-                        {
-                           stdPrintf( "'%s': \"", strCtrl( itemIndex ) );
-                           for ( innerIndex = 0; aryMacro[itemIndex][innerIndex]; innerIndex++ )
-                           {
-                              stdPrintf( "%s", strCtrl( aryMacro[itemIndex][innerIndex] ) );
-                           }
-                           stdPrintf( "\"\r\n" );
-                           if ( ++lines == rows - 1 && more( &lines, -1 ) < 0 )
-                           {
-                              break;
-                           }
-                        }
-                     }
-                     break;
-
-                  case 'q':
-                  case ' ':
-                  case '\n':
-                     stdPrintf( "Quit\r\n" );
-                     inputChar = 'q';
-                     break;
-               }
-            }
-            break;
-
-         case 'q':
-         case ' ':
-         case '\n':
-            stdPrintf( "Quit\r\n" );
-            flagsConfiguration.isConfigMode = 0;
-            if ( isBbsRcReadOnly || !ptrBbsRc )
-            {
-               return;
-            }
-            writeBbsRc();
-            return;
-            /* NOTREACHED */
-
-         default:
-            break;
-      }
-   }
-}
-
-void expressConfig( void )
-{
-   stdPrintf( "Express\r\n" );
-
-   while ( true )
-   {
-      printThemedMnemonicText( "\r\n<A>way  <X>Land  <Q>uit", color.number );
-      printThemedMnemonicText( "\r\nExpress config -> ", color.forum );
-      printAnsiForegroundColorValue( color.text );
-
-      int inputChar = readValidatedMenuKey( CONFIG_EXPRESS_MENU_KEYS );
-
-      switch ( inputChar )
-      {
-         case 'a':
-            stdPrintf( "Away from keyboard\r\n\n" );
-            newAwayMessage();
-            break;
-
-         case 'x':
-            stdPrintf( "XLand\r\n\nAutomatically reply to X messages you receive? (%s) -> ", isXland ? "Yes" : "No" );
-            isXland = yesNoDefault( isXland );
-            break;
-
-         case 'q':
-         case ' ':
-         case '\n':
-            stdPrintf( "Quit\r\n" );
-            return;
-            /* NOTREACHED */
-
-         default:
-            break;
-      }
-   }
-}
-
-void newAwayMessage( void )
-{
-   int itemIndex;
-
-   if ( **aryAwayMessageLines )
-   {
-      stdPrintf( "Current away from keyboard message is:\r\n\n" );
-      for ( itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex]; itemIndex++ )
-      {
-         stdPrintf( " %s\r\n", aryAwayMessageLines[itemIndex] );
-      }
-      stdPrintf( "\r\nDo you wish to change this? -> " );
-      if ( !yesNo() )
-      {
-         return;
-      }
-      stdPrintf( "\r\nOk, you have five lines to do something creative.\r\n\n" );
-   }
-   else
-   {
-      stdPrintf( "Enter a message, up to 5 lines\r\n\n" );
-   }
-   for ( itemIndex = 0; itemIndex < 5; itemIndex++ )
-   {
-      *aryAwayMessageLines[itemIndex] = 0;
-   }
-   for ( itemIndex = 0; itemIndex < 5 && ( !itemIndex || *aryAwayMessageLines[itemIndex - 1] ); itemIndex++ )
-   {
-      stdPrintf( ">" );
-      getString( itemIndex ? 78 : 74, aryAwayMessageLines[itemIndex], itemIndex );
-   }
-}
-
-void writeBbsRc( void )
-{
-   int itemIndex, innerIndex;
-   const char *ptrColorName;
-   const friend *ptrFriend;
-   const int *ptrColorValues;
-
-   deleteFile( aryBbsFriendsName );
-   rewind( ptrBbsRc );
-   fprintf( ptrBbsRc, "aryEditor %s\n", aryEditor );
-   /* Change:  site line will always be written */
-   fprintf( ptrBbsRc, "site %s %d%s\n", aryBbsHost, bbsPort,
-            shouldUseSsl ? " secure" : "" );
-   fprintf( ptrBbsRc, "commandkey %s\n", strCtrl( commandKey ) );
-   fprintf( ptrBbsRc, "quit %s\n", strCtrl( quitKey ) );
-   fprintf( ptrBbsRc, "susp %s\n", strCtrl( suspKey ) );
-   fprintf( ptrBbsRc, "shellkey %s\n", strCtrl( shellKey ) );
-   fprintf( ptrBbsRc, "capture %s\n", strCtrl( captureKey ) );
-   fprintf( ptrBbsRc, "awaykey %s\n", strCtrl( awayKey ) );
-   fprintf( ptrBbsRc, "squelch %d\n", ( flagsConfiguration.shouldSquelchPost ? 2 : 0 ) + ( flagsConfiguration.shouldSquelchExpress ? 1 : 0 ) );
-   fprintf( ptrBbsRc, "keepalive %d\n", flagsConfiguration.shouldUseTcpKeepalive ? 1 : 0 );
-   fprintf( ptrBbsRc, "clickableurls %d\n", flagsConfiguration.shouldEnableClickableUrls ? 1 : 0 );
-   fprintf( ptrBbsRc, "titlebar %d\n", flagsConfiguration.shouldEnableTitleBar ? 1 : 0 );
-   fprintf( ptrBbsRc, "screenreader %d\n", flagsConfiguration.isScreenReaderModeEnabled ? 1 : 0 );
-   fprintf( ptrBbsRc, "autocomplete %d\n", flagsConfiguration.shouldEnableNameAutocomplete ? 1 : 0 );
-   if ( *aryAutoName )
-   {
-      fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );
-   }
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( *aryAutoPassword )
-   {
-      fprintf( ptrBbsRc, "autopass %s\n", aryAutoPassword );
-   }
-#endif
-   ptrColorValues = (const int *)&color;
-   fprintf( ptrBbsRc, "color" );
-   for ( itemIndex = 0; itemIndex < COLOR_FIELD_COUNT; itemIndex++ )
-   {
-      ptrColorName = colorNameFromValue( ptrColorValues[itemIndex] );
-      if ( ptrColorName != NULL )
-      {
-         fprintf( ptrBbsRc, " %s", ptrColorName );
-      }
-      else
-      {
-         fprintf( ptrBbsRc, " %d", ptrColorValues[itemIndex] );
-      }
-   }
-   fprintf( ptrBbsRc, "\n" );
-   if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt )
-   {
-      fprintf( ptrBbsRc, "autoansi\n" );
-   }
-   if ( **aryAwayMessageLines )
-   {
-      for ( itemIndex = 0; itemIndex < 5 && *aryAwayMessageLines[itemIndex]; itemIndex++ )
-      {
-         fprintf( ptrBbsRc, "a%d %s\n", itemIndex + 1, aryAwayMessageLines[itemIndex] );
-      }
-   }
-   fprintf( ptrBbsRc, "version %d\n", version );
-   if ( flagsConfiguration.shouldUseBold )
-   {
-      fprintf( ptrBbsRc, "bold\n" );
-   }
-   if ( !isXland )
-   {
-      fprintf( ptrBbsRc, "xland\n" );
-   }
-   for ( itemIndex = 0; itemIndex < (int)friendList->nitems; itemIndex++ )
-   {
-      ptrFriend = (friend *)friendList->items[itemIndex];
-      fprintf( ptrBbsRc, "friend %-20s   %s\n", ptrFriend->name, ptrFriend->info );
-   }
-   for ( itemIndex = 0; itemIndex < (int)enemyList->nitems; itemIndex++ )
-   {
-      fprintf( ptrBbsRc, "enemy %s\n", (char *)enemyList->items[itemIndex] );
-   }
-   for ( itemIndex = 0; itemIndex < 128; itemIndex++ )
-   {
-      if ( *aryMacro[itemIndex] )
-      {
-         fprintf( ptrBbsRc, "aryMacro %s ", strCtrl( itemIndex ) );
-         for ( innerIndex = 0; aryMacro[itemIndex][innerIndex]; innerIndex++ )
-         {
-            fprintf( ptrBbsRc, "%s", strCtrl( aryMacro[itemIndex][innerIndex] ) );
-         }
-         fprintf( ptrBbsRc, "\n" );
-      }
-   }
-   for ( itemIndex = 33; itemIndex < 128; itemIndex++ )
-   {
-      if ( aryKeyMap[itemIndex] != itemIndex )
-      {
-         fprintf( ptrBbsRc, "aryKeyMap %c %c\n", itemIndex, aryKeyMap[itemIndex] );
-      }
-   }
-   fflush( ptrBbsRc );
-   truncateBbsRc( ftell( ptrBbsRc ) );
-}
-
-/*
- * Gets a new hotkey value or returns the old value if the default is taken. If
- * the old value is specified as -1, no checking is done to see if the new
- * value doesn't conflict with other hotkeys.  Calls getKey() instead of
- * inKey() to avoid the character translation (since the hotkey values are
- * checked within inKey() instead of getKey())
- */
-int newKey( int oldkey )
-{
-   while ( true )
-   {
-      int inputChar;
-
-      inputChar = getKey();
-      if ( ( ( inputChar == ' ' || inputChar == '\n' ||
-               inputChar == '\r' ) &&
-             oldkey >= 0 ) ||
-           inputChar == oldkey )
-      {
-         return ( oldkey );
-      }
-      if ( oldkey >= 0 &&
-           ( inputChar == commandKey || inputChar == suspKey ||
-             inputChar == quitKey || inputChar == shellKey ||
-             inputChar == captureKey || inputChar == awayKey ||
-             inputChar == browserKey ) )
-      {
-         stdPrintf( "\r\nThat key is already in use for another hotkey, try again -> " );
-      }
-      else
-      {
-         return ( inputChar );
-      }
-   }
-}
-
-/*
- * Gets a new value for aryMacro 'which'.
- */
-void newMacro( int which )
-{
-   register int itemIndex;
-
-   if ( *aryMacro[which] )
-   {
-      stdPrintf( "\r\nCurrent aryMacro for '%s' is: \"", strCtrl( which ) );
-      for ( itemIndex = 0; aryMacro[which][itemIndex]; itemIndex++ )
-      {
-         stdPrintf( "%s", strCtrl( aryMacro[which][itemIndex] ) );
-      }
-      stdPrintf( "\"\r\nDo you wish to change this? (Y/N) -> " );
-   }
-   else
-   {
-      stdPrintf( "\r\nNo current aryMacro for '%s'.\r\nDo you want to make one? (Y/N) -> ", strCtrl( which ) );
-   }
-   if ( !yesNo() )
-   {
-      return;
-   }
-   stdPrintf( "\r\nEnter new aryMacro (use %s to end)\r\n -> ", strCtrl( commandKey ) );
-   for ( itemIndex = 0;; itemIndex++ )
-   {
-      register int inputChar;
-
-      inputChar = inKey();
-      if ( inputChar == '\b' )
-      {
-         if ( itemIndex )
-         {
-            if ( aryMacro[which][itemIndex - 1] < ' ' )
-            {
-               printf( "\b \b" );
-            }
-            itemIndex--;
-            printf( "\b \b" );
-         }
-         itemIndex--;
-         continue;
-      }
-      if ( inputChar == commandKey )
-      {
-         aryMacro[which][itemIndex] = 0;
-         for ( itemIndex = 0; aryMacro[which][itemIndex]; itemIndex++ )
-         { /* Shut up!! */
-            capPrintf( "%s", strCtrl( aryMacro[which][itemIndex] ) );
-         }
-         stdPrintf( "\r\n" );
-         return;
-      }
-      else if ( itemIndex == 70 )
-      {
-         itemIndex--;
-         continue;
-      }
-      printf( "%s", strCtrl( aryMacro[which][itemIndex] = (char)inputChar ) );
-   }
-}
-
-/*
- * Returns a string representation of inputChar suitable for printing.  If inputChar is a
- * regular character it will be printed normally, if it is a control character
- * it is printed as in the Unix ctlecho mode (itemIndex.e. ctrl-A is printed as ^A)
- */
-char *strCtrl( int inputChar )
-{
-   static char aryControlText[3];
-
-   if ( inputChar <= 31 || inputChar == DEL )
-   {
-      aryControlText[0] = '^';
-      aryControlText[1] = (char)( inputChar == 10 ? 'M' : ( inputChar ^ 0x40 ) );
-   }
-   else
-   {
-      aryControlText[0] = (char)inputChar;
-      aryControlText[1] = 0;
-   }
-   aryControlText[2] = 0;
-   return ( aryControlText );
-}
-
-/*
- * Does the editing of the friend and enemy lists.
- */
-void editUsers( slist *list, int ( *findfn )( const void *, const void * ), const char *name )
-{
-   register int inputChar;
-   register int itemIndex = 0;
-   unsigned int invalid = 0;
-   int lines;
-   char *ptrUserName;
-   char aryInfo[50];
-   char *ptrEnemyName;
-   friend *ptrFriend;
-
-   while ( true )
-   {
-      /* Build menu */
-      if ( !strncmp( name, "enemy", 5 ) )
-      {
-         printThemedMnemonicText( "\r\n<A>dd  <D>elete  <L>ist  <O>ptions  <Q>uit", color.number );
-      }
-      else
-      {
-         printThemedMnemonicText( "\r\n<A>dd  <D>elete  <E>dit  <L>ist  <Q>uit", color.number );
-      }
-      {
-         char aryDisplayLine[80];
-
-         snprintf( aryDisplayLine, sizeof( aryDisplayLine ), "\r\n%c%s list -> ", toupper( name[0] ), name + 1 );
-         printThemedMnemonicText( aryDisplayLine, color.forum );
-      }
-      printAnsiForegroundColorValue( color.text );
-
-      inputChar = inKey();
-      switch ( inputChar )
-      {
-         case 'a':
-            {
-               bool shouldSkipAdd;
-
-               stdPrintf( "Add\r\n" );
-               stdPrintf( "\r\nUser to add to your %s list -> ", name );
-               ptrUserName = getName( -999 );
-               shouldSkipAdd = false;
-               if ( *ptrUserName )
-               {
-                  if ( slistFind( list, ptrUserName, findfn ) != -1 )
-                  {
-                     stdPrintf( "\r\n%s is already on your %s list.\r\n", ptrUserName, name );
-                     shouldSkipAdd = true;
-                  }
-                  if ( shouldSkipAdd )
-                  {
-                     break;
-                  }
-                  if ( !strcmp( name, "friend" ) )
-                  {
-                     if ( !( ptrFriend = (friend *)calloc( 1, sizeof( friend ) ) ) )
-                     {
-                        fatalExit( "Out of memory adding 'friend'!\n", "Fatal error" );
-                     }
-                     snprintf( ptrFriend->name, sizeof( ptrFriend->name ), "%s", ptrUserName );
-                     stdPrintf( "Enter info for %s: ", ptrUserName );
-                     getString( 48, aryInfo, -999 );
-                     snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", ( *aryInfo ) ? aryInfo : "(None)" );
-                     ptrFriend->magic = 0x3231;
-                     if ( !slistAddItem( list, ptrFriend, 0 ) )
-                     {
-                        fatalExit( "Can't add 'friend'!\n", "Fatal error" );
-                     }
-                  }
-                  else
-                  { /* enemy list */
-                     ptrEnemyName = (char *)calloc( 1, strlen( ptrUserName ) + 1 );
-                     if ( !ptrEnemyName )
-                     {
-                        fatalExit( "Out of memory adding 'enemy'!\r\n", "Fatal error" );
-                     }
-                     else
-                     {
-                        snprintf( ptrEnemyName, strlen( ptrUserName ) + 1, "%s", ptrUserName );
-                     }
-                     if ( !slistAddItem( list, ptrEnemyName, 0 ) )
-                     {
-                        fatalExit( "Can't add 'enemy'!\r\n", "Fatal error" );
-                     }
-                  }
-                  stdPrintf( "\r\n%s was added to your %s list.\r\n", ptrUserName, name );
-               }
-               break;
-            }
-
-         case 'd':
-            stdPrintf( "Delete\r\n\nUser to delete from your %s list -> ", name );
-            ptrUserName = getName( -999 );
-            if ( *ptrUserName )
-            {
-               itemIndex = slistFind( list, ptrUserName, findfn );
-               if ( itemIndex != -1 )
-               {
-                  free( list->items[itemIndex] );
-                  if ( !slistRemoveItem( list, itemIndex ) )
-                  {
-                     fatalExit( "Can't remove user!\r\n", "Fatal error" );
-                  }
-                  stdPrintf( "\r\n%s was deleted from your %s list.\r\n", ptrUserName, name );
-               }
-               else
-               {
-                  stdPrintf( "\r\n%s is not in your %s list.\r\n", ptrUserName, name );
-               }
-            }
-            break;
-
-         case 'e':
-            if ( !strncmp( name, "friend", 6 ) )
-            {
-               stdPrintf( "Edit\r\nName of user to edit: " );
-               ptrUserName = getName( -999 );
-               if ( *ptrUserName )
-               {
-                  if ( ( itemIndex = slistFind( list, ptrUserName, findfn ) ) != -1 )
-                  {
-                     ptrFriend = list->items[itemIndex];
-                     if ( !strcmp( ptrFriend->name, ptrUserName ) )
-                     {
-                        stdPrintf( "Current info: %s\r\n", ptrFriend->info );
-                        stdPrintf( "Return to leave unchanged, NONE to erase.\r\n" );
-                        stdPrintf( "Enter new info: " );
-                        getString( 48, aryInfo, -999 );
-                        if ( *aryInfo )
-                        {
-                           if ( !strcmp( aryInfo, "NONE" ) )
-                           {
-                              snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", "(None)" );
-                           }
-                           else
-                           {
-                              snprintf( ptrFriend->info, sizeof( ptrFriend->info ), "%s", aryInfo );
-                           }
-                        }
-                     }
-                  }
-                  else
-                  {
-                     stdPrintf( "\r\n%s is not in your %s list.\r\n", ptrUserName, name );
-                  }
-               }
-               break;
-            }
-            else
-            {
-               handleInvalidInput( &invalid );
-               continue;
-            }
-
-         case 'l':
-            stdPrintf( "List\r\n\n" );
-            if ( !strcmp( name, "friend" ) )
-            {
-               lines = 1;
-               for ( itemIndex = 0; itemIndex < (int)list->nitems; itemIndex++ )
-               {
-                  ptrFriend = list->items[itemIndex];
-                  printThemedFriendListEntry( ptrFriend );
-                  lines++;
-                  if ( lines == rows - 1 && more( &lines, -1 ) < 0 )
-                  {
-                     break;
-                  }
-               }
-            }
-            else
-            {
-               lines = 1;
-               for ( itemIndex = 0; itemIndex < (int)list->nitems; itemIndex++ )
-               {
-                  stdPrintf( "%-19s%s", list->items[itemIndex], ( itemIndex % 4 ) == 3 ? "\r\n" : " " );
-                  if ( ( itemIndex % 4 ) == 3 )
-                  {
-                     lines++;
-                  }
-                  if ( lines == rows - 1 && more( &lines, -1 ) < 0 )
-                  {
-                     break;
-                  }
-               }
-               if ( itemIndex % 4 )
-               {
-                  stdPrintf( "\r\n" );
-               }
-            }
-            break;
-
-         case 'q':
-         case '\n':
-         case ' ':
-            stdPrintf( "Quit\r\n" );
-            return;
-
-         case 'o':
-            if ( !strncmp( name, "enemy", 5 ) )
-            {
-               stdPrintf( "Options\r\n\nNotify when an enemy's post is killed? (%s) -> ",
-                          flagsConfiguration.shouldSquelchPost ? "No" : "Yes" );
-               flagsConfiguration.shouldSquelchPost = !yesNoDefault( !flagsConfiguration.shouldSquelchPost );
-               stdPrintf( "Notify when an enemy's eXpress message is killed? (%s) -> ",
-                          flagsConfiguration.shouldSquelchExpress ? "No" : "Yes" );
-               flagsConfiguration.shouldSquelchExpress = !yesNoDefault( !flagsConfiguration.shouldSquelchExpress );
-            }
-            /* Fall through */
-
-         default:
-            handleInvalidInput( &invalid );
-            continue;
-      }
-      invalid = 0;
-   }
 }

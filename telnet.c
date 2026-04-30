@@ -4,284 +4,294 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-/*
- * This handles the information flowing into the client from the BBS.  It
- * basically understands a very limited subset of the telnet protocol (enough
- * to "fake it" with the BBS) with some extensions to allow the extra features
- * the client provides.  The telnet stuff is unimportant, but it'll confuse the
- * BBS if you alter it.
- *
- * The client tells the BBS it is a client rather a telnet program when it first
- * connects, after that the BBS acts differently, letting the client know when
- * something in particular is being done (entering an X message, posting, etc.)
- * to allow the client to handle that however it wants, as well as providing
- * extra protocol for the start/end of messages/X'aryString and the special who list.
- *
- * This is made more complex by the fact that the client doesn't know it should
- * handle (for example) an X message differently until it receives word from
- * the BBS that an X message should be entered -- but by this time the client
- * may have already sent some of the X message over the network instead of
- * gathering it up locally.  So when the BBS tells the client to go into the
- * local X message mode it also tells the client how many bytes have been
- * passed to it (they count them in the same manner) and throws isAway the excess
- * on its side.  The client has buffered this excess on its side and therefore
- * make it available locally instead of having it lost forever.  Boy, that was
- * a pisser when I realized I'd have to do that!
- */
+#include "browser.h"
+#include "client.h"
+#include "client_globals.h"
+#include "config_menu.h"
 #include "defs.h"
-#include "ext.h"
+#include "edit.h"
+#include "filter.h"
+#include "filter_globals.h"
+#include "getline_input.h"
+#include "network_globals.h"
 #include "telnet.h"
+#include "utility.h"
+static int handleTelnetDataState( int inputByte, int *ptrState );
+static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer );
+static int handleTelnetGetState( int inputByte, int *ptrState,
+                                 unsigned char *aryTelnetBuffer,
+                                 int *ptrTelnetBufferPos );
+static int handleTelnetIacState( int inputByte, int *ptrState,
+                                 unsigned char *aryTelnetBuffer,
+                                 int *ptrTelnetBufferPos );
+static int handleTelnetVoidState( int inputByte, int *ptrState );
+static void markPromptTriggerNonReplayable( unsigned char commandType );
+static void markReplayByteNonReplayable( long replayPosition );
 
-int telReceive( int inputByte )
+
+/// @brief Handle normal telnet data bytes outside IAC command parsing.
+///
+/// @param inputByte Incoming protocol byte.
+/// @param ptrState Current telnet parser state.
+///
+/// @return `0` after dispatching the byte.
+static int handleTelnetDataState( int inputByte, int *ptrState )
 {
-   static int state = TS_DATA;               /* Current state of telnet state machine */
-   static unsigned char aryTelnetBuffer[80]; /* Generic buffer */
-   static int telnetBufferPos = 0;           /* Pointer into generic buffer */
-   register int outputIndex;
-   const char *ptrInputString;
-
-   switch ( state )
+   if ( inputByte == IAC )
    {
-      case TS_DATA: /* normal data */
-         if ( inputByte == IAC )
-         { /* telnet Is A Command (IAC) byte */
-            state = TS_IAC;
-            break;
-         }
-         if ( whoListProgress )
-         { /* We are currently receiving a whoListProgress */
-            filterWhoList( inputByte );
-         }
-         else if ( isExpressMessageInProgress )
-         { /* We are currently receiving an X message */
-            filterExpress( inputByte );
-         }
-         else if ( postProgressState )
-         { /* We are currently receiving a post */
-            filterPost( inputByte );
-         }
-         else
-         { /* Garden-variety data (I hope!) */
-            filterData( inputByte );
-         }
-         break;
-
-         /* handle various telnet and client-specific IAC commands */
-      case TS_IAC:
-         switch ( inputByte )
-         {
-
-               /*
-        * This is sent/received when the BBS thinks the client is
-        * 'inactive' as per the normal 10 minute limit in the BBS -- the
-        * actual inactive time limit for a client is an hour, this is done
-        * to make sure the client is still alive on this end so dead
-        * connections can be timed out and not be ghosted for an hour.
-        */
-            case CLIENT:
-               state = TS_DATA;
-               netPutChar( IAC );
-               netPutChar( CLIENT );
-               break;
-
-            case S_WHO: /* start who list transfer */
-               state = TS_DATA;
-               whoListProgress = 1;
-               break;
-
-            case G_POST: /* get post */
-            case G_FIVE: /* get five lines (X or profile info) */
-            case G_NAME: /* get name */
-            case G_STR:  /* get string */
-            case CONFIG: /* do configuration */
-               state = TS_GET;
-               aryTelnetBuffer[telnetBufferPos++] = (unsigned char)inputByte;
-               break;
-
-               /*
-        * This code is used by the bbs to signal the client to synchronize
-        * its count of the current byte we are on.  We then send back a
-        * START to the bbs so it can synchronize with us.  NOTE:  If it
-        * becomes necessary in the future to introduce incompatible changes
-        * in the BBS and the client, this will be how the BBS can
-        * differentiate between new clients that understand the new stuff,
-        * and old clients which the BBS will probably still want to be
-        * compatible with. Instead of START a new code can be sent to let
-        * the BBS know we understand the new stuff and will operate
-        * accordingly.  If there are multiple different versions of the BBS
-        * to worry about as well (gag!) then more logic would be needed, I
-        * refuse to worry about this case, if it comes about it'll be after
-        * I ever have to worry about or maintain that BBS code!
-        */
-            case START:
-               state = TS_DATA;
-               byte = 1;
-               netPutChar( IAC );
-               netPutChar( START3 );
-               break;
-
-            case POST_S: /* Start of post transfer */
-               state = TS_DATA;
-               postHeaderActive = 1;
-               postProgressState = 1;
-               filterPost( -1 ); /* tell filter to start working */
-               break;
-
-            case POST_E: /* End of post transfer */
-               state = TS_DATA;
-               postHeaderActive = 0;
-               ptrPostBuffer = 0;
-               postProgressState = 0;
-               isPostJustEnded = 1;
-               filterPost( -1 ); /* Tell filter to end working */
-               break;
-
-            case MORE_M: /* More prompt marker */
-               state = TS_DATA;
-               flagsConfiguration.isMorePromptActive ^= 1;
-               if ( !flagsConfiguration.isMorePromptActive && flagsConfiguration.shouldUseAnsi )
-               {
-                  morePromptHelper();
-               }
-               break;
-
-            case XMSG_S: /* Start of X message transfer */
-               state = TS_DATA;
-               *aryExpressParsing = 0;
-               isExpressMessageHeaderActive = 1;
-               isExpressMessageInProgress = 1;
-               filterExpress( -1 ); /* tell filter to start working */
-               break;
-
-            case XMSG_E: /* End of X message transfer */
-               state = TS_DATA;
-               *aryExpressParsing = 0;
-               isExpressMessageHeaderActive = 0;
-               isExpressMessageInProgress = 0;
-               ptrExpressMessageBuffer = aryExpressMessageBuffer;
-               filterExpress( -1 ); /* Tell filter to end working */
-               if ( shouldSendExpressMessage )
-               {
-                  sendAnX();
-                  shouldSendExpressMessage = 0;
-               }
-               break;
-
-               /* telnet DO/DONT/WILL/WONT option negotiation commands (ignored) */
-            case DO:
-            case DONT:
-            case WILL:
-            case WONT:
-               state = TS_VOID;
-               break;
-
-            default:
-               state = TS_DATA;
-               break;
-         }
-         break;
-
-         /* Get local mode strings/lines/posts */
-      case TS_GET:
-         aryTelnetBuffer[telnetBufferPos++] = (unsigned char)inputByte;
-         if ( telnetBufferPos == 5 )
-         {
-            targetByte = byte;
-            /* Decode the bbs' idea of what the current byte is */
-            bytePosition = ( (long)aryTelnetBuffer[2] << 16 ) + ( (long)aryTelnetBuffer[3] << 8 ) + aryTelnetBuffer[4];
-            byte = bytePosition;
-
-            /*
-        * If we are more out of sync than our buffer size, we can't
-        * recover.  If we are out of sync but not so far out of sync we
-        * haven't overrun our buffers, we just go back into our buffer and
-        * find out what we erroneously sent over the network, and reuse it.
-        */
-            if ( byte < targetByte - (int)( sizeof arySavedBytes ) - 1 )
-            {
-               stdPrintf( "\r\n[Error:  characters lost during transmission]\r\n" );
-            }
-            state = TS_DATA;
-            telnetBufferPos = 0;
-            switch ( *aryTelnetBuffer )
-            {
-               case G_POST: /* get post */
-                  if ( flagsConfiguration.isPosting )
-                  {
-                     flagsConfiguration.shouldCheckExpress = 0;
-                     return ( -1 );
-                  }
-                  makeMessage( aryTelnetBuffer[1] );
-                  break;
-
-               case G_FIVE: /* get five lines (X message, profile) */
-                  getFiveLines( aryTelnetBuffer[1] );
-                  if ( aryTelnetBuffer[1] == 1 && xlandQueue->itemCount > 0 )
-                  {
-                     sendAnX();
-                  }
-                  break;
-
-               case G_NAME: /* get name */
-                  sendBlock();
-                  ptrInputString = getName( aryTelnetBuffer[1] );
-                  outputIndex = (int)strlen( ptrInputString );
-                  sendTrackedBuffer( ptrInputString, (size_t)outputIndex );
-                  if ( *ptrInputString != CTRL_D )
-                  {
-                     sendTrackedNewline();
-                  }
-                  break;
-
-               case G_STR: /* get string */
-                  sendBlock();
-                  getString( aryTelnetBuffer[1], (char *)aryTelnetBuffer, -1 );
-                  outputIndex = (int)strlen( (char *)aryTelnetBuffer );
-                  sendTrackedBuffer( (char *)aryTelnetBuffer, (size_t)outputIndex );
-                  sendTrackedNewline();
-                  break;
-
-               case CONFIG: /* do configuration */
-                  sendBlock();
-                  configBbsRc();
-                  sendTrackedNewline();
-                  break;
-            }
-         }
-         break;
-
-         /* Ignore next byte (used for ignoring negotations we don't care about) */
-      case TS_VOID:
-         /*
-          * Send IAC WONT in response to a telnet negotiation so unsupported
-          * options do not alter the expected client state.
-          */
-         netPutChar( IAC );
-         netPutChar( WONT );
-         netPutChar( inputByte );
-         /* Fall through */
-      default:
-         state = TS_DATA;
-         break;
+      *ptrState = TS_IAC;
+      return 0;
    }
-   return ( 0 );
+   if ( whoListProgress )
+   {
+      filterWhoList( inputByte );
+   }
+   else if ( isExpressMessageInProgress )
+   {
+      filterExpress( inputByte );
+   }
+   else if ( postProgressState )
+   {
+      filterPost( inputByte );
+   }
+   else
+   {
+      filterData( inputByte );
+   }
+
+   return 0;
 }
 
-/*
- * Send signal that block of data follows -- this is a signal to the bbs that
- * it should stop ignoring what we send it, since it begins ignoring and
- * throwing isAway everything it receives from the time it sends an IAC G_*
- * command until the time it receives an IAC BLOCK command.
- */
+
+/// @brief Execute a completed telnet GET command from the protocol buffer.
+///
+/// @param aryTelnetBuffer Completed GET command buffer.
+///
+/// @return `0` on success, or `-1` when the caller should abort the current path.
+static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer )
+{
+   int outputIndex;
+   const char *ptrInputString;
+
+   switch ( *aryTelnetBuffer )
+   {
+      case G_POST:
+         if ( flagsConfiguration.isPosting )
+         {
+            flagsConfiguration.shouldCheckExpress = 0;
+            return -1;
+         }
+         makeMessage( aryTelnetBuffer[1] );
+         break;
+
+      case G_FIVE:
+         getFiveLines( aryTelnetBuffer[1] );
+         if ( aryTelnetBuffer[1] == 1 && xlandQueue->itemCount > 0 )
+         {
+            sendAnX();
+         }
+         break;
+
+      case G_NAME:
+         sendBlock();
+         ptrInputString = getName( aryTelnetBuffer[1] );
+         outputIndex = (int)strlen( ptrInputString );
+         sendTrackedBuffer( ptrInputString, (size_t)outputIndex );
+         if ( *ptrInputString != CTRL_D )
+         {
+            sendTrackedNewline();
+         }
+         break;
+
+      case G_STR:
+         sendBlock();
+         getString( aryTelnetBuffer[1], (char *)aryTelnetBuffer, -1 );
+         outputIndex = (int)strlen( (char *)aryTelnetBuffer );
+         sendTrackedBuffer( (char *)aryTelnetBuffer, (size_t)outputIndex );
+         sendTrackedNewline();
+         break;
+
+      case CONFIG:
+         sendBlock();
+         configBbsRc();
+         sendTrackedNewline();
+         break;
+   }
+
+   return 0;
+}
+
+
+/// @brief Collect and finish a multi-byte telnet GET command.
+///
+/// @param inputByte Incoming protocol byte.
+/// @param ptrState Current telnet parser state.
+/// @param aryTelnetBuffer Shared telnet command buffer.
+/// @param ptrTelnetBufferPos Current write position in the command buffer.
+///
+/// @return `0` on success, or the result from the completed GET command.
+static int handleTelnetGetState( int inputByte, int *ptrState,
+                                 unsigned char *aryTelnetBuffer,
+                                 int *ptrTelnetBufferPos )
+{
+   aryTelnetBuffer[( *ptrTelnetBufferPos )++] = (unsigned char)inputByte;
+   if ( *ptrTelnetBufferPos != 5 )
+   {
+      return 0;
+   }
+
+   targetByte = byte;
+   bytePosition = ( (long)aryTelnetBuffer[2] << 16 ) +
+                  ( (long)aryTelnetBuffer[3] << 8 ) +
+                  aryTelnetBuffer[4];
+   byte = bytePosition;
+   markPromptTriggerNonReplayable( aryTelnetBuffer[0] );
+
+   if ( byte < targetByte - (int)( sizeof arySavedBytes ) - 1 )
+   {
+      stdPrintf( "\r\n[Error:  characters lost during transmission]\r\n" );
+   }
+
+   *ptrState = TS_DATA;
+   *ptrTelnetBufferPos = 0;
+   return handleTelnetGetCommand( aryTelnetBuffer );
+}
+
+
+/// @brief Handle an IAC-prefixed telnet command byte.
+///
+/// @param inputByte Incoming protocol byte.
+/// @param ptrState Current telnet parser state.
+/// @param aryTelnetBuffer Shared telnet command buffer.
+/// @param ptrTelnetBufferPos Current write position in the command buffer.
+///
+/// @return `0` after handling the command.
+static int handleTelnetIacState( int inputByte, int *ptrState,
+                                 unsigned char *aryTelnetBuffer,
+                                 int *ptrTelnetBufferPos )
+{
+   switch ( inputByte )
+   {
+      case CLIENT:
+         *ptrState = TS_DATA;
+         netPutChar( IAC );
+         netPutChar( CLIENT );
+         break;
+
+      case S_WHO:
+         *ptrState = TS_DATA;
+         whoListProgress = 1;
+         break;
+
+      case G_POST:
+      case G_FIVE:
+      case G_NAME:
+      case G_STR:
+      case CONFIG:
+         *ptrState = TS_GET;
+         aryTelnetBuffer[( *ptrTelnetBufferPos )++] = (unsigned char)inputByte;
+         break;
+
+      case START:
+         *ptrState = TS_DATA;
+         byte = 1;
+         netPutChar( IAC );
+         netPutChar( START3 );
+         break;
+
+      case POST_S:
+         *ptrState = TS_DATA;
+         postHeaderActive = 1;
+         postProgressState = 1;
+         filterPost( -1 );
+         break;
+
+      case POST_E:
+         *ptrState = TS_DATA;
+         postHeaderActive = 0;
+         ptrPostBuffer = 0;
+         postProgressState = 0;
+         isPostJustEnded = 1;
+         filterPost( -1 );
+         break;
+
+      case MORE_M:
+         *ptrState = TS_DATA;
+         flagsConfiguration.isMorePromptActive ^= 1;
+         if ( !flagsConfiguration.isMorePromptActive &&
+              flagsConfiguration.shouldUseAnsi )
+         {
+            morePromptHelper();
+         }
+         break;
+
+      case XMSG_S:
+         *ptrState = TS_DATA;
+         *aryExpressParsing = 0;
+         isExpressMessageHeaderActive = 1;
+         isExpressMessageInProgress = 1;
+         filterExpress( -1 );
+         break;
+
+      case XMSG_E:
+         *ptrState = TS_DATA;
+         *aryExpressParsing = 0;
+         isExpressMessageHeaderActive = 0;
+         isExpressMessageInProgress = 0;
+         ptrExpressMessageBuffer = aryExpressMessageBuffer;
+         filterExpress( -1 );
+         if ( shouldSendExpressMessage )
+         {
+            sendAnX();
+            shouldSendExpressMessage = 0;
+         }
+         break;
+
+      case DO:
+      case DONT:
+      case WILL:
+      case WONT:
+         *ptrState = TS_VOID;
+         break;
+
+      default:
+         *ptrState = TS_DATA;
+         break;
+   }
+
+   return 0;
+}
+
+
+/// @brief Reject a telnet option negotiation that is not supported.
+///
+/// @param inputByte Incoming telnet option byte.
+/// @param ptrState Current telnet parser state.
+///
+/// @return `0` after sending the refusal.
+static int handleTelnetVoidState( int inputByte, int *ptrState )
+{
+   netPutChar( IAC );
+   netPutChar( WONT );
+   netPutChar( inputByte );
+   *ptrState = TS_DATA;
+   return 0;
+}
+
+
+/// @brief Tell the BBS that a client-side input block is about to follow.
+///
+/// @return This function does not return a value.
 void sendBlock( void )
 {
    netPutChar( IAC );
    netPutChar( BLOCK );
 }
 
-/*
- * Send a NAWS command to the bbs to tell it what our window size is.
- */
+
+/// @brief Send an updated NAWS window-size record to the BBS.
+///
+/// @return This function does not return a value.
 void sendNaws( void )
 {
    if ( oldRows != getWindowSize() )
@@ -289,7 +299,7 @@ void sendNaws( void )
       char aryString[10];
       register int outputIndex;
 
-      /* Old window max was 70 */
+      // Old window max was 70
       if ( rows > NAWS_ROWS_MAX || rows < NAWS_ROWS_MIN )
       {
          rows = WINDOW_ROWS_DEFAULT;
@@ -306,12 +316,54 @@ void sendNaws( void )
    }
 }
 
-/*
- * Initialize telnet negotations with the bbs -- we don't really do the
- * negotations, we just tell the bbs what it needs to hear, since we don't need
- * to negotiate because we know the correct state to put the terminal in. The
- * BBS queue daemon also expects the IAC CLIENT command.
- */
+
+/// @brief Mark command bytes that opened a BBS input request as non-replayable.
+///
+/// @param commandType BBS GET command being handled.
+///
+/// @return This helper does not return a value.
+static void markPromptTriggerNonReplayable( unsigned char commandType )
+{
+   long replayPosition;
+
+   if ( commandType == G_NAME || commandType == G_STR )
+   {
+      if ( lastInteractiveInputByte >= bytePosition &&
+           lastInteractiveInputByte < targetByte )
+      {
+         markReplayByteNonReplayable( lastInteractiveInputByte );
+      }
+      return;
+   }
+   if ( commandType != G_POST )
+   {
+      return;
+   }
+
+   for ( replayPosition = bytePosition; replayPosition < targetByte; replayPosition++ )
+   {
+      if ( arySavedByteCanReplay[(size_t)( replayPosition % (long)sizeof arySavedBytes )] )
+      {
+         markReplayByteNonReplayable( replayPosition );
+      }
+   }
+}
+
+
+/// @brief Mark one saved replay byte position as non-replayable.
+///
+/// @param replayPosition Saved-byte position to update.
+///
+/// @return This helper does not return a value.
+static void markReplayByteNonReplayable( long replayPosition )
+{
+   arySavedByteCanReplay[(size_t)( replayPosition % (long)sizeof arySavedBytes )] = false;
+}
+
+
+/// @brief Send the initial telnet and client-identification sequence to the BBS.
+///
+/// @return This function does not return a value.
 void telInit( void )
 {
    netPutChar( IAC );
@@ -328,4 +380,39 @@ void telInit( void )
    netPutChar( IAC );
    netPutChar( SE );
    sendNaws();
+}
+
+
+/// @brief Feed one incoming byte through the telnet protocol state machine.
+///
+/// @param inputByte Incoming protocol byte.
+///
+/// @return `0` on success, or a negative value if the caller should abort.
+int telReceive( int inputByte )
+{
+   static int state = TS_DATA;               // Current state of telnet state machine
+   static unsigned char aryTelnetBuffer[80]; // Generic buffer
+   static int telnetBufferPos = 0;           // Pointer into generic buffer
+
+   switch ( state )
+   {
+      case TS_DATA:
+         return handleTelnetDataState( inputByte, &state );
+
+      case TS_IAC:
+         return handleTelnetIacState( inputByte, &state, aryTelnetBuffer,
+                                      &telnetBufferPos );
+
+      case TS_GET:
+         return handleTelnetGetState( inputByte, &state, aryTelnetBuffer,
+                                      &telnetBufferPos );
+
+      case TS_VOID:
+         return handleTelnetVoidState( inputByte, &state );
+
+      default:
+         state = TS_DATA;
+         break;
+   }
+   return ( 0 );
 }

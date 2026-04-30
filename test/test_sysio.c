@@ -3,16 +3,23 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
+#include "telnet.h"
 #include "test_helpers.h"
-
+#include "utility.h"
 static int fatalPerrorCallCount;
 static int tempFileErrorCallCount;
 
@@ -39,7 +46,7 @@ static void resetState( void )
    }
 }
 
-/* sysio.c dependency stubs. */
+// sysio.c dependency stubs.
 noreturn void fatalPerror( const char *message, const char *heading )
 {
    (void)message;

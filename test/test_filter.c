@@ -3,15 +3,22 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "bbsrc.h"
+#include "browser.h"
+#include "client.h"
+#include <cmocka.h>
+#include "color.h"
+#include "config_menu.h"
+#include "defs.h"
+#include "edit.h"
+#include "ext.h"
+#include "filter.h"
+#include "getline_input.h"
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "defs.h"
-#include "ext.h"
-#include "proto.h"
-
+#include "telnet.h"
+#include "utility.h"
 static char aryPrintLog[32768];
 static int sendAnXCallCount;
 
@@ -108,7 +115,7 @@ static void addFriend( const char *ptrName, const char *ptrInfo )
    }
 }
 
-/* filter.c dependencies not under direct test in this file. */
+// filter.c dependencies not under direct test in this file.
 int ansiTransform( int inputChar )
 {
    return inputChar;
@@ -137,6 +144,16 @@ int ansiTransformPost( int inputChar, int isFriend )
 {
    (void)isFriend;
    return inputChar;
+}
+
+void printAnsiDisplayStateValue( int foregroundColor, int backgroundColor )
+{
+   char aryAnsiSequence[32];
+
+   formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
+                                   foregroundColor, backgroundColor,
+                                   flagsConfiguration.shouldUseBold );
+   stdPrintf( "%s", aryAnsiSequence );
 }
 
 void ansiTransformPostHeader( char *ptrText, size_t bufferSize, int isFriend )

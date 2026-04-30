@@ -5,1012 +5,48 @@
  */
 
 /*
- * Everything Unix/system specific goes in this file.  If you are looking to
- * port to some system the code currently doesn't work on, most if not all of
- * your problems should restricted to this file.
+ * Everything Unix/system specific lives in this file. Most porting work is
+ * expected to stay here.
  *
  * This file covers Unix/macOS builds.
  */
 #define _IN_UNIX_C
+#include "bbsrc.h"
+#include "client.h"
+#include "client_globals.h"
+#include "config_globals.h"
 #include "defs.h"
-#include "ext.h"
+#include "network_globals.h"
+#include "telnet.h"
 #include "unix.h"
+#include "utility.h"
 #include <wordexp.h>
-
 static struct passwd *pw;
 
-typedef struct
-{
-   int errorCode;
-   int messageKind;
-} ErrorMessageTemplate;
+static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg );
 
-enum
-{
-   HOST_LOOKUP_COULD_NOT_RESOLVE,
-   HOST_LOOKUP_TEMPORARY_DNS_FAILURE,
-   HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED,
-   HOST_LOOKUP_SERVICE_LOOKUP_FAILED,
-   HOST_LOOKUP_GENERIC_FAILURE,
-   SOCKET_CONNECT_REFUSED,
-   SOCKET_CONNECT_TIMED_OUT,
-   SOCKET_CONNECT_HOST_UNREACHABLE,
-   SOCKET_CONNECT_HOST_DOWN,
-   SOCKET_CONNECT_NETWORK_UNREACHABLE,
-   SOCKET_CONNECT_NETWORK_DOWN,
-   SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE,
-   SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED,
-   SOCKET_CONNECT_ABORTED,
-   SOCKET_CONNECT_GENERIC_FAILURE
-};
 
-static const ErrorMessageTemplate aryHostLookupErrors[] =
-   {
-#ifdef EAI_NONAME
-      { EAI_NONAME, HOST_LOOKUP_COULD_NOT_RESOLVE },
-#endif
-#ifdef EAI_AGAIN
-      { EAI_AGAIN, HOST_LOOKUP_TEMPORARY_DNS_FAILURE },
-#endif
-#ifdef EAI_FAMILY
-      { EAI_FAMILY, HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED },
-#endif
-#ifdef EAI_SERVICE
-      { EAI_SERVICE, HOST_LOOKUP_SERVICE_LOOKUP_FAILED },
-#endif
-};
-
-static const ErrorMessageTemplate arySocketConnectErrors[] =
-   {
-#ifdef ECONNREFUSED
-      { ECONNREFUSED, SOCKET_CONNECT_REFUSED },
-#endif
-#ifdef ETIMEDOUT
-      { ETIMEDOUT, SOCKET_CONNECT_TIMED_OUT },
-#endif
-#ifdef EHOSTUNREACH
-      { EHOSTUNREACH, SOCKET_CONNECT_HOST_UNREACHABLE },
-#endif
-#ifdef EHOSTDOWN
-      { EHOSTDOWN, SOCKET_CONNECT_HOST_DOWN },
-#endif
-#ifdef ENETUNREACH
-      { ENETUNREACH, SOCKET_CONNECT_NETWORK_UNREACHABLE },
-#endif
-#ifdef ENETDOWN
-      { ENETDOWN, SOCKET_CONNECT_NETWORK_DOWN },
-#endif
-#ifdef EADDRNOTAVAIL
-      { EADDRNOTAVAIL, SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE },
-#endif
-#ifdef EAFNOSUPPORT
-      { EAFNOSUPPORT, SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED },
-#endif
-#ifdef ECONNABORTED
-      { ECONNABORTED, SOCKET_CONNECT_ABORTED },
-#endif
-};
-
-static int findErrorMessageKind( int errorCode,
-                                 const ErrorMessageTemplate *ptrTemplates,
-                                 size_t templateCount, int defaultMessageKind )
-{
-   size_t itemIndex;
-
-   for ( itemIndex = 0; itemIndex < templateCount; itemIndex++ )
-   {
-      if ( ptrTemplates[itemIndex].errorCode == errorCode )
-      {
-         return ptrTemplates[itemIndex].messageKind;
-      }
-   }
-   return defaultMessageKind;
-}
-
-static void formatHostLookupMessage( char *ptrBuffer, size_t bufferSize,
-                                     int messageKind, const char *ptrHost,
-                                     const char *ptrPort )
-{
-   switch ( messageKind )
-   {
-      case HOST_LOOKUP_COULD_NOT_RESOLVE:
-         snprintf( ptrBuffer, bufferSize, "Could not resolve %s:%s.", ptrHost, ptrPort );
-         break;
-      case HOST_LOOKUP_TEMPORARY_DNS_FAILURE:
-         snprintf( ptrBuffer, bufferSize,
-                   "Temporary DNS failure while looking up %s:%s.", ptrHost, ptrPort );
-         break;
-      case HOST_LOOKUP_ADDRESS_FAMILY_UNSUPPORTED:
-         snprintf( ptrBuffer, bufferSize,
-                   "Address family for %s:%s is not supported.", ptrHost, ptrPort );
-         break;
-      case HOST_LOOKUP_SERVICE_LOOKUP_FAILED:
-         snprintf( ptrBuffer, bufferSize,
-                   "Service lookup failed for %s:%s.", ptrHost, ptrPort );
-         break;
-      default:
-         snprintf( ptrBuffer, bufferSize,
-                   "Host lookup failed for %s:%s.", ptrHost, ptrPort );
-         break;
-   }
-}
-
-static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
-                                        int messageKind, const char *ptrHost,
-                                        const char *ptrPort )
-{
-   switch ( messageKind )
-   {
-      case SOCKET_CONNECT_REFUSED:
-         snprintf( ptrBuffer, bufferSize,
-                   "Connection to %s:%s was refused by the server.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_TIMED_OUT:
-         snprintf( ptrBuffer, bufferSize,
-                   "Connection to %s:%s timed out.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_HOST_UNREACHABLE:
-         snprintf( ptrBuffer, bufferSize,
-                   "Host %s:%s is unreachable.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_HOST_DOWN:
-         snprintf( ptrBuffer, bufferSize,
-                   "Host %s:%s appears to be down.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_NETWORK_UNREACHABLE:
-         snprintf( ptrBuffer, bufferSize,
-                   "The network path to %s:%s is unreachable.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_NETWORK_DOWN:
-         snprintf( ptrBuffer, bufferSize,
-                   "The local network is down while connecting to %s:%s.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_ADDRESS_NOT_AVAILABLE:
-         snprintf( ptrBuffer, bufferSize,
-                   "No usable local address is available for %s:%s.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_ADDRESS_FAMILY_UNSUPPORTED:
-         snprintf( ptrBuffer, bufferSize,
-                   "The resolved address family for %s:%s is not supported.", ptrHost, ptrPort );
-         break;
-      case SOCKET_CONNECT_ABORTED:
-         snprintf( ptrBuffer, bufferSize,
-                   "Connection to %s:%s was aborted during setup.", ptrHost, ptrPort );
-         break;
-      default:
-         snprintf( ptrBuffer, bufferSize,
-                   "Could not connect to %s:%s.", ptrHost, ptrPort );
-         break;
-   }
-}
-
-static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
-{
-   int enabledValue;
-
-   if ( socketFileDescriptor < 0 )
-   {
-      return;
-   }
-
-   enabledValue = isEnabled ? 1 : 0;
-   if ( setsockopt( socketFileDescriptor, SOL_SOCKET, SO_KEEPALIVE, &enabledValue, sizeof( enabledValue ) ) < 0 )
-   {
-      return;
-   }
-   if ( !isEnabled )
-   {
-      return;
-   }
-
-   /*
-    * Keepalive defaults are conservative to avoid noticeable server load while
-    * still preventing common ISP/NAT idle disconnects on long-lived telnet sessions.
-    */
-#if defined( TCP_KEEPALIVE )
-   {
-      int keepaliveIdleSeconds = 120;
-      (void)setsockopt( socketFileDescriptor,
-                        IPPROTO_TCP,
-                        TCP_KEEPALIVE,
-                        &keepaliveIdleSeconds,
-                        sizeof( keepaliveIdleSeconds ) );
-   }
-#elif defined( TCP_KEEPIDLE )
-   {
-      int keepaliveIdleSeconds = 120;
-      (void)setsockopt( socketFileDescriptor,
-                        IPPROTO_TCP,
-                        TCP_KEEPIDLE,
-                        &keepaliveIdleSeconds,
-                        sizeof( keepaliveIdleSeconds ) );
-   }
-#endif
-#ifdef TCP_KEEPINTVL
-   {
-      int keepaliveIntervalSeconds = 30;
-      (void)setsockopt( socketFileDescriptor,
-                        IPPROTO_TCP,
-                        TCP_KEEPINTVL,
-                        &keepaliveIntervalSeconds,
-                        sizeof( keepaliveIntervalSeconds ) );
-   }
-#endif
-#ifdef TCP_KEEPCNT
-   {
-      int keepaliveProbeCount = 3;
-      (void)setsockopt( socketFileDescriptor,
-                        IPPROTO_TCP,
-                        TCP_KEEPCNT,
-                        &keepaliveProbeCount,
-                        sizeof( keepaliveProbeCount ) );
-   }
-#endif
-}
-
-static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
-                                     int lookupResult )
-{
-   const char *ptrReason;
-   char aryMessage[256];
-   int messageKind;
-
-   ptrReason = gai_strerror( lookupResult );
-   messageKind = findErrorMessageKind( lookupResult, aryHostLookupErrors,
-                                       sizeof( aryHostLookupErrors ) / sizeof( aryHostLookupErrors[0] ),
-                                       HOST_LOOKUP_GENERIC_FAILURE );
-   formatHostLookupMessage( aryMessage, sizeof( aryMessage ), messageKind, ptrHost, ptrPort );
-
-   fatalExit( ptrReason, aryMessage );
-}
-
-static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort,
-                                        int connectionErrno )
-{
-   char aryMessage[256];
-   int messageKind;
-
-   messageKind = findErrorMessageKind( connectionErrno, arySocketConnectErrors,
-                                       sizeof( arySocketConnectErrors ) / sizeof( arySocketConnectErrors[0] ),
-                                       SOCKET_CONNECT_GENERIC_FAILURE );
-   formatSocketConnectMessage( aryMessage, sizeof( aryMessage ), messageKind, ptrHost, ptrPort );
-
-   errno = connectionErrno;
-   fatalPerror( "connect", aryMessage );
-}
-
-#ifdef HAVE_OPENSSL
-SSL_CTX *ctx;
-
-static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
-                                     const char *ptrOperation )
-{
-   unsigned long errorCode;
-   const char *ptrReason;
-   char aryMessage[256];
-
-   errorCode = ERR_get_error();
-   ptrReason = ERR_reason_error_string( errorCode );
-   if ( ptrReason == NULL )
-   {
-      ptrReason = "TLS handshake failed";
-   }
-
-   snprintf( aryMessage, sizeof( aryMessage ),
-             "TLS setup failed while connecting to %s:%s during %s.",
-             ptrHost, ptrPort, ptrOperation );
-   fatalExit( ptrReason, aryMessage );
-}
-
-void killSsl( void )
-{
-   SSL_shutdown( ssl );
-   SSL_free( ssl );
-}
-
-int initSSL( void )
-{
-   SSL_METHOD *meth;
-
-   SSL_load_error_strings();
-   SSLeay_add_ssl_algorithms();
-   meth = SSLv23_client_method();
-   ctx = SSL_CTX_new( meth );
-
-   if ( !ctx )
-   {
-      printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
-      exit( 1 );
-   }
-
-   ssl = SSL_new( ctx );
-   if ( !ssl )
-   {
-      printf( "SSL_new failed\n" );
-      return 0;
-   }
-
-   return 1;
-}
-#endif /* HAVE_OPENSSL */
-
-/*
- * Wait for the next activity from either the aryUser or the network -- we ignore
- * the aryUser while we have a child process running.  Returns 1 for aryUser input
- * pending, 2 for network input pending, 3 for both.
- */
-int waitNextEvent( void )
-{
-   fd_set fdr;
-   int result;
-
-   while ( true )
-   {
-      FD_ZERO( &fdr );
-      if ( !childPid && !flagsConfiguration.shouldCheckExpress )
-      {
-         FD_SET( 0, &fdr );
-      }
-      if ( !shouldIgnoreNetwork )
-      {
-         FD_SET( net, &fdr );
-      }
-
-      if ( select( shouldIgnoreNetwork ? 1 : net + 1, &fdr, 0, 0, 0 ) < 0 )
-      {
-         if ( errno == EINTR )
-         {
-            continue;
-         }
-         else
-         {
-            stdPrintf( "\r\n" );
-            fatalPerror( "select", "Local error" );
-         }
-      }
-
-      if ( ( result = ( ( FD_ISSET( net, &fdr ) != 0 ) << 1 | ( FD_ISSET( 0, &fdr ) != 0 ) ) ) )
-      {
-         return ( result );
-      }
-   }
-}
-
-/*
- * Find the aryUser's home directory (needed for .bbsrc and .bbstmp)
- */
-void findHome( void )
-{
-   if ( ( pw = getpwuid( getuid() ) ) )
-   {
-      snprintf( aryUser, sizeof( aryUser ), "%s", pw->pw_name );
-   }
-   else if ( getenv( "USER" ) )
-   {
-      snprintf( aryUser, sizeof( aryUser ), "%s", getenv( "USER" ) );
-   }
-   else
-   {
-      fatalExit( "findHome: You don't exist, go away.", "Local error" );
-   }
-   if ( isLoginShell )
-   {
-      size_t userNameLength = strlen( aryUser );
-      if ( userNameLength < sizeof( aryUser ) - 1 )
-      {
-         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login shell)" );
-      }
-   }
-}
-
-/*
- * Locate the bbsrc file.  Usually is ~/.bbsrc, can be overriden by providing
- * an argument to the command that invokes this client.  If the argument is not
- * provided the BBSRC environment will specify the name of the BBSRC file if it
- * is set.  Returns a pointer to the file via openbbsrc().
- */
-FILE *findBbsRc( void )
-{
-   FILE *ptrFileHandle;
-
-   if ( isLoginShell )
-   {
-      snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "/tmp/bbsrc.%d", getpid() );
-   }
-   else
-   {
-      if ( getenv( "BBSRC" ) )
-      {
-         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", getenv( "BBSRC" ) );
-      }
-      else if ( pw )
-      {
-         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s/.bbsrc", pw->pw_dir );
-      }
-      else if ( getenv( "HOME" ) )
-      {
-         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s/.bbsrc", getenv( "HOME" ) );
-      }
-      else
-      {
-         fatalExit( "findbbsrc: You don't exist, go away.", "Local error" );
-      }
-   }
-   if ( ( ptrFileHandle = fopen( aryBbsRcName, "r" ) ) && chmod( aryBbsRcName, 0600 ) < 0 )
-   {
-      sPerror( "Can't set access on bbsrc file", "Warning" );
-   }
-   if ( ptrFileHandle )
-   {
-      fclose( ptrFileHandle );
-   }
-   return ( openBbsRc() );
-}
-
-/* Locate .bbsfriends and keep permissions restricted when the file exists. */
-FILE *findBbsFriends( void )
-{
-   if ( isLoginShell )
-   {
-      snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "/tmp/bbsfriends.%d", getpid() );
-   }
-   else
-   {
-      if ( getenv( "BBSFRIENDS" ) )
-      {
-         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s", getenv( "BBSFRIENDS" ) );
-      }
-      else if ( pw )
-      {
-         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", pw->pw_dir );
-      }
-      else if ( getenv( "HOME" ) )
-      {
-         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", getenv( "HOME" ) );
-      }
-      else
-      {
-         fatalExit( "findBbsFriends: You don't exist, go away.", "Local error" );
-      }
-   }
-   chmod( aryBbsFriendsName, 0600 );
-   return ( openBbsFriends() );
-}
-
-/*
- * Truncates bbsrc file to the specified length.
- */
-void truncateBbsRc( long userNameLength )
-{
-   if ( ftruncate( fileno( ptrBbsRc ), userNameLength ) < 0 )
-   {
-      fatalExit( "ftruncate", "Local error" );
-   }
-}
-
-/*
- * Opens the temp file, ~/.bbstmp.  If the BBSTMP environment variable is set,
- * that file is used instead.
- */
-void openTmpFile( void )
-{
-   if ( isLoginShell )
-   {
-      snprintf( aryTempFileName, sizeof( aryTempFileName ), "/tmp/bbstmp.%d", getpid() );
-   }
-   else
-   {
-      if ( getenv( "BBSTMP" ) )
-      {
-         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s", getenv( "BBSTMP" ) );
-      }
-      else if ( pw )
-      {
-         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s/.bbstmp", pw->pw_dir );
-      }
-      else if ( getenv( "HOME" ) )
-      {
-         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s/.bbstmp", getenv( "HOME" ) );
-      }
-      else
-      {
-         fatalExit( "openTmpFile: You don't exist, go away.", "Local error" );
-      }
-   }
-   if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
-   {
-      fatalPerror( "openTmpFile: fopen", "Local error" );
-   }
-   if ( chmod( aryTempFileName, 0600 ) < 0 )
-   {
-      sPerror( "openTmpFile: chmod", "Warning" );
-   }
-}
-
-static bool terminalSupportsTitleBarUpdates( void )
-{
-   const char *ptrTerm;
-   const char *ptrTermProgram;
-
-   ptrTerm = getenv( "TERM" );
-   ptrTermProgram = getenv( "TERM_PROGRAM" );
-
-   if ( ptrTermProgram != NULL &&
-        ( strcmp( ptrTermProgram, "Apple_Terminal" ) == 0 ||
-          strcmp( ptrTermProgram, "iTerm.app" ) == 0 ) )
-   {
-      return true;
-   }
-   if ( ptrTerm == NULL )
-   {
-      return false;
-   }
-   if ( strncmp( ptrTerm, "xterm", 5 ) == 0 ||
-        strncmp( ptrTerm, "screen", 6 ) == 0 ||
-        strncmp( ptrTerm, "tmux", 4 ) == 0 )
-   {
-      return true;
-   }
-
-   return false;
-}
-
-void titleBar( void )
-{
-   char aryTitle[80];
-
-   if ( !flagsConfiguration.shouldEnableTitleBar ||
-        flagsConfiguration.isScreenReaderModeEnabled )
-   {
-      return;
-   }
-
-   snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
-             aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
-             BUILD_VERSION, "Unix" );
-   if ( terminalSupportsTitleBarUpdates() )
-   {
-      printf( "\033]0;%s\007", aryTitle );
-      fflush( stdout );
-   }
-   return;
-}
-
-void noTitleBar( void )
-{
-   if ( !flagsConfiguration.shouldEnableTitleBar ||
-        flagsConfiguration.isScreenReaderModeEnabled )
-   {
-      return;
-   }
-
-   if ( terminalSupportsTitleBarUpdates() )
-   {
-      printf( "\033]0;\007" );
-      fflush( stdout );
-   }
-   return;
-}
-
-/*
- * Open a socket connection to the bbs.  Defaults to BBS_HOSTNAME with port BBS_PORT_NUMBER
- * (by default a standard telnet to bbs.iscabbs.com) but can be overridden
- * in the bbsrc file if/when the source to the ISCA BBS is released and others
- * start their own on different machines and/or ports.
- */
-void connectBbs( void )
-{
-   register int connectResult;
-   struct addrinfo addressHints;
-   struct addrinfo *ptrAddressInfo;
-   struct addrinfo *ptrAddressList;
-   int savedErrno;
-   char aryPortString[8];
-   const char *ptrLookupHost;
-
-   if ( !*aryBbsHost )
-   {
-      snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", BBS_HOSTNAME );
-   }
-   if ( !bbsPort )
-   {
-      bbsPort = BBS_PORT_NUMBER;
-   }
-   if ( !*aryCommandLineHost )
-   {
-      snprintf( aryCommandLineHost, sizeof( aryCommandLineHost ), "%s", aryBbsHost );
-   }
-   if ( !cmdLinePort )
-   {
-      cmdLinePort = bbsPort;
-   }
-
-   snprintf( aryPortString, sizeof( aryPortString ), "%u", (unsigned int)cmdLinePort );
-   memset( &addressHints, 0, sizeof( addressHints ) );
-   addressHints.ai_family = AF_INET;
-   addressHints.ai_socktype = SOCK_STREAM;
-
-   ptrLookupHost = aryCommandLineHost;
-   stdPrintf( "Connection to: %s:%s\n", ptrLookupHost, aryPortString );
-   stdPrintf( "Looking up host... " );
-   fflush( stdout );
-   connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
-   if ( connectResult != 0 )
-   {
-      ptrLookupHost = BBS_IP_ADDRESS;
-      connectResult = getaddrinfo( ptrLookupHost, aryPortString, &addressHints, &ptrAddressList );
-   }
-   if ( connectResult != 0 )
-   {
-      stdPrintf( "failed.\n" );
-      failHostLookup( aryCommandLineHost, aryPortString, connectResult );
-   }
-   stdPrintf( "done.\n" );
-
-   stdPrintf( "Opening connection... " );
-   fflush( stdout );
-   net = -1;
-   savedErrno = 0;
-   for ( ptrAddressInfo = ptrAddressList; ptrAddressInfo != NULL; ptrAddressInfo = ptrAddressInfo->ai_next )
-   {
-      net = socket( ptrAddressInfo->ai_family,
-                    ptrAddressInfo->ai_socktype,
-                    ptrAddressInfo->ai_protocol );
-      if ( net < 0 )
-      {
-         savedErrno = errno;
-         continue;
-      }
-
-      /* Client configuration controls keepalive probes. */
-      configureTcpKeepalive( net, flagsConfiguration.shouldUseTcpKeepalive );
-
-      connectResult = connect( net, ptrAddressInfo->ai_addr, ptrAddressInfo->ai_addrlen );
-      if ( connectResult == 0 )
-      {
-         break;
-      }
-
-      savedErrno = errno;
-      close( net );
-      net = -1;
-   }
-   freeaddrinfo( ptrAddressList );
-
-   if ( net < 0 )
-   {
-      stdPrintf( "failed.\n" );
-      failSocketConnect( ptrLookupHost, aryPortString, savedErrno );
-   }
-   stdPrintf( "done.\n" );
-#ifdef HAVE_OPENSSL
-   if ( shouldUseSsl )
-   {
-      stdPrintf( "Negotiating TLS... " );
-      fflush( stdout );
-      initSSL();
-      if ( SSL_set_fd( ssl, net ) != 1 )
-      {
-         stdPrintf( "failed.\n" );
-         shutdown( net, 2 );
-         failTlsConnect( ptrLookupHost, aryPortString, "TLS socket setup" );
-      }
-      if ( ( connectResult = SSL_connect( ssl ) ) != 1 )
-      {
-         stdPrintf( "failed.\n" );
-         shutdown( net, 2 );
-         failTlsConnect( ptrLookupHost, aryPortString, "TLS handshake" );
-      }
-      isSsl = 1;
-      stdPrintf( "done.\n" );
-   }
-#endif
-   stdPrintf( "[%s Connection Established]\n", ( shouldUseSsl ) ? "Secure" : "Insecure" );
-   titleBar();
-   fflush( stdout );
-
-   /*
-     * We let the stdio libraries handle buffering issues for us.  Only for
-     * output, there are portability problems with what is needed for input.
-     */
-   if ( !( netOutputFile = fdopen( net, "w" ) ) )
-   {
-      fatalPerror( "fdopen w", "Local error" );
-   }
-}
-
-/*
- * Suspend the client.  Restores terminal to previous state before suspending,
- * puts it back in proper mode when client restarts, and checks if the window
- * size was changed while we were isAway.
- */
-void suspend( void )
-{
-   noTitleBar();
-   resetTerm();
-   kill( 0, SIGSTOP );
-   setTerm();
-   titleBar();
-   printf( "\r\n[Continue]\r\n" );
-   if ( oldRows != getWindowSize() && oldRows != -1 )
-   {
-      sendNaws();
-   }
-}
-
-/*
- * Quits gracefully when we are given a HUP or STOP signal.
- */
+/// @brief Exit the client cleanly from a signal handler.
+///
+/// @param signalNumber Signal number being handled.
+///
+/// @return This signal handler does not return a useful value.
 RETSIGTYPE bye( int signalNumber )
 {
    (void)signalNumber;
    myExit();
 }
 
-/*
- * Handles a WINCH signal given when the window is resized
- */
-RETSIGTYPE naws( int signalNumber )
-{
-   (void)signalNumber;
-   if ( oldRows != -1 )
-   {
-      sendNaws();
-   }
-#ifdef SIGWINCH
-   signal( SIGWINCH, naws );
-#endif
-}
 
-/*
- * Handles the death of the child by doing a longjmp back to the function that
- * forked it.  We get spurious signals when the child is stopped, and to avoid
- * confusion we don't allow the child to be stopped -- therefore we attempt to
- * send a continue signal to the child here.  If it fails, we assume the child
- * did in fact die, and longjmp back to the function that forked it.  If it
- * doesn't fail, the child is restarted and the aryUser is forced to exit the
- * child cleanly to get back into the main client.
- */
-RETSIGTYPE reapChild( int signalNumber )
-{
-   (void)signalNumber;
-   wait( 0 );
-   titleBar();
-   if ( kill( childPid, SIGCONT ) < 0 )
-   {
-#ifdef USE_POSIX_SIGSETJMP
-      siglongjmp( jumpEnv, 1 );
-#else
-      longjmp( jumpEnv, 1 );
-#endif /* USE_POSIX_SIGSETJMP */
-   }
-}
-
-/*
- * Initialize necessary signals
- */
-void sigInit( void )
-{
-   oldRows = -1;
-
-   signal( SIGINT, SIG_IGN );
-   signal( SIGQUIT, SIG_IGN );
-   signal( SIGPIPE, SIG_IGN );
-#ifdef SIGTSTP
-   signal( SIGTSTP, SIG_IGN );
-#endif
-#ifdef SIGTTOU
-   signal( SIGTTOU, SIG_IGN );
-#endif
-   signal( SIGHUP, bye );
-   signal( SIGTERM, bye );
-#ifdef SIGWINCH
-   signal( SIGWINCH, naws );
-#endif
-}
-
-/*
- * Turn off signals now that we are ready to terminate
- */
-void sigOff( void )
-{
-   signal( SIGALRM, SIG_IGN );
-#ifdef SIGWINCH
-   signal( SIGWINCH, SIG_IGN );
-#endif
-   signal( SIGHUP, SIG_IGN );
-   signal( SIGTERM, SIG_IGN );
-}
-
-static int isTerminalStateSaved = 0;
-
-#ifdef HAVE_TERMIO_H
-static struct termio saveterm;
-
-#else
-static struct sgttyb saveterm;
-static struct tchars savetchars;
-static struct ltchars savedLocalTermChars;
-static int savelocalmode;
-
-#endif
-
-/*
- * Set terminal state to proper modes for running the client/bbs
- */
-void setTerm( void )
-{
-#ifdef HAVE_TERMIO_H
-   struct termio tmpterm;
-
-#else
-   struct sgttyb tmpterm;
-   struct tchars temporaryTermChars;
-   struct ltchars tmpltchars;
-   int tmplocalmode;
-
-#endif
-
-   getWindowSize();
-
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiDisplayStateSequence( aryAnsiSequence, sizeof( aryAnsiSequence ),
-                                      lastColor, color.background,
-                                      flagsConfiguration.shouldUseBold );
-      printf( "%s", aryAnsiSequence );
-   }
-   fflush( stdout );
-
-   titleBar();
-#ifdef HAVE_TERMIO_H
-   if ( !isTerminalStateSaved )
-   {
-      ioctl( 0, TCGETA, &saveterm );
-   }
-   tmpterm = saveterm;
-   tmpterm.c_iflag &= ~( INLCR | IGNCR | ICRNL );
-   tmpterm.c_iflag |= IXOFF | IXON | IXANY;
-   tmpterm.c_oflag &= ~( ONLCR | OCRNL );
-   tmpterm.c_lflag &= ~( ISIG | ICANON | ECHO );
-   tmpterm.c_cc[VMIN] = 1;
-   tmpterm.c_cc[VTIME] = 0;
-   ioctl( 0, TCSETA, &tmpterm );
-#else
-   if ( !isTerminalStateSaved )
-   {
-      ioctl( 0, TIOCGETP, (char *)&saveterm );
-   }
-   tmpterm = saveterm;
-   tmpterm.sg_flags &= ~( ECHO | CRMOD );
-   tmpterm.sg_flags |= CBREAK | TANDEM;
-   ioctl( 0, TIOCSETN, (char *)&tmpterm );
-   if ( !isTerminalStateSaved )
-   {
-      ioctl( 0, TIOCGETC, (char *)&savetchars );
-   }
-   temporaryTermChars = savetchars;
-   temporaryTermChars.t_intrc = -1;
-   temporaryTermChars.t_quitc = -1;
-   temporaryTermChars.t_eofc = -1;
-   temporaryTermChars.t_brkc = -1;
-   ioctl( 0, TIOCSETC, (char *)&temporaryTermChars );
-   if ( !isTerminalStateSaved )
-   {
-      ioctl( 0, TIOCGLTC, (char *)&savedLocalTermChars );
-   }
-   tmpltchars = savedLocalTermChars;
-   tmpltchars.t_suspc = -1;
-   tmpltchars.t_dsuspc = -1;
-   tmpltchars.t_rprntc = -1;
-   ioctl( 0, TIOCSLTC, (char *)&tmpltchars );
-   if ( !isTerminalStateSaved )
-   {
-      ioctl( 0, TIOCLGET, (char *)&savelocalmode );
-   }
-   tmplocalmode = savelocalmode;
-   tmplocalmode &= ~( LPRTERA | LCRTERA | LCRTKIL | LCTLECH | LPENDIN | LDECCTQ );
-   tmplocalmode |= LCRTBS;
-   ioctl( 0, TIOCLSET, (char *)&tmplocalmode );
-#endif
-   isTerminalStateSaved = 1;
-}
-
-/*
- * Reset the terminal to the previous state it was in when we started.
- */
-void resetTerm( void )
-{
-   if ( flagsConfiguration.shouldUseAnsi )
-   {
-      char aryAnsiSequence[32];
-
-      formatAnsiResetSequence( aryAnsiSequence, sizeof( aryAnsiSequence ) );
-      printf( "%s", aryAnsiSequence );
-   }
-   fflush( stdout );
-   if ( !isTerminalStateSaved )
-   {
-      return;
-   }
-#ifdef HAVE_TERMIO_H
-   ioctl( 0, TCSETA, &saveterm );
-#else
-   ioctl( 0, TIOCSETN, (char *)&saveterm );
-   ioctl( 0, TIOCSETC, (char *)&savetchars );
-   ioctl( 0, TIOCSLTC, (char *)&savedLocalTermChars );
-   ioctl( 0, TIOCLSET, (char *)&savelocalmode );
-#endif
-}
-
-/*
- * Get the current window size.
- */
-int getWindowSize( void )
-{
-#ifdef TIOCGWINSZ
-   struct winsize ws;
-
-   if ( ioctl( 0, TIOCGWINSZ, (char *)&ws ) < 0 )
-   {
-      return ( rows = WINDOW_ROWS_DEFAULT );
-   }
-   else if ( ( rows = ws.ws_row ) < WINDOW_ROWS_MIN || rows > WINDOW_ROWS_MAX )
-   {
-      return ( rows = WINDOW_ROWS_DEFAULT );
-   }
-   else
-   {
-      return ( rows );
-   }
-#else
-   return ( rows = WINDOW_ROWS_DEFAULT );
-#endif
-}
-
-void mySleep( unsigned int sec )
-{
-   sleep( sec );
-}
-
-/*
- * This function flushes the input buffer in the same manner as the BBS does.
- * By doing it on the client end we arySavedBytes the BBS the trouble of doing it, but
- * in general the same thing will happen on one end or the other, so you won't
- * speed things up at all by changing this, the sleep is there for your
- * protection to insure a cut and paste gone awry or aryLine noise doesn't cause
- * you too much hassle of posting random garbage, changing your profile or
- * configuration or whatever.
- */
-void flushInput( unsigned int invalid )
-{
-#if defined( FIONREAD ) || defined( TCFLSH )
-   int pendingInputBytes;
-#endif
-
-   if ( invalid / 2 )
-   {
-      mySleep( invalid / 2 < 3 ? invalid / 2 : 3 );
-   }
-#ifdef FIONREAD
-   while ( isPtyInputAvailable() || ( !ioctl( 0, FIONREAD, &pendingInputBytes ) && pendingInputBytes > 0 ) )
-   {
-      (void)ptyget();
-   }
-#else
-#ifdef TCFLSH
-   pendingInputBytes = 0;
-   ioctl( 0, TCFLSH, &pendingInputBytes );
-#endif
-   while ( isPtyInputAvailable() )
-   {
-      (void)ptyget();
-   }
-#endif
-}
-
+/// @brief Parse a command string and execute it with an optional trailing argument.
+///
+/// The command string is expanded with `wordexp()` using `WRDE_NOCMD` so
+/// command substitution is rejected before `execvp()` is called.
+///
+/// @param ptrCommand Command string to execute.
+/// @param ptrArg Optional argument appended after the parsed command words.
+///
+/// @return This function does not return to the caller.
 static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg )
 {
    wordexp_t parsedCommand;
@@ -1052,11 +88,200 @@ static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrA
    _exit( 1 );
 }
 
-/*
- * Launch aryCommand with an optional trailing argument. Used for the external
- * editor and subshell paths. The child exit path returns here through the
- * existing setjmp/longjmp signal flow.
- */
+
+/// @brief Resolve and open the legacy friends file path.
+///
+/// @return A stream for the resolved friends file.
+FILE *findBbsFriends( void )
+{
+   if ( isLoginShell )
+   {
+      snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "/tmp/bbsfriends.%d", getpid() );
+   }
+   else
+   {
+      if ( getenv( "BBSFRIENDS" ) )
+      {
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s", getenv( "BBSFRIENDS" ) );
+      }
+      else if ( pw )
+      {
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", pw->pw_dir );
+      }
+      else if ( getenv( "HOME" ) )
+      {
+         snprintf( aryBbsFriendsName, sizeof( aryBbsFriendsName ), "%s/.bbsfriends", getenv( "HOME" ) );
+      }
+      else
+      {
+         fatalExit( "findBbsFriends: You don't exist, go away.", "Local error" );
+      }
+   }
+   chmod( aryBbsFriendsName, 0600 );
+   return ( openBbsFriends() );
+}
+
+
+/// @brief Resolve and open the main `.bbsrc` path.
+///
+/// Environment overrides and login-shell temp paths are handled before the file
+/// is opened through `openBbsRc()`.
+///
+/// @return A stream for the resolved configuration file.
+FILE *findBbsRc( void )
+{
+   FILE *ptrFileHandle;
+
+   if ( isLoginShell )
+   {
+      snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "/tmp/bbsrc.%d", getpid() );
+   }
+   else
+   {
+      if ( getenv( "BBSRC" ) )
+      {
+         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", getenv( "BBSRC" ) );
+      }
+      else if ( pw )
+      {
+         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s/.bbsrc", pw->pw_dir );
+      }
+      else if ( getenv( "HOME" ) )
+      {
+         snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s/.bbsrc", getenv( "HOME" ) );
+      }
+      else
+      {
+         fatalExit( "findbbsrc: You don't exist, go away.", "Local error" );
+      }
+   }
+   if ( ( ptrFileHandle = fopen( aryBbsRcName, "r" ) ) && chmod( aryBbsRcName, 0600 ) < 0 )
+   {
+      sPerror( "Can't set access on bbsrc file", "Warning" );
+   }
+   if ( ptrFileHandle )
+   {
+      fclose( ptrFileHandle );
+   }
+   return ( openBbsRc() );
+}
+
+
+/// @brief Discover the current username and mark login-shell sessions.
+///
+/// @return This function does not return a value.
+void findHome( void )
+{
+   if ( ( pw = getpwuid( getuid() ) ) )
+   {
+      snprintf( aryUser, sizeof( aryUser ), "%s", pw->pw_name );
+   }
+   else if ( getenv( "USER" ) )
+   {
+      snprintf( aryUser, sizeof( aryUser ), "%s", getenv( "USER" ) );
+   }
+   else
+   {
+      fatalExit( "findHome: You don't exist, go away.", "Local error" );
+   }
+   if ( isLoginShell )
+   {
+      size_t userNameLength = strlen( aryUser );
+      if ( userNameLength < sizeof( aryUser ) - 1 )
+      {
+         snprintf( aryUser + userNameLength, sizeof( aryUser ) - userNameLength, "  (login shell)" );
+      }
+   }
+}
+
+
+/// @brief Handle terminal resize signals and send an updated NAWS record.
+///
+/// @param signalNumber Signal number being handled.
+///
+/// @return This signal handler does not return a useful value.
+RETSIGTYPE naws( int signalNumber )
+{
+   (void)signalNumber;
+   if ( oldRows != -1 )
+   {
+      sendNaws();
+   }
+#ifdef SIGWINCH
+   signal( SIGWINCH, naws );
+#endif
+}
+
+
+/// @brief Resolve and open the message temp file used by the editor paths.
+///
+/// @return This function does not return a value.
+void openTmpFile( void )
+{
+   if ( isLoginShell )
+   {
+      snprintf( aryTempFileName, sizeof( aryTempFileName ), "/tmp/bbstmp.%d", getpid() );
+   }
+   else
+   {
+      if ( getenv( "BBSTMP" ) )
+      {
+         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s", getenv( "BBSTMP" ) );
+      }
+      else if ( pw )
+      {
+         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s/.bbstmp", pw->pw_dir );
+      }
+      else if ( getenv( "HOME" ) )
+      {
+         snprintf( aryTempFileName, sizeof( aryTempFileName ), "%s/.bbstmp", getenv( "HOME" ) );
+      }
+      else
+      {
+         fatalExit( "openTmpFile: You don't exist, go away.", "Local error" );
+      }
+   }
+   if ( !( tempFile = fopen( aryTempFileName, "a+" ) ) )
+   {
+      fatalPerror( "openTmpFile: fopen", "Local error" );
+   }
+   if ( chmod( aryTempFileName, 0600 ) < 0 )
+   {
+      sPerror( "openTmpFile: chmod", "Warning" );
+   }
+}
+
+
+/// @brief Handle child-process exit and return control to the parent flow.
+///
+/// @param signalNumber Signal number being handled.
+///
+/// @return This signal handler does not return a useful value.
+RETSIGTYPE reapChild( int signalNumber )
+{
+   (void)signalNumber;
+   wait( 0 );
+   titleBar();
+   if ( kill( childPid, SIGCONT ) < 0 )
+   {
+#ifdef USE_POSIX_SIGSETJMP
+      siglongjmp( jumpEnv, 1 );
+#else
+      longjmp( jumpEnv, 1 );
+#endif // USE_POSIX_SIGSETJMP
+   }
+}
+
+
+/// @brief Launch a local command such as the shell or external editor.
+///
+/// The child exit path returns here through the existing setjmp/longjmp signal
+/// flow.
+///
+/// @param aryCommand Command string to execute.
+/// @param arg Optional trailing argument for the command.
+///
+/// @return This function does not return a value.
 void run( const char *aryCommand, const char *arg )
 {
    fflush( stdout );
@@ -1066,7 +291,7 @@ void run( const char *aryCommand, const char *arg )
 #else
    if ( setjmp( jumpEnv ) )
    {
-#endif /* USE_POSIX_SIGSETJMP */
+#endif // USE_POSIX_SIGSETJMP
       signal( SIGCHLD, SIG_DFL );
       if ( childPid < 0 )
       {
@@ -1092,11 +317,8 @@ void run( const char *aryCommand, const char *arg )
       else if ( childPid > 0 )
       {
 
-         /*
-        * Flush out anything in our stdio buffer -- it was copied to the
-        * child process, we don't want it waiting for us when the child
-        * is done.
-        */
+         // Flush any stdio data copied into the child process so it is not
+         // still pending after the child exits.
          flushInput( 0 );
          (void)inKey();
       }
@@ -1107,6 +329,9 @@ void run( const char *aryCommand, const char *arg )
    }
 }
 
+/// @brief Show the technical information screen.
+///
+/// @return This function does not return a value.
 void techInfo( void )
 {
    char aryRuntimeInfo[256];
@@ -1144,6 +369,9 @@ void techInfo( void )
               (char *)NULL );
 }
 
+/// @brief Initialize Unix-side runtime state before connecting to the BBS.
+///
+/// @return This function does not return a value.
 void initialize( void )
 {
    if ( !isatty( 0 ) || !isatty( 1 ) || !isatty( 2 ) )
@@ -1202,12 +430,15 @@ void initialize( void )
    }
 }
 
+/// @brief Tear down Unix-side temporary files and title-bar state.
+///
+/// @return This function does not return a value.
 void deinitialize( void )
 {
    char aryTempFile[PATH_MAX];
 
    noTitleBar();
-   /* Get rid of ~ file emacs always leaves behind */
+   // Remove the backup file Emacs leaves behind.
    snprintf( aryTempFile, sizeof( aryTempFile ), "%s~", aryTempFileName );
    unlink( aryTempFile );
    if ( isLoginShell )
@@ -1218,11 +449,23 @@ void deinitialize( void )
    }
 }
 
+/// @brief Delete a file path using the Unix unlink call.
+///
+/// @param pathname File path to delete.
+///
+/// @return Result from `unlink()`.
 int deleteFile( const char *pathname )
 {
    return unlink( pathname );
 }
 
+/// @brief Show a yes/no prompt using the Unix text UI.
+///
+/// @param info Informational text shown before the prompt.
+/// @param question Prompt question text.
+/// @param def Default yes/no choice.
+///
+/// @return `1` for yes, or `0` for no.
 int sPrompt( const char *info, const char *question, int def )
 {
    stdPrintf( "\r\n%s\r\n\n", info );
@@ -1234,14 +477,26 @@ int sPrompt( const char *info, const char *question, int def )
    return 0;
 }
 
+/// @brief Show an informational message using the Unix text UI.
+///
+/// @param info Informational text to print.
+/// @param heading Unused heading parameter kept for interface compatibility.
+///
+/// @return This function does not return a value.
 void sInfo( const char *info, const char *heading )
 {
    (void)heading;
-   /* Heading ignored for Unix */
+   // Ignore the heading on Unix.
    stdPrintf( "\r\n%s\r\n\n", info );
    return;
 }
 
+/// @brief Print a `perror`-style message using the Unix text UI.
+///
+/// @param message Error text to append to the heading.
+/// @param heading Heading text for the error line.
+///
+/// @return This function does not return a value.
 void sPerror( const char *message, const char *heading )
 {
    char aryErrorBuffer[4096];
@@ -1254,6 +509,12 @@ void sPerror( const char *message, const char *heading )
    return;
 }
 
+/// @brief Print a plain error message using the Unix text UI.
+///
+/// @param message Error text to print.
+/// @param heading Heading text for the error line.
+///
+/// @return This function does not return a value.
 void sError( const char *message, const char *heading )
 {
    char aryErrorBuffer[4096];
@@ -1262,10 +523,12 @@ void sError( const char *message, const char *heading )
    fprintf( stderr, "%s\r\n", aryErrorBuffer );
 }
 
-/*
- * Move oldpath to newpath if oldpath exists and newpath does not exist.
- * Then delete oldpath, even if newpath already exists.
- */
+/// @brief Move a file to a new path if the old file exists and the new file is missing or empty.
+///
+/// @param oldpath Existing source path.
+/// @param newpath Destination path.
+///
+/// @return This function does not return a value.
 void moveIfNeeded( const char *oldpath, const char *newpath )
 {
    FILE *ptrOldFile;
@@ -1311,4 +574,56 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
    fclose( ptrNewFile );
    unlink( oldpath );
    return;
+}
+
+
+/// @brief Install the signal handlers used during normal client runtime.
+///
+/// @return This function does not return a value.
+void sigInit( void )
+{
+   oldRows = -1;
+
+   signal( SIGINT, SIG_IGN );
+   signal( SIGQUIT, SIG_IGN );
+   signal( SIGPIPE, SIG_IGN );
+#ifdef SIGTSTP
+   signal( SIGTSTP, SIG_IGN );
+#endif
+#ifdef SIGTTOU
+   signal( SIGTTOU, SIG_IGN );
+#endif
+   signal( SIGHUP, bye );
+   signal( SIGTERM, bye );
+#ifdef SIGWINCH
+   signal( SIGWINCH, naws );
+#endif
+}
+
+
+/// @brief Disable the runtime signal handlers during shutdown.
+///
+/// @return This function does not return a value.
+void sigOff( void )
+{
+   signal( SIGALRM, SIG_IGN );
+#ifdef SIGWINCH
+   signal( SIGWINCH, SIG_IGN );
+#endif
+   signal( SIGHUP, SIG_IGN );
+   signal( SIGTERM, SIG_IGN );
+}
+
+
+/// @brief Truncate the `.bbsrc` file to a given length.
+///
+/// @param userNameLength New file length.
+///
+/// @return This function does not return a value.
+void truncateBbsRc( long userNameLength )
+{
+   if ( ftruncate( fileno( ptrBbsRc ), userNameLength ) < 0 )
+   {
+      fatalExit( "ftruncate", "Local error" );
+   }
 }
