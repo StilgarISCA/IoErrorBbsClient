@@ -8,7 +8,7 @@ AC_ARG_WITH(ssl,
    [  --with-ssl=PATH         use OpenSSL (no BBSs support this yet) ],
    [
    	if test "x$withval" != "xno" ; then
-   		trussldir=$withval
+   		tryssldir=$withval
    	fi
    ]
 )
