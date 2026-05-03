@@ -32,8 +32,8 @@ make scan-build
 
 ## Platform Support
 
-- macOS is explicitly supported
-- Other Unix-like systems build in generic Unix mode but are not explicitly supported
+- macOS is the primary target
+- Other Unix-like systems receive least-effort support
 
 ### Build Modes
 

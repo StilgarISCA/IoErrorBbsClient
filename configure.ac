@@ -40,7 +40,7 @@ AC_DEFINE_UNQUOTED([BUILD_VERSION], ["$PACKAGE_VERSION"],
    [Define to the configured release version string])
 
 platformDisplayName="Unix"
-platformSupportMode="not explicitly supported"
+platformSupportMode="least-effort"
 case "$host_os" in
 darwin*)
    platformDisplayName="macOS"
@@ -48,10 +48,9 @@ darwin*)
    ;;
 linux*)
    platformDisplayName="Linux"
-   platformSupportMode="supported"
    ;;
 *)
-   AC_MSG_WARN([host OS $host_os is not an explicitly supported target; build will proceed in generic Unix mode])
+   AC_MSG_WARN([host OS $host_os is not a primary target; build will proceed with least-effort Unix support])
    ;;
 esac
 
