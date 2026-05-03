@@ -4,6 +4,10 @@ AC_CONFIG_SRCDIR([main.c])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CANONICAL_HOST
 
+AC_ARG_ENABLE(keychain,
+   [  --enable-keychain          enable macOS Keychain support],
+   [],
+   [enable_keychain=no])
 AC_ARG_ENABLE(native-optimizations,
    [  --disable-native-optimizations  disable host-specific tuning flags],
    [],
@@ -97,6 +101,7 @@ SANITIZER_CFLAGS=""
 SANITIZER_LDFLAGS=""
 UNIVERSAL_CFLAGS=""
 UNIVERSAL_LDFLAGS=""
+KEYCHAIN_LDFLAGS=""
 
 if test "x$ac_env_CFLAGS_set" != "xset"; then
    if test "x$enable_release_build" = "xyes"; then
@@ -206,6 +211,35 @@ darwin*)
    ;;
 esac
 
+keychainMode="disabled"
+if test "x$enable_keychain" = "xyes"; then
+   case "$host_os" in
+   darwin*)
+      saved_LDFLAGS="$LDFLAGS"
+      LDFLAGS="$LDFLAGS -framework Security"
+      AC_MSG_CHECKING([whether $CC links with Security.framework])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <Security/Security.h>]], [[SecKeychainRef keychainRef = NULL; (void)keychainRef;]])],
+         [
+            AC_MSG_RESULT([yes])
+            KEYCHAIN_LDFLAGS="-framework Security"
+            keychainMode="enabled"
+            AC_DEFINE([ENABLE_KEYCHAIN], [1],
+               [Define if macOS Keychain support is enabled])
+         ],
+         [
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([--enable-keychain requires Security.framework support])
+         ]
+      )
+      LDFLAGS="$saved_LDFLAGS"
+      ;;
+   *)
+      AC_MSG_WARN([--enable-keychain is only supported on macOS; disabling keychain support for $host_os])
+      enable_keychain=no
+      ;;
+   esac
+fi
+
 if test "x$enable_native_optimizations" = "xyes" && test "x$ac_env_CFLAGS_set" != "xset"; then
    case "$host_cpu" in
    arm64|aarch64)
@@ -305,6 +339,7 @@ AC_SUBST([STRIP])
 AC_SUBST([UNIVERSAL_CFLAGS])
 AC_SUBST([UNIVERSAL_LDFLAGS])
 AC_SUBST([HOST_TRIPLE], [$host])
+AC_SUBST([KEYCHAIN_LDFLAGS])
 
 if test "x$enable_release_build" = "xyes"; then
    buildMode="release"
@@ -362,6 +397,8 @@ AC_DEFINE_UNQUOTED([BUILD_PLATFORM_SUPPORT_MODE], ["$platformSupportMode"],
    [Define to the platform support mode])
 AC_DEFINE_UNQUOTED([BUILD_UNIVERSAL_MODE], ["$universalMode"],
    [Define to the universal binary mode])
+AC_DEFINE_UNQUOTED([BUILD_KEYCHAIN_MODE], ["$keychainMode"],
+   [Define to the keychain support mode])
 AC_DEFINE_UNQUOTED([BUILD_CMOCKA_MODE], ["$cmockaMode"],
    [Define to the cmocka availability mode])
 AC_DEFINE_UNQUOTED([BUILD_SANITIZER_MODE], ["$sanitizerMode"],
@@ -386,6 +423,7 @@ Configuration summary:
   Platform: $platformDisplayName
   Platform support: $platformSupportMode
   Universal binary: $universalMode
+  Keychain support: $keychainMode
   CMocka: $cmockaMode
   Sanitizers: $sanitizerMode
   Native optimizations: $nativeOptimizationMode
