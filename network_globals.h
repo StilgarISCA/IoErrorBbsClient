@@ -9,9 +9,6 @@
 
 #include "defs.h"
 
-#ifdef HAVE_OPENSSL
-extern SSL *ssl; // SSL connection
-#endif
 extern bool arySavedByteCanReplay[1000];      // true if the saved byte can be replayed
 extern unsigned char aryNetInputBuffer[2048]; // buffer for input from net
 extern unsigned char aryPtyInputBuffer[1024]; // buffer for input from pty

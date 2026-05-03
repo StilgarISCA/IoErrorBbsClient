@@ -25,7 +25,6 @@ static struct passwd *pw;
 
 static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrArg );
 
-
 /// @brief Exit the client cleanly from a signal handler.
 ///
 /// @param signalNumber Signal number being handled.
@@ -36,7 +35,6 @@ RETSIGTYPE bye( int signalNumber )
    (void)signalNumber;
    myExit();
 }
-
 
 /// @brief Parse a command string and execute it with an optional trailing argument.
 ///
@@ -88,7 +86,6 @@ static void execCommandWithOptionalArg( const char *ptrCommand, const char *ptrA
    _exit( 1 );
 }
 
-
 /// @brief Resolve and open the legacy friends file path.
 ///
 /// @return A stream for the resolved friends file.
@@ -120,7 +117,6 @@ FILE *findBbsFriends( void )
    chmod( aryBbsFriendsName, 0600 );
    return ( openBbsFriends() );
 }
-
 
 /// @brief Resolve and open the main `.bbsrc` path.
 ///
@@ -166,7 +162,6 @@ FILE *findBbsRc( void )
    return ( openBbsRc() );
 }
 
-
 /// @brief Discover the current username and mark login-shell sessions.
 ///
 /// @return This function does not return a value.
@@ -194,7 +189,6 @@ void findHome( void )
    }
 }
 
-
 /// @brief Handle terminal resize signals and send an updated NAWS record.
 ///
 /// @param signalNumber Signal number being handled.
@@ -211,7 +205,6 @@ RETSIGTYPE naws( int signalNumber )
    signal( SIGWINCH, naws );
 #endif
 }
-
 
 /// @brief Resolve and open the message temp file used by the editor paths.
 ///
@@ -251,7 +244,6 @@ void openTmpFile( void )
    }
 }
 
-
 /// @brief Handle child-process exit and return control to the parent flow.
 ///
 /// @param signalNumber Signal number being handled.
@@ -271,7 +263,6 @@ RETSIGTYPE reapChild( int signalNumber )
 #endif // USE_POSIX_SIGSETJMP
    }
 }
-
 
 /// @brief Launch a local command such as the shell or external editor.
 ///
@@ -339,8 +330,7 @@ void techInfo( void )
 
    snprintf( aryRuntimeInfo,
              sizeof( aryRuntimeInfo ),
-             "Runtime: SSL %s, keepalive %s, title bar %s, clickable URLs %s\r\n",
-             shouldUseSsl ? "on" : "off",
+             "Runtime: keepalive %s, title bar %s, clickable URLs %s\r\n",
              flagsConfiguration.shouldUseTcpKeepalive ? "on" : "off",
              flagsConfiguration.shouldEnableTitleBar ? "on" : "off",
              flagsConfiguration.shouldEnableClickableUrls ? "on" : "off" );
@@ -359,7 +349,6 @@ void techInfo( void )
               "Build mode: " BUILD_MODE "\r\n",
               "Optimization: " BUILD_OPTIMIZATION_MODE "\r\n",
               "Universal binary: " BUILD_UNIVERSAL_MODE "\r\n",
-              "OpenSSL support: " BUILD_SSL_MODE "\r\n",
               "Save password support: " BUILD_SAVE_PASSWORD_MODE "\r\n",
               "Sanitizers: " BUILD_SANITIZER_MODE "\r\n",
               "Native optimizations: " BUILD_NATIVE_OPTIMIZATION_MODE "\r\n",
@@ -576,7 +565,6 @@ void moveIfNeeded( const char *oldpath, const char *newpath )
    return;
 }
 
-
 /// @brief Install the signal handlers used during normal client runtime.
 ///
 /// @return This function does not return a value.
@@ -600,7 +588,6 @@ void sigInit( void )
 #endif
 }
 
-
 /// @brief Disable the runtime signal handlers during shutdown.
 ///
 /// @return This function does not return a value.
@@ -613,7 +600,6 @@ void sigOff( void )
    signal( SIGHUP, SIG_IGN );
    signal( SIGTERM, SIG_IGN );
 }
-
 
 /// @brief Truncate the `.bbsrc` file to a given length.
 ///

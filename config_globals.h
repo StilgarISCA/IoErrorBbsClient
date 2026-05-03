@@ -19,10 +19,8 @@ extern FILE *tempFile;                   // file pointer to above
 
 extern char aryBbsHost[64];         // name of bbs host (bbs.iscabbs.com)
 extern char aryCommandLineHost[64]; // name of bbs host from command line
-extern unsigned short bbsPort;      // port to connect to (23 or 992)
+extern unsigned short bbsPort;      // port to connect to
 extern unsigned short cmdLinePort;  // port to connect to from command line
-extern bool isSsl;                  // Whether the current connection is secured
-extern bool shouldUseSsl;           // Whether the connection should be secure
 
 extern char aryAwayMessageLines[6][80]; // Away from keyboard message
 extern char aryKeyMap[128];             // key remapping array

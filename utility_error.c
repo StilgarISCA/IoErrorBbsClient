@@ -15,7 +15,6 @@
 static void reopenTempFileForShutdown( void );
 static void waitForChildShutdown( void );
 
-
 /// @brief Print a fatal error heading and message, then terminate the client.
 ///
 /// @param message Error text to display.
@@ -28,7 +27,6 @@ noreturn void fatalExit( const char *message, const char *heading )
    sError( message, heading );
    myExit();
 }
-
 
 /// @brief Print a fatal `errno`-based error, then terminate the client.
 ///
@@ -46,7 +44,6 @@ noreturn void fatalPerror( const char *error, const char *heading )
    myExit();
 }
 
-
 /// @brief Shut down the client cleanly and exit the process.
 ///
 /// @return This function does not return to the caller.
@@ -55,17 +52,10 @@ noreturn void myExit( void )
    fflush( stdout );
    waitForChildShutdown();
    resetTerm();
-#ifdef HAVE_OPENSSL
-   if ( isSsl )
-   {
-      killSsl();
-   }
-#endif
    reopenTempFileForShutdown();
    deinitialize();
    exit( 0 );
 }
-
 
 /// @brief Reopen the temp file in truncate mode before shutdown when needed.
 ///
@@ -81,7 +71,6 @@ static void reopenTempFileForShutdown( void )
    }
 }
 
-
 /// @brief Report a temp-file write error unless it was an interrupted system call.
 ///
 /// @return This function does not return a value.
@@ -94,7 +83,6 @@ void tempFileError( void )
    fprintf( stderr, "\r\n" );
    sPerror( "writing tempfile", "Local error" );
 }
-
 
 /// @brief Wait for an active child process to terminate during shutdown.
 ///

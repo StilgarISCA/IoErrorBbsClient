@@ -577,7 +577,7 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
    }
    if ( !tryWriteFileContents(
            aryPath,
-           "site bbs.example.net 2323\n"
+           "site bbs.example.net 2323 secure\n"
            "commandkey ^[\n"
            "quit ^D\n"
            "susp ^Z\n"
@@ -607,7 +607,8 @@ static void readBbsRc_WhenConfigHasEntries_ParsesValuesAndIgnoresDuplicateEnemy(
    // Assert
    if ( strcmp( aryBbsHost, "bbs.example.net" ) != 0 || bbsPort != 2323 )
    {
-      fail_msg( "site parsing failed; expected bbs.example.net:2323, got %s:%u", aryBbsHost, bbsPort );
+      fail_msg( "site parsing should ignore legacy secure suffixes; expected bbs.example.net:2323, got %s:%u",
+                aryBbsHost, bbsPort );
    }
    if ( commandKey != ESC || quitKey != CTRL_D || suspKey != CTRL_Z || captureKey != 'c' || awayKey != 'a' || shellKey != '!' )
    {

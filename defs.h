@@ -51,10 +51,6 @@
 #define SEEK_END 2
 #endif
 
-#ifdef HAVE_OPENSSL
-#include <openssl/ssl.h>
-#endif
-
 // Use sigsetjmp/siglongjmp behavior when available so signal masks are
 // preserved across jump boundaries.
 #define USE_POSIX_SIGSETJMP 1
@@ -206,7 +202,6 @@ typedef struct
 #define BBS_HOSTNAME "bbs.iscabbs.com"
 #define BBS_IP_ADDRESS "206.217.131.27"
 #define BBS_PORT_NUMBER 23
-#define SSL_PORT_NUMBER 992
 
 // sendingXState defines
 #define SX_WANT_TO 5

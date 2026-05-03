@@ -62,20 +62,7 @@ void configureOptionsMenu( void )
    {
       snprintf( aryBbsHost, sizeof( aryBbsHost ), "%s", aryMenuLine );
    }
-#if 0
-	      stdPrintf("Use secure (SSL) connection to this site? (%s) -> ",
-		    shouldUseSsl ? "Yes" : "No");
-	      if ( yesNoDefault( shouldUseSsl ) )
-	      {
-	         shouldUseSsl = 1;
-	      }
-	      else
-	      {
-	         shouldUseSsl = 0;
-	      }
-#endif
-   shouldUseSsl = 0;
-   if ( !bbsPort || bbsPort == SSL_PORT_NUMBER || bbsPort == BBS_PORT_NUMBER )
+   if ( !bbsPort )
    {
       bbsPort = BBS_PORT_NUMBER;
    }
