@@ -88,11 +88,6 @@ static noreturn void failHostLookup( const char *ptrHost, const char *ptrPort,
                                      int lookupResult );
 static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort,
                                         int connectionErrno );
-#ifdef HAVE_OPENSSL
-static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
-                                     const char *ptrOperation );
-static int initSSL( void );
-#endif // HAVE_OPENSSL
 static int findErrorMessageKind( int errorCode,
                                  const ErrorMessageTemplate *ptrTemplates,
                                  size_t templateCount, int defaultMessageKind );
@@ -173,9 +168,8 @@ static void configureTcpKeepalive( int socketFileDescriptor, bool isEnabled )
 
 /// @brief Resolve the target host and open the main BBS network connection.
 ///
-/// The function reports progress for host lookup, socket connect, and optional
-/// TLS setup before handing the connected socket back to the rest of the
-/// client.
+/// The function reports progress for host lookup and socket connect before
+/// handing the connected socket back to the rest of the client.
 ///
 /// @return This function does not return a value.
 void connectBbs( void )
@@ -263,29 +257,7 @@ void connectBbs( void )
       failSocketConnect( ptrLookupHost, aryPortString, savedErrno );
    }
    stdPrintf( "done.\n" );
-#ifdef HAVE_OPENSSL
-   if ( shouldUseSsl )
-   {
-      stdPrintf( "Negotiating TLS... " );
-      fflush( stdout );
-      initSSL();
-      if ( SSL_set_fd( ssl, net ) != 1 )
-      {
-         stdPrintf( "failed.\n" );
-         shutdown( net, 2 );
-         failTlsConnect( ptrLookupHost, aryPortString, "TLS socket setup" );
-      }
-      if ( SSL_connect( ssl ) != 1 )
-      {
-         stdPrintf( "failed.\n" );
-         shutdown( net, 2 );
-         failTlsConnect( ptrLookupHost, aryPortString, "TLS handshake" );
-      }
-      isSsl = 1;
-      stdPrintf( "done.\n" );
-   }
-#endif
-   stdPrintf( "[%s Connection Established]\n", ( shouldUseSsl ) ? "Secure" : "Insecure" );
+   stdPrintf( "[Connection Established]\n" );
    titleBar();
    fflush( stdout );
 
@@ -341,37 +313,6 @@ static noreturn void failSocketConnect( const char *ptrHost, const char *ptrPort
    errno = connectionErrno;
    fatalPerror( "connect", aryMessage );
 }
-
-#ifdef HAVE_OPENSSL
-static SSL_CTX *ctx;
-
-/// @brief Abort after a TLS setup failure.
-///
-/// @param ptrHost Host name being contacted.
-/// @param ptrPort Port string being contacted.
-/// @param ptrOperation Short description of the TLS step that failed.
-///
-/// @return This function does not return to the caller.
-static noreturn void failTlsConnect( const char *ptrHost, const char *ptrPort,
-                                     const char *ptrOperation )
-{
-   unsigned long errorCode;
-   const char *ptrReason;
-   char aryMessage[256];
-
-   errorCode = ERR_get_error();
-   ptrReason = ERR_reason_error_string( errorCode );
-   if ( ptrReason == NULL )
-   {
-      ptrReason = "TLS handshake failed";
-   }
-
-   snprintf( aryMessage, sizeof( aryMessage ),
-             "TLS setup failed while connecting to %s:%s during %s.",
-             ptrHost, ptrPort, ptrOperation );
-   fatalExit( ptrReason, aryMessage );
-}
-#endif // HAVE_OPENSSL
 
 /// @brief Map a platform error code to one of the client message categories.
 ///
@@ -491,46 +432,6 @@ static void formatSocketConnectMessage( char *ptrBuffer, size_t bufferSize,
          break;
    }
 }
-
-#ifdef HAVE_OPENSSL
-/// @brief Initialize the OpenSSL client state for the current connection.
-///
-/// @return Non-zero on success, zero if the SSL object could not be created.
-static int initSSL( void )
-{
-   const SSL_METHOD *ptrMethod;
-
-   SSL_load_error_strings();
-   SSLeay_add_ssl_algorithms();
-   ptrMethod = SSLv23_client_method();
-   ctx = SSL_CTX_new( ptrMethod );
-
-   if ( !ctx )
-   {
-      printf( "%s\n", ERR_reason_error_string( ERR_get_error() ) );
-      exit( 1 );
-   }
-
-   ssl = SSL_new( ctx );
-   if ( !ssl )
-   {
-      printf( "SSL_new failed\n" );
-      return 0;
-   }
-
-   return 1;
-}
-
-/// @brief Shut down and free the active SSL connection object.
-///
-/// @return This function does not return a value.
-void killSsl( void )
-{
-   SSL_shutdown( ssl );
-   SSL_free( ssl );
-}
-
-#endif // HAVE_OPENSSL
 
 /// @brief Wait for local or network activity.
 ///

@@ -22,10 +22,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_OPENSSL
-#include <openssl/err.h>
-#endif
-
 #if defined( sun ) && defined( unix ) && !defined( FIONREAD ) && !defined( __svr4__ )
 #define __svr4__
 #endif

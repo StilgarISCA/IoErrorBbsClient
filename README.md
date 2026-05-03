@@ -161,5 +161,3 @@ bear -- make clean all -j4
 ## License
 
 - See `LICENSE` for the GNU GPL v2.0-or-later terms used by this project.
-- OpenSSL exception: linking this software to OpenSSL is explicitly permitted,
-  provided all other GPL and OpenSSL license obligations are satisfied.

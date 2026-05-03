@@ -115,7 +115,6 @@ static void writeDecodedBbsRcText( const char *ptrToken, char *ptrWriteBuffer,
                                    char ( *aryAwayBuffers )[80] );
 static void warnAboutBbsRcConflicts( void );
 
-
 /// @brief Parse and add one `friend` directive from `.bbsrc`.
 ///
 /// @param ptrLine Raw `friend` line from the config file.
@@ -178,7 +177,6 @@ static bool addFriendFromLine( const char *ptrLine )
    return true;
 }
 
-
 /// @brief Apply default hotkey values when the config did not define them.
 ///
 /// @return This helper does not return a value.
@@ -214,7 +212,6 @@ static void applyBbsRcKeyDefaults( void )
    }
 }
 
-
 /// @brief Decode a config token into a control-key value.
 ///
 /// `^X` spellings and literal control characters are normalized to the same
@@ -244,7 +241,6 @@ static int ctrl( const char *ptrToken )
    }
    return ( parseIndex );
 }
-
 
 /// @brief Detect which `.bbsrc` command family a raw line belongs to.
 ///
@@ -307,7 +303,6 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
    return BBRC_CMD_UNKNOWN;
 }
 
-
 /// @brief Ensure there is at least one away-message line configured.
 ///
 /// @return This helper does not return a value.
@@ -320,7 +315,6 @@ static void ensureDefaultAwayMessage( void )
       *aryAwayMessageLines[1] = 0;
    }
 }
-
 
 /// @brief Finalize config state after `.bbsrc` parsing completes.
 ///
@@ -411,7 +405,6 @@ static bool finalizeBbsRcRead( BbsRcReadState *ptrState )
    return true;
 }
 
-
 /// @brief Initialize default config values before `.bbsrc` parsing begins.
 ///
 /// @return This helper does not return a value.
@@ -479,10 +472,8 @@ static void initializeBbsRcDefaults( void )
    isExpressMessageInProgress = 0;
    shouldSendExpressMessage = 0;
    pendingLinesToEat = 0;
-   shouldUseSsl = 0;
    ptrExpressMessageBuffer = aryExpressMessageBuffer;
 }
-
 
 /// @brief Create the list structures used while reading `.bbsrc`.
 ///
@@ -503,7 +494,6 @@ static void initializeBbsRcLists( void )
    }
 }
 
-
 /// @brief Check whether a line is one of the numbered away-message commands.
 ///
 /// @param ptrLine Raw config line.
@@ -514,7 +504,6 @@ static bool isNewAwayMessageCommand( const char *ptrLine )
    return ptrLine[0] == 'a' && ptrLine[1] >= '1' &&
           ptrLine[1] <= '5' && ptrLine[2] == ' ';
 }
-
 
 /// @brief Parse an on/off-style `.bbsrc` setting value.
 ///
@@ -561,7 +550,6 @@ static BbsRcOptionValue parseBooleanSettingValue( const char *ptrLine, size_t pr
    return BBRC_OPTION_INVALID;
 }
 
-
 /// @brief Parse a full `.bbsrc` color scheme into the active color fields.
 ///
 /// @param ptrLine Raw `color` directive line.
@@ -586,7 +574,6 @@ static bool parseColorScheme( const char *ptrLine )
 
    return parseNamedColorScheme( ptrLine + 6 );
 }
-
 
 /// @brief Parse a named-color `.bbsrc` color scheme.
 ///
@@ -661,7 +648,6 @@ static bool parseNamedColorScheme( const char *ptrColorSpec )
    return colorIndex == COLOR_FIELD_COUNT;
 }
 
-
 /// @brief Dispatch one normalized `.bbsrc` line to the correct command handler.
 ///
 /// @param ptrLine Normalized config line.
@@ -730,7 +716,6 @@ static bool processBbsRcCommandLine( const char *ptrLine, BbsRcReadState *ptrSta
    return true;
 }
 
-
 /// @brief Handle connection, editor, and site-related `.bbsrc` commands.
 ///
 /// @param commandId Parsed command identifier.
@@ -783,22 +768,21 @@ static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
             }
             else
             {
+               const char *ptrPortSpec;
+
                aryBbsHost[parseIndex - 5] = 0;
-               if ( ptrLine[parseIndex] )
+               ptrPortSpec = ptrLine + parseIndex;
+               while ( *ptrPortSpec != '\0' && isspace( (unsigned char)*ptrPortSpec ) )
                {
-                  bbsPort = (unsigned short)atoi( ptrLine + parseIndex + 1 );
+                  ptrPortSpec++;
+               }
+               if ( isdigit( (unsigned char)*ptrPortSpec ) )
+               {
+                  bbsPort = (unsigned short)atoi( ptrPortSpec );
                }
                else
                {
                   bbsPort = BBS_PORT_NUMBER;
-               }
-               for ( ; ptrLine[parseIndex] && ptrLine[parseIndex] != ' '; parseIndex++ )
-               {
-                  ;
-               }
-               if ( !strncmp( ptrLine + parseIndex, "secure", 6 ) )
-               {
-                  shouldUseSsl = 1;
                }
             }
             if ( !strcmp( aryBbsHost, "206.217.131.27" ) )
@@ -812,7 +796,6 @@ static bool processBbsRcConnectionCommand( BbsRcCommandId commandId,
          return false;
    }
 }
-
 
 /// @brief Handle hotkey-related `.bbsrc` commands.
 ///
@@ -841,7 +824,8 @@ static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
                commandKey = ctrl( ptrLine + 11 );
             }
             if ( findChar( "\0x01\0x03\0x04\0x05\b\n\r\0x11\0x13\0x15\0x17\0x18\0x19\0x1a\0x7f",
-                           commandKey ) || commandKey >= ' ' )
+                           commandKey ) ||
+                 commandKey >= ' ' )
             {
                stdPrintf( "Illegal value for 'commandkey', using default of 'Esc'.\n" );
                commandKey = 0x1b;
@@ -927,7 +911,6 @@ static bool processBbsRcHotkeyCommand( BbsRcCommandId commandId,
    }
 }
 
-
 /// @brief Handle friend and enemy list `.bbsrc` commands.
 ///
 /// @param commandId Parsed command identifier.
@@ -983,7 +966,6 @@ static bool processBbsRcListCommand( BbsRcCommandId commandId,
          return false;
    }
 }
-
 
 /// @brief Handle macro and away-message `.bbsrc` commands.
 ///
@@ -1042,7 +1024,6 @@ static bool processBbsRcMacroCommand( BbsRcCommandId commandId,
          return false;
    }
 }
-
 
 /// @brief Handle boolean and setting-style `.bbsrc` commands.
 ///
@@ -1170,7 +1151,6 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
    }
 }
 
-
 /// @brief Read `.bbsrc` and apply the configured client settings.
 ///
 /// @return This function does not return a value.
@@ -1199,7 +1179,6 @@ void readBbsRc( void )
    finalizeBbsRcRead( &state );
 }
 
-
 /// @brief Read legacy `.bbsfriends` entries after `.bbsrc` parsing.
 ///
 /// @param ptrLine Reusable line buffer.
@@ -1226,7 +1205,6 @@ static bool readLegacyBbsFriends( char *ptrLine, BbsRcReadState *ptrState )
 
    return true;
 }
-
 
 /// @brief Warn about conflicting `.bbsrc` hotkey and macro definitions.
 ///
@@ -1274,7 +1252,6 @@ static void warnAboutBbsRcConflicts( void )
       stdPrintf( "Warning: duplicate definition of 'capture' and 'shellkey'\n" );
    }
 }
-
 
 /// @brief Decode a `.bbsrc` escaped text field into its destination buffer.
 ///

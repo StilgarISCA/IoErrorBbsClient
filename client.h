@@ -22,7 +22,6 @@ void flushInput( unsigned int invalid );
 int getWindowSize( void );
 void information( void );
 void initialize( void );
-void killSsl( void );
 void license( void );
 void moveIfNeeded( const char *oldpath, const char *newpath );
 noreturn void myExit( void );

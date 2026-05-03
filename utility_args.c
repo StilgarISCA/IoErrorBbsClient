@@ -10,7 +10,7 @@
 #include "client.h"
 #include "config_globals.h"
 #include "defs.h"
-/// @brief Parse optional command-line host, port, and secure-mode overrides.
+/// @brief Parse optional command-line host and port overrides.
 ///
 /// @param argc Argument count from `main()`.
 /// @param argv Argument vector from `main()`.
@@ -33,16 +33,5 @@ void arguments( int argc, char **argv )
    else
    {
       cmdLinePort = 0;
-   }
-   if ( argc > 3 )
-   {
-      if ( !strncmp( argv[3], "secure", 6 ) || !strncmp( argv[3], "ssl", 6 ) )
-      {
-         shouldUseSsl = 1;
-      }
-      else
-      {
-         shouldUseSsl = 0;
-      }
    }
 }

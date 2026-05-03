@@ -27,7 +27,6 @@ static struct ltchars savedLocalTermChars;
 static int savelocalmode;
 #endif
 
-
 /// @brief Flush pending terminal input after invalid or dangerous key sequences.
 ///
 /// @param invalid Count of invalid bytes seen so far, used to scale the delay.
@@ -60,7 +59,6 @@ void flushInput( unsigned int invalid )
 #endif
 }
 
-
 /// @brief Read the current terminal height and clamp it to supported limits.
 ///
 /// @return The number of terminal rows now stored in `rows`.
@@ -86,7 +84,6 @@ int getWindowSize( void )
 #endif
 }
 
-
 /// @brief Sleep for the requested number of seconds.
 ///
 /// @param sec Number of seconds to sleep.
@@ -96,7 +93,6 @@ void mySleep( unsigned int sec )
 {
    sleep( sec );
 }
-
 
 /// @brief Clear any custom terminal title.
 ///
@@ -111,7 +107,6 @@ void noTitleBar( void )
    printf( "\033]0;\007" );
    fflush( stdout );
 }
-
 
 /// @brief Restore the terminal state saved before client mode was enabled.
 ///
@@ -136,7 +131,6 @@ void resetTerm( void )
    ioctl( 0, TIOCLSET, (char *)&savelocalmode );
 #endif
 }
-
 
 /// @brief Put the terminal into the mode expected by the interactive client.
 ///
@@ -216,7 +210,6 @@ void setTerm( void )
    isTerminalStateSaved = 1;
 }
 
-
 /// @brief Decide whether title-bar updates should be emitted right now.
 ///
 /// @return `true` when title-bar updates are enabled and supported.
@@ -230,7 +223,6 @@ static bool shouldUpdateTitleBar( void )
 
    return terminalSupportsTitleBarUpdates();
 }
-
 
 /// @brief Suspend the client process and restore the terminal around the stop.
 ///
@@ -248,7 +240,6 @@ void suspend( void )
       sendNaws();
    }
 }
-
 
 /// @brief Detect whether the current terminal supports title-bar updates.
 ///
@@ -281,7 +272,6 @@ static bool terminalSupportsTitleBarUpdates( void )
    return false;
 }
 
-
 /// @brief Update the terminal title with the current connection state.
 ///
 /// @return This function does not return a value.
@@ -294,8 +284,8 @@ void titleBar( void )
       return;
    }
 
-   snprintf( aryTitle, sizeof( aryTitle ), "%s:%d%s - BBS Client %s (%s)",
-             aryCommandLineHost, cmdLinePort, isSsl ? " (Secure)" : "",
+   snprintf( aryTitle, sizeof( aryTitle ), "%s:%d - BBS Client %s (%s)",
+             aryCommandLineHost, cmdLinePort,
              BUILD_VERSION, "Unix" );
    printf( "\033]0;%s\007", aryTitle );
    fflush( stdout );

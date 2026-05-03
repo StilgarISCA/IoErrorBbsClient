@@ -4,14 +4,6 @@ AC_CONFIG_SRCDIR([main.c])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CANONICAL_HOST
 
-AC_ARG_WITH(ssl,
-   [  --with-ssl=PATH         use OpenSSL (no BBSs support this yet) ],
-   [
-   	if test "x$withval" != "xno" ; then
-   		tryssldir=$withval
-   	fi
-   ]
-)
 AC_ARG_ENABLE(save-password, [  --enable-save-password  allow passwords to be saved])
 AC_ARG_ENABLE(native-optimizations,
    [  --disable-native-optimizations  disable macOS host-specific tuning flags],
@@ -253,129 +245,6 @@ AC_CHECK_LIB(util, main)
 
 PLATFORM_OBJS="unix.o"
 
-#Some target - specific stuff
-case "$host_os" in
-netbsd*)
-   need_dash_r=1;
-   ;;
-solaris*)
-   need_dash_r=1;
-   ;;
-esac
-
-if test "x$with_ssl" != "xno"; then
-#The big search for OpenSSL
-   saved_LIBS="$LIBS"
-   saved_LDFLAGS="$LDFLAGS"
-   saved_CFLAGS="$CFLAGS"
-   if test "x$prefix" != "xNONE"; then
-   	tryssldir="$tryssldir $prefix"
-   fi
-   AC_CACHE_CHECK([for OpenSSL], ac_cv_openssldir, [
-   	for ssldir in $tryssldir "" /usr /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl ; do
-   		CFLAGS="$saved_CFLAGS"
-   		LDFLAGS="$saved_LDFLAGS"
-   		LIBS="$saved_LIBS -lssl -lcrypto"
-
-#Skip directories if they don't exist
-   		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
-   			continue;
-   		fi
-   		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
-#Try to use $ssldir / lib if it exists, otherwise
-#$ssldir
-   			if test -d "$ssldir/lib" ; then
-   				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
-   				if test ! -z "$need_dash_r" ; then
-   					LDFLAGS="-R$ssldir/lib $LDFLAGS"
-   				fi
-   			else
-   				LDFLAGS="-L$ssldir $saved_LDFLAGS"
-   				if test ! -z "$need_dash_r" ; then
-   					LDFLAGS="-R$ssldir $LDFLAGS"
-   				fi
-   			fi
-#Try to use $ssldir / include if it exists,
-#otherwise $ssldir
-   			if test -d "$ssldir/include" ; then
-   				CFLAGS="-I$ssldir/include $saved_CFLAGS"
-   			else
-   				CFLAGS="-I$ssldir $saved_CFLAGS"
-   			fi
-   		fi
-
-#Basic test to check for compatible version and
-#correct linking *does not *test for RSA - that
-#comes later.
-   		AC_RUN_IFELSE(
-   			[AC_LANG_SOURCE([[
-#include <string.h>
-#include <openssl/rand.h>
-int main(void)
-{
-   char a[2048];
-   memset(a, 0, sizeof(a));
-   RAND_add(a, sizeof(a), sizeof(a));
-   return(RAND_status() <= 0);
-}
-   			]])],
-   			[
-   				found_crypto=1
-   				break;
-   			], [], []
-   		)
-
-   		if test ! -z "$found_crypto" ; then
-   			break;
-   		fi
-   	done
-
-   	if test -z "$ssldir" ; then
-   		ssldir="(system)"
-   	fi
-
-   	if test ! -z "$found_crypto" ; then
-   		ac_cv_openssldir=$ssldir
-   	else
-   		ac_cv_openssldir="no"
-   	fi
-   ])
-   LIBS="$saved_LIBS"
-   LDFLAGS="$saved_LDFLAGS"
-   CFLAGS="$saved_CFLAGS"
-else
-   ac_cv_openssldir=no
-fi
-
-if test "x$ac_cv_openssldir" != "xno" ; then
-   AC_DEFINE(HAVE_OPENSSL,[1],[Define this if we have OpenSSL])
-   LIBS="$saved_LIBS -lssl -lcrypto"
-   dnl Need to recover ssldir - test above runs in subshell
-   ssldir=$ac_cv_openssldir
-   if test ! -z "$ssldir" -a "x$ssldir" != "x/usr" -a "x$ssldir" != "x(system)"; then
-#Try to use $ssldir / lib if it exists, otherwise
-#$ssldir
-   	if test -d "$ssldir/lib" ; then
-   		LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
-   		if test ! -z "$need_dash_r" ; then
-   			LDFLAGS="-R$ssldir/lib $LDFLAGS"
-   		fi
-   	else
-   		LDFLAGS="-L$ssldir $saved_LDFLAGS"
-   		if test ! -z "$need_dash_r" ; then
-   			LDFLAGS="-R$ssldir $LDFLAGS"
-   		fi
-   	fi
-#Try to use $ssldir / include if it exists, otherwise
-#$ssldir
-   	if test -d "$ssldir/include" ; then
-   		CFLAGS="-I$ssldir/include $saved_CFLAGS"
-   	else
-   		CFLAGS="-I$ssldir $saved_CFLAGS"
-   	fi
-   fi
-fi
-
 
 if test x$enable_save_password = xyes; then
    AC_DEFINE(ENABLE_SAVE_PASSWORD,[1],[Define this if you want to enable saving passwords])
@@ -459,12 +328,6 @@ else
    stackProtectorMode="disabled"
 fi
 
-if test "x$ac_cv_openssldir" != "xno"; then
-   sslMode="enabled"
-else
-   sslMode="disabled"
-fi
-
 if test "x$enable_save_password" = "xyes"; then
    savePasswordMode="enabled"
 else
@@ -487,8 +350,6 @@ AC_DEFINE_UNQUOTED([BUILD_OPTIMIZATION_MODE], ["$optimizationMode"],
    [Define to the selected optimization mode])
 AC_DEFINE_UNQUOTED([BUILD_UNIVERSAL_MODE], ["$universalMode"],
    [Define to the universal binary mode])
-AC_DEFINE_UNQUOTED([BUILD_SSL_MODE], ["$sslMode"],
-   [Define to the OpenSSL support mode])
 AC_DEFINE_UNQUOTED([BUILD_SAVE_PASSWORD_MODE], ["$savePasswordMode"],
    [Define to the saved password support mode])
 AC_DEFINE_UNQUOTED([BUILD_CMOCKA_MODE], ["$cmockaMode"],
@@ -513,7 +374,6 @@ Configuration summary:
   Build mode: $buildMode
   Optimization mode: $optimizationMode
   Universal binary: $universalMode
-  OpenSSL support: $sslMode
   Save password support: $savePasswordMode
   CMocka: $cmockaMode
   Sanitizers: $sanitizerMode

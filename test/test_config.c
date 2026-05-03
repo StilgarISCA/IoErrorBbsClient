@@ -876,6 +876,12 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
       fail_msg( "writeBbsRc should emit 'autocomplete 0' when autocomplete is disabled; output was:\n%s", aryOutput );
       return;
    }
+   if ( strstr( aryOutput, "\nsite bbs.example.net 23\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit a plain site line without a secure suffix; output was:\n%s", aryOutput );
+      return;
+   }
    if ( strstr( aryOutput, "\ncolor brightgreen brightyellow brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
    {
       cleanupWriteBbsRcFixture();

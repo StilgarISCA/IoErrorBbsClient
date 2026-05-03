@@ -21,9 +21,6 @@
 /* Define to the saved password support mode */
 #undef BUILD_SAVE_PASSWORD_MODE
 
-/* Define to the OpenSSL support mode */
-#undef BUILD_SSL_MODE
-
 /* Define to the stack protector mode */
 #undef BUILD_STACK_PROTECTOR_MODE
 
@@ -62,9 +59,6 @@
 
 /* Define to 1 if you have the 'util' library (-lutil). */
 #undef HAVE_LIBUTIL
-
-/* Define this if we have OpenSSL */
-#undef HAVE_OPENSSL
 
 /* Define to 1 if you have the 'select' function. */
 #undef HAVE_SELECT
