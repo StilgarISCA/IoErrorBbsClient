@@ -58,7 +58,6 @@ bbs_SOURCES = \
 	utility_error.c \
 	utility_input.c \
 	utility_line.c \
-	utility_password.c \
 	utility_send.c \
 	utility_string.c \
 	unix.c \

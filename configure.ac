@@ -4,7 +4,6 @@ AC_CONFIG_SRCDIR([main.c])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CANONICAL_HOST
 
-AC_ARG_ENABLE(save-password, [  --enable-save-password  allow passwords to be saved])
 AC_ARG_ENABLE(native-optimizations,
    [  --disable-native-optimizations  disable host-specific tuning flags],
    [],
@@ -265,11 +264,6 @@ AC_CHECK_LIB(util, main)
 
 PLATFORM_OBJS="unix.o"
 
-
-if test x$enable_save_password = xyes; then
-   AC_DEFINE(ENABLE_SAVE_PASSWORD,[1],[Define this if you want to enable saving passwords])
-fi
-
 dnl Checks for header files.
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sgtty.h stdint.h sys/ioctl.h sys/time.h termio.h time.h unistd.h)
@@ -348,12 +342,6 @@ else
    stackProtectorMode="disabled"
 fi
 
-if test "x$enable_save_password" = "xyes"; then
-   savePasswordMode="enabled"
-else
-   savePasswordMode="disabled"
-fi
-
 if test "x$have_cmocka" = "xyes"; then
    cmockaMode="found"
 else
@@ -374,8 +362,6 @@ AC_DEFINE_UNQUOTED([BUILD_PLATFORM_SUPPORT_MODE], ["$platformSupportMode"],
    [Define to the platform support mode])
 AC_DEFINE_UNQUOTED([BUILD_UNIVERSAL_MODE], ["$universalMode"],
    [Define to the universal binary mode])
-AC_DEFINE_UNQUOTED([BUILD_SAVE_PASSWORD_MODE], ["$savePasswordMode"],
-   [Define to the saved password support mode])
 AC_DEFINE_UNQUOTED([BUILD_CMOCKA_MODE], ["$cmockaMode"],
    [Define to the cmocka availability mode])
 AC_DEFINE_UNQUOTED([BUILD_SANITIZER_MODE], ["$sanitizerMode"],
@@ -400,28 +386,9 @@ Configuration summary:
   Platform: $platformDisplayName
   Platform support: $platformSupportMode
   Universal binary: $universalMode
-  Save password support: $savePasswordMode
   CMocka: $cmockaMode
   Sanitizers: $sanitizerMode
   Native optimizations: $nativeOptimizationMode
   Stack protector: $stackProtectorMode
 
 CFG
-
-if test x$enable_save_password = xyes; then
-   cat <<SPT;
-
-  *** WARNING *** WARNING *** WARNING *** WARNING *** WARNING *** WARNING ***
-
-    You have chosen to enable saving your password.  This option provides
-    NO SECURITY WHATSOEVER!  Anyone with access to your configuration file
-    may be able to recover your saved BBS password.  This includes anyone
-    with physical access to your computer, not to mention system crackers.
-    ISCABBS policy provides that you will be responsible for any activity
-    from your account.  I will leave it up to you as to whether you wish
-    to incur this risk.  If you don't, please re-run configure without the
-    --enable-save-password option.
-
-SPT
-
-fi

@@ -32,12 +32,8 @@ static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCu
 static bool handleCtrlWEdit( const char *result, char **ptrCursor );
 static bool handleGetStringOverflow( int inputChar, int line, const char *result,
                                      char **ptrCursor );
-static bool maybeUseSavedPassword( char *result, GetStringState *ptrState );
 static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState );
 static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState );
-static void saveHiddenPasswordIfNeeded( const char *ptrResult,
-                                        const GetStringState *ptrState );
-
 
 static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
                                  const GetStringState *ptrState )
@@ -52,7 +48,6 @@ static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
    putchar( ptrState->hidden ? '.' : inputChar );
    return true;
 }
-
 
 /// @brief Seed a wrapped input field with leftover text from the previous line.
 ///
@@ -83,7 +78,6 @@ static void applyWrapSeed( int length, int line, char *result, char **ptrCursor 
       *aryWrap = 0;
    }
 }
-
 
 /// @brief Collect and send a five-line input block such as an X or profile entry.
 ///
@@ -176,7 +170,6 @@ void getFiveLines( int which )
    }
 }
 
-
 /// @brief Read a short input string with local editing and optional hidden echo.
 ///
 /// @param length Maximum input length. Negative values request hidden echo.
@@ -191,10 +184,6 @@ void getString( int length, char *result, int line )
 
    normalizeGetStringMode( &length, &state );
    applyWrapSeed( length, line, result, &ptrCursor );
-   if ( maybeUseSavedPassword( result, &state ) )
-   {
-      return;
-   }
 
    while ( true )
    {
@@ -243,10 +232,8 @@ void getString( int length, char *result, int line )
    }
    *ptrCursor = 0;
    recordCapturedString( result, &state );
-   saveHiddenPasswordIfNeeded( result, &state );
    stdPrintf( "\r\n" );
 }
-
 
 /// @brief Handle backspace-style editing inside `getString()`.
 ///
@@ -273,7 +260,6 @@ static bool handleBackspaceEdit( int inputChar, const char *result, char **ptrCu
    } while ( inputChar == CTRL_X && *ptrCursor > result );
    return true;
 }
-
 
 /// @brief Erase the previous word inside `getString()`.
 ///
@@ -307,7 +293,6 @@ static bool handleCtrlWEdit( const char *result, char **ptrCursor )
 
    return true;
 }
-
 
 /// @brief Move overflow text into the wrap buffer for the next input line.
 ///
@@ -358,40 +343,6 @@ static bool handleGetStringOverflow( int inputChar, int line, const char *result
    return false;
 }
 
-
-/// @brief Autofill a saved hidden password when that feature is enabled.
-///
-/// @param result Destination buffer for the decoded password.
-/// @param ptrState Current input mode state.
-///
-/// @return `true` if a saved password was used, otherwise `false`.
-static bool maybeUseSavedPassword( char *result, GetStringState *ptrState )
-{
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( ptrState->hidden != 0 && *aryAutoPassword && !isAutoPasswordSent )
-   {
-      size_t charIndex;
-      size_t resultLength;
-
-      jhpdecode( result, aryAutoPassword, strlen( aryAutoPassword ) );
-      resultLength = strlen( result );
-      for ( charIndex = 0; charIndex < resultLength; charIndex++ )
-      {
-         stdPutChar( '.' );
-      }
-      stdPrintf( "\r\n" );
-      isAutoPasswordSent = 1;
-      return true;
-   }
-#else
-   (void)result;
-   (void)ptrState;
-#endif
-
-   return false;
-}
-
-
 /// @brief Normalize the raw `getString()` length into active input mode state.
 ///
 /// @param ptrLength Requested input length to normalize in place.
@@ -418,7 +369,6 @@ static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState )
    *ptrLength = ptrState->length;
 }
 
-
 /// @brief Record the collected string into the capture log.
 ///
 /// @param ptrResult Collected input string.
@@ -441,26 +391,4 @@ static void recordCapturedString( const char *ptrResult, const GetStringState *p
    {
       capPutChar( '.' );
    }
-}
-
-
-/// @brief Save a hidden password back into the config when enabled.
-///
-/// @param ptrResult Collected hidden input string.
-/// @param ptrState Current input mode state.
-///
-/// @return This helper does not return a value.
-static void saveHiddenPasswordIfNeeded( const char *ptrResult,
-                                        const GetStringState *ptrState )
-{
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( ptrState->hidden != 0 )
-   {
-      jhpencode( aryAutoPassword, ptrResult, strlen( ptrResult ) );
-      writeBbsRc();
-   }
-#else
-   (void)ptrResult;
-   (void)ptrState;
-#endif
 }

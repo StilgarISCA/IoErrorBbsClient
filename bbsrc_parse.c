@@ -29,9 +29,6 @@ typedef enum
    BBRC_CMD_AWAYKEY,
    BBRC_CMD_AUTOANSI,
    BBRC_CMD_AUTONAME,
-#ifdef ENABLE_SAVE_PASSWORD
-   BBRC_CMD_AUTOPASS,
-#endif
    BBRC_CMD_BOLD,
    BBRC_CMD_BROWSER,
    BBRC_CMD_CAPTURE,
@@ -266,9 +263,6 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
          { "autoansi", 9, BBRC_CMD_AUTOANSI },
-#ifdef ENABLE_SAVE_PASSWORD
-         { "autopass ", 9, BBRC_CMD_AUTOPASS },
-#endif
          { "aryBrowser ", sizeof( "aryBrowser " ) - 1, BBRC_CMD_BROWSER },
          { "aryEditor ", sizeof( "aryEditor " ) - 1, BBRC_CMD_EDITOR },
          { "site ", 5, BBRC_CMD_SITE },
@@ -437,10 +431,6 @@ static void initializeBbsRcDefaults( void )
 
    isAutoLoggedIn = 0;
    *aryAutoName = 0;
-#ifdef ENABLE_SAVE_PASSWORD
-   isAutoPasswordSent = 0;
-   *aryAutoPassword = 0;
-#endif
 
    *aryEditor = 0;
    *aryBbsHost = 0;
@@ -1140,12 +1130,6 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
          }
          return true;
 
-#ifdef ENABLE_SAVE_PASSWORD
-      case BBRC_CMD_AUTOPASS:
-         strncpy( aryAutoPassword, ptrLine + 9, 21 );
-         aryAutoPassword[20] = 0;
-         return true;
-#endif
       default:
          return false;
    }

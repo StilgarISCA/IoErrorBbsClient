@@ -24,9 +24,6 @@
 /* Define to the sanitizer mode */
 #undef BUILD_SANITIZER_MODE
 
-/* Define to the saved password support mode */
-#undef BUILD_SAVE_PASSWORD_MODE
-
 /* Define to the stack protector mode */
 #undef BUILD_STACK_PROTECTOR_MODE
 
@@ -35,9 +32,6 @@
 
 /* Define to the configured release version string */
 #undef BUILD_VERSION
-
-/* Define this if you want to enable saving passwords */
-#undef ENABLE_SAVE_PASSWORD
 
 /* Define if cmocka is available for unit tests */
 #undef HAVE_CMOCKA

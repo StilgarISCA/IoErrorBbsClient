@@ -195,12 +195,6 @@ static void writeOptionSettings( void )
    {
       fprintf( ptrBbsRc, "aryAutoName %s\n", aryAutoName );
    }
-#ifdef ENABLE_SAVE_PASSWORD
-   if ( *aryAutoPassword )
-   {
-      fprintf( ptrBbsRc, "autopass %s\n", aryAutoPassword );
-   }
-#endif
    if ( flagsConfiguration.shouldAutoAnswerAnsiPrompt )
    {
       fprintf( ptrBbsRc, "autoansi\n" );
