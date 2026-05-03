@@ -94,6 +94,12 @@ void configureOptionsMenu( void )
    flagsConfiguration.shouldEnableNameAutocomplete =
       (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableNameAutocomplete );
    flagsConfiguration.hasNameAutocompleteSetting = 1;
+#ifdef ENABLE_KEYCHAIN
+   stdPrintf( "Use macOS Keychain for password storage? (%s) -> ",
+              flagsConfiguration.shouldUseKeychain ? "Yes" : "No" );
+   flagsConfiguration.shouldUseKeychain =
+      (unsigned int)yesNoDefault( flagsConfiguration.shouldUseKeychain );
+#endif
 }
 
 /// @brief Set the default autocomplete behavior when the user has not chosen one yet.

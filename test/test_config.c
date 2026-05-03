@@ -774,6 +774,22 @@ static void configBbsRc_WhenOptionsToggleScreenReaderMode_UpdatesFlags( void **s
       fail_msg( "configBbsRc should show the screen reader default of No for autocomplete after enabling screen reader mode" );
       return;
    }
+#ifndef ENABLE_KEYCHAIN
+   if ( strstr( aryStdPrintfLog, "Use macOS Keychain for password storage?" ) != NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should hide the keychain option when keychain support is not compiled in" );
+      return;
+   }
+#else
+   if ( strstr( aryStdPrintfLog,
+                "Use macOS Keychain for password storage? (No) -> " ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "configBbsRc should display the keychain option when keychain support is compiled in" );
+      return;
+   }
+#endif
 
    cleanupWriteBbsRcFixture();
 }
@@ -876,6 +892,23 @@ static void writeBbsRc_WhenTcpKeepaliveEnabled_WritesKeepaliveOne( void **state 
       fail_msg( "writeBbsRc should emit 'autocomplete 0' when autocomplete is disabled; output was:\n%s", aryOutput );
       return;
    }
+#ifndef ENABLE_KEYCHAIN
+   if ( strstr( aryOutput, "\nkeychain " ) != NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should not emit keychain configuration when keychain support is not compiled in; output was:\n%s",
+                aryOutput );
+      return;
+   }
+#else
+   if ( strstr( aryOutput, "\nkeychain 0\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'keychain 0' when keychain support is compiled in and disabled at runtime; output was:\n%s",
+                aryOutput );
+      return;
+   }
+#endif
    if ( strstr( aryOutput, "\nsite bbs.example.net 23\n" ) == NULL )
    {
       cleanupWriteBbsRcFixture();
@@ -955,6 +988,9 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
    flagsConfiguration.shouldEnableTitleBar = false;
    flagsConfiguration.isScreenReaderModeEnabled = false;
    flagsConfiguration.shouldEnableNameAutocomplete = true;
+#ifdef ENABLE_KEYCHAIN
+   flagsConfiguration.shouldUseKeychain = true;
+#endif
 
    // Act
    writeBbsRc();
@@ -996,6 +1032,23 @@ static void writeBbsRc_WhenTcpKeepaliveDisabled_WritesKeepaliveZero( void **stat
       fail_msg( "writeBbsRc should emit 'autocomplete 1' when autocomplete is enabled; output was:\n%s", aryOutput );
       return;
    }
+#ifndef ENABLE_KEYCHAIN
+   if ( strstr( aryOutput, "\nkeychain " ) != NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should not emit keychain configuration when keychain support is not compiled in; output was:\n%s",
+                aryOutput );
+      return;
+   }
+#else
+   if ( strstr( aryOutput, "\nkeychain 1\n" ) == NULL )
+   {
+      cleanupWriteBbsRcFixture();
+      fail_msg( "writeBbsRc should emit 'keychain 1' when keychain support is compiled in and enabled at runtime; output was:\n%s",
+                aryOutput );
+      return;
+   }
+#endif
    if ( strstr( aryOutput, "\ncolor brightgreen 123 brightcyan brightred brightblack brightblack brightblack brightmagenta brightblue brightwhite brightred brightgreen brightyellow brightblue brightcyan brightblack brightblack default brightwhite brightgreen brightyellow brightmagenta brightcyan brightmagenta\n" ) == NULL )
    {
       cleanupWriteBbsRcFixture();

@@ -927,6 +927,102 @@ static void readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete( void 
    unlink( aryPath );
 }
 
+#ifndef ENABLE_KEYCHAIN
+static void readBbsRc_WhenConfigSetsKeychainOneWithoutBuildSupport_IgnoresSetting( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for keychain=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keychain 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for keychain=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( flagsConfiguration.shouldUseKeychain )
+   {
+      fail_msg( "keychain 1 should be ignored when keychain support is not compiled in" );
+   }
+   if ( strstr( aryStdPrintfLog, "Invalid definition of keychain option ignored." ) != NULL )
+   {
+      fail_msg( "keychain 1 should be accepted syntactically even when keychain support is not compiled in; log was: %s",
+                aryStdPrintfLog );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+#endif
+
+#ifdef ENABLE_KEYCHAIN
+static void readBbsRc_WhenConfigSetsKeychainOne_EnablesKeychain( void **state )
+{
+   // Arrange
+   char aryPath[PATH_MAX];
+
+   (void)state;
+
+   cleanupReadState();
+   resetTracking();
+   if ( !tryCreateTempPath( aryPath, sizeof( aryPath ), "/tmp/iobbsrc_test_XXXXXX" ) )
+   {
+      fail_msg( "Arrange failed: unable to create temporary path for keychain=1 test" );
+      return;
+   }
+   if ( !tryWriteFileContents(
+           aryPath,
+           "keychain 1\n"
+           "version 2310\n" ) )
+   {
+      unlink( aryPath );
+      fail_msg( "Arrange failed: unable to write configuration content for keychain=1 test" );
+      return;
+   }
+   snprintf( aryBbsRcName, sizeof( aryBbsRcName ), "%s", aryPath );
+   snprintf( aryMyEditor, sizeof( aryMyEditor ), "%s", "nano" );
+   isLoginShell = 0;
+   isBbsRcReadOnly = 0;
+
+   // Act
+   readBbsRc();
+
+   // Assert
+   if ( !flagsConfiguration.shouldUseKeychain )
+   {
+      fail_msg( "keychain 1 should enable runtime keychain support when compiled in" );
+   }
+   if ( strstr( aryStdPrintfLog, "Invalid definition of keychain option ignored." ) != NULL )
+   {
+      fail_msg( "keychain 1 should parse cleanly when keychain support is compiled in; log was: %s",
+                aryStdPrintfLog );
+   }
+
+   cleanupReadState();
+   unlink( aryPath );
+}
+#endif
+
 static void readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites( void **state )
 {
    // Arrange
@@ -1607,6 +1703,12 @@ int main( void )
       cmocka_unit_test( readBbsRc_WhenConfigSetsTitleBarZero_DisablesTitleBarUpdates ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsScreenReaderOne_EnablesScreenReaderMode ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsAutocompleteZero_DisablesAutocomplete ),
+#ifndef ENABLE_KEYCHAIN
+      cmocka_unit_test( readBbsRc_WhenConfigSetsKeychainOneWithoutBuildSupport_IgnoresSetting ),
+#endif
+#ifdef ENABLE_KEYCHAIN
+      cmocka_unit_test( readBbsRc_WhenConfigSetsKeychainOne_EnablesKeychain ),
+#endif
       cmocka_unit_test( readBbsRc_WhenConfigMissingScreenReaderSetting_PromptsAndRewrites ),
       cmocka_unit_test( readBbsRc_WhenAutocompleteMissingAndScreenReaderEnabled_DefaultsAutocompleteOff ),
       cmocka_unit_test( readBbsRc_WhenConfigSetsClickableUrlsZero_DisablesClickableUrls ),

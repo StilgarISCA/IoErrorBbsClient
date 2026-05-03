@@ -39,6 +39,7 @@ typedef enum
    BBRC_CMD_EDITOR,
    BBRC_CMD_ENEMY,
    BBRC_CMD_FRIEND,
+   BBRC_CMD_KEYCHAIN,
    BBRC_CMD_KEYMAP,
    BBRC_CMD_MACRO,
    BBRC_CMD_NEW_AWAY,
@@ -259,6 +260,7 @@ static BbsRcCommandId detectBbsRcCommand( const char *ptrLine )
          { "titlebar", 8, BBRC_CMD_TITLEBAR },
          { "screenreader", 12, BBRC_CMD_SCREENREADER },
          { "autocomplete", 12, BBRC_CMD_AUTOCOMPLETE },
+         { "keychain", 8, BBRC_CMD_KEYCHAIN },
          { "urlsummary", 10, BBRC_CMD_CLICKABLE_URLS },
          { "color ", 6, BBRC_CMD_COLOR },
          { "aryAutoName ", sizeof( "aryAutoName " ) - 1, BBRC_CMD_AUTONAME },
@@ -444,6 +446,7 @@ static void initializeBbsRcDefaults( void )
    flagsConfiguration.shouldUseTcpKeepalive = 1;
    flagsConfiguration.shouldEnableClickableUrls = 1;
    flagsConfiguration.shouldEnableTitleBar = 1;
+   flagsConfiguration.shouldUseKeychain = 0;
    flagsConfiguration.hasTitleBarSetting = 0;
    flagsConfiguration.isScreenReaderModeEnabled = 0;
    flagsConfiguration.hasScreenReaderModeSetting = 0;
@@ -1104,6 +1107,17 @@ static bool processBbsRcSettingCommand( BbsRcCommandId commandId,
          {
             flagsConfiguration.shouldEnableNameAutocomplete = (unsigned int)optionValue;
             flagsConfiguration.hasNameAutocompleteSetting = 1;
+         }
+         return true;
+
+      case BBRC_CMD_KEYCHAIN:
+         optionValue = parseBooleanSettingValue( ptrLine, strlen( "keychain" ),
+                                                 "keychain option", false );
+         if ( optionValue != BBRC_OPTION_INVALID )
+         {
+#ifdef ENABLE_KEYCHAIN
+            flagsConfiguration.shouldUseKeychain = (unsigned int)optionValue;
+#endif
          }
          return true;
 
