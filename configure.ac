@@ -6,7 +6,7 @@ AC_CANONICAL_HOST
 
 AC_ARG_ENABLE(save-password, [  --enable-save-password  allow passwords to be saved])
 AC_ARG_ENABLE(native-optimizations,
-   [  --disable-native-optimizations  disable macOS host-specific tuning flags],
+   [  --disable-native-optimizations  disable host-specific tuning flags],
    [],
    [enable_native_optimizations=yes])
 AC_ARG_ENABLE(release-build,
@@ -38,6 +38,21 @@ AC_CHECK_TOOL([STRIP], [strip], [no])
 AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
 AC_DEFINE_UNQUOTED([BUILD_VERSION], ["$PACKAGE_VERSION"],
    [Define to the configured release version string])
+
+platformDisplayName="Unix"
+platformSupportMode="least-effort"
+case "$host_os" in
+darwin*)
+   platformDisplayName="macOS"
+   platformSupportMode="supported"
+   ;;
+linux*)
+   platformDisplayName="Linux"
+   ;;
+*)
+   AC_MSG_WARN([host OS $host_os is not a primary target; build will proceed with least-effort Unix support])
+   ;;
+esac
 
 compilerFamily="Unknown"
 isClangCompiler=no
@@ -168,66 +183,71 @@ fi
 
 case "$host_os" in
 darwin*)
-if test "x$enable_universal_binary" = "xyes"; then
-   universalFlags="-arch arm64 -arch x86_64"
-   saved_CFLAGS="$CFLAGS"
-   saved_LDFLAGS="$LDFLAGS"
-   CFLAGS="$CFLAGS $universalFlags"
-   LDFLAGS="$LDFLAGS $universalFlags"
-   AC_MSG_CHECKING([whether $CC supports macOS universal binary flags])
-   AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
-      [
-         AC_MSG_RESULT([yes])
-         UNIVERSAL_CFLAGS="$universalFlags"
-         UNIVERSAL_LDFLAGS="$universalFlags"
-      ],
-      [
-         AC_MSG_RESULT([no])
-         AC_MSG_ERROR([--enable-universal-binary requires compiler support for -arch arm64 -arch x86_64])
-      ]
-   )
-   CFLAGS="$saved_CFLAGS"
-   LDFLAGS="$saved_LDFLAGS"
-elif test "x$enable_native_optimizations" = "xyes"; then
-   if test "x$ac_env_CFLAGS_set" != "xset"; then
-      case "$host_cpu" in
-      arm64|aarch64)
-         for optimizationFlag in "-mcpu=native" "-mcpu=apple-m1"; do
-            saved_CFLAGS="$CFLAGS"
-            CFLAGS="$CFLAGS $optimizationFlag"
-            AC_MSG_CHECKING([whether $CC accepts $optimizationFlag])
-            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
-               [
-                  AC_MSG_RESULT([yes])
-                  OPTIMIZATION_CFLAGS="$OPTIMIZATION_CFLAGS $optimizationFlag"
-                  CFLAGS="$saved_CFLAGS"
-                  break
-               ],
-               [AC_MSG_RESULT([no])]
-            )
-            CFLAGS="$saved_CFLAGS"
-         done
-         ;;
-      x86_64|amd64)
-         for optimizationFlag in "-march=native" "-mtune=native"; do
-            saved_CFLAGS="$CFLAGS"
-            CFLAGS="$CFLAGS $optimizationFlag"
-            AC_MSG_CHECKING([whether $CC accepts $optimizationFlag])
-            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
-               [
-                  AC_MSG_RESULT([yes])
-                  OPTIMIZATION_CFLAGS="$OPTIMIZATION_CFLAGS $optimizationFlag"
-               ],
-               [AC_MSG_RESULT([no])]
-            )
-            CFLAGS="$saved_CFLAGS"
-         done
-         ;;
-      esac
+   if test "x$enable_universal_binary" = "xyes"; then
+      universalFlags="-arch arm64 -arch x86_64"
+      saved_CFLAGS="$CFLAGS"
+      saved_LDFLAGS="$LDFLAGS"
+      CFLAGS="$CFLAGS $universalFlags"
+      LDFLAGS="$LDFLAGS $universalFlags"
+      AC_MSG_CHECKING([whether $CC supports macOS universal binary flags])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+         [
+            AC_MSG_RESULT([yes])
+            UNIVERSAL_CFLAGS="$universalFlags"
+            UNIVERSAL_LDFLAGS="$universalFlags"
+         ],
+         [
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([--enable-universal-binary requires compiler support for -arch arm64 -arch x86_64])
+         ]
+      )
+      CFLAGS="$saved_CFLAGS"
+      LDFLAGS="$saved_LDFLAGS"
    fi
-fi
-;;
+   ;;
 esac
+
+if test "x$enable_native_optimizations" = "xyes" && test "x$ac_env_CFLAGS_set" != "xset"; then
+   case "$host_cpu" in
+   arm64|aarch64)
+      if test "x$host_os" = "xdarwin"; then
+         optimizationFlagCandidates="-mcpu=native -mcpu=apple-m1"
+      else
+         optimizationFlagCandidates="-mcpu=native"
+      fi
+      for optimizationFlag in $optimizationFlagCandidates; do
+         saved_CFLAGS="$CFLAGS"
+         CFLAGS="$CFLAGS $optimizationFlag"
+         AC_MSG_CHECKING([whether $CC accepts $optimizationFlag])
+         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+            [
+               AC_MSG_RESULT([yes])
+               OPTIMIZATION_CFLAGS="$OPTIMIZATION_CFLAGS $optimizationFlag"
+               CFLAGS="$saved_CFLAGS"
+               break
+            ],
+            [AC_MSG_RESULT([no])]
+         )
+         CFLAGS="$saved_CFLAGS"
+      done
+      ;;
+   x86_64|amd64)
+      for optimizationFlag in "-march=native" "-mtune=native"; do
+         saved_CFLAGS="$CFLAGS"
+         CFLAGS="$CFLAGS $optimizationFlag"
+         AC_MSG_CHECKING([whether $CC accepts $optimizationFlag])
+         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+            [
+               AC_MSG_RESULT([yes])
+               OPTIMIZATION_CFLAGS="$OPTIMIZATION_CFLAGS $optimizationFlag"
+            ],
+            [AC_MSG_RESULT([no])]
+         )
+         CFLAGS="$saved_CFLAGS"
+      done
+      ;;
+   esac
+fi
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -linet:
@@ -252,7 +272,7 @@ fi
 
 dnl Checks for header files.
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(sgtty.h sys/ioctl.h time.h sys/time.h termio.h unistd.h)
+AC_CHECK_HEADERS(sgtty.h stdint.h sys/ioctl.h sys/time.h termio.h time.h unistd.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -348,6 +368,10 @@ AC_DEFINE_UNQUOTED([BUILD_MODE], ["$buildMode"],
    [Define to the selected build mode])
 AC_DEFINE_UNQUOTED([BUILD_OPTIMIZATION_MODE], ["$optimizationMode"],
    [Define to the selected optimization mode])
+AC_DEFINE_UNQUOTED([BUILD_PLATFORM], ["$platformDisplayName"],
+   [Define to the selected platform display name])
+AC_DEFINE_UNQUOTED([BUILD_PLATFORM_SUPPORT_MODE], ["$platformSupportMode"],
+   [Define to the platform support mode])
 AC_DEFINE_UNQUOTED([BUILD_UNIVERSAL_MODE], ["$universalMode"],
    [Define to the universal binary mode])
 AC_DEFINE_UNQUOTED([BUILD_SAVE_PASSWORD_MODE], ["$savePasswordMode"],
@@ -373,6 +397,8 @@ Configuration summary:
   Host: $host
   Build mode: $buildMode
   Optimization mode: $optimizationMode
+  Platform: $platformDisplayName
+  Platform support: $platformSupportMode
   Universal binary: $universalMode
   Save password support: $savePasswordMode
   CMocka: $cmockaMode

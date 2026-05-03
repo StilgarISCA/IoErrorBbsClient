@@ -40,6 +40,9 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 #include <string.h>
 #ifndef RETSIGTYPE
 #define RETSIGTYPE void

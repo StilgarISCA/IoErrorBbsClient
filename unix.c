@@ -343,11 +343,12 @@ void techInfo( void )
    stdPrintf( "Technical information\r\n\n" );
 
    feedPager( 3,
-              "ISCA BBS Client " BUILD_VERSION " (macOS/Unix)\r\n",
+              "ISCA BBS Client " BUILD_VERSION " (" BUILD_PLATFORM ")\r\n",
               "Built on: " HOSTTYPE "\r\n",
               "Compiler: " BUILD_COMPILER "\r\n",
               "Build mode: " BUILD_MODE "\r\n",
               "Optimization: " BUILD_OPTIMIZATION_MODE "\r\n",
+              "Platform support: " BUILD_PLATFORM_SUPPORT_MODE "\r\n",
               "Universal binary: " BUILD_UNIVERSAL_MODE "\r\n",
               "Save password support: " BUILD_SAVE_PASSWORD_MODE "\r\n",
               "Sanitizers: " BUILD_SANITIZER_MODE "\r\n",
