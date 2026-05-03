@@ -1,6 +1,6 @@
 .\" -*-Nroff-*-
 .\"
-.TH BBS 1 "15 Feb 2026" "@PACKAGE_VERSION@" "macOS User's Manual"
+.TH BBS 1 "15 Feb 2026" "@PACKAGE_VERSION@" "Unix User's Manual"
 .SH NAME
 bbs \- Connect to the ISCA BBS or a similar BBS.
 .SH SYNOPSIS
@@ -32,6 +32,10 @@ normal usage you should probably use telnet instead.
 This man page documents only the basics of IO ERROR's BBS Client; for
 more specific usage information, please visit
 .BR https://iscabbs.rocks/
+.sp
+This client is explicitly supported on macOS and Linux. Other Unix-like
+systems may still build and run in generic Unix mode, but they are not
+explicitly supported targets.
 .sp
 When you log in for the first time, the client will remember your username,
 and the next time you log in, you will not have to type it; you will only

@@ -30,15 +30,20 @@ make cppcheck
 make scan-build
 ```
 
+## Platform Support
+
+- macOS is explicitly supported
+- Other Unix-like systems build in generic Unix mode but are not explicitly supported
+
 ### Build Modes
 
 The default configure path produces a development build.
 
 - Dev build is the default
 - Dev build uses debug-friendly flags and sanitizers
-- macOS builds still add host-appropriate tuning flags by default:
+- Supported builds still add host-appropriate tuning flags by default:
   - Apple Silicon builds use Apple Silicon tuning flags
-  - Intel Mac builds use Intel tuning flags
+  - Intel builds use Intel tuning flags
 
 Default dev build:
 
@@ -74,8 +79,8 @@ make -j4
 make release-package
 ```
 
-`make release-package` creates a stripped release binary under `release/` and
-keeps a matching macOS `.dSYM` bundle for postmortem debugging.
+`make release-package` creates a stripped release binary under `release/`.
+On macOS, it also keeps a matching `.dSYM` bundle for postmortem debugging.
 
 ## Shell And Editor Commands
 

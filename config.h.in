@@ -15,6 +15,12 @@
 /* Define to the selected optimization mode */
 #undef BUILD_OPTIMIZATION_MODE
 
+/* Define to the selected platform display name */
+#undef BUILD_PLATFORM
+
+/* Define to the platform support mode */
+#undef BUILD_PLATFORM_SUPPORT_MODE
+
 /* Define to the sanitizer mode */
 #undef BUILD_SANITIZER_MODE
 
