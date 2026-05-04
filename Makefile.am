@@ -15,6 +15,7 @@ noinst_HEADERS = \
 	browser.h \
 	defs.h \
 	ext.h \
+	macos_keychain.h \
 	proto.h \
 	sysio.h \
 	telnet.h \
@@ -47,6 +48,7 @@ bbs_SOURCES = \
 	global.c \
 	info.c \
 	inkey.c \
+	macos_keychain.c \
 	main.c \
 	queue.c \
 	slist.c \
@@ -65,7 +67,7 @@ bbs_SOURCES = \
 	unix_term.c
 
 if HAVE_CMOCKA
-check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey test_filter test_color test_config test_sysio test_edit test_telnet
+check_PROGRAMS = test_queue test_slist test_utility test_bbsrc test_getline test_inkey test_filter test_color test_config test_macos_keychain test_sysio test_edit test_telnet
 TESTS = $(check_PROGRAMS)
 test_queue_SOURCES = test/test_queue.c test/test_helpers.c queue.c
 test_queue_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
@@ -94,6 +96,9 @@ test_color_LDADD = $(CMOCKA_LIBS)
 test_config_SOURCES = test/test_config.c test/test_helpers.c config.c config_express.c config_keys.c config_options.c config_write.c config_users.c slist.c global.c
 test_config_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_config_LDADD = $(CMOCKA_LIBS)
+test_macos_keychain_SOURCES = test/test_macos_keychain.c test/test_helpers.c macos_keychain.c global.c
+test_macos_keychain_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
+test_macos_keychain_LDADD = $(CMOCKA_LIBS) $(KEYCHAIN_LDFLAGS)
 test_sysio_SOURCES = test/test_sysio.c test/test_helpers.c sysio.c global.c
 test_sysio_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_sysio_LDADD = $(CMOCKA_LIBS)

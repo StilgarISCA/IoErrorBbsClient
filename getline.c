@@ -14,6 +14,7 @@
 #include "color.h"
 #include "defs.h"
 #include "getline_input.h"
+#include "macos_keychain.h"
 #include "telnet.h"
 #include "utility.h"
 typedef struct
@@ -34,6 +35,8 @@ static bool handleGetStringOverflow( int inputChar, int line, const char *result
                                      char **ptrCursor );
 static void normalizeGetStringMode( int *ptrLength, GetStringState *ptrState );
 static void recordCapturedString( const char *ptrResult, const GetStringState *ptrState );
+static bool tryAutoFillHiddenInput( char *ptrResult, size_t resultSize,
+                                    const GetStringState *ptrState );
 
 static bool appendPrintableChar( int inputChar, char *result, char **ptrCursor,
                                  const GetStringState *ptrState )
@@ -184,6 +187,12 @@ void getString( int length, char *result, int line )
 
    normalizeGetStringMode( &length, &state );
    applyWrapSeed( length, line, result, &ptrCursor );
+   if ( tryAutoFillHiddenInput( result, (size_t)length + 1, &state ) )
+   {
+      recordCapturedString( result, &state );
+      stdPrintf( "\r\n" );
+      return;
+   }
 
    while ( true )
    {
@@ -231,6 +240,7 @@ void getString( int length, char *result, int line )
       }
    }
    *ptrCursor = 0;
+   handleKeychainHiddenInput( result );
    recordCapturedString( result, &state );
    stdPrintf( "\r\n" );
 }
@@ -391,4 +401,31 @@ static void recordCapturedString( const char *ptrResult, const GetStringState *p
    {
       capPutChar( '.' );
    }
+}
+
+/// @brief Fill a hidden prompt from macOS Keychain when the current prompt allows it.
+///
+/// @param ptrResult Destination buffer for the hidden input.
+/// @param resultSize Size of the destination buffer.
+/// @param ptrState Current input mode state.
+///
+/// @return `true` if the prompt was filled from Keychain, otherwise `false`.
+static bool tryAutoFillHiddenInput( char *ptrResult, size_t resultSize,
+                                    const GetStringState *ptrState )
+{
+   size_t charIndex;
+   size_t passwordLength;
+
+   if ( ptrState->hidden == 0 ||
+        !tryGetKeychainPasswordForPrompt( ptrResult, resultSize ) )
+   {
+      return false;
+   }
+
+   passwordLength = strlen( ptrResult );
+   for ( charIndex = 0; charIndex < passwordLength; charIndex++ )
+   {
+      putchar( '.' );
+   }
+   return true;
 }

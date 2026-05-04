@@ -38,9 +38,6 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_CHECK_TOOL([DSYMUTIL], [dsymutil], [no])
 AC_CHECK_TOOL([STRIP], [strip], [no])
-AC_DEFINE_UNQUOTED(HOSTTYPE,"$host",[Define to the canonical host])
-AC_DEFINE_UNQUOTED([BUILD_VERSION], ["$PACKAGE_VERSION"],
-   [Define to the configured release version string])
 
 platformDisplayName="Unix"
 platformSupportMode="least-effort"
@@ -216,12 +213,12 @@ if test "x$enable_keychain" = "xyes"; then
    case "$host_os" in
    darwin*)
       saved_LDFLAGS="$LDFLAGS"
-      LDFLAGS="$LDFLAGS -framework Security"
-      AC_MSG_CHECKING([whether $CC links with Security.framework])
-      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <Security/Security.h>]], [[SecKeychainRef keychainRef = NULL; (void)keychainRef;]])],
+      LDFLAGS="$LDFLAGS -framework Security -framework CoreFoundation"
+      AC_MSG_CHECKING([whether $CC links with Security.framework and CoreFoundation.framework])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <Security/Security.h>]], [[CFMutableDictionaryRef queryRef = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks); if ( queryRef != NULL ) { CFDictionarySetValue(queryRef, kSecClass, kSecClassGenericPassword); CFRelease(queryRef); }]])],
          [
             AC_MSG_RESULT([yes])
-            KEYCHAIN_LDFLAGS="-framework Security"
+            KEYCHAIN_LDFLAGS="-framework Security -framework CoreFoundation"
             keychainMode="enabled"
             AC_DEFINE([ENABLE_KEYCHAIN], [1],
                [Define if macOS Keychain support is enabled])
@@ -385,6 +382,10 @@ fi
 
 compilerSummary="$CC ($compilerFamily)"
 
+AC_DEFINE_UNQUOTED([HOSTTYPE], ["$host"],
+   [Define to the canonical host])
+AC_DEFINE_UNQUOTED([BUILD_VERSION], ["$PACKAGE_VERSION"],
+   [Define to the configured release version string])
 AC_DEFINE_UNQUOTED([BUILD_COMPILER], ["$compilerSummary"],
    [Define to the selected compiler summary])
 AC_DEFINE_UNQUOTED([BUILD_MODE], ["$buildMode"],
@@ -416,17 +417,17 @@ AC_OUTPUT
 cat <<CFG
 
 Configuration summary:
-  Compiler: $compilerSummary
-  Host: $host
-  Build mode: $buildMode
-  Optimization mode: $optimizationMode
-  Platform: $platformDisplayName
-  Platform support: $platformSupportMode
-  Universal binary: $universalMode
-  Keychain support: $keychainMode
-  CMocka: $cmockaMode
-  Sanitizers: $sanitizerMode
-  Native optimizations: $nativeOptimizationMode
-  Stack protector: $stackProtectorMode
+Compiler : $compilerSummary
+              Host : $host
+                        Build mode : $buildMode
+                                        Optimization mode : $optimizationMode
+                                                               Platform : $platformDisplayName
+                                                                             Platform support : $platformSupportMode
+                                                                                                   Universal binary : $universalMode
+                                                                                                                         Keychain support : $keychainMode
+                                                                                                                                               CMocka : $cmockaMode
+                                                                                                                                                           Sanitizers : $sanitizerMode
+                                                                                                                                                                           Native optimizations : $nativeOptimizationMode
+                                                                                                                                                                                                     Stack protector : $stackProtectorMode
 
-CFG
+                                                                                                                                                                                                                       CFG
