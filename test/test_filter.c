@@ -14,17 +14,20 @@
 #include "ext.h"
 #include "filter.h"
 #include "getline_input.h"
+#include "macos_keychain.h"
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include "telnet.h"
 #include "utility.h"
 static char aryPrintLog[32768];
+static char aryLastKeychainServerLine[320];
 static int sendAnXCallCount;
 
 static void resetState( void )
 {
    aryPrintLog[0] = '\0';
+   aryLastKeychainServerLine[0] = '\0';
    sendAnXCallCount = 0;
 
    isAway = 0;
@@ -283,6 +286,52 @@ int netPutChar( int inputChar )
    return inputChar;
 }
 
+void clearKeychainSessionState( void )
+{
+}
+
+bool deleteKeychainPassword( const char *ptrHost, const char *ptrUser )
+{
+   (void)ptrHost;
+   (void)ptrUser;
+   return false;
+}
+
+bool getKeychainPassword( const char *ptrHost, const char *ptrUser,
+                          char *ptrPassword, size_t passwordSize )
+{
+   (void)ptrHost;
+   (void)ptrPassword;
+   (void)passwordSize;
+   (void)ptrUser;
+   return false;
+}
+
+void handleKeychainHiddenInput( const char *ptrPassword )
+{
+   (void)ptrPassword;
+}
+
+void handleKeychainServerLine( const char *ptrLine )
+{
+   snprintf( aryLastKeychainServerLine, sizeof( aryLastKeychainServerLine ),
+             "%s", ptrLine );
+}
+
+void recordCurrentBbsUser( const char *ptrUser )
+{
+   (void)ptrUser;
+}
+
+bool setKeychainPassword( const char *ptrHost, const char *ptrUser,
+                          const char *ptrPassword )
+{
+   (void)ptrHost;
+   (void)ptrPassword;
+   (void)ptrUser;
+   return false;
+}
+
 void sPerror( const char *message, const char *heading )
 {
    (void)message;
@@ -333,6 +382,22 @@ int stdPrintf( const char *format, ... )
 int stdPutChar( int inputChar )
 {
    return inputChar;
+}
+
+bool tryGetKeychainPasswordForPrompt( char *ptrPassword, size_t passwordSize )
+{
+   (void)ptrPassword;
+   (void)passwordSize;
+   return false;
+}
+
+bool upsertKeychainPassword( const char *ptrHost, const char *ptrUser,
+                             const char *ptrPassword )
+{
+   (void)ptrHost;
+   (void)ptrPassword;
+   (void)ptrUser;
+   return false;
 }
 
 void getString( int length, char *result, int line )
@@ -1036,6 +1101,30 @@ static void filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence( voi
    }
 }
 
+static void filterData_WhenLineCompletes_ForwardsServerLineToKeychainHandler( void **state )
+{
+   // Arrange
+   const char *ptrLine;
+
+   (void)state;
+
+   resetState();
+   ptrLine = "Wrong password...\n";
+
+   // Act
+   while ( *ptrLine != '\0' )
+   {
+      filterData( *ptrLine++ );
+   }
+
+   // Assert
+   if ( strstr( aryLastKeychainServerLine, "Wrong password..." ) == NULL )
+   {
+      fail_msg( "filterData should forward completed lines to the keychain handler; got '%s'",
+                aryLastKeychainServerLine );
+   }
+}
+
 static void filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender( void **state )
 {
    // Arrange
@@ -1104,6 +1193,7 @@ int main( void )
       cmocka_unit_test( filterWhoList_WhenSavedFriendsRendered_UsesThemeColors ),
       cmocka_unit_test( filterWhoList_WhenLiveFriendRendered_UsesThemeColors ),
       cmocka_unit_test( filterData_WhenAnsiColorMapsToBrightValue_EmitsFullAnsiSequence ),
+      cmocka_unit_test( filterData_WhenLineCompletes_ForwardsServerLineToKeychainHandler ),
       cmocka_unit_test( filterExpress_WhenAwayAndIncomingNewMessage_QueuesSender ),
    };
 

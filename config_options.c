@@ -13,6 +13,7 @@
 #include "config_menu.h"
 #include "defs.h"
 #include "getline_input.h"
+#include "macos_keychain.h"
 #include "utility.h"
 #define SCREEN_READER_INFO \
    "Screen reader friendly mode keeps this client easier for VoiceOver and other\r\nscreen readers to follow.  You can change this later from the Options menu."
@@ -94,6 +95,34 @@ void configureOptionsMenu( void )
    flagsConfiguration.shouldEnableNameAutocomplete =
       (unsigned int)yesNoDefault( flagsConfiguration.shouldEnableNameAutocomplete );
    flagsConfiguration.hasNameAutocompleteSetting = 1;
+#ifdef ENABLE_KEYCHAIN
+   bool shouldUseKeychainBeforePrompt;
+
+   shouldUseKeychainBeforePrompt = flagsConfiguration.shouldUseKeychain != 0;
+   stdPrintf( "Use macOS Keychain for password storage? (%s) -> ",
+              flagsConfiguration.shouldUseKeychain ? "Yes" : "No" );
+   flagsConfiguration.shouldUseKeychain =
+      (unsigned int)yesNoDefault( flagsConfiguration.shouldUseKeychain );
+   if ( !shouldUseKeychainBeforePrompt && flagsConfiguration.shouldUseKeychain )
+   {
+      stdPrintf( "\r\nKeychain password storage will start after your next successful\r\nlogin.  Saved password autofill will be available on the login after that.\r\n" );
+   }
+   if ( hasSavedKeychainPasswordContextForCurrentBbs() )
+   {
+      stdPrintf( "Forget saved Keychain password for this BBS? (No) -> " );
+      if ( yesNoDefault( 0 ) )
+      {
+         if ( deleteSavedKeychainPasswordForCurrentBbs() )
+         {
+            stdPrintf( "\r\nSaved Keychain password for this BBS deleted.\r\n" );
+         }
+         else
+         {
+            stdPrintf( "\r\nNo saved Keychain password for this BBS was deleted.\r\n" );
+         }
+      }
+   }
+#endif
 }
 
 /// @brief Set the default autocomplete behavior when the user has not chosen one yet.
