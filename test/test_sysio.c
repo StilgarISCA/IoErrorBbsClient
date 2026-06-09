@@ -23,6 +23,12 @@
 static int fatalPerrorCallCount;
 static int tempFileErrorCallCount;
 
+void sendTrackedCharWithoutReplay( int inputChar )
+{
+   (void)inputChar;
+   byte++;
+}
+
 static void resetState( void )
 {
    fatalPerrorCallCount = 0;
@@ -58,16 +64,6 @@ noreturn void fatalPerror( const char *message, const char *heading )
 void tempFileError( void )
 {
    tempFileErrorCallCount++;
-}
-
-int colorValueFromLegacyDigit( int inputChar )
-{
-   if ( inputChar >= '0' && inputChar <= '9' )
-   {
-      return inputChar - '0';
-   }
-
-   return inputChar;
 }
 
 static void stripAnsi_WhenEscapeCodesPresent_RemovesAnsiSequences( void **state )

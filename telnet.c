@@ -14,6 +14,7 @@
 #include "filter_globals.h"
 #include "getline_input.h"
 #include "network_globals.h"
+#include "pane_ui.h"
 #include "telnet.h"
 #include "utility.h"
 static int handleTelnetDataState( int inputByte, int *ptrState );
@@ -39,6 +40,10 @@ static int handleTelnetDataState( int inputByte, int *ptrState )
    if ( inputByte == IAC )
    {
       *ptrState = TS_IAC;
+      return 0;
+   }
+   if ( paneUiHandleCapturedIncomingChar( inputByte ) )
+   {
       return 0;
    }
    if ( whoListProgress )
@@ -80,6 +85,7 @@ static int handleTelnetGetCommand( unsigned char *aryTelnetBuffer )
             return -1;
          }
          makeMessage( aryTelnetBuffer[1] );
+         paneUiEnterIfEligible();
          break;
 
       case G_FIVE:
@@ -214,6 +220,8 @@ static int handleTelnetIacState( int inputByte, int *ptrState,
       case MORE_M:
          *ptrState = TS_DATA;
          flagsConfiguration.isMorePromptActive ^= 1;
+         paneUiHandleMorePromptStateChanged(
+            flagsConfiguration.isMorePromptActive );
          if ( !flagsConfiguration.isMorePromptActive &&
               flagsConfiguration.shouldUseAnsi )
          {

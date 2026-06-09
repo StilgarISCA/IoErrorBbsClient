@@ -13,6 +13,7 @@
 #include "config_globals.h"
 #include "defs.h"
 #include "network_globals.h"
+#include "pane_ui.h"
 #include <stdarg.h>
 #include "sysio.h"
 #include "utility.h"
@@ -214,11 +215,18 @@ int stdPrintf( const char *format, ... )
 /// @return The input character value.
 int stdPutChar( int inputChar )
 {
+   if ( paneUiWriteLocalOutputChar( inputChar ) )
+   {
+      capPutChar( inputChar );
+      return inputChar;
+   }
+
    if ( putchar( inputChar ) < 0 )
    {
       fatalPerror( "stdPutChar", "Local error" );
    }
    capPutChar( inputChar );
+   paneUiAfterOutputChar( inputChar );
    return inputChar;
 }
 
@@ -229,6 +237,12 @@ int stdPutChar( int inputChar )
 /// @return Always returns `1` on success.
 int stdPuts( const char *ptrText )
 {
+   if ( paneUiWriteLocalOutputText( ptrText ) )
+   {
+      capPuts( ptrText );
+      return 1;
+   }
+
    if ( fputs( ptrText, stdout ) == EOF )
    {
       fatalPerror( "stdPuts", "Local error" );
@@ -238,6 +252,7 @@ int stdPuts( const char *ptrText )
       fflush( stdout );
    }
    capPuts( ptrText );
+   paneUiAfterOutputText( ptrText );
    return 1;
 }
 

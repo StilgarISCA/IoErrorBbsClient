@@ -37,8 +37,27 @@ static int makeMessageArg;
 static int configClientCallCount;
 static int sendAnXCallCount;
 static int morePromptHelperCallCount;
+static int paneUiEnterIfEligibleCallCount;
+static int paneUiMorePromptCallCount;
+static bool paneUiLastMorePromptState;
+static bool paneUiCaptureIncomingResult;
+static int paneUiCaptureIncomingCallCount;
+static int paneUiLastCapturedIncomingChar;
 static char aryNameResponse[64];
 static char aryStringResponse[256];
+
+bool paneUiHandleCapturedIncomingChar( int inputChar )
+{
+   paneUiCaptureIncomingCallCount++;
+   paneUiLastCapturedIncomingChar = inputChar;
+   return paneUiCaptureIncomingResult;
+}
+
+void paneUiHandleMorePromptStateChanged( bool isActive )
+{
+   paneUiMorePromptCallCount++;
+   paneUiLastMorePromptState = isActive;
+}
 
 static void resetNetOutput( void )
 {
@@ -119,6 +138,12 @@ static void resetState( void )
    configClientCallCount = 0;
    sendAnXCallCount = 0;
    morePromptHelperCallCount = 0;
+   paneUiEnterIfEligibleCallCount = 0;
+   paneUiMorePromptCallCount = 0;
+   paneUiLastMorePromptState = false;
+   paneUiCaptureIncomingResult = false;
+   paneUiCaptureIncomingCallCount = 0;
+   paneUiLastCapturedIncomingChar = 0;
 }
 
 // telnet.c dependencies outside these tests.
@@ -181,6 +206,11 @@ void makeMessage( int upload )
 {
    makeMessageCallCount++;
    makeMessageArg = upload;
+}
+
+void paneUiEnterIfEligible( void )
+{
+   paneUiEnterIfEligibleCallCount++;
 }
 
 void morePromptHelper( void )
@@ -438,6 +468,11 @@ static void telReceive_WhenPostCommandArrives_MarksReplayWindowNonReplayable( vo
    {
       fail_msg( "G_POST flow should call makeMessage once; got %d", makeMessageCallCount );
    }
+   if ( paneUiEnterIfEligibleCallCount != 1 )
+   {
+      fail_msg( "G_POST flow should re-evaluate pane UI after posting; got %d",
+                paneUiEnterIfEligibleCallCount );
+   }
    if ( arySavedByteCanReplay[19] ||
         arySavedByteCanReplay[20] ||
         arySavedByteCanReplay[21] )
@@ -505,6 +540,39 @@ static void telReceive_WhenDataByteReceived_RoutesToCorrectFilter( void **state 
    }
 }
 
+static void telReceive_WhenMorePromptToggles_NotifiesPaneUi( void **state )
+{
+   (void)state;
+
+   resetState();
+
+   (void)telReceive( IAC );
+   (void)telReceive( MORE_M );
+   assert_int_equal( paneUiMorePromptCallCount, 1 );
+   assert_true( paneUiLastMorePromptState );
+
+   (void)telReceive( IAC );
+   (void)telReceive( MORE_M );
+   assert_int_equal( paneUiMorePromptCallCount, 2 );
+   assert_false( paneUiLastMorePromptState );
+}
+
+static void telReceive_WhenPaneUiCapturesData_DoesNotRouteToSpecializedFilter( void **state )
+{
+   (void)state;
+
+   resetState();
+   paneUiCaptureIncomingResult = true;
+   postProgressState = 1;
+
+   (void)telReceive( 'I' );
+
+   assert_int_equal( paneUiCaptureIncomingCallCount, 1 );
+   assert_int_equal( paneUiLastCapturedIncomingChar, 'I' );
+   assert_int_equal( filterPostCallCount, 0 );
+   assert_int_equal( filterDataCallCount, 0 );
+}
+
 int main( void )
 {
    const struct CMUnitTest aryTests[] = {
@@ -516,6 +584,9 @@ int main( void )
       cmocka_unit_test( telReceive_WhenPostCommandArrives_MarksReplayWindowNonReplayable ),
       cmocka_unit_test( telReceive_WhenXMessageEndsAndPendingSend_TriggersSendAnX ),
       cmocka_unit_test( telReceive_WhenDataByteReceived_RoutesToCorrectFilter ),
+      cmocka_unit_test( telReceive_WhenMorePromptToggles_NotifiesPaneUi ),
+      cmocka_unit_test(
+         telReceive_WhenPaneUiCapturesData_DoesNotRouteToSpecializedFilter ),
    };
 
    return cmocka_run_group_tests( aryTests, NULL, NULL );

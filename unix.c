@@ -17,6 +17,7 @@
 #include "config_globals.h"
 #include "defs.h"
 #include "network_globals.h"
+#include "pane_ui.h"
 #include "telnet.h"
 #include "unix.h"
 #include "utility.h"
@@ -191,6 +192,7 @@ RETSIGTYPE naws( int signalNumber )
    {
       sendNaws();
    }
+   paneUiMarkResizePending();
 #ifdef SIGWINCH
    signal( SIGWINCH, naws );
 #endif
@@ -265,7 +267,10 @@ RETSIGTYPE reapChild( int signalNumber )
 /// @return This function does not return a value.
 void run( const char *aryCommand, const char *arg )
 {
+   bool shouldRestorePaneUi;
+
    fflush( stdout );
+   shouldRestorePaneUi = paneUiIsActive();
 #ifdef USE_POSIX_SIGSETJMP
    if ( sigsetjmp( jumpEnv, 1 ) )
    {
@@ -282,6 +287,10 @@ void run( const char *aryCommand, const char *arg )
       else
       {
          setTerm();
+         if ( shouldRestorePaneUi && !flagsConfiguration.isPosting )
+         {
+            paneUiEnterIfEligible();
+         }
          childPid = 0;
       }
    }
@@ -289,6 +298,10 @@ void run( const char *aryCommand, const char *arg )
    {
       signal( SIGCHLD, reapChild );
       noTitleBar();
+      if ( shouldRestorePaneUi )
+      {
+         paneUiLeave();
+      }
       resetTerm();
 
       if ( !( childPid = fork() ) )
